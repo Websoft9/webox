@@ -5,7 +5,7 @@
 - 产品名称：应用聚合与托管平台
 - 价值体现：聚合/接入/运行/连接一切应用，打开 Websoft9 控制台，开启一天轻松基于 Web 随时随地办公模式
 - 业务功能：寻找、部署、接入、运行、发布、管理、安全
-- 技术功能：多用户多权限、Vault、Git、SSO、Variables，
+- 技术功能：多用户多权限、Vault, Git, SSO, Variables, Orchestration
 
 ## 业务需求
 
