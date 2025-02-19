@@ -6,6 +6,7 @@
 - 价值体现：聚合/接入/运行/连接一切应用，打开 Websoft9 控制台，开启一天轻松基于 Web 随时随地办公模式
 - 业务功能：寻找、部署、接入、运行、发布、管理、安全
 - 技术功能：多用户多权限、Vault, Git, SSO, Variables, Orchestration, AI workfolw, Connection pipeline
+- 架构组件：前端(UI/CLI)、server, Agent, Controller, Event Stream, Storage, Runtime, LLMs provider
 
 ## 业务需求
 
@@ -49,6 +50,10 @@
 ### 发布
 
 ### 安全
+
+### 智库
+
+提供工具
 
 ## 技术需求
 
