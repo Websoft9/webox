@@ -7,7 +7,7 @@
 - 业务功能：寻找、部署、接入、运行、发布、管理、安全、订阅、咨询
 - 技术功能：多用户多权限、Vault, Git, SSO, Variables, Orchestration, AI workfolw, Connection pipeline
 - 架构组件：前端(UI/CLI)、server, Agent, Controller, Event Stream, Storage, Runtime, LLMs provider
-- 横切关注点：日志记录、安全性、事务管理、缓存和配置管理、[微服务架构框架](https://microservices.io/)
+- 横切关注点：日志记录、安全性、事务管理、缓存、消息队列和配置管理、[微服务架构框架](https://microservices.io/)
 - 开发框架：使用全站框架(SvelteKit, T3, [remix](https://remix.run/)等)
 
 ## 业务需求
