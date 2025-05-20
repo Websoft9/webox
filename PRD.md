@@ -92,3 +92,7 @@
 - 更新凭证（事件/轮询/Webhook 三种机制之一）
 - 多用户、多角色
 
+### API/CLI
+
+- API 优先，先有 API，才有界面和 CLI
+- CLI是 HTTP API 的精简包装器，CLI 命令在内部直接映射到 HTTP API
