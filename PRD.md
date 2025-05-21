@@ -58,6 +58,21 @@
 
 提供应用和科技相关知识，结合 RAG/LLM 供用户使用
 
+## License 管理
+
+## 插件
+
+扩展 Websoft9 的功能：
+
+- 应该是前端程序与 Websoft9 plugin 相关的 API
+- 支持 declarative（声明式编程） 和 programmatic（函数式编程）
+- 插件入口设计
+
+## 贡献应用
+
+- 用户可以为 AppStore 贡献应用
+- 用户可以将自定义应用上架的 AppStore，但保持私有
+
 ## 技术需求
 
 ### 组网
