@@ -9,6 +9,7 @@
 - 架构组件：前端(UI/CLI)、server, BFF 组件、API 网关，Agent, Controller, Event Stream, Storage, Runtime, LLMs provider, Web Components, iPaaS or [CI/CD](https://www.lambdatest.com/blog/best-ci-cd-tools/)
 - 横切关注点：日志记录、安全性、事务管理、缓存、消息队列、有限状态机、特征与配置管理、[微服务架构框架](https://microservices.io/)
 - 开发框架：使用全站框架(SvelteKit, T3, [remix](https://remix.run/)等)
+- 可配置性：决策表、树、图、DSL 的灵活运用
 - 插件：集成 CI/CD, 集成 Github, GitLab 等
 - 开发语言：[Golang](https://golang.halfiisland.com/)
 
