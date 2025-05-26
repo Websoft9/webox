@@ -10,6 +10,24 @@
 
 功能需求描述要设计的系统的功能。它描述了系统将是什么以及它将如何发挥作用以满足用户需求。简单说，它解决了客户的业务问题。
 
+### 资源
+
+使用 Websoft9 过程中，需要接入、维护的对象。将外部应用全局接入到 Websoft9，更方便快捷登录使用
+
+- 服务器
+- 数据库
+- 域名
+- 证书
+- SFTP
+- S3 以及兼容
+- File (shell 或 Python 脚本,zip, html，.sql, ini, md 等)
+- LLM
+- 账号或密钥
+- 制品库（pip, node, docker 等仓库）
+- SaaS 应用
+- HTTP request（包含 webhook）
+- git
+
 ### 寻找
 
 基于 AI + 知识库，根据用户需求推荐具体的软件集。
@@ -65,23 +83,7 @@
 
 提供应用和科技相关知识，结合 RAG/LLM 供用户使用
 
-### 资源
 
-使用 Websoft9 过程中，需要接入、维护的对象。将外部应用全局接入到 Websoft9，更方便快捷登录使用
-
-- 服务器
-- 数据库
-- 域名
-- 证书
-- SFTP
-- S3 以及兼容
-- File (shell 或 Python 脚本,zip, html，.sql, ini, md 等)
-- LLM
-- 账号或密钥
-- 制品库（pip, node, docker 等仓库）
-- SaaS 应用
-- HTTP request（包含 webhook）
-- git
 
 ### 监控
 
