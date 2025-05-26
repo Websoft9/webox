@@ -3,17 +3,10 @@
 ## 概要
 
 - 产品名称：应用聚合与托管平台
-- 价值体现：聚合/接入/运行/连接一切应用，打开 Websoft9 控制台，开启一天轻松基于 Web 随时随地办公模式
+- 价值体现：聚合/接入/运行/连接一切应用或服务，打开 Websoft9 控制台，开启一天轻松基于 Web 随时随地办公模式
 - 业务功能：寻找、部署、接入、运行、发布、管理、安全、订阅、咨询
-- 技术功能：多用户多权限、Vault, Git, SSO, Variables, Orchestration, AI workfolw, Connection pipeline, Embeddeding applications/micro frontends
-- 架构组件：前端(UI/CLI)、server, BFF 组件、API 网关，Agent, Controller, Event Stream, Storage, Runtime, LLMs provider, Web Components, iPaaS or [CI/CD](https://www.lambdatest.com/blog/best-ci-cd-tools/)
-- 横切关注点：日志记录、安全性、事务管理、缓存、消息队列、有限状态机、特征与配置管理、[微服务架构框架](https://microservices.io/)
-- 开发框架：使用全站框架(SvelteKit, T3, [remix](https://remix.run/)等)
-- 可配置性：决策表、树、图、DSL 的灵活运用
-- 插件：集成 CI/CD, 集成 Github, GitLab 等
-- 开发语言：[Golang](https://golang.halfiisland.com/)
 
-## 业务需求
+## 功能需求
 
 ### 寻找
 
@@ -70,12 +63,12 @@
 - 支持 declarative（声明式编程） 和 programmatic（函数式编程）
 - 插件入口设计
 
-## 贡献应用
+## 用户贡献应用
 
 - 用户可以为 AppStore 贡献应用
 - 用户可以将自定义应用上架的 AppStore，但保持私有
 
-## 技术需求
+## 非功能需求
 
 ### 组网
 
@@ -113,3 +106,15 @@
 
 - API 优先，先有 API，才有界面和 CLI
 - CLI是 HTTP API 的精简包装器，CLI 命令在内部直接映射到 HTTP API
+
+## 架构
+
+架构设计中关注的要点：
+
+- 技术功能：多用户多权限、Vault, Git, SSO, Variables, Orchestration, AI workfolw, Connection pipeline, Embeddeding applications/micro frontends
+- 架构组件：前端(UI/CLI)、server, BFF 组件、API 网关，Agent, Controller, Event Stream, Storage, Runtime, LLMs provider, Web Components, iPaaS or [CI/CD](https://www.lambdatest.com/blog/best-ci-cd-tools/)
+- 横切关注点：日志记录、安全性、事务管理、缓存、消息队列、有限状态机、特征与配置管理、[微服务架构框架](https://microservices.io/)
+- 开发框架：使用全站框架(SvelteKit, T3, [remix](https://remix.run/)等)
+- 可配置性：决策表、树、图、DSL 的灵活运用
+- 插件：集成 CI/CD, 集成 Github, GitLab 等
+- 开发语言：[Golang](https://golang.halfiisland.com/)
