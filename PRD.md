@@ -27,8 +27,10 @@
 - SaaS 应用
 - HTTP request（包含 webhook）
 - git
-- 代理
+- 代理(http/https/socks5)
 - 环境变量
+- SMTP
+- 
 
 ### 找应用
 
