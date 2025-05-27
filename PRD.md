@@ -30,7 +30,7 @@
 - 代理(http/https/socks5)
 - 环境变量
 - SMTP
-- 
+- json/键值对
 
 ### 找应用
 
