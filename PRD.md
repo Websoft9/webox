@@ -26,11 +26,13 @@
 - 制品库（pip, node, docker 等仓库）
 - SaaS 应用
 - HTTP request（包含 webhook）
-- git
+- Git Provider
 - 代理(http/https/socks5)
 - 环境变量
 - SMTP
 - json/键值对
+- rss
+- 
 
 
 
@@ -58,6 +60,12 @@
 - 支持将应用发布到多种类型的网关（包含 Websoft9 默认的网关）
 - 绑定域名
 - 无域名下的访问管理
+
+### 应用发现
+
+- 统一的服务注册，能够发现部署在不同服务器的应用
+- 提供统一的域名访问
+- 监控服务的状态
 
 ### 插件
 
