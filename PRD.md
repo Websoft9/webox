@@ -60,7 +60,46 @@
 - 部署时环境变量和部分容器指令可配置，例如：
   - 数据库连接信息的环境变量
   - 容器CPU资源限制
-    
+
+```mermaid
+flowchart LR
+    subgraph Connect
+        docker[docker run]
+        docker-compose[Docker Compose]
+        ansible[Ansible]
+        script[Scripts]
+        terraform[Terraform]
+    end
+
+    subgraph Git
+        source[Data source]
+        source[Parse]
+    end
+
+    subgraph Process
+        view[Materialized view]
+        pipe[Pipe]
+        copy[Copy data source]
+    end
+
+    subgraph Publish
+        endpoint[Endpoint]
+        sink[Sink]
+    end
+
+    docker --> source
+    docker-compose --> source
+    ansible --> source
+    ansible --> source
+    script --> source
+    terraform --> source
+    source --> pipe
+    pipe --> view
+    pipe --> copy
+    pipe --> endpoint
+    pipe --> sink
+```
+
  ### 应用发现
 
 所有的节点之间具备公网 IP 或可达的局域网 IP，以此基础下：
