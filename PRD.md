@@ -55,6 +55,9 @@
 流程：选择部署类型 > 建立/连接 Git > CI (parse > 检查 > 构建镜像) > CD (部署 > 运行
 
 - 支持的服务类型：计划任务 Cron，Web 运行时，数据库，Terraform, 静态网站，一键脚本，Ansible
+- 快速部署的手段：
+  - 应用商店模板（官方+社区）
+  - AI 引导式：粘贴 `docker run` 命令，指定一个 Dockerhub 镜像
 - 目标环境：服务器，云设施提供商（IaC）
 - 必要环境：Docker/Podman 引擎
 - Pipeline + 可视化
