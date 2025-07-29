@@ -49,3 +49,16 @@ init: deps build
 # 完整测试
 full-test: build
 	./test_api.sh
+
+# 数据库初始化
+init-db:
+	./scripts/init_db.sh
+
+# MySQL数据库初始化
+init-mysql:
+	./scripts/init_db.sh -t mysql -u root -p password
+
+# 重置数据库
+reset-db:
+	rm -f data/websoft9.db
+	./scripts/init_db.sh
