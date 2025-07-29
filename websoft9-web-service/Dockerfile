@@ -18,6 +18,9 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 # 运行阶段
 FROM alpine:latest
 
+LABEL maintainer="Websoft9<help@websoft9.com>"
+LABEL version="0.1.1"
+
 RUN apk --no-cache add ca-certificates
 WORKDIR /root/
 
@@ -27,6 +30,10 @@ COPY --from=builder /app/configs ./configs
 
 # 创建数据目录
 RUN mkdir -p /root/data
+VOLUME /root/data
+
+ENV REDIS_HOST=websoft9-redis
+ENV REDIS_PORT=6379
 
 # 暴露端口
 EXPOSE 8080 9090

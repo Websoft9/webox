@@ -1,0 +1,31 @@
+services:
+  webox:
+    image: websoft9dev/webox:$WEBOX_VERSION
+    container_name: websoft9-webox
+    restart: unless-stopped
+    env_files: .env
+    depends_on:
+      - redis
+    volumes:
+      - webox_data:/root/data
+    ports:
+      - "8080:8080" # Web Service Port
+      - "9090:9090" # RPC Port
+  redis:
+    image: redis:8.0
+    container_name: websoft9-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    command: redis-server --bind 0.0.0.0 --loglevel verbose
+	
+networks:
+  default:
+    name: websoft9
+    external: true
+
+volumes:
+  redis_data:
+  influxdb-data:
+  influxdb-config:
+  webox_data:
