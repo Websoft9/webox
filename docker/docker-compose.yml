@@ -3,7 +3,7 @@ services:
     image: websoft9dev/webox:$WEBOX_VERSION
     container_name: websoft9-webox
     restart: unless-stopped
-    env_files: .env
+    env_file: .env
     depends_on:
       - redis
     volumes:
