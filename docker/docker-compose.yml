@@ -26,6 +26,4 @@ networks:
 
 volumes:
   redis_data:
-  influxdb-data:
-  influxdb-config:
   webox_data:
