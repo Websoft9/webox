@@ -48,11 +48,11 @@ func (s *userService) Register(username, email, password string) (*model.User, e
 	}
 
 	user := &model.User{
-		Username: username,
-		Email:    email,
-		Password: string(hashedPassword),
-		Role:     "user",
-		Status:   "active",
+		GroupID:      1, // 默认用户组ID，需要确保存在
+		Username:     username,
+		Email:        email,
+		PasswordHash: string(hashedPassword),
+		Status:       1, // 1-启用
 	}
 
 	if err := s.userRepo.Create(user); err != nil {
@@ -68,15 +68,21 @@ func (s *userService) Login(username, password string) (string, error) {
 		return "", errors.New("invalid credentials")
 	}
 
-	if user.Status != "active" {
+	if user.Status != 1 {
 		return "", errors.New("account is disabled")
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
 		return "", errors.New("invalid credentials")
 	}
 
-	token, err := s.jwtAuth.GenerateToken(user.ID, user.Username, user.Role)
+	// 获取用户角色，这里简化处理，实际应该查询用户角色关联表
+	userRole := "user" // 默认角色
+	if len(user.Roles) > 0 {
+		userRole = user.Roles[0].Code
+	}
+
+	token, err := s.jwtAuth.GenerateToken(user.ID, user.Username, userRole)
 	if err != nil {
 		return "", err
 	}
@@ -107,7 +113,7 @@ func (s *userService) ChangePassword(userID uint, oldPassword, newPassword strin
 		return err
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(oldPassword)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(oldPassword)); err != nil {
 		return errors.New("invalid old password")
 	}
 
@@ -116,7 +122,7 @@ func (s *userService) ChangePassword(userID uint, oldPassword, newPassword strin
 		return err
 	}
 
-	user.Password = string(hashedPassword)
+	user.PasswordHash = string(hashedPassword)
 	return s.userRepo.Update(user)
 }
 
