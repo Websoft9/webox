@@ -20,6 +20,9 @@ DB_USER=""
 DB_PASS=""
 SQLITE_PATH="./data/websoft9.db"
 
+# Path to the flag file
+FLAG_FILE="/var/lib/websoft9_db_initialized"
+
 # Function to print colored output
 print_info() {
     echo -e "${GREEN}[INFO]${NC} $1"
@@ -38,7 +41,7 @@ show_usage() {
     echo "Usage: $0 [OPTIONS]"
     echo ""
     echo "Options:"
-    echo "  -t, --type TYPE        Database type (sqlite|mysql) [default: sqlite]"
+    echo "  -t, --type TYPE        Database type (sqlite|mysql|postgres) [default: sqlite]"
     echo "  -h, --host HOST        Database host [default: localhost]"
     echo "  -P, --port PORT        Database port"
     echo "  -d, --database NAME    Database name [default: websoft9]"
@@ -96,10 +99,16 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Check if the script has already been executed
+if [[ -f "$FLAG_FILE" ]]; then
+    print_info "Database initialization already completed. Skipping..."
+    exit 0
+fi
+
 # Validate database type
-if [[ "$DB_TYPE" != "sqlite" && "$DB_TYPE" != "mysql" ]]; then
+if [[ "$DB_TYPE" != "sqlite" && "$DB_TYPE" != "mysql" && "$DB_TYPE" != "postgres" ]]; then
     print_error "Unsupported database type: $DB_TYPE"
-    print_info "Supported types: sqlite, mysql"
+    print_info "Supported types: sqlite, mysql, postgres"
     exit 1
 fi
 
@@ -108,6 +117,9 @@ if [[ -z "$DB_PORT" ]]; then
     case $DB_TYPE in
         mysql)
             DB_PORT="3306"
+            ;;
+        postgres)
+            DB_PORT="5432"
             ;;
         sqlite)
             DB_PORT=""
@@ -189,7 +201,56 @@ case $DB_TYPE in
             exit 1
         fi
         ;;
+        
+    postgres)
+        print_info "PostgreSQL connection: $DB_USER@$DB_HOST:$DB_PORT/$DB_NAME"
+        
+        # Check if PostgreSQL client is available
+        if ! command -v psql &> /dev/null; then
+            print_error "psql command not found. Please install PostgreSQL client."
+            exit 1
+        fi
+        
+        # Validate required parameters
+        if [[ -z "$DB_USER" ]]; then
+            print_error "PostgreSQL username is required. Use -u or --user option."
+            exit 1
+        fi
+        
+        # Prepare PostgreSQL connection parameters
+        PSQL_CMD="psql -h $DB_HOST -p $DB_PORT -U $DB_USER"
+        if [[ -n "$DB_PASS" ]]; then
+            export PGPASSWORD="$DB_PASS"
+        fi
+        
+        # Test PostgreSQL connection
+        print_info "Testing PostgreSQL connection..."
+        if ! echo "\q" | $PSQL_CMD > /dev/null 2>&1; then
+            print_error "Failed to connect to PostgreSQL server"
+            print_info "Please check your connection parameters"
+            exit 1
+        fi
+        
+        # Create database if it doesn't exist
+        print_info "Creating database if not exists: $DB_NAME"
+        echo "CREATE DATABASE \"$DB_NAME\";" | $PSQL_CMD || print_warn "Database $DB_NAME may already exist."
+        
+        # Initialize PostgreSQL database
+        print_info "Executing PostgreSQL initialization script..."
+        if $PSQL_CMD -d "$DB_NAME" -f scripts/init_postgres.sql; then
+            print_info "PostgreSQL database initialized successfully!"
+            print_info "Database: $DB_NAME"
+        else
+            print_error "Failed to initialize PostgreSQL database"
+            exit 1
+        fi
+        ;;
 esac
+
+# At the end of the script, create the flag file
+print_info "Creating flag file to indicate initialization is complete: $FLAG_FILE"
+mkdir -p "$(dirname "$FLAG_FILE")"
+touch "$FLAG_FILE"
 
 print_info "Database initialization completed!"
 print_info ""
