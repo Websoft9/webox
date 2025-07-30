@@ -35,6 +35,10 @@ COPY --from=builder /app/scripts ./scripts
 RUN mkdir -p /root/data
 VOLUME /root/data
 
+ENV REDIS_HOST=websoft9-redis
+ENV REDIS_PORT=6379
+ENV JWT_SECRET="570ef696bca45877d1b5da0ede0177703d2f1079f31a1332607a1ad237e5d356"
+
 # 暴露端口
 EXPOSE 8080 9090
 
