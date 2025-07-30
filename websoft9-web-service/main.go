@@ -9,7 +9,7 @@ import (
 	"websoft9-web-service/internal/router"
 	"websoft9-web-service/internal/service"
 
-	"github.com/go-redis/redis/v8"
+	"github.com/go-redis/redis/v9"
 	"golang.org/x/net/context"
 )
 
