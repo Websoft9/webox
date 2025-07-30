@@ -1,0 +1,51 @@
+# This action is used for building webox docker images to DockerHub at one time
+
+name: Build and Push Docker Image with Version
+
+on:
+  push:
+    branches:
+      - main  # 在 main 分支推送时触发
+    paths:
+      - "websoft9-web-service/Dockerfile"  # 仅在 Dockerfile 发生更改时触发
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 检出代码
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 提取 Dockerfile 中的版本信息
+      - name: Extract version from Dockerfile
+        id: extract_version
+        run: |
+          VERSION=$(grep 'LABEL version=' ./websoft9-web-service/Dockerfile | cut -d'"' -f2)
+          echo "VERSION=$VERSION"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "README=websoft9-web-service/README.md" >> $GITHUB_ENV
+
+      # 构建并推送 Docker 镜像
+      - name: Build & push Docker image
+        uses: mr-smithers-excellent/docker-build-push@v6
+        with:
+          image: websoft9dev/webox-server
+          tags: ${{ env.VERSION }}
+          registry: docker.io
+          directory: ./websoft9-web-service
+          dockerfile: ./websoft9-web-service/Dockerfile
+          multiPlatform: true
+          platform: linux/amd64
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # 更新 Docker Hub 描述
+      - name: Docker Hub Description
+        uses: peter-evans/dockerhub-description@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          repository: websoft9dev/webox-server
+          readme-filepath: ./websoft9-web-service/README.md
