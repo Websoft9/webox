@@ -22,9 +22,9 @@ func main() {
 	}
 
 	// 自动迁移数据库表结构
-	if err := database.AutoMigrate(db); err != nil {
-		log.Fatal("Failed to migrate database:", err)
-	}
+	// if err := database.AutoMigrate(db); err != nil {
+	// 	log.Fatal("Failed to migrate database:", err)
+	// }
 
 	// 初始化Redis
 	rdb, err := database.InitRedis(cfg)
