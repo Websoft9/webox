@@ -25,7 +25,6 @@ jobs:
           VERSION=$(grep 'LABEL version=' ./websoft9-web-service/Dockerfile | cut -d'"' -f2)
           echo "VERSION=$VERSION"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "README=./websoft9-web-service/README.md" >> $GITHUB_ENV
 
       # 构建并推送 Docker 镜像
       - name: Build & push Docker image
