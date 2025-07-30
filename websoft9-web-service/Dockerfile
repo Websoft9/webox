@@ -7,7 +7,7 @@ RUN apk add --no-cache git bash gcc musl-dev
 
 # 复制go mod文件
 COPY go.mod go.sum ./
-RUN go mod download
+RUN go mod tidy
 
 # 复制源代码
 COPY . .
