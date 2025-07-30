@@ -22,7 +22,7 @@ jobs:
       - name: Extract version from Dockerfile
         id: extract_version
         run: |
-          VERSION=$(grep 'LABEL version=' ./websoft9-web-service/Dockerfile | cut -d'"' -f2)
+          VERSION=$(grep 'LABEL version=' ./websoft9-web-service/Dockerfile | cut -d'"' -f2 | tr -d '\n' | tr -d '\r' | xargs)
           echo "VERSION=$VERSION"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
