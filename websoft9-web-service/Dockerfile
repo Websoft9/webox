@@ -1,6 +1,6 @@
 # This action is used for building webox-server to DockerHub at one time
 # It need LABEL version="" at your dockerfile.
-# modify time: 202507301800, you can modify here to trigger Docker Build action
+# modify time: 202507301801, you can modify here to trigger Docker Build action
 
 
 FROM golang:1.24-alpine AS builder
