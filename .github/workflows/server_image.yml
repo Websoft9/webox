@@ -1,6 +1,6 @@
 # This action is used for building webox docker images to DockerHub at one time
 
-name: Build and Push Docker Image with Version
+name: Build and Push webox server image to docker-hub
 
 on:
   push:

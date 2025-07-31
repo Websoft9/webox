@@ -1,6 +1,6 @@
 services:
   webox:
-    image: websoft9dev/webox:$WEBOX_VERSION
+    image: websoft9dev/webox-server:$WEBOX_VERSION
     container_name: websoft9-webox
     restart: unless-stopped
     env_file: .env
