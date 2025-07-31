@@ -16,6 +16,7 @@ Webox is a modern cloud platform consisting of two main components:
 Core backend service built with Golang and Gin framework.
 
 **Tech Stack:**
+
 - Golang 1.24+
 - Gin web framework
 - GORM ORM
@@ -30,6 +31,7 @@ Core backend service built with Golang and Gin framework.
 Client agent deployed on server nodes for task execution and monitoring.
 
 **Tech Stack:**
+
 - Golang
 - gRPC (grpc-go)
 - Redis (go-redis)
@@ -49,12 +51,14 @@ Client agent deployed on server nodes for task execution and monitoring.
 ### Development Setup
 
 1. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd webox
    ```
 
 2. **Start Web Service**
+
    ```bash
    cd api-service
    go mod tidy
@@ -62,6 +66,7 @@ Client agent deployed on server nodes for task execution and monitoring.
    ```
 
 3. **Start Agent**
+
    ```bash
    cd websoft9-agent
    go mod tidy

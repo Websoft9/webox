@@ -4,7 +4,7 @@ Websoft9平台的核心后端服务，基于Golang和Gin框架构建，提供RES
 
 ## 技术栈
 
-- **开发语言**: Golang 1.21
+- **开发语言**: Golang 1.24+
 - **Web框架**: Gin
 - **ORM框架**: GORM
 - **数据库**: SQLite

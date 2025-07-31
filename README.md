@@ -16,6 +16,7 @@ Webox 是一个现代化的云平台，由两个主要组件构成：
 基于 Golang 和 Gin 框架构建的核心后端服务。
 
 **技术栈：**
+
 - Golang 1.24+
 - Gin Web 框架
 - GORM ORM 框架
@@ -30,6 +31,7 @@ Webox 是一个现代化的云平台，由两个主要组件构成：
 部署在服务器节点的客户端代理，负责任务执行和监控。
 
 **技术栈：**
+
 - Golang
 - gRPC (grpc-go)
 - Redis (go-redis)
@@ -49,12 +51,14 @@ Webox 是一个现代化的云平台，由两个主要组件构成：
 ### 开发环境搭建
 
 1. **克隆仓库**
+
    ```bash
    git clone <repository-url>
    cd webox
    ```
 
 2. **启动 Web 服务**
+
    ```bash
    cd api-service
    go mod tidy
@@ -62,6 +66,7 @@ Webox 是一个现代化的云平台，由两个主要组件构成：
    ```
 
 3. **启动代理**
+
    ```bash
    cd websoft9-agent
    go mod tidy
