@@ -6,7 +6,7 @@ Next generation of Websoft9 platform - A comprehensive cloud application managem
 
 Webox is a modern cloud platform consisting of two main components:
 
-- **websoft9-web-service**: Core backend service providing RESTful APIs
+- **api-service**: Core backend service providing RESTful APIs
 - **websoft9-agent**: Client agent deployed on server nodes for task execution and monitoring
 
 ## Components
@@ -56,7 +56,7 @@ Client agent deployed on server nodes for task execution and monitoring.
 
 2. **Start Web Service**
    ```bash
-   cd websoft9-web-service
+   cd api-service
    go mod tidy
    go run main.go
    ```
@@ -73,9 +73,9 @@ Client agent deployed on server nodes for task execution and monitoring.
 
 ```bash
 # Build and run web service
-cd websoft9-web-service
-docker build -t websoft9-web-service .
-docker run -p 8080:8080 -p 9090:9090 websoft9-web-service
+cd api-service
+docker build -t api-service .
+docker run -p 8080:8080 -p 9090:9090 api-service
 
 # Build and run agent
 cd websoft9-agent
@@ -93,7 +93,7 @@ docker run --privileged websoft9-agent
 
 ```
 webox/
-├── websoft9-web-service/    # Backend API service
+├── api-service/    # Backend API service
 │   ├── main.go
 │   ├── internal/
 │   │   ├── config/

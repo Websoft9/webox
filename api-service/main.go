@@ -1,11 +1,11 @@
 package main
 
 import (
+	"api-service/internal/config"
+	"api-service/internal/database"
+	"api-service/internal/router"
+	"api-service/internal/service"
 	"log"
-	"websoft9-web-service/internal/config"
-	"websoft9-web-service/internal/database"
-	"websoft9-web-service/internal/router"
-	"websoft9-web-service/internal/service"
 )
 
 func main() {

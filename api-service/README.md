@@ -16,7 +16,7 @@ Websoft9平台的核心后端服务，基于Golang和Gin框架构建，提供RES
 ## 项目结构
 
 ```text
-websoft9-web-service/
+api-service/
 ├── main.go                 # 应用入口
 ├── go.mod                  # Go模块文件
 ├── Dockerfile              # Docker构建文件
@@ -67,8 +67,8 @@ go run main.go
 ### Docker运行
 
 ```bash
-docker build -t websoft9-web-service .
-docker run -p 8080:8080 -p 9090:9090 websoft9-web-service
+docker build -t api-service .
+docker run -p 8080:8080 -p 9090:9090 api-service
 ```
 
 ## 架构设计

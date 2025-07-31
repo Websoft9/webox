@@ -1,10 +1,10 @@
 package middleware
 
 import (
+	"api-service/pkg/auth"
+	"api-service/pkg/response"
 	"net/http"
 	"strings"
-	"websoft9-web-service/pkg/auth"
-	"websoft9-web-service/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )

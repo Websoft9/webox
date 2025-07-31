@@ -1,4 +1,4 @@
-module websoft9-web-service
+module api-service
 
 go 1.24.5
 

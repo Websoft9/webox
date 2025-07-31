@@ -1,10 +1,10 @@
 package database
 
 import (
+	"api-service/internal/config"
 	"fmt"
 	"os"
 	"path/filepath"
-	"websoft9-web-service/internal/config"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/redis/go-redis/v9"

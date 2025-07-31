@@ -1,11 +1,11 @@
 package controller
 
 import (
+	"api-service/internal/model"
+	"api-service/internal/service"
+	"api-service/pkg/response"
 	"net/http"
 	"strconv"
-	"websoft9-web-service/internal/model"
-	"websoft9-web-service/internal/service"
-	"websoft9-web-service/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )

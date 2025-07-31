@@ -1,8 +1,8 @@
 package service
 
 import (
-	"websoft9-web-service/internal/model"
-	"websoft9-web-service/internal/repository"
+	"api-service/internal/model"
+	"api-service/internal/repository"
 )
 
 type ApplicationService interface {

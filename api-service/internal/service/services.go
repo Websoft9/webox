@@ -1,11 +1,11 @@
 package service
 
 import (
-	"websoft9-web-service/internal/repository"
-	"websoft9-web-service/pkg/auth"
+	"api-service/internal/repository"
+	"api-service/pkg/auth"
 
-	"github.com/redis/go-redis/v9"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 

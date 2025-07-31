@@ -1,10 +1,10 @@
 package controller
 
 import (
+	"api-service/internal/service"
+	"api-service/pkg/response"
 	"net/http"
 	"strconv"
-	"websoft9-web-service/internal/service"
-	"websoft9-web-service/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
@@ -89,9 +89,9 @@ func (c *UserController) ListUsers(ctx *gin.Context) {
 	}
 
 	response.Success(ctx, "Users retrieved successfully", gin.H{
-		"users": users,
-		"total": total,
-		"page":  page,
+		"users":     users,
+		"total":     total,
+		"page":      page,
 		"page_size": pageSize,
 	})
 }

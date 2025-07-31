@@ -1,10 +1,10 @@
 package service
 
 import (
+	"api-service/internal/model"
+	"api-service/internal/repository"
+	"api-service/pkg/auth"
 	"errors"
-	"websoft9-web-service/internal/model"
-	"websoft9-web-service/internal/repository"
-	"websoft9-web-service/pkg/auth"
 
 	"golang.org/x/crypto/bcrypt"
 )

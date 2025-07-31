@@ -6,7 +6,7 @@ Websoft9 平台的下一代版本 - 云应用管理解决方案。
 
 Webox 是一个现代化的云平台，由两个主要组件构成：
 
-- **websoft9-web-service**: 核心后端服务，提供 RESTful API
+- **api-service**: 核心后端服务，提供 RESTful API
 - **websoft9-agent**: 部署在服务器节点的客户端代理，负责任务执行和监控
 
 ## 组件介绍
@@ -56,7 +56,7 @@ Webox 是一个现代化的云平台，由两个主要组件构成：
 
 2. **启动 Web 服务**
    ```bash
-   cd websoft9-web-service
+   cd api-service
    go mod tidy
    go run main.go
    ```
@@ -73,9 +73,9 @@ Webox 是一个现代化的云平台，由两个主要组件构成：
 
 ```bash
 # 构建并运行 web 服务
-cd websoft9-web-service
-docker build -t websoft9-web-service .
-docker run -p 8080:8080 -p 9090:9090 websoft9-web-service
+cd api-service
+docker build -t api-service .
+docker run -p 8080:8080 -p 9090:9090 api-service
 
 # 构建并运行代理
 cd websoft9-agent
@@ -93,7 +93,7 @@ docker run --privileged websoft9-agent
 
 ```
 webox/
-├── websoft9-web-service/    # 后端 API 服务
+├── api-service/    # 后端 API 服务
 │   ├── main.go
 │   ├── internal/
 │   │   ├── config/

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "Starting Websoft9 Web Service..."
-./websoft9-web-service &
+./api-service &
 SERVER_PID=$!
 
 # 等待服务启动

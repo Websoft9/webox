@@ -1,9 +1,9 @@
 package router
 
 import (
-	"websoft9-web-service/internal/controller"
-	"websoft9-web-service/internal/middleware"
-	"websoft9-web-service/internal/service"
+	"api-service/internal/controller"
+	"api-service/internal/middleware"
+	"api-service/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

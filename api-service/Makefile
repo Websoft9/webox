@@ -2,7 +2,7 @@
 
 # 构建应用
 build:
-	go build -v -o websoft9-web-service .
+	go build -v -o api-service .
 
 # 运行应用
 run:
@@ -10,7 +10,7 @@ run:
 
 # 清理构建文件
 clean:
-	rm -f websoft9-web-service
+	rm -f api-service
 	rm -f data/websoft9.db
 
 # 下载依赖
@@ -32,11 +32,11 @@ vet:
 
 # 构建Docker镜像
 docker-build:
-	docker build -t websoft9-web-service:latest .
+	docker build -t api-service:latest .
 
 # 运行Docker容器
 docker-run:
-	docker run -p 8080:8080 -p 9090:9090 websoft9-web-service:latest
+	docker run -p 8080:8080 -p 9090:9090 api-service:latest
 
 # 开发模式（热重载需要安装air: go install github.com/air-verse/air@latest）
 dev:

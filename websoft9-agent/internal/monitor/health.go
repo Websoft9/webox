@@ -63,7 +63,7 @@ func (h *HealthChecker) getHealthChecks() []HealthCheck {
 	// TODO: 从配置文件或数据库读取
 	return []HealthCheck{
 		{
-			Name:     "websoft9-web-service",
+			Name:     "api-service",
 			Type:     "http",
 			Target:   "http://localhost:8080/health",
 			Interval: 30,

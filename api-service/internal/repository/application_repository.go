@@ -1,7 +1,8 @@
 package repository
 
 import (
-	"websoft9-web-service/internal/model"
+	"api-service/internal/model"
+
 	"gorm.io/gorm"
 )
 
