@@ -39,10 +39,10 @@ func main() {
 	}
 
 	// 初始化服务
-	services := service.NewServices(db, rdb, influxClient)
+	services := service.NewServices(db, rdb, influxClient, cfg)
 
 	// 初始化路由
-	r := router.SetupRouter(services)
+	r := router.SetupRouter(services, cfg)
 
 	// 启动服务器
 	log.Printf("Server starting on port %s", cfg.Server.Port)

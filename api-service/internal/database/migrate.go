@@ -9,7 +9,7 @@ import (
 // AutoMigrate 自动迁移数据库表结构
 func AutoMigrate(db *gorm.DB) error {
 	return db.AutoMigrate(
-		// 3.5 平台管理 (Platform Management)
+		// 系统管理相关表
 		&model.UserGroup{},
 		&model.User{},
 		&model.Role{},
@@ -33,7 +33,7 @@ func AutoMigrate(db *gorm.DB) error {
 		&model.DockerImage{},
 		&model.StorageQuota{},
 
-		// 3.1 应用商店 (App Store)
+		// 应用商店相关表
 		&model.AppStoreCategory{},
 		&model.AppStoreTemplate{},
 		&model.AppStoreWishlist{},
@@ -49,27 +49,12 @@ func AutoMigrate(db *gorm.DB) error {
 		&model.AppDeployment{},
 		&model.AppShortcut{},
 
-		// 3.2 工作空间 (Workspace)
-		&model.UserFile{},
-		&model.Workflow{},
-		&model.WorkflowTask{},
-		&model.WorkflowExecution{},
-
-		// 3.3 资源管理 (Resource Management)
+		// 资源管理相关表
 		&model.ResourceGroup{},
 		&model.DatabaseConnection{},
 		&model.Server{},
 		&model.ServerAgent{},
 		&model.AppInstance{},
-		&model.Application{}, // 兼容现有代码
-
-		// 3.4 安全管控 (Security Management)
-		&model.SSLCertificate{},
-		&model.SecretKey{},
-		&model.AppGateway{},
-		&model.AppGatewayPublish{},
-		&model.AppGatewayAccessRule{},
-		&model.AuditLog{},
-		&model.Gateway{}, // 兼容现有代码
+		&model.Application{},
 	)
 }

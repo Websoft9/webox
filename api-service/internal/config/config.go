@@ -75,6 +75,7 @@ func setDefaults() {
 	viper.SetDefault("redis.host", "localhost")
 	viper.SetDefault("redis.port", "6379")
 	viper.SetDefault("redis.db", 0)
+	viper.SetDefault("jwt.secret", "change-this-secret-key-in-production")
 	viper.SetDefault("jwt.expire_time", 3600)
 	viper.SetDefault("grpc.port", "9090")
 }

@@ -1,6 +1,7 @@
 package router
 
 import (
+	"api-service/internal/config"
 	"api-service/internal/controller"
 	"api-service/internal/middleware"
 	"api-service/internal/service"
@@ -8,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRouter(services *service.Services) *gin.Engine {
+func SetupRouter(services *service.Services, cfg *config.Config) *gin.Engine {
 	r := gin.Default()
 
 	// 中间件
@@ -32,7 +33,7 @@ func SetupRouter(services *service.Services) *gin.Engine {
 
 		// 需要认证的路由
 		protected := api.Group("/")
-		protected.Use(middleware.JWTAuth())
+		protected.Use(middleware.JWTAuth(cfg))
 		{
 			// 用户相关路由
 			users := protected.Group("/users")

@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"api-service/internal/config"
 	"api-service/pkg/auth"
 	"api-service/pkg/response"
 	"net/http"
@@ -9,7 +10,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func JWTAuth() gin.HandlerFunc {
+func JWTAuth(cfg *config.Config) gin.HandlerFunc {
+	jwtAuth := auth.NewJWTAuth(cfg.JWT.Secret, cfg.JWT.ExpireTime)
+
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
@@ -25,7 +28,6 @@ func JWTAuth() gin.HandlerFunc {
 			return
 		}
 
-		jwtAuth := auth.NewJWTAuth("your-secret-key", 3600)
 		claims, err := jwtAuth.ValidateToken(tokenString)
 		if err != nil {
 			response.Error(c, http.StatusUnauthorized, "Invalid token", err.Error())

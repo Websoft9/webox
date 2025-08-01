@@ -1,6 +1,7 @@
 package service
 
 import (
+	"api-service/internal/config"
 	"api-service/internal/repository"
 	"api-service/pkg/auth"
 
@@ -15,9 +16,9 @@ type Services struct {
 	MonitorService     MonitorService
 }
 
-func NewServices(db *gorm.DB, rdb *redis.Client, influxClient influxdb2.Client) *Services {
+func NewServices(db *gorm.DB, rdb *redis.Client, influxClient influxdb2.Client, cfg *config.Config) *Services {
 	// 初始化JWT认证
-	jwtAuth := auth.NewJWTAuth("your-secret-key", 3600)
+	jwtAuth := auth.NewJWTAuth(cfg.JWT.Secret, cfg.JWT.ExpireTime)
 
 	// 初始化Repository
 	userRepo := repository.NewUserRepository(db)
