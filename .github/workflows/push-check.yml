@@ -129,6 +129,11 @@ jobs:
 
       - name: Build ${{ matrix.service }}
         run: |
+          # 打印当前目录路径
+          echo "当前工作目录: $(pwd)"
+          echo "目录内容:"
+          ls -la
+
           if [ ! -d "webox/${{ matrix.service }}" ]; then
             echo "⏭️ 跳过 ${{ matrix.service }}，目录不存在"
             exit 0
@@ -136,6 +141,7 @@ jobs:
 
           echo "构建 ${{ matrix.service }}..."
           cd webox/${{ matrix.service }}
+          echo "切换到目录: $(pwd)"
 
           # 下载依赖
           go mod download
