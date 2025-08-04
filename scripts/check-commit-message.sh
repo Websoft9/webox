@@ -104,8 +104,9 @@ check_commit_message() {
     local scope=""
     local description=""
     
-    if [[ "$message" =~ \(([^)]+)\) ]]; then
-        scope="${BASH_REMATCH[1]}"
+    # 提取范围（如果存在）
+    if echo "$message" | grep -q '('; then
+        scope=$(echo "$message" | sed -E 's/^[^(]*\(([^)]+)\).*/\1/')
     fi
     
     description=$(echo "$message" | sed -E "s/^(${valid_types})(\([^)]+\))?: (.*)/\3/")
