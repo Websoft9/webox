@@ -55,19 +55,19 @@ jobs:
         run: |
           echo "运行 Nancy 依赖漏洞扫描..."
           mkdir -p reports
-          
+
           # 扫描 api-service 依赖
           echo "扫描 api-service 依赖..."
           cd webox/api-service
           go list -json -m all | nancy sleuth --output-format=json > ../../reports/nancy-api-service.json || true
           cd ../..
-          
+
           # 扫描 websoft9-agent 依赖
           echo "扫描 websoft9-agent 依赖..."
           cd webox/websoft9-agent
           go list -json -m all | nancy sleuth --output-format=json > ../../reports/nancy-agent.json || true
           cd ../..
-          
+
           echo "Nancy 扫描完成"
 
       - name: Run Snyk vulnerability scan for api-service
@@ -93,35 +93,35 @@ jobs:
       - name: Process vulnerability results
         run: |
           echo "处理漏洞扫描结果..."
-          
+
           # 创建漏洞报告
           cat > reports/vulnerability-summary.md << 'EOF'
           # 🔒 依赖漏洞扫描报告
-          
+
           **扫描时间:** $(date)
           **扫描范围:** Go 依赖包
-          
+
           ## 📊 扫描结果汇总
-          
+
           EOF
-          
+
           # 处理 Nancy 结果
           if [ -f "reports/nancy-api-service.json" ]; then
             nancy_count=$(jq '.vulnerable | length' reports/nancy-api-service.json 2>/dev/null || echo "0")
             echo "- **API Service 漏洞数量:** $nancy_count" >> reports/vulnerability-summary.md
           fi
-          
+
           if [ -f "reports/nancy-agent.json" ]; then
             nancy_count=$(jq '.vulnerable | length' reports/nancy-agent.json 2>/dev/null || echo "0")
             echo "- **Agent 漏洞数量:** $nancy_count" >> reports/vulnerability-summary.md
           fi
-          
+
           # 处理 Snyk 结果
           if [ -f "reports/snyk-results.json" ]; then
             snyk_count=$(jq '.vulnerabilities | length' reports/snyk-results.json 2>/dev/null || echo "0")
             echo "- **Snyk 发现漏洞数量:** $snyk_count" >> reports/vulnerability-summary.md
           fi
-          
+
           echo "" >> reports/vulnerability-summary.md
           echo "## 📋 详细信息" >> reports/vulnerability-summary.md
           echo "" >> reports/vulnerability-summary.md
@@ -132,14 +132,14 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            
+
             // 读取 Nancy 结果
             const processNancyResults = (filePath, service) => {
               if (!fs.existsSync(filePath)) return [];
-              
+
               try {
                 const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-                return (data.vulnerable || []).filter(vuln => 
+                return (data.vulnerable || []).filter(vuln =>
                   vuln.cve && (vuln.cvssScore >= 7.0 || vuln.severity === 'HIGH' || vuln.severity === 'CRITICAL')
                 ).map(vuln => ({
                   service,
@@ -156,41 +156,41 @@ jobs:
                 return [];
               }
             };
-            
+
             // 处理漏洞结果
             const vulnerabilities = [
               ...processNancyResults('reports/nancy-api-service.json', 'api-service'),
               ...processNancyResults('reports/nancy-agent.json', 'websoft9-agent')
             ];
-            
+
             console.log(`Found ${vulnerabilities.length} high severity vulnerabilities`);
-            
+
             // 为高危漏洞创建 Issue
             for (const vuln of vulnerabilities) {
               const title = `[Security]: ${vuln.id} in ${vuln.package}`;
               const body = `## 🔒 安全漏洞报告
-              
+
               **漏洞 ID:** ${vuln.id}
               **影响服务:** ${vuln.service}
               **影响包:** ${vuln.package}
               **严重程度:** ${vuln.severity}
               **CVSS 评分:** ${vuln.score || 'N/A'}
-              
+
               ### 描述
               ${vuln.description}
-              
+
               ### 参考链接
               ${vuln.reference || 'N/A'}
-              
+
               ### 建议措施
               1. 检查是否有可用的安全更新
               2. 评估漏洞对系统的实际影响
               3. 制定修复计划
               4. 更新依赖包到安全版本
-              
+
               ---
               *此 Issue 由安全扫描工作流自动创建*`;
-              
+
               // 检查是否已存在相同的 Issue
               const { data: existingIssues } = await github.rest.issues.listForRepo({
                 owner: context.repo.owner,
@@ -198,11 +198,11 @@ jobs:
                 labels: 'security,vulnerability',
                 state: 'open'
               });
-              
-              const existingIssue = existingIssues.find(issue => 
+
+              const existingIssue = existingIssues.find(issue =>
                 issue.title.includes(vuln.id) && issue.title.includes(vuln.package)
               );
-              
+
               if (!existingIssue) {
                 await github.rest.issues.create({
                   owner: context.repo.owner,
@@ -212,7 +212,7 @@ jobs:
                   labels: ['security', 'vulnerability', 'high-priority'],
                   assignees: []
                 });
-                
+
                 console.log(`Created issue for vulnerability: ${vuln.id}`);
               } else {
                 console.log(`Issue already exists for vulnerability: ${vuln.id}`);
@@ -368,46 +368,46 @@ jobs:
         run: |
           echo "检查安全配置最佳实践..."
           mkdir -p reports
-          
+
           # 检查 Dockerfile 安全配置
           echo "## 🐳 Dockerfile 安全检查" > reports/security-config.md
           echo "" >> reports/security-config.md
-          
+
           for dockerfile in $(find . -name "Dockerfile" -o -name "*.dockerfile"); do
             echo "检查 $dockerfile..."
             echo "### $dockerfile" >> reports/security-config.md
             echo "" >> reports/security-config.md
-            
+
             # 检查是否使用非 root 用户
             if grep -q "USER" "$dockerfile"; then
               echo "✅ 使用非 root 用户" >> reports/security-config.md
             else
               echo "⚠️ 建议使用非 root 用户" >> reports/security-config.md
             fi
-            
+
             # 检查是否固定基础镜像版本
             if grep -E "FROM.*:latest" "$dockerfile"; then
               echo "⚠️ 使用了 latest 标签，建议固定版本" >> reports/security-config.md
             else
               echo "✅ 使用固定版本的基础镜像" >> reports/security-config.md
             fi
-            
+
             echo "" >> reports/security-config.md
           done
-          
+
           # 检查 GitHub Actions 安全配置
           echo "## 🔧 GitHub Actions 安全检查" >> reports/security-config.md
           echo "" >> reports/security-config.md
-          
+
           for workflow in .github/workflows/*.yml; do
             echo "检查 $workflow..."
-            
+
             # 检查是否固定 action 版本
             if grep -E "uses:.*@main|uses:.*@master" "$workflow"; then
               echo "⚠️ $workflow 使用了不固定的 action 版本" >> reports/security-config.md
             fi
           done
-          
+
           echo "安全配置检查完成"
 
       - name: Upload security config report
@@ -434,7 +434,7 @@ jobs:
           echo "**扫描时间:** $(date)" >> $GITHUB_STEP_SUMMARY
           echo "**触发方式:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           echo "## 📋 扫描结果" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| 扫描类型 | 状态 | 说明 |" >> $GITHUB_STEP_SUMMARY
@@ -445,7 +445,7 @@ jobs:
           echo "| 容器安全扫描 | ${{ needs.container-security-scan.result }} | Docker 镜像漏洞扫描 |" >> $GITHUB_STEP_SUMMARY
           echo "| 安全配置检查 | ${{ needs.security-config-check.result }} | 安全配置最佳实践检查 |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           # 确定整体安全状态
           if [[ "${{ needs.dependency-scan.result }}" == "failure" || "${{ needs.code-security-scan.result }}" == "failure" || "${{ needs.secrets-scan.result }}" == "failure" ]]; then
             echo "## ❌ 发现安全问题" >> $GITHUB_STEP_SUMMARY
@@ -456,7 +456,7 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "所有安全扫描都已通过，未发现严重的安全问题。" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 📎 相关链接" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -469,29 +469,29 @@ jobs:
         with:
           script: |
             const needs = ${{ toJSON(needs) }};
-            
+
             // 计算失败的扫描
             const failedScans = Object.entries(needs)
               .filter(([name, result]) => result.result === 'failure')
               .map(([name]) => name);
-            
+
             if (failedScans.length > 0) {
               // 发送安全警报
               const title = '🚨 安全扫描发现问题';
               const body = `## 安全扫描警报
-              
+
               **时间:** ${new Date().toISOString()}
               **仓库:** ${{ github.repository }}
               **分支:** ${{ github.ref_name }}
-              
+
               **失败的扫描:**
               ${failedScans.map(scan => `- ${scan}`).join('\n')}
-              
+
               请及时查看详细报告并修复发现的安全问题。
-              
+
               **查看详情:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
               `;
-              
+
               // 创建或更新安全 Issue
               const { data: issues } = await github.rest.issues.listForRepo({
                 owner: context.repo.owner,
@@ -499,11 +499,11 @@ jobs:
                 labels: 'security,automated',
                 state: 'open'
               });
-              
-              const existingIssue = issues.find(issue => 
+
+              const existingIssue = issues.find(issue =>
                 issue.title.includes('安全扫描发现问题')
               );
-              
+
               if (existingIssue) {
                 await github.rest.issues.createComment({
                   owner: context.repo.owner,

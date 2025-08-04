@@ -1,10 +1,6 @@
 name: 🚀 Continuous Integration
 
 on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
   workflow_dispatch:
     inputs:
       skip_tests:
@@ -83,7 +79,7 @@ jobs:
       - name: Wait for services
         run: |
           echo "等待服务启动..."
-          
+
           # 等待 Redis
           for i in {1..30}; do
             if redis-cli -h 127.0.0.1 -p 6379 ping 2>/dev/null | grep -q PONG; then
@@ -93,7 +89,7 @@ jobs:
             echo "等待 Redis... ($i/30)"
             sleep 2
           done
-          
+
           echo "所有服务已就绪"
 
       - name: Initialize test database
@@ -116,10 +112,10 @@ jobs:
         run: |
           echo "运行 ${{ matrix.service }} 单元测试..."
           mkdir -p reports
-          
+
           # 运行测试并生成覆盖率报告
           go test -v -race -coverprofile=reports/coverage.out -covermode=atomic ./... | tee reports/test-results.txt
-          
+
           # 生成覆盖率报告
           if [ -f "reports/coverage.out" ]; then
             go tool cover -html=reports/coverage.out -o reports/coverage.html
@@ -173,14 +169,14 @@ jobs:
         working-directory: ${{ matrix.context }}
         run: |
           echo "构建 ${{ matrix.service }}..."
-          
+
           # 构建二进制文件
           if [ -f "Makefile" ]; then
             make build
           else
             go build -v -o ${{ matrix.service }} ${{ matrix.main_path }}
           fi
-          
+
           echo "✅ ${{ matrix.service }} 构建成功"
 
       - name: Upload build artifacts
@@ -303,11 +299,11 @@ jobs:
         run: |
           echo "安装 Gosec..."
           go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
-          
+
           echo "运行 Gosec 安全扫描..."
           # 使用 || true 确保即使发现安全问题也不会失败
           $(go env GOPATH)/bin/gosec -fmt sarif -out ../gosec-${{ matrix.service }}-results.sarif ./... || true
-          
+
           # 检查文件是否生成
           if [ ! -f "../gosec-${{ matrix.service }}-results.sarif" ]; then
             echo "Gosec 扫描未生成 SARIF 文件，创建空结果文件"
@@ -328,7 +324,7 @@ jobs:
           }
           EOF
           fi
-          
+
           echo "Gosec 扫描完成"
 
       - name: Upload Gosec scan results to GitHub Security tab
@@ -344,21 +340,21 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### ${{ matrix.service }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           # 检查 Trivy 结果
           if [ -f "trivy-${{ matrix.service }}-results.sarif" ]; then
             echo "✅ Trivy 容器安全扫描已完成" >> $GITHUB_STEP_SUMMARY
           else
             echo "⚠️ Trivy 容器安全扫描未完成" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           # 检查 Gosec 结果
           if [ -f "gosec-${{ matrix.service }}-results.sarif" ]; then
             echo "✅ Gosec 代码安全扫描已完成" >> $GITHUB_STEP_SUMMARY
           else
             echo "⚠️ Gosec 代码安全扫描未完成" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "详细的安全扫描结果请查看 GitHub Security 标签页。" >> $GITHUB_STEP_SUMMARY
 
@@ -381,10 +377,10 @@ jobs:
         run: |
           echo "运行性能测试..."
           mkdir -p reports
-          
+
           # 运行基准测试
           go test -bench=. -benchmem -run=^$ ./... | tee reports/benchmark-results.txt
-          
+
           # 生成性能报告
           echo "## 性能测试报告" > reports/performance-report.md
           echo "" >> reports/performance-report.md
@@ -416,13 +412,13 @@ jobs:
           build="${{ needs.build.result }}"
           docker_build="${{ needs.docker-build.result }}"
           security_scan="${{ needs.security-scan.result }}"
-          
+
           echo "代码质量检查: $code_quality"
           echo "测试: $tests"
           echo "构建: $build"
           echo "Docker 构建: $docker_build"
           echo "安全扫描: $security_scan"
-          
+
           # 确定整体状态
           if [[ "$code_quality" == "failure" || "$build" == "failure" ]]; then
             echo "status=failure" >> $GITHUB_OUTPUT
@@ -446,7 +442,7 @@ jobs:
         run: |
           status="${{ steps.status.outputs.status }}"
           message="${{ steps.status.outputs.message }}"
-          
+
           # 设置邮件主题
           if [ "$status" = "success" ]; then
             subject="✅ CI 成功 - ${{ github.repository }} (${{ github.ref_name }})"
@@ -455,9 +451,9 @@ jobs:
           else
             subject="❌ CI 失败 - ${{ github.repository }} (${{ github.ref_name }})"
           fi
-          
+
           echo "subject=$subject" >> $GITHUB_OUTPUT
-          
+
           # 生成邮件正文
           cat > email_body.html << EOF
           <!DOCTYPE html>
@@ -482,7 +478,7 @@ jobs:
                   <p><strong>仓库:</strong> ${{ github.repository }}</p>
                   <p><strong>状态:</strong> <span class="status-$(echo $status | tr '[:upper:]' '[:lower:]')">$message</span></p>
               </div>
-              
+
               <h3>📋 基本信息</h3>
               <table class="info-table">
                   <tr><th>分支</th><td>${{ github.ref_name }}</td></tr>
@@ -491,7 +487,7 @@ jobs:
                   <tr><th>触发事件</th><td>${{ github.event_name }}</td></tr>
                   <tr><th>执行时间</th><td>$(date)</td></tr>
               </table>
-              
+
               <h3>🔍 执行结果</h3>
               <table class="info-table">
                   <tr><th>阶段</th><th>状态</th></tr>
@@ -501,14 +497,14 @@ jobs:
                   <tr><td>Docker 构建</td><td>${{ needs.docker-build.result }}</td></tr>
                   <tr><td>安全扫描</td><td>${{ needs.security-scan.result }}</td></tr>
               </table>
-              
+
               <h3>🔗 相关链接</h3>
               <ul>
                   <li><a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">查看工作流运行详情</a></li>
                   <li><a href="${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}">查看提交详情</a></li>
                   <li><a href="${{ github.server_url }}/${{ github.repository }}">访问仓库</a></li>
               </ul>
-              
+
               <div class="footer">
                   <p>此邮件由 GitHub Actions 自动发送，请勿回复。</p>
                   <p>如有问题，请联系开发团队。</p>
@@ -517,19 +513,7 @@ jobs:
           </html>
           EOF
 
-      - name: Send email notification
-        if: always() && vars.NOTIFICATION_EMAIL != ''
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: ${{ vars.SMTP_SERVER || 'smtp.gmail.com' }}
-          server_port: ${{ vars.SMTP_PORT || '587' }}
-          username: ${{ secrets.SMTP_USERNAME }}
-          password: ${{ secrets.SMTP_PASSWORD }}
-          subject: ${{ steps.email.outputs.subject }}
-          to: ${{ vars.NOTIFICATION_EMAIL }}
-          from: ${{ vars.FROM_EMAIL || secrets.SMTP_USERNAME }}
-          html_body: file://email_body.html
-          priority: ${{ steps.status.outputs.status == 'failure' && 'high' || 'normal' }}
+
 
   # CI 总结
   ci-summary:
@@ -547,7 +531,7 @@ jobs:
           echo "**触发者:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
           echo "**执行时间:** $(date)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           echo "## 📋 执行结果" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| 阶段 | 状态 | 耗时 |" >> $GITHUB_STEP_SUMMARY
@@ -559,7 +543,7 @@ jobs:
           echo "| 安全扫描 | ${{ needs.security-scan.result }} | - |" >> $GITHUB_STEP_SUMMARY
           echo "| 性能测试 | ${{ needs.performance-test.result }} | - |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           # 确定整体状态
           if [[ "${{ needs.code-quality.result }}" == "failure" || "${{ needs.build.result }}" == "failure" ]]; then
             echo "## ❌ 流水线失败" >> $GITHUB_STEP_SUMMARY
@@ -574,13 +558,13 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "所有关键阶段都已成功完成！" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 📎 相关链接" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- [工作流运行](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
           echo "- [提交详情](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})" >> $GITHUB_STEP_SUMMARY
-          
+
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
             echo "- [Docker 镜像](https://hub.docker.com/r/${{ env.REGISTRY_NAMESPACE }})" >> $GITHUB_STEP_SUMMARY
           fi

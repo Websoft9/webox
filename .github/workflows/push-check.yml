@@ -1,0 +1,225 @@
+name: 🚀 Push Check
+
+on:
+  push:
+    branches: [ main, develop, 'bugfix/**', 'hotfix/**' ]
+
+env:
+  GO_VERSION: '1.24.5'
+
+jobs:
+  # 提交消息格式检查
+  commit-message-check:
+    name: 📝 Commit Message Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check latest commit message
+        run: |
+          echo "检查最新提交消息格式..."
+
+          # 获取最新提交消息
+          message=$(git log --format=%s -n 1 HEAD)
+          echo "提交消息: $message"
+
+          # 检查提交消息格式
+          if ! ./scripts/check-commit-message.sh "$message"; then
+            echo "❌ 提交消息格式不正确"
+            echo ""
+            echo "请修改提交消息以符合 Conventional Commits 规范:"
+            echo "格式: <type>[optional scope]: <description>"
+            echo "示例: feat(auth): add JWT token refresh mechanism"
+            exit 1
+          fi
+
+          echo "✅ 提交消息格式正确"
+
+  # 代码格式检查
+  code-format-check:
+    name: 🎨 Code Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+          cache-dependency-path: |
+            webox/api-service/go.sum
+            webox/websoft9-agent/go.sum
+
+      - name: Check Go formatting
+        run: |
+          echo "检查 Go 代码格式..."
+
+          # 检查 api-service
+          if [ -d "webox/api-service" ]; then
+            cd webox/api-service
+            unformatted=$(gofmt -l .)
+            if [ -n "$unformatted" ]; then
+              echo "❌ api-service 以下文件格式不正确:"
+              echo "$unformatted"
+              exit 1
+            fi
+            cd ../..
+          fi
+
+          # 检查 websoft9-agent
+          if [ -d "webox/websoft9-agent" ]; then
+            cd webox/websoft9-agent
+            unformatted=$(gofmt -l .)
+            if [ -n "$unformatted" ]; then
+              echo "❌ websoft9-agent 以下文件格式不正确:"
+              echo "$unformatted"
+              exit 1
+            fi
+            cd ../..
+          fi
+
+          echo "✅ Go 代码格式正确"
+
+      - name: Run golangci-lint for api-service
+        if: hashFiles('webox/api-service/go.mod') != ''
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          working-directory: webox/api-service
+          args: --timeout=5m
+
+      - name: Run golangci-lint for websoft9-agent
+        if: hashFiles('webox/websoft9-agent/go.mod') != ''
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          working-directory: webox/websoft9-agent
+          args: --timeout=5m
+
+  # 快速构建检查
+  build-check:
+    name: 🔨 Build Check
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: ['api-service', 'websoft9-agent']
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Build ${{ matrix.service }}
+        run: |
+          if [ ! -d "webox/${{ matrix.service }}" ]; then
+            echo "⏭️ 跳过 ${{ matrix.service }}，目录不存在"
+            exit 0
+          fi
+
+          echo "构建 ${{ matrix.service }}..."
+          cd webox/${{ matrix.service }}
+
+          # 下载依赖
+          go mod download
+
+          # 构建
+          if [ -f "Makefile" ]; then
+            make build
+          else
+            go build -v ./...
+          fi
+
+          echo "✅ ${{ matrix.service }} 构建成功"
+
+  # 快速测试
+  quick-test:
+    name: ⚡ Quick Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+          cache-dependency-path: |
+            webox/api-service/go.sum
+            webox/websoft9-agent/go.sum
+
+      - name: Run quick tests for api-service
+        if: hashFiles('webox/api-service/go.mod') != ''
+        working-directory: webox/api-service
+        run: |
+          echo "运行 api-service 快速测试..."
+          go test -short -race ./...
+
+      - name: Run quick tests for websoft9-agent
+        if: hashFiles('webox/websoft9-agent/go.mod') != ''
+        working-directory: webox/websoft9-agent
+        run: |
+          echo "运行 websoft9-agent 快速测试..."
+          go test -short -race ./...
+
+  # 推送检查汇总
+  push-check-summary:
+    name: 📊 Push Check Summary
+    runs-on: ubuntu-latest
+    needs: [commit-message-check, code-format-check, build-check, quick-test]
+    if: always()
+    steps:
+      - name: Check all jobs status
+        run: |
+          echo "=== 推送检查结果汇总 ==="
+
+          # 检查各个作业的状态
+          commit_check="${{ needs.commit-message-check.result }}"
+          code_format="${{ needs.code-format-check.result }}"
+          build_check="${{ needs.build-check.result }}"
+          quick_test="${{ needs.quick-test.result }}"
+
+          echo "提交消息检查: $commit_check"
+          echo "代码格式检查: $code_format"
+          echo "构建检查: $build_check"
+          echo "快速测试: $quick_test"
+
+          # 检查是否有失败的作业
+          failed_jobs=()
+
+          [ "$commit_check" = "failure" ] && failed_jobs+=("提交消息检查")
+          [ "$code_format" = "failure" ] && failed_jobs+=("代码格式检查")
+          [ "$build_check" = "failure" ] && failed_jobs+=("构建检查")
+          [ "$quick_test" = "failure" ] && failed_jobs+=("快速测试")
+
+          if [ ${#failed_jobs[@]} -gt 0 ]; then
+            echo ""
+            echo "❌ 以下检查失败:"
+            for job in "${failed_jobs[@]}"; do
+              echo "  - $job"
+            done
+            echo ""
+            echo "请修复失败的检查项"
+            exit 1
+          fi
+
+          echo ""
+          echo "✅ 所有推送检查通过！"
