@@ -1,6 +1,7 @@
 package main
 
 import (
+	"api-service/internal/constants"
 	"context"
 	"fmt"
 	"log"
@@ -52,24 +53,27 @@ func main() {
 
 	// API 路由组
 	api := r.Group("/api/v1")
-	{
-		api.GET("/ping", func(c *gin.Context) {
-			c.JSON(http.StatusOK, gin.H{
-				"message": "pong",
-			})
+	api.GET("/ping", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "pong",
 		})
-	}
+	})
 
 	// 获取端口
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		port = constants.DefaultPort
 	}
 
-	// 创建 HTTP 服务器
+	// 创建 HTTP 服务器 - 配置安全参数防止 Slowloris 攻击
 	srv := &http.Server{
-		Addr:    ":" + port,
-		Handler: r,
+		Addr:              ":" + port,
+		Handler:           r,
+		ReadTimeout:       constants.DefaultReadTimeout,
+		ReadHeaderTimeout: constants.DefaultReadHeaderTimeout,
+		WriteTimeout:      constants.DefaultWriteTimeout,
+		IdleTimeout:       constants.DefaultIdleTimeout,
+		MaxHeaderBytes:    constants.DefaultMaxHeaderSize,
 	}
 
 	// 启动服务器
@@ -88,11 +92,13 @@ func main() {
 	log.Println("Shutting down server...")
 
 	// 优雅关闭
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), constants.DefaultShutdownTimeout)
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatalf("Server forced to shutdown: %v", err)
+		// 使用 log.Printf 而不是 log.Fatalf，因为 defer cancel() 需要执行
+		log.Printf("Server forced to shutdown: %v", err)
+		return
 	}
 
 	log.Println("Server exited")

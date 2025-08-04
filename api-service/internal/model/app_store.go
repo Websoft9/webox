@@ -221,7 +221,7 @@ type AppDeployment struct {
 	AppInstance   *AppInstance      `json:"app_instance" gorm:"foreignKey:AppInstanceID"`
 	ServerID      uint              `json:"server_id" gorm:"not null"`
 	Server        Server            `json:"server" gorm:"foreignKey:ServerID"`
-	Status        string            `json:"status" gorm:"default:PENDING"` // PENDING, RUNNING, SUCCESS, FAILED, CANCELLED
+	Status        string            `json:"status" gorm:"default:PENDING"` // PENDING, RUNNING, SUCCESS, FAILED, CANCELED
 	Progress      int8              `json:"progress" gorm:"default:0"`
 	EstimatedTime int               `json:"estimated_time" gorm:"default:0"` // 秒
 	StartTime     *time.Time        `json:"start_time"`

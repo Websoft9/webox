@@ -12,10 +12,11 @@ import (
 
 // SSLCertificate SSL证书表
 type SSLCertificate struct {
-	ID               uint           `json:"id" gorm:"primarykey"`
-	Name             string         `json:"name" gorm:"not null" binding:"required"`
-	Domain           string         `json:"domain" gorm:"not null" binding:"required"`
-	CertificateType  string         `json:"certificate_type" gorm:"default:LETS_ENCRYPT"` // LETS_ENCRYPT, COMMERCIAL, SELF_SIGNED
+	ID     uint   `json:"id" gorm:"primarykey"`
+	Name   string `json:"name" gorm:"not null" binding:"required"`
+	Domain string `json:"domain" gorm:"not null" binding:"required"`
+	// CertificateType 证书类型: LETS_ENCRYPT, COMMERCIAL, SELF_SIGNED
+	CertificateType  string         `json:"certificate_type" gorm:"default:LETS_ENCRYPT"`
 	CertificateData  string         `json:"certificate_data" gorm:"type:text;not null"`
 	PrivateKeyData   string         `json:"private_key_data" gorm:"type:text;not null"`
 	CertificateChain string         `json:"certificate_chain" gorm:"type:text"`

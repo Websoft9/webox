@@ -68,15 +68,15 @@ func (c *ContainerMonitor) Collect() error {
 	return nil
 }
 
-// collectContainerMetrics 采集单个容器指标 (简化版本)
-func (c *ContainerMonitor) collectContainerMetrics(containerID string) (*ContainerMetrics, error) {
-	// TODO: 实现基于命令行的容器指标采集
-	// 这里可以使用 docker stats, docker inspect 等命令
-
-	metrics := &ContainerMetrics{
-		ID:    containerID,
-		State: "unknown",
-	}
-
-	return metrics, nil
-}
+// TODO: collectContainerMetrics 采集单个容器指标 - 当需要详细容器指标时启用
+// func (c *ContainerMonitor) collectContainerMetrics(containerID string) (*ContainerMetrics, error) {
+//     // 实现基于命令行的容器指标采集
+//     // 这里可以使用 docker stats, docker inspect 等命令
+//
+//     metrics := &ContainerMetrics{
+//         ID:    containerID,
+//         State: "unknown",
+//     }
+//
+//     return metrics, nil
+// }

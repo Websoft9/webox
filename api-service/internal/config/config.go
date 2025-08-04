@@ -1,6 +1,8 @@
 package config
 
 import (
+	"api-service/internal/constants"
+
 	"github.com/spf13/viper"
 )
 
@@ -69,13 +71,13 @@ func Load() (*Config, error) {
 }
 
 func setDefaults() {
-	viper.SetDefault("server.port", "8080")
+	viper.SetDefault("server.port", constants.DefaultPort)
 	viper.SetDefault("server.mode", "debug")
 	viper.SetDefault("database.path", "./data/websoft9.db")
 	viper.SetDefault("redis.host", "localhost")
 	viper.SetDefault("redis.port", "6379")
 	viper.SetDefault("redis.db", 0)
 	viper.SetDefault("jwt.secret", "change-this-secret-key-in-production")
-	viper.SetDefault("jwt.expire_time", 3600)
+	viper.SetDefault("jwt.expire_time", constants.DefaultJWTExpireTime)
 	viper.SetDefault("grpc.port", "9090")
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"os/exec"
 	"time"
+	"websoft9-agent/internal/constants"
 
 	"github.com/sirupsen/logrus"
 )
@@ -24,7 +25,7 @@ func (h *AppDeployHandler) Execute(ctx context.Context, task *Task) (*TaskResult
 
 	return &TaskResult{
 		TaskID:   task.ID,
-		Status:   "success",
+		Status:   constants.StatusSuccess,
 		Message:  "应用部署成功",
 		Duration: time.Since(start).Milliseconds(),
 	}, nil
@@ -43,7 +44,7 @@ func (h *AppManageHandler) Execute(ctx context.Context, task *Task) (*TaskResult
 
 	return &TaskResult{
 		TaskID:   task.ID,
-		Status:   "success",
+		Status:   constants.StatusSuccess,
 		Message:  "应用管理操作成功",
 		Duration: time.Since(start).Milliseconds(),
 	}, nil
@@ -59,7 +60,7 @@ func (h *SystemCommandHandler) Execute(ctx context.Context, task *Task) (*TaskRe
 	if !ok {
 		return &TaskResult{
 			TaskID:   task.ID,
-			Status:   "failed",
+			Status:   constants.StatusFailed,
 			Message:  "缺少命令参数",
 			Duration: time.Since(start).Milliseconds(),
 		}, nil
@@ -77,10 +78,10 @@ func (h *SystemCommandHandler) Execute(ctx context.Context, task *Task) (*TaskRe
 	}
 
 	if err != nil {
-		result.Status = "failed"
+		result.Status = constants.StatusFailed
 		result.Message = err.Error()
 	} else {
-		result.Status = "success"
+		result.Status = constants.StatusSuccess
 		result.Message = "命令执行成功"
 	}
 
@@ -102,7 +103,7 @@ func (h *FileTransferHandler) Execute(ctx context.Context, task *Task) (*TaskRes
 
 	return &TaskResult{
 		TaskID:   task.ID,
-		Status:   "success",
+		Status:   constants.StatusSuccess,
 		Message:  "文件传输成功",
 		Duration: time.Since(start).Milliseconds(),
 	}, nil
@@ -118,7 +119,7 @@ func (h *ServiceManageHandler) Execute(ctx context.Context, task *Task) (*TaskRe
 	if !ok {
 		return &TaskResult{
 			TaskID:   task.ID,
-			Status:   "failed",
+			Status:   constants.StatusFailed,
 			Message:  "缺少服务名称参数",
 			Duration: time.Since(start).Milliseconds(),
 		}, nil
@@ -128,7 +129,7 @@ func (h *ServiceManageHandler) Execute(ctx context.Context, task *Task) (*TaskRe
 	if !ok {
 		return &TaskResult{
 			TaskID:   task.ID,
-			Status:   "failed",
+			Status:   constants.StatusFailed,
 			Message:  "缺少操作参数",
 			Duration: time.Since(start).Milliseconds(),
 		}, nil
@@ -149,7 +150,7 @@ func (h *ServiceManageHandler) Execute(ctx context.Context, task *Task) (*TaskRe
 	default:
 		return &TaskResult{
 			TaskID:   task.ID,
-			Status:   "failed",
+			Status:   constants.StatusFailed,
 			Message:  "不支持的操作: " + action,
 			Duration: time.Since(start).Milliseconds(),
 		}, nil
@@ -164,10 +165,10 @@ func (h *ServiceManageHandler) Execute(ctx context.Context, task *Task) (*TaskRe
 	}
 
 	if err != nil {
-		result.Status = "failed"
+		result.Status = constants.StatusFailed
 		result.Message = err.Error()
 	} else {
-		result.Status = "success"
+		result.Status = constants.StatusSuccess
 		result.Message = "服务管理操作成功"
 	}
 

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"websoft9-agent/internal/config"
+	"websoft9-agent/internal/constants"
 
 	"github.com/sirupsen/logrus"
 )
@@ -38,7 +39,7 @@ func NewHealthChecker(cfg *config.Config) (*HealthChecker, error) {
 	return &HealthChecker{
 		config: cfg,
 		client: &http.Client{
-			Timeout: 10 * time.Second,
+			Timeout: constants.DefaultHTTPTimeout,
 		},
 	}, nil
 }
@@ -66,8 +67,8 @@ func (h *HealthChecker) getHealthChecks() []HealthCheck {
 			Name:     "api-service",
 			Type:     "http",
 			Target:   "http://localhost:8080/health",
-			Interval: 30,
-			Timeout:  5,
+			Interval: int(constants.DefaultCheckInterval.Seconds()),
+			Timeout:  int(constants.DefaultTCPTimeout.Seconds()),
 		},
 	}
 }
@@ -82,13 +83,13 @@ func (h *HealthChecker) performCheck(check HealthCheck) HealthResult {
 
 	switch check.Type {
 	case "http":
-		result = h.httpCheck(check, result)
+		return *h.httpCheck(check, &result)
 	case "tcp":
-		result = h.tcpCheck(check, result)
+		return *h.tcpCheck(check, &result)
 	case "script":
-		result = h.scriptCheck(check, result)
+		return *h.scriptCheck(check, &result)
 	default:
-		result.Status = "unhealthy"
+		result.Status = constants.StatusUnhealthy
 		result.Message = "未知的检查类型"
 	}
 
@@ -97,20 +98,20 @@ func (h *HealthChecker) performCheck(check HealthCheck) HealthResult {
 }
 
 // httpCheck HTTP健康检查
-func (h *HealthChecker) httpCheck(check HealthCheck, result HealthResult) HealthResult {
+func (h *HealthChecker) httpCheck(check HealthCheck, result *HealthResult) *HealthResult {
 	resp, err := h.client.Get(check.Target)
 	if err != nil {
-		result.Status = "unhealthy"
+		result.Status = constants.StatusUnhealthy
 		result.Message = err.Error()
 		return result
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-		result.Status = "healthy"
+		result.Status = constants.StatusHealthy
 		result.Message = "HTTP检查成功"
 	} else {
-		result.Status = "unhealthy"
+		result.Status = constants.StatusUnhealthy
 		result.Message = "HTTP状态码异常: " + resp.Status
 	}
 
@@ -118,17 +119,21 @@ func (h *HealthChecker) httpCheck(check HealthCheck, result HealthResult) Health
 }
 
 // tcpCheck TCP健康检查
-func (h *HealthChecker) tcpCheck(check HealthCheck, result HealthResult) HealthResult {
+func (h *HealthChecker) tcpCheck(check HealthCheck, result *HealthResult) *HealthResult {
 	// TODO: 实现TCP连接检查
-	result.Status = "healthy"
+	// 使用 check.Target 进行 TCP 连接测试
+	_ = check // 暂时忽略未使用的参数，待实现时使用
+	result.Status = constants.StatusHealthy
 	result.Message = "TCP检查成功"
 	return result
 }
 
 // scriptCheck 脚本健康检查
-func (h *HealthChecker) scriptCheck(check HealthCheck, result HealthResult) HealthResult {
+func (h *HealthChecker) scriptCheck(check HealthCheck, result *HealthResult) *HealthResult {
 	// TODO: 实现脚本执行检查
-	result.Status = "healthy"
+	// 使用 check.Target 作为脚本路径执行
+	_ = check // 暂时忽略未使用的参数，待实现时使用
+	result.Status = constants.StatusHealthy
 	result.Message = "脚本检查成功"
 	return result
 }

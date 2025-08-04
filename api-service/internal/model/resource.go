@@ -108,26 +108,27 @@ type ServerAgent struct {
 
 // AppInstance 应用实例表
 type AppInstance struct {
-	ID              uint             `json:"id" gorm:"primarykey"`
-	Name            string           `json:"name" gorm:"not null" binding:"required"`
-	TemplateID      uint             `json:"template_id" gorm:"not null"`
-	Template        AppStoreTemplate `json:"template" gorm:"foreignKey:TemplateID"`
-	ServerID        uint             `json:"server_id" gorm:"not null"`
-	Server          Server           `json:"server" gorm:"foreignKey:ServerID"`
-	ContainerID     string           `json:"container_id"`
-	ContainerName   string           `json:"container_name"`
-	ImageName       string           `json:"image_name"`
-	ImageTag        string           `json:"image_tag"`
-	Status          string           `json:"status" gorm:"default:DEFAULT"` // DEFAULT, DEPLOYMENT, RUNNING, PAUSED, STOPPED, UPDATE
-	StartedAt       *time.Time       `json:"started_at"`
-	StoppedAt       *time.Time       `json:"stopped_at"`
-	ResourceGroupID *uint            `json:"resource_group_id"`
-	ResourceGroup   *ResourceGroup   `json:"resource_group" gorm:"foreignKey:ResourceGroupID"`
-	OwnerID         uint             `json:"owner_id" gorm:"not null"`
-	Owner           User             `json:"owner" gorm:"foreignKey:OwnerID"`
-	CreatedAt       time.Time        `json:"created_at"`
-	UpdatedAt       time.Time        `json:"updated_at"`
-	DeletedAt       gorm.DeletedAt   `json:"-" gorm:"index"`
+	ID            uint             `json:"id" gorm:"primarykey"`
+	Name          string           `json:"name" gorm:"not null" binding:"required"`
+	TemplateID    uint             `json:"template_id" gorm:"not null"`
+	Template      AppStoreTemplate `json:"template" gorm:"foreignKey:TemplateID"`
+	ServerID      uint             `json:"server_id" gorm:"not null"`
+	Server        Server           `json:"server" gorm:"foreignKey:ServerID"`
+	ContainerID   string           `json:"container_id"`
+	ContainerName string           `json:"container_name"`
+	ImageName     string           `json:"image_name"`
+	ImageTag      string           `json:"image_tag"`
+	// Status 状态: DEFAULT, DEPLOYMENT, RUNNING, PAUSED, STOPPED, UPDATE
+	Status          string         `json:"status" gorm:"default:DEFAULT"`
+	StartedAt       *time.Time     `json:"started_at"`
+	StoppedAt       *time.Time     `json:"stopped_at"`
+	ResourceGroupID *uint          `json:"resource_group_id"`
+	ResourceGroup   *ResourceGroup `json:"resource_group" gorm:"foreignKey:ResourceGroupID"`
+	OwnerID         uint           `json:"owner_id" gorm:"not null"`
+	Owner           User           `json:"owner" gorm:"foreignKey:OwnerID"`
+	CreatedAt       time.Time      `json:"created_at"`
+	UpdatedAt       time.Time      `json:"updated_at"`
+	DeletedAt       gorm.DeletedAt `json:"-" gorm:"index"`
 
 	// 关联关系
 	GatewayPublishes []AppGatewayPublish `json:"gateway_publishes" gorm:"foreignKey:AppInstanceID"`

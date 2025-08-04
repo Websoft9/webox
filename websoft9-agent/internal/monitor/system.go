@@ -115,8 +115,8 @@ func (s *SystemMonitor) collectMetrics() (*SystemMetrics, error) {
 	}
 
 	for _, partition := range diskPartitions {
-		diskUsage, err := disk.Usage(partition.Mountpoint)
-		if err != nil {
+		diskUsage, diskErr := disk.Usage(partition.Mountpoint)
+		if diskErr != nil {
 			continue
 		}
 

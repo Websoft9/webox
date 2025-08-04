@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"websoft9-agent/internal/constants"
 
 	"gopkg.in/yaml.v3"
 )
@@ -63,13 +64,13 @@ func Load(configFile string) (*Config, error) {
 
 func setDefaults(config *Config) {
 	if config.Server.Host == "" {
-		config.Server.Host = "localhost"
+		config.Server.Host = constants.DefaultHost
 	}
 	if config.Server.Port == 0 {
 		config.Server.Port = 9090
 	}
 	if config.Redis.Host == "" {
-		config.Redis.Host = "localhost"
+		config.Redis.Host = constants.DefaultHost
 	}
 	if config.Redis.Port == 0 {
 		config.Redis.Port = 6379

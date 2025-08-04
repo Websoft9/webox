@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+	"websoft9-agent/internal/constants"
 )
 
 var (
@@ -49,7 +50,7 @@ func main() {
 	cancel()
 
 	// 等待所有 goroutine 完成
-	time.Sleep(2 * time.Second)
+	time.Sleep(constants.DefaultStartupDelay)
 
 	log.Println("Agent exited")
 }
@@ -77,7 +78,7 @@ func NewAgent() *Agent {
 func (a *Agent) StartMonitoring(ctx context.Context) {
 	log.Println("Starting monitoring service...")
 
-	ticker := time.NewTicker(30 * time.Second)
+	ticker := time.NewTicker(constants.DefaultHealthCheckInterval)
 	defer ticker.Stop()
 
 	for {
@@ -103,7 +104,7 @@ func (a *Agent) StartTaskExecutor(ctx context.Context) {
 			return
 		default:
 			// 模拟任务执行
-			time.Sleep(10 * time.Second)
+			time.Sleep(constants.DefaultRetryInterval)
 			log.Printf("Agent %s: Checking for tasks...", a.ID)
 		}
 	}
@@ -113,7 +114,7 @@ func (a *Agent) StartTaskExecutor(ctx context.Context) {
 func (a *Agent) StartCommunication(ctx context.Context) {
 	log.Println("Starting communication manager...")
 
-	ticker := time.NewTicker(60 * time.Second)
+	ticker := time.NewTicker(constants.DefaultMetricsInterval)
 	defer ticker.Stop()
 
 	for {
@@ -128,21 +129,21 @@ func (a *Agent) StartCommunication(ctx context.Context) {
 	}
 }
 
-// 示例函数用于测试
+// ProcessTask 处理任务 - 修复未使用参数问题
 func ProcessTask(taskType string, payload []byte) error {
 	if taskType == "" {
 		return fmt.Errorf("task type cannot be empty")
 	}
 
-	log.Printf("Processing task: %s", taskType)
+	log.Printf("Processing task: %s with payload size: %d bytes", taskType, len(payload))
 	return nil
 }
 
 func GetSystemInfo() map[string]interface{} {
 	return map[string]interface{}{
-		"cpu_usage":    45.5,
-		"memory_usage": 78.2,
-		"disk_usage":   65.0,
+		"cpu_usage":    constants.TestCPUUsage,
+		"memory_usage": constants.TestMemoryUsage,
+		"disk_usage":   constants.TestDiskUsage,
 		"timestamp":    time.Now().Unix(),
 	}
 }

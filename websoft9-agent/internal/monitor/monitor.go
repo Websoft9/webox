@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"websoft9-agent/internal/config"
+	"websoft9-agent/internal/constants"
 
 	"github.com/sirupsen/logrus"
 )
@@ -124,7 +125,7 @@ func (m *Monitor) runContainerMonitor() {
 
 // runHealthChecker 运行健康检查
 func (m *Monitor) runHealthChecker() {
-	ticker := time.NewTicker(30 * time.Second) // 健康检查间隔固定为30秒
+	ticker := time.NewTicker(constants.DefaultHealthCheckInterval) // 健康检查间隔
 	defer ticker.Stop()
 
 	for {

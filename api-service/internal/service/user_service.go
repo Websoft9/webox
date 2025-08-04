@@ -72,7 +72,7 @@ func (s *userService) Login(username, password string) (string, error) {
 		return "", errors.New("account is disabled")
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
+	if bcryptErr := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); bcryptErr != nil {
 		return "", errors.New("invalid credentials")
 	}
 
@@ -113,7 +113,7 @@ func (s *userService) ChangePassword(userID uint, oldPassword, newPassword strin
 		return err
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(oldPassword)); err != nil {
+	if bcryptErr := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(oldPassword)); bcryptErr != nil {
 		return errors.New("invalid old password")
 	}
 

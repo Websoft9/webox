@@ -1,6 +1,7 @@
 package service
 
 import (
+	"api-service/internal/constants"
 	"api-service/internal/model"
 	"api-service/internal/repository"
 )
@@ -60,7 +61,7 @@ func (s *applicationService) DeployApplication(appID uint) error {
 
 	// TODO: 实现应用部署逻辑
 	// 这里应该调用Agent的gRPC接口来部署应用
-	app.Status = "running"
+	app.Status = constants.AppStatusRunning
 	return s.appRepo.Update(app)
 }
 
@@ -71,7 +72,7 @@ func (s *applicationService) StopApplication(appID uint) error {
 	}
 
 	// TODO: 实现应用停止逻辑
-	app.Status = "stopped"
+	app.Status = constants.AppStatusStopped
 	return s.appRepo.Update(app)
 }
 
@@ -82,6 +83,6 @@ func (s *applicationService) RestartApplication(appID uint) error {
 	}
 
 	// TODO: 实现应用重启逻辑
-	app.Status = "running"
+	app.Status = constants.AppStatusRunning
 	return s.appRepo.Update(app)
 }

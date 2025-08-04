@@ -2,6 +2,7 @@ package database
 
 import (
 	"api-service/internal/config"
+	"api-service/internal/constants"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -15,7 +16,7 @@ import (
 func InitDB(cfg *config.Config) (*gorm.DB, error) {
 	// 确保数据库目录存在
 	dbDir := filepath.Dir(cfg.Database.Path)
-	if err := os.MkdirAll(dbDir, 0755); err != nil {
+	if err := os.MkdirAll(dbDir, constants.DefaultDirPerm); err != nil {
 		return nil, fmt.Errorf("failed to create database directory: %v", err)
 	}
 

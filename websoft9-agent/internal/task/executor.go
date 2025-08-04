@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"websoft9-agent/internal/config"
+	"websoft9-agent/internal/constants"
 
 	"github.com/sirupsen/logrus"
 )
@@ -96,47 +97,52 @@ func (e *Executor) registerHandlers() {
 func (e *Executor) listenTasks() {
 	logrus.Info("开始监听任务...")
 
+	ticker := time.NewTicker(constants.DefaultRetryInterval)
+	defer ticker.Stop()
+
 	for {
 		select {
 		case <-e.ctx.Done():
 			return
-		default:
+		case <-ticker.C:
 			// TODO: 从 Redis 队列获取任务
 			// task := getTaskFromQueue()
-			// e.executeTask(task)
+			// if task != nil {
+			//     e.executeTask(task)
+			// }
 		}
 	}
 }
 
-// executeTask 执行任务
-func (e *Executor) executeTask(task *Task) {
-	logrus.Infof("执行任务: %s (类型: %s)", task.ID, task.Type)
-
-	handler, exists := e.handlers[task.Type]
-	if !exists {
-		logrus.Errorf("未知的任务类型: %s", task.Type)
-		return
-	}
-
-	// 创建任务上下文
-	taskCtx := e.ctx
-	if task.Timeout > 0 {
-		var cancel context.CancelFunc
-		taskCtx, cancel = context.WithTimeout(e.ctx, time.Duration(task.Timeout)*time.Second)
-		defer cancel()
-	}
-
-	// 执行任务
-	result, err := handler.Execute(taskCtx, task)
-	if err != nil {
-		logrus.Errorf("任务执行失败: %v", err)
-		result = &TaskResult{
-			TaskID:  task.ID,
-			Status:  "failed",
-			Message: err.Error(),
-		}
-	}
-
-	// TODO: 发送结果到服务端
-	logrus.Infof("任务 %s 执行完成: %s", task.ID, result.Status)
-}
+// TODO: executeTask 执行任务 - 当实现任务队列时需要此函数
+// func (e *Executor) executeTask(task *Task) {
+//     logrus.Infof("执行任务: %s (类型: %s)", task.ID, task.Type)
+//
+//     handler, exists := e.handlers[task.Type]
+//     if !exists {
+//         logrus.Errorf("未知的任务类型: %s", task.Type)
+//         return
+//     }
+//
+//     // 创建任务上下文
+//     taskCtx := e.ctx
+//     if task.Timeout > 0 {
+//         var cancel context.CancelFunc
+//         taskCtx, cancel = context.WithTimeout(e.ctx, time.Duration(task.Timeout)*time.Second)
+//         defer cancel()
+//     }
+//
+//     // 执行任务
+//     result, err := handler.Execute(taskCtx, task)
+//     if err != nil {
+//         logrus.Errorf("任务执行失败: %v", err)
+//         result = &TaskResult{
+//             TaskID:  task.ID,
+//             Status:  constants.StatusFailed,
+//             Message: err.Error(),
+//         }
+//     }
+//
+//     // TODO: 发送结果到服务端
+//     logrus.Infof("任务 %s 执行完成: %s", task.ID, result.Status)
+// }

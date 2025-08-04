@@ -57,7 +57,7 @@ func (s *monitorService) QueryMetrics(query string) ([]map[string]interface{}, e
 	return data, nil
 }
 
-func (s *monitorService) GetServerMetrics(serverID string, timeRange string) ([]map[string]interface{}, error) {
+func (s *monitorService) GetServerMetrics(serverID, timeRange string) ([]map[string]interface{}, error) {
 	query := `from(bucket: "metrics")
 		|> range(start: ` + timeRange + `)
 		|> filter(fn: (r) => r["_measurement"] == "server_metrics")
@@ -66,7 +66,7 @@ func (s *monitorService) GetServerMetrics(serverID string, timeRange string) ([]
 	return s.QueryMetrics(query)
 }
 
-func (s *monitorService) GetApplicationMetrics(appID string, timeRange string) ([]map[string]interface{}, error) {
+func (s *monitorService) GetApplicationMetrics(appID, timeRange string) ([]map[string]interface{}, error) {
 	query := `from(bucket: "metrics")
 		|> range(start: ` + timeRange + `)
 		|> filter(fn: (r) => r["_measurement"] == "app_metrics")
