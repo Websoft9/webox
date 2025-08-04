@@ -41,7 +41,7 @@ api-service/
 
 ### 环境要求
 
-- Go 1.21+
+- Go 1.24+
 - SQLite 3.0+
 - Redis 6.0+
 - InfluxDB 2.0+
