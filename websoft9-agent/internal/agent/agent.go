@@ -36,8 +36,6 @@ func New(cfg *config.Config) (*Agent, error) {
 		return nil, err
 	}
 
-	just for testing, dont care about it
-
 	// 创建任务执行器
 	taskExec, err := task.NewExecutor(cfg)
 	if err != nil {
