@@ -1,0 +1,213 @@
+# Websoft9 项目 golangci-lint 配置
+# 基于开发规范文档的要求配置
+
+run:
+  timeout: 5m
+  tests: false
+  skip-dirs:
+    - vendor
+    - .git
+    - bin
+    - build
+  skip-files:
+    - ".*\\.pb\\.go$"
+    - ".*_mock\\.go$"
+
+output:
+  format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+
+linters-settings:
+  govet:
+    check-shadowing: true
+    enable-all: true
+
+  golint:
+    min-confidence: 0
+
+  gocyclo:
+    min-complexity: 15
+
+  maligned:
+    suggest-new: true
+
+  dupl:
+    threshold: 100
+
+  goconst:
+    min-len: 2
+    min-occurrences: 2
+
+  misspell:
+    locale: US
+
+  lll:
+    line-length: 120
+
+  goimports:
+    local-prefixes: github.com/websoft9
+
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
+    disabled-checks:
+      - dupImport
+      - ifElseChain
+      - octalLiteral
+      - whyNoLint
+      - wrapperFunc
+
+  funlen:
+    lines: 100
+    statements: 50
+
+  gocognit:
+    min-complexity: 15
+
+  nestif:
+    min-complexity: 4
+
+  gomnd:
+    settings:
+      mnd:
+        checks: argument,case,condition,operation,return,assign
+
+  gomodguard:
+    allowed:
+      modules: []
+      domains: []
+    blocked:
+      modules: []
+      versions: []
+
+  godox:
+    keywords:
+      - NOTE
+      - OPTIMIZE
+      - HACK
+
+  dogsled:
+    max-blank-identifiers: 2
+
+  whitespace:
+    multi-if: false
+    multi-func: false
+
+linters:
+  disable-all: true
+  enable:
+    # 错误检查
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - typecheck
+    - unused
+    - varcheck
+    - deadcode
+    - structcheck
+
+    # 代码风格
+    - gofmt
+    - goimports
+    - golint
+    - stylecheck
+    - misspell
+    - whitespace
+    - lll
+
+    # 复杂度检查
+    - gocyclo
+    - gocognit
+    - funlen
+    - nestif
+
+    # 安全检查
+    - gosec
+
+    # 性能检查
+    - bodyclose
+    - rowserrcheck
+    - sqlclosecheck
+
+    # 代码质量
+    - dupl
+    - goconst
+    - gocritic
+    - gomnd
+    - goprintffuncname
+    - interfacer
+    - nakedret
+    - prealloc
+    - scopelint
+    - unconvert
+    - unparam
+
+    # 其他
+    - dogsled
+    - godox
+    - gomodguard
+
+issues:
+  exclude-rules:
+    # 排除测试文件的某些检查
+    - path: _test\.go
+      linters:
+        - gomnd
+        - funlen
+        - goconst
+        - dupl
+
+    # 排除生成的文件
+    - path: ".*\\.pb\\.go"
+      linters:
+        - lll
+        - golint
+        - govet
+
+    # 排除 mock 文件
+    - path: ".*_mock\\.go"
+      linters:
+        - golint
+        - govet
+        - errcheck
+
+    # 排除 main 函数的复杂度检查
+    - text: "cyclomatic complexity"
+      source: "func main\\("
+
+    # 排除某些常见的误报
+    - text: "should have a package comment"
+      linters:
+        - golint
+
+    - text: "don't use an underscore in package name"
+      linters:
+        - golint
+
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  new: false
+
+severity:
+  default-severity: error
+  case-sensitive: false
+  rules:
+    - linters:
+        - dupl
+        - gomnd
+        - goconst
+      severity: warning
+
+    - linters:
+        - gosec
+        - errcheck
+        - govet
+      severity: error
