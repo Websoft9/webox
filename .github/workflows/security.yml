@@ -44,12 +44,12 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache: true
           cache-dependency-path: |
-            webox/api-service/go.sum
-            webox/websoft9-agent/go.sum
+            api-service/go.sum
+            websoft9-agent/go.sum
 
       - name: Install Nancy
         run: |
-          go install github.com/sonatypecommunity/nancy@latest
+          go install github.com/sonatype-nexus-community/nancy@latest
 
       - name: Run Nancy vulnerability scan
         run: |
@@ -58,13 +58,13 @@ jobs:
 
           # 扫描 api-service 依赖
           echo "扫描 api-service 依赖..."
-          cd webox/api-service
+          cd api-service
           go list -json -m all | nancy sleuth --output-format=json > ../../reports/nancy-api-service.json || true
           cd ../..
 
           # 扫描 websoft9-agent 依赖
           echo "扫描 websoft9-agent 依赖..."
-          cd webox/websoft9-agent
+          cd websoft9-agent
           go list -json -m all | nancy sleuth --output-format=json > ../../reports/nancy-agent.json || true
           cd ../..
 
@@ -242,18 +242,18 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache: true
           cache-dependency-path: |
-            webox/api-service/go.sum
-            webox/websoft9-agent/go.sum
+            api-service/go.sum
+            websoft9-agent/go.sum
 
       - name: Run Gosec Security Scanner for api-service
         uses: securecodewarrior/github-action-gosec@master
         with:
-          args: '-fmt sarif -out gosec-api-service.sarif webox/api-service/...'
+          args: '-fmt sarif -out gosec-api-service.sarif api-service/...'
 
       - name: Run Gosec Security Scanner for websoft9-agent
         uses: securecodewarrior/github-action-gosec@master
         with:
-          args: '-fmt sarif -out gosec-agent.sarif webox/websoft9-agent/...'
+          args: '-fmt sarif -out gosec-agent.sarif websoft9-agent/...'
 
       - name: Upload Gosec scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
@@ -321,8 +321,8 @@ jobs:
       - name: Build Docker image for scanning
         uses: docker/build-push-action@v5
         with:
-          context: webox/${{ matrix.service }}
-          file: webox/${{ matrix.service }}/Dockerfile
+          context: ${{ matrix.service }}
+          file: ${{ matrix.service }}/Dockerfile
           tags: ${{ matrix.service }}:scan
           load: true
           cache-from: type=gha
