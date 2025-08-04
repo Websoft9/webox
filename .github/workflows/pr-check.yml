@@ -119,15 +119,15 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache: true
           cache-dependency-path: |
-            webox/api-service/go.sum
-            webox/websoft9-agent/go.sum
+            api-service/go.sum
+            websoft9-agent/go.sum
 
       - name: Check Go formatting
         run: |
           echo "检查 Go 代码格式..."
 
           # 检查 api-service
-          cd webox/api-service
+          cd api-service
           unformatted=$(gofmt -l .)
           if [ -n "$unformatted" ]; then
             echo "❌ api-service 以下文件格式不正确:"
@@ -150,14 +150,14 @@ jobs:
         uses: golangci/golangci-lint-action@v6
         with:
           version: latest
-          working-directory: webox/api-service
+          working-directory: api-service
           args: --timeout=5m --out-format=github-actions
 
       - name: Run golangci-lint for websoft9-agent
         uses: golangci/golangci-lint-action@v6
         with:
           version: latest
-          working-directory: webox/websoft9-agent
+          working-directory: websoft9-agent
           args: --timeout=5m --out-format=github-actions
 
   # 单元测试
@@ -177,11 +177,11 @@ jobs:
           go-version: ${{ matrix.go-version }}
           cache: true
           cache-dependency-path: |
-            webox/api-service/go.sum
-            webox/websoft9-agent/go.sum
+            api-service/go.sum
+            websoft9-agent/go.sum
 
       - name: Run unit tests for api-service
-        working-directory: webox/api-service
+        working-directory: api-service
         run: |
           echo "运行 api-service 单元测试..."
           mkdir -p reports
@@ -201,7 +201,7 @@ jobs:
           fi
 
       - name: Run unit tests for websoft9-agent
-        working-directory: webox/websoft9-agent
+        working-directory: websoft9-agent
         run: |
           echo "运行 websoft9-agent 单元测试..."
           mkdir -p reports
@@ -225,8 +225,8 @@ jobs:
         with:
           name: coverage-reports-go${{ matrix.go-version }}
           path: |
-            webox/api-service/reports/
-            webox/websoft9-agent/reports/
+            api-service/reports/
+            websoft9-agent/reports/
           retention-days: 30
 
       - name: Comment coverage on PR
@@ -320,8 +320,19 @@ jobs:
 
       - name: Build ${{ matrix.service }}
         run: |
+          # 打印当前目录路径
+          echo "当前工作目录: $(pwd)"
+          echo "目录内容:"
+          ls -la
+
+          if [ ! -d "${{ matrix.service }}" ]; then
+            echo "⏭️ 跳过 ${{ matrix.service }}，目录不存在"
+            exit 0
+          fi
+
           echo "构建 ${{ matrix.service }}..."
-          cd webox/${{ matrix.service }}
+          cd ${{ matrix.service }}
+          echo "切换到目录: $(pwd)"
 
           # 下载依赖
           go mod download
