@@ -2,7 +2,7 @@ name: 🚀 Push Check
 
 on:
   push:
-    branches: [ main, develop, 'bugfix/**', 'hotfix/**' ]
+    branches: [ main, develop, 'feature/**', 'bugfix/**', 'hotfix/**' ]
 
 env:
   GO_VERSION: '1.24.5'
@@ -52,16 +52,16 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache: true
           cache-dependency-path: |
-            webox/api-service/go.sum
-            webox/websoft9-agent/go.sum
+            api-service/go.sum
+            websoft9-agent/go.sum
 
       - name: Check Go formatting
         run: |
           echo "检查 Go 代码格式..."
 
           # 检查 api-service
-          if [ -d "webox/api-service" ]; then
-            cd webox/api-service
+          if [ -d "api-service" ]; then
+            cd api-service
             unformatted=$(gofmt -l .)
             if [ -n "$unformatted" ]; then
               echo "❌ api-service 以下文件格式不正确:"
@@ -72,8 +72,8 @@ jobs:
           fi
 
           # 检查 websoft9-agent
-          if [ -d "webox/websoft9-agent" ]; then
-            cd webox/websoft9-agent
+          if [ -d "websoft9-agent" ]; then
+            cd websoft9-agent
             unformatted=$(gofmt -l .)
             if [ -n "$unformatted" ]; then
               echo "❌ websoft9-agent 以下文件格式不正确:"
@@ -86,19 +86,19 @@ jobs:
           echo "✅ Go 代码格式正确"
 
       - name: Run golangci-lint for api-service
-        if: hashFiles('webox/api-service/go.mod') != ''
+        if: hashFiles('api-service/go.mod') != ''
         uses: golangci/golangci-lint-action@v6
         with:
           version: latest
-          working-directory: webox/api-service
+          working-directory: api-service
           args: --timeout=5m
 
       - name: Run golangci-lint for websoft9-agent
-        if: hashFiles('webox/websoft9-agent/go.mod') != ''
+        if: hashFiles('websoft9-agent/go.mod') != ''
         uses: golangci/golangci-lint-action@v6
         with:
           version: latest
-          working-directory: webox/websoft9-agent
+          working-directory: websoft9-agent
           args: --timeout=5m
 
   # 快速构建检查
@@ -134,13 +134,13 @@ jobs:
           echo "目录内容:"
           ls -la
 
-          if [ ! -d "webox/${{ matrix.service }}" ]; then
+          if [ ! -d "${{ matrix.service }}" ]; then
             echo "⏭️ 跳过 ${{ matrix.service }}，目录不存在"
             exit 0
           fi
 
           echo "构建 ${{ matrix.service }}..."
-          cd webox/${{ matrix.service }}
+          cd ${{ matrix.service }}
           echo "切换到目录: $(pwd)"
 
           # 下载依赖
@@ -169,19 +169,19 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache: true
           cache-dependency-path: |
-            webox/api-service/go.sum
-            webox/websoft9-agent/go.sum
+            api-service/go.sum
+            websoft9-agent/go.sum
 
       - name: Run quick tests for api-service
-        if: hashFiles('webox/api-service/go.mod') != ''
-        working-directory: webox/api-service
+        if: hashFiles('api-service/go.mod') != ''
+        working-directory: api-service
         run: |
           echo "运行 api-service 快速测试..."
           go test -short -race ./...
 
       - name: Run quick tests for websoft9-agent
-        if: hashFiles('webox/websoft9-agent/go.mod') != ''
-        working-directory: webox/websoft9-agent
+        if: hashFiles('websoft9-agent/go.mod') != ''
+        working-directory: websoft9-agent
         run: |
           echo "运行 websoft9-agent 快速测试..."
           go test -short -race ./...
