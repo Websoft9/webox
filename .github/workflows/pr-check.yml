@@ -29,7 +29,6 @@ jobs:
           fetch-depth: 0
 
       - name: Check commit messages
-        working-directory: webox
         run: |
           echo "检查提交消息格式..."
 
