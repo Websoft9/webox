@@ -7,6 +7,16 @@ import (
 	"strings"
 )
 
+// 验证相关常量
+const (
+	// MaxServiceNameLength 服务名称最大长度
+	MaxServiceNameLength = 64
+	// MaxInputLength 输入字符串最大长度
+	MaxInputLength = 1024
+	// MaxParamValueLength 参数值最大长度
+	MaxParamValueLength = 4096
+)
+
 // CommandValidator 命令验证器
 type CommandValidator struct {
 	allowedCommands map[string]bool
@@ -126,7 +136,7 @@ func (v *CommandValidator) ValidateServiceName(serviceName string) error {
 	}
 
 	// 检查服务名长度
-	if len(serviceName) > 64 {
+	if len(serviceName) > MaxServiceNameLength {
 		return fmt.Errorf("服务名称过长: %s", serviceName)
 	}
 
@@ -203,8 +213,8 @@ func SanitizeInput(input string) string {
 	input = regexp.MustCompile(`[\x00-\x1f\x7f]`).ReplaceAllString(input, "")
 
 	// 限制长度
-	if len(input) > 1024 {
-		input = input[:1024]
+	if len(input) > MaxInputLength {
+		input = input[:MaxInputLength]
 	}
 
 	// 去除首尾空白
@@ -224,7 +234,7 @@ func ValidateTaskParams(params map[string]interface{}) error {
 		// 验证值的类型和内容
 		switch v := value.(type) {
 		case string:
-			if len(v) > 4096 {
+			if len(v) > MaxParamValueLength {
 				return fmt.Errorf("参数 %s 的值过长", key)
 			}
 		case map[string]interface{}:
