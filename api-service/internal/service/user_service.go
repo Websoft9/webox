@@ -23,37 +23,37 @@ type UserQueryParams struct {
 
 // CreateUserRequest 创建用户请求
 type CreateUserRequest struct {
-	GroupID   uint     `json:"group_id" binding:"required"`
-	Username  string   `json:"username" binding:"required,min=3,max=32"`
-	Email     string   `json:"email" binding:"required,email"`
-	Password  string   `json:"password" binding:"required,min=8,max=32"`
-	Nickname  string   `json:"nickname"`
-	Phone     string   `json:"phone"`
-	Gender    int8     `json:"gender"`
-	Signature string   `json:"signature"`
-	Timezone  string   `json:"timezone"`
-	Language  string   `json:"language"`
-	RoleIDs   []uint   `json:"role_ids"`
-	Status    int8     `json:"status"`
+	GroupID   uint   `json:"group_id" binding:"required"`
+	Username  string `json:"username" binding:"required,min=3,max=32"`
+	Email     string `json:"email" binding:"required,email"`
+	Password  string `json:"password" binding:"required,min=8,max=32"`
+	Nickname  string `json:"nickname"`
+	Phone     string `json:"phone"`
+	Gender    int8   `json:"gender"`
+	Signature string `json:"signature"`
+	Timezone  string `json:"timezone"`
+	Language  string `json:"language"`
+	RoleIDs   []uint `json:"role_ids"`
+	Status    int8   `json:"status"`
 }
 
 // UpdateUserRequest 更新用户请求
 type UpdateUserRequest struct {
-	GroupID   uint     `json:"group_id"`
-	Nickname  string   `json:"nickname"`
-	Email     string   `json:"email" binding:"omitempty,email"`
-	Phone     string   `json:"phone"`
-	Gender    int8     `json:"gender"`
-	Signature string   `json:"signature"`
-	Timezone  string   `json:"timezone"`
-	Language  string   `json:"language"`
-	RoleIDs   []uint   `json:"role_ids"`
-	Status    int8     `json:"status"`
+	GroupID   uint   `json:"group_id"`
+	Nickname  string `json:"nickname"`
+	Email     string `json:"email" binding:"omitempty,email"`
+	Phone     string `json:"phone"`
+	Gender    int8   `json:"gender"`
+	Signature string `json:"signature"`
+	Timezone  string `json:"timezone"`
+	Language  string `json:"language"`
+	RoleIDs   []uint `json:"role_ids"`
+	Status    int8   `json:"status"`
 }
 
 // UserListResult 用户列表结果
 type UserListResult struct {
-	Items      []*model.User `json:"items"`
+	Items      []*model.User  `json:"items"`
 	Pagination PaginationInfo `json:"pagination"`
 }
 
@@ -74,7 +74,7 @@ type UserService interface {
 	UpdateProfile(userID uint, updates map[string]interface{}) error
 	ChangePassword(userID uint, oldPassword, newPassword string) error
 	ListUsers(page, pageSize int) ([]*model.User, int64, error)
-	
+
 	// 新增的用户管理接口
 	ListUsersWithFilter(params *UserQueryParams) (*UserListResult, error)
 	GetUserByID(userID uint) (*model.User, error)
