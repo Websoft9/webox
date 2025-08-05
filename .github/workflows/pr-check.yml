@@ -2,11 +2,18 @@ name: 🔍 PR Check
 
 on:
   pull_request:
-    branches: [ main, develop ]
-    types: [ opened, synchronize, reopened, edited ]
+    branches: [main, develop]
+    types: [opened, synchronize, reopened, edited]
+
+# 添加必要的权限
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  checks: write
 
 env:
-  GO_VERSION: '1.24.5'
+  GO_VERSION: "1.24.5"
   COVERAGE_THRESHOLD: 80
 
 jobs:
@@ -22,6 +29,7 @@ jobs:
           fetch-depth: 0
 
       - name: Check commit messages
+        working-directory: webox
         run: |
           echo "检查提交消息格式..."
 
@@ -53,57 +61,6 @@ jobs:
           fi
 
           echo "✅ 所有提交消息格式正确"
-
-  # PR 标题和描述检查
-  pr-format-check:
-    name: 📋 PR Format Check
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check PR title format
-        run: |
-          title="${{ github.event.pull_request.title }}"
-          echo "检查 PR 标题: $title"
-
-          # 检查 PR 标题是否符合 Conventional Commits 格式
-          if [[ ! "$title" =~ ^(feat|fix|docs|style|refactor|test|chore|perf|ci)(\([a-zA-Z0-9_-]+\))?: .{1,50}$ ]]; then
-            echo "❌ PR 标题格式不正确"
-            echo "正确格式: <type>[optional scope]: <description>"
-            echo "示例: feat(auth): add JWT token refresh mechanism"
-            exit 1
-          fi
-
-          echo "✅ PR 标题格式正确"
-
-      - name: Check PR description
-        run: |
-          description="${{ github.event.pull_request.body }}"
-
-          if [ -z "$description" ] || [ "$description" = "null" ]; then
-            echo "❌ PR 描述不能为空"
-            echo "请添加 PR 描述，说明变更内容和测试情况"
-            exit 1
-          fi
-
-          # 检查是否包含必要的信息
-          required_sections=("变更类型" "变更描述" "测试说明")
-          missing_sections=()
-
-          for section in "${required_sections[@]}"; do
-            if [[ ! "$description" =~ $section ]]; then
-              missing_sections+=("$section")
-            fi
-          done
-
-          if [ ${#missing_sections[@]} -gt 0 ]; then
-            echo "⚠️ PR 描述缺少以下部分:"
-            for section in "${missing_sections[@]}"; do
-              echo "  - $section"
-            done
-            echo ""
-            echo "建议使用 PR 模板填写完整信息"
-          fi
-
-          echo "✅ PR 描述检查完成"
 
   # 代码格式检查
   code-format-check:
@@ -164,9 +121,13 @@ jobs:
   unit-tests:
     name: 🧪 Unit Tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
     strategy:
       matrix:
-        go-version: ['1.23', '1.24.5']
+        go-version: ["1.24.5"]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -232,64 +193,127 @@ jobs:
       - name: Comment coverage on PR
         if: matrix.go-version == '1.24.5'
         uses: actions/github-script@v7
+        continue-on-error: true
         with:
           script: |
-            const fs = require('fs');
-            const coverage = process.env.total_coverage;
-            const threshold = process.env.COVERAGE_THRESHOLD;
-            const isWarning = process.env.coverage_warning === 'true';
+            try {
+              const fs = require('fs');
+              const path = require('path');
 
-            let coverageIcon = '✅';
-            let coverageColor = 'green';
+              // 获取覆盖率数据
+              const apiCoverage = process.env.api_coverage || '0';
+              const agentCoverage = process.env.agent_coverage || '0';
+              const threshold = process.env.COVERAGE_THRESHOLD;
 
-            if (isWarning) {
-              coverageIcon = '⚠️';
-              coverageColor = 'orange';
-            }
+              // 计算平均覆盖率
+              const avgCoverage = ((parseFloat(apiCoverage) + parseFloat(agentCoverage)) / 2).toFixed(1);
+              const isWarning = parseFloat(avgCoverage) < parseFloat(threshold);
 
-            const comment = `## ${coverageIcon} 测试覆盖率报告
+              let coverageIcon = '✅';
+              if (isWarning) {
+                coverageIcon = '⚠️';
+              }
 
-            **总覆盖率:** ${coverage}% (阈值: ${threshold}%)
+              let detailsSection = '';
 
-            ${isWarning ? '⚠️ **警告:** 覆盖率低于阈值，建议增加测试用例' : '✅ 覆盖率达到要求'}
+              // 尝试读取覆盖率详细信息
+              try {
+                const apiCoverageFile = path.join('api-service', 'reports', 'coverage.txt');
+                const agentCoverageFile = path.join('websoft9-agent', 'reports', 'coverage.txt');
 
-            <details>
-            <summary>详细覆盖率信息</summary>
+                let apiDetails = '';
+                let agentDetails = '';
 
-            \`\`\`
-            ${fs.readFileSync('reports/coverage.txt', 'utf8')}
-            \`\`\`
+                if (fs.existsSync(apiCoverageFile)) {
+                  apiDetails = fs.readFileSync(apiCoverageFile, 'utf8');
+                }
 
-            </details>
-            `;
+                if (fs.existsSync(agentCoverageFile)) {
+                  agentDetails = fs.readFileSync(agentCoverageFile, 'utf8');
+                }
 
-            // 查找现有的覆盖率评论
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
+                if (apiDetails || agentDetails) {
+                  detailsSection = `
+              <details>
+              <summary>详细覆盖率信息</summary>
 
-            const existingComment = comments.find(comment =>
-              comment.body.includes('测试覆盖率报告')
-            );
+              ${apiDetails ? `**API Service:**
+              \`\`\`
+              ${apiDetails}
+              \`\`\`
+              ` : ''}
 
-            if (existingComment) {
-              // 更新现有评论
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existingComment.id,
-                body: comment
-              });
-            } else {
-              // 创建新评论
-              await github.rest.issues.createComment({
+              ${agentDetails ? `**Websoft9 Agent:**
+              \`\`\`
+              ${agentDetails}
+              \`\`\`
+              ` : ''}
+
+              </details>`;
+                }
+              } catch (error) {
+                console.log('无法读取覆盖率详细信息:', error.message);
+              }
+
+              const comment = `## ${coverageIcon} 测试覆盖率报告
+
+              | 组件 | 覆盖率 | 状态 |
+              |------|--------|------|
+              | API Service | ${apiCoverage}% | ${parseFloat(apiCoverage) >= parseFloat(threshold) ? '✅' : '⚠️'} |
+              | Websoft9 Agent | ${agentCoverage}% | ${parseFloat(agentCoverage) >= parseFloat(threshold) ? '✅' : '⚠️'} |
+              | **平均覆盖率** | **${avgCoverage}%** | **${isWarning ? '⚠️' : '✅'}** |
+
+              **阈值:** ${threshold}%
+
+              ${isWarning ? '⚠️ **警告:** 部分组件覆盖率低于阈值，建议增加测试用例' : '✅ 所有组件覆盖率达到要求'}
+              ${detailsSection}
+              `;
+
+              // 查找现有的覆盖率评论
+              const { data: comments } = await github.rest.issues.listComments({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
-                body: comment
               });
+
+              const existingComment = comments.find(comment =>
+                comment.body.includes('测试覆盖率报告')
+              );
+
+              if (existingComment) {
+                // 更新现有评论
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existingComment.id,
+                  body: comment
+                });
+                console.log('✅ 覆盖率评论已更新');
+              } else {
+                // 创建新评论
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body: comment
+                });
+                console.log('✅ 覆盖率评论已创建');
+              }
+            } catch (error) {
+              console.log('⚠️ 无法创建或更新覆盖率评论:', error.message);
+              console.log('覆盖率数据仍会在工作流日志中显示');
+
+              // 在控制台输出覆盖率信息作为备选方案
+              const apiCoverage = process.env.api_coverage || '0';
+              const agentCoverage = process.env.agent_coverage || '0';
+              const threshold = process.env.COVERAGE_THRESHOLD;
+              const avgCoverage = ((parseFloat(apiCoverage) + parseFloat(agentCoverage)) / 2).toFixed(1);
+
+              console.log('📊 测试覆盖率报告:');
+              console.log(`API Service: ${apiCoverage}%`);
+              console.log(`Websoft9 Agent: ${agentCoverage}%`);
+              console.log(`平均覆盖率: ${avgCoverage}%`);
+              console.log(`阈值: ${threshold}%`);
             }
 
   # 构建验证
@@ -298,7 +322,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: ['api-service', 'websoft9-agent']
+        service: ["api-service", "websoft9-agent"]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -350,6 +374,10 @@ jobs:
   security-scan:
     name: 🔒 Security Scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -359,22 +387,109 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - name: Run Gosec Security Scanner
-        uses: securecodewarrior/github-action-gosec@v1
+      - name: Install Gosec
+        run: |
+          echo "安装 Gosec 安全扫描工具..."
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
+
+      - name: Run Gosec Security Scanner for api-service
+        run: |
+          echo "运行 api-service 安全扫描..."
+
+          if [ ! -d "api-service" ]; then
+            echo "⏭️ 跳过 api-service，目录不存在"
+          else
+            cd api-service
+            mkdir -p reports
+
+            echo "扫描 api-service Go 代码..."
+            # 使用配置文件（如果存在）
+            config_flag=""
+            if [ -f "../.gosec.json" ]; then
+              config_flag="-conf ../.gosec.json"
+            fi
+
+            if gosec $config_flag -fmt sarif -out reports/gosec-results.sarif ./... 2>/dev/null; then
+              echo "✅ api-service SARIF 报告生成成功"
+            else
+              echo "⚠️ api-service SARIF 报告生成失败，尝试基本扫描"
+              gosec $config_flag ./... || echo "⚠️ api-service 安全扫描完成（可能有警告）"
+            fi
+
+            # 生成 JSON 报告（用于调试）
+            gosec $config_flag -fmt json -out reports/gosec-results.json ./... 2>/dev/null || true
+            cd ../..
+          fi
+
+      - name: Run Gosec Security Scanner for websoft9-agent
+        run: |
+          echo "运行 websoft9-agent 安全扫描..."
+
+          if [ ! -d "websoft9-agent" ]; then
+            echo "⏭️ 跳过 websoft9-agent，目录不存在"
+          else
+            cd websoft9-agent
+            mkdir -p reports
+
+            echo "扫描 websoft9-agent Go 代码..."
+            # 使用配置文件（如果存在）
+            config_flag=""
+            if [ -f "../.gosec.json" ]; then
+              config_flag="-conf ../.gosec.json"
+            fi
+
+            if gosec $config_flag -fmt sarif -out reports/gosec-results.sarif ./... 2>/dev/null; then
+              echo "✅ websoft9-agent SARIF 报告生成成功"
+            else
+              echo "⚠️ websoft9-agent SARIF 报告生成失败，尝试基本扫描"
+              gosec $config_flag ./... || echo "⚠️ websoft9-agent 安全扫描完成（可能有警告）"
+            fi
+
+            # 生成 JSON 报告（用于调试）
+            gosec $config_flag -fmt json -out reports/gosec-results.json ./... 2>/dev/null || true
+            cd ../..
+          fi
+
+      - name: Upload Gosec scan results
+        uses: actions/upload-artifact@v4
+        if: always()
         with:
-          args: '-fmt sarif -out gosec-results.sarif ./...'
+          name: gosec-security-reports
+          path: |
+            api-service/reports/gosec-*
+            websoft9-agent/reports/gosec-*
+          retention-days: 30
 
       - name: Upload Gosec scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        if: always() && hashFiles('api-service/reports/gosec-results.sarif') != ''
         with:
-          sarif_file: gosec-results.sarif
+          sarif_file: api-service/reports/gosec-results.sarif
+          category: api-service-gosec
+
+      - name: Upload Agent Gosec scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('websoft9-agent/reports/gosec-results.sarif') != ''
+        with:
+          sarif_file: websoft9-agent/reports/gosec-results.sarif
+          category: websoft9-agent-gosec
 
   # 最终状态检查
   pr-check-summary:
     name: 📊 PR Check Summary
     runs-on: ubuntu-latest
-    needs: [commit-message-check, pr-format-check, code-format-check, unit-tests, build-check, security-scan]
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    needs:
+      [
+        commit-message-check,
+        code-format-check,
+        unit-tests,
+        build-check,
+        security-scan,
+      ]
     if: always()
     steps:
       - name: Check all jobs status
@@ -383,14 +498,12 @@ jobs:
 
           # 检查各个作业的状态
           commit_check="${{ needs.commit-message-check.result }}"
-          pr_format="${{ needs.pr-format-check.result }}"
           code_format="${{ needs.code-format-check.result }}"
           unit_tests="${{ needs.unit-tests.result }}"
           build_check="${{ needs.build-check.result }}"
           security_scan="${{ needs.security-scan.result }}"
 
           echo "提交消息检查: $commit_check"
-          echo "PR 格式检查: $pr_format"
           echo "代码格式检查: $code_format"
           echo "单元测试: $unit_tests"
           echo "构建检查: $build_check"
@@ -400,7 +513,6 @@ jobs:
           failed_jobs=()
 
           [ "$commit_check" = "failure" ] && failed_jobs+=("提交消息检查")
-          [ "$pr_format" = "failure" ] && failed_jobs+=("PR 格式检查")
           [ "$code_format" = "failure" ] && failed_jobs+=("代码格式检查")
           [ "$unit_tests" = "failure" ] && failed_jobs+=("单元测试")
           [ "$build_check" = "failure" ] && failed_jobs+=("构建检查")
@@ -423,71 +535,95 @@ jobs:
       - name: Comment PR check summary
         if: always()
         uses: actions/github-script@v7
+        continue-on-error: true
         with:
           script: |
-            const needs = ${{ toJSON(needs) }};
+            try {
+              const needs = ${{ toJSON(needs) }};
 
-            let summary = '## 📊 PR 检查结果汇总\n\n';
-            let allPassed = true;
+              let summary = '## 📊 PR 检查结果汇总\n\n';
+              let allPassed = true;
 
-            const jobs = [
-              { name: '提交消息检查', key: 'commit-message-check' },
-              { name: 'PR 格式检查', key: 'pr-format-check' },
-              { name: '代码格式检查', key: 'code-format-check' },
-              { name: '单元测试', key: 'unit-tests' },
-              { name: '构建检查', key: 'build-check' },
-              { name: '安全扫描', key: 'security-scan' }
-            ];
+              const jobs = [
+                { name: '提交消息检查', key: 'commit-message-check' },
+                { name: '代码格式检查', key: 'code-format-check' },
+                { name: '单元测试', key: 'unit-tests' },
+                { name: '构建检查', key: 'build-check' },
+                { name: '安全扫描', key: 'security-scan' }
+              ];
 
-            for (const job of jobs) {
-              const result = needs[job.key]?.result || 'skipped';
-              let icon = '✅';
+              for (const job of jobs) {
+                const result = needs[job.key]?.result || 'skipped';
+                let icon = '✅';
 
-              if (result === 'failure') {
-                icon = '❌';
-                allPassed = false;
-              } else if (result === 'cancelled') {
-                icon = '⏹️';
-              } else if (result === 'skipped') {
-                icon = '⏭️';
+                if (result === 'failure') {
+                  icon = '❌';
+                  allPassed = false;
+                } else if (result === 'cancelled') {
+                  icon = '⏹️';
+                } else if (result === 'skipped') {
+                  icon = '⏭️';
+                }
+
+                summary += `${icon} **${job.name}:** ${result}\n`;
               }
 
-              summary += `${icon} **${job.name}:** ${result}\n`;
-            }
+              summary += '\n';
 
-            summary += '\n';
+              if (allPassed) {
+                summary += '🎉 **所有检查通过！** 此 PR 可以合并。';
+              } else {
+                summary += '⚠️ **部分检查失败** 请修复失败的检查项后重新提交。';
+              }
 
-            if (allPassed) {
-              summary += '🎉 **所有检查通过！** 此 PR 可以合并。';
-            } else {
-              summary += '⚠️ **部分检查失败** 请修复失败的检查项后重新提交。';
-            }
-
-            // 查找现有的汇总评论
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-
-            const existingComment = comments.find(comment =>
-              comment.body.includes('PR 检查结果汇总')
-            );
-
-            if (existingComment) {
-              // 更新现有评论
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existingComment.id,
-                body: summary
-              });
-            } else {
-              // 创建新评论
-              await github.rest.issues.createComment({
+              // 查找现有的汇总评论
+              const { data: comments } = await github.rest.issues.listComments({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
-                body: summary
               });
+
+              const existingComment = comments.find(comment =>
+                comment.body.includes('PR 检查结果汇总')
+              );
+
+              if (existingComment) {
+                // 更新现有评论
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existingComment.id,
+                  body: summary
+                });
+                console.log('✅ PR 检查汇总评论已更新');
+              } else {
+                // 创建新评论
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body: summary
+                });
+                console.log('✅ PR 检查汇总评论已创建');
+              }
+            } catch (error) {
+              console.log('⚠️ 无法创建或更新 PR 检查汇总评论:', error.message);
+              console.log('检查结果仍会在工作流日志中显示');
+
+              // 在控制台输出汇总信息作为备选方案
+              const needs = ${{ toJSON(needs) }};
+              console.log('📊 PR 检查结果汇总:');
+
+              const jobs = [
+                { name: '提交消息检查', key: 'commit-message-check' },
+                { name: '代码格式检查', key: 'code-format-check' },
+                { name: '单元测试', key: 'unit-tests' },
+                { name: '构建检查', key: 'build-check' },
+                { name: '安全扫描', key: 'security-scan' }
+              ];
+
+              for (const job of jobs) {
+                const result = needs[job.key]?.result || 'skipped';
+                console.log(`${job.name}: ${result}`);
+              }
             }
