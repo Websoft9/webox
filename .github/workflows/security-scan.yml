@@ -1,4 +1,4 @@
-name: 🔒 Security Scan (Simple)
+name: 🔒 Security Scan
 
 on:
   schedule:
