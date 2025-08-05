@@ -97,9 +97,9 @@ jobs:
         service: ['api-service', 'websoft9-agent']
         include:
           - service: api-service
-            context: webox/api-service
+            context: api-service
           - service: websoft9-agent
-            context: webox/websoft9-agent
+            context: websoft9-agent
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

@@ -31,17 +31,17 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
-          cache-dependency-path: webox/${{ matrix.service }}/go.sum
+          cache-dependency-path: ${{ matrix.service }}/go.sum
 
       - name: Install golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
           version: latest
-          working-directory: webox/${{ matrix.service }}
+          working-directory: ${{ matrix.service }}
           args: --timeout=10m --out-format=github-actions
 
       - name: Run go vet
-        working-directory: webox/${{ matrix.service }}
+        working-directory: ${{ matrix.service }}
         run: |
           echo "运行 go vet 检查..."
           go vet ./...
@@ -74,7 +74,7 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
-          cache-dependency-path: webox/${{ matrix.service }}/go.sum
+          cache-dependency-path: ${{ matrix.service }}/go.sum
 
       - name: Wait for services
         run: |
@@ -104,7 +104,7 @@ jobs:
           fi
 
       - name: Run unit tests
-        working-directory: webox/${{ matrix.service }}
+        working-directory: ${{ matrix.service }}
         env:
           DB_TYPE: sqlite
           DB_DSN: "./test.db"
@@ -127,14 +127,14 @@ jobs:
         if: always()
         with:
           name: test-reports-${{ matrix.service }}
-          path: webox/${{ matrix.service }}/reports/
+          path: ${{ matrix.service }}/reports/
           retention-days: 30
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         if: always()
         with:
-          file: webox/${{ matrix.service }}/reports/coverage.out
+          file: ${{ matrix.service }}/reports/coverage.out
           flags: ${{ matrix.service }}
           name: codecov-${{ matrix.service }}
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -149,10 +149,10 @@ jobs:
         service: ['api-service', 'websoft9-agent']
         include:
           - service: api-service
-            context: webox/api-service
+            context: api-service
             main_path: ./cmd/server
           - service: websoft9-agent
-            context: webox/websoft9-agent
+            context: websoft9-agent
             main_path: ./cmd/agent
     steps:
       - name: Checkout code
@@ -197,11 +197,11 @@ jobs:
         service: ['api-service', 'websoft9-agent']
         include:
           - service: api-service
-            dockerfile: webox/api-service/Dockerfile
-            context: webox/api-service
+            dockerfile: api-service/Dockerfile
+            context: api-service
           - service: websoft9-agent
-            dockerfile: webox/websoft9-agent/Dockerfile
-            context: webox/websoft9-agent
+            dockerfile: websoft9-agent/Dockerfile
+            context: websoft9-agent
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -267,9 +267,9 @@ jobs:
         service: ['api-service', 'websoft9-agent']
         include:
           - service: api-service
-            context: webox/api-service
+            context: api-service
           - service: websoft9-agent
-            context: webox/websoft9-agent
+            context: websoft9-agent
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

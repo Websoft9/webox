@@ -113,21 +113,21 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache: true
           cache-dependency-path: |
-            webox/api-service/go.sum
-            webox/websoft9-agent/go.sum
+            api-service/go.sum
+            websoft9-agent/go.sum
 
       - name: Run comprehensive tests
         run: |
           echo "运行发布前测试..."
 
           # 运行 api-service 测试
-          cd webox/api-service
+          cd api-service
           mkdir -p reports
           go test -v -race -coverprofile=reports/coverage.out ./...
           cd ../..
 
           # 运行 websoft9-agent 测试
-          cd webox/websoft9-agent
+          cd websoft9-agent
           mkdir -p reports
           go test -v -race -coverprofile=reports/coverage.out ./...
           cd ../..
@@ -139,8 +139,8 @@ jobs:
         with:
           name: pre-release-test-reports
           path: |
-            webox/api-service/reports/
-            webox/websoft9-agent/reports/
+            api-service/reports/
+            websoft9-agent/reports/
           retention-days: 30
 
   # 构建多平台二进制文件
@@ -153,10 +153,10 @@ jobs:
         service: ['api-service', 'websoft9-agent']
         include:
           - service: api-service
-            context: webox/api-service
+            context: api-service
             main_path: ./cmd/server
           - service: websoft9-agent
-            context: webox/websoft9-agent
+            context: websoft9-agent
             main_path: ./cmd/agent
     steps:
       - name: Checkout code
@@ -241,11 +241,11 @@ jobs:
         service: ['api-service', 'websoft9-agent']
         include:
           - service: api-service
-            dockerfile: webox/api-service/Dockerfile
-            context: webox/api-service
+            dockerfile: api-service/Dockerfile
+            context: api-service
           - service: websoft9-agent
-            dockerfile: webox/websoft9-agent/Dockerfile
-            context: webox/websoft9-agent
+            dockerfile: websoft9-agent/Dockerfile
+            context: websoft9-agent
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
