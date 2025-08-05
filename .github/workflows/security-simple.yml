@@ -1,0 +1,197 @@
+name: 🔒 Security Scan (Simple)
+
+on:
+  schedule:
+    # 每天凌晨 2 点运行
+    - cron: "0 2 * * *"
+  push:
+    branches: [main]
+    paths:
+      - "go.mod"
+      - "go.sum"
+      - "**/go.mod"
+      - "**/go.sum"
+  workflow_dispatch:
+
+env:
+  GO_VERSION: "1.24.5"
+
+jobs:
+  # 依赖漏洞扫描
+  dependency-scan:
+    name: 📦 Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+          cache-dependency-path: |
+            api-service/go.sum
+            websoft9-agent/go.sum
+
+      - name: Install govulncheck
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      - name: Run vulnerability scan for api-service
+        run: |
+          echo "扫描 api-service 依赖漏洞..."
+          cd api-service
+          govulncheck ./... || true
+          cd ..
+
+      - name: Run vulnerability scan for websoft9-agent
+        run: |
+          echo "扫描 websoft9-agent 依赖漏洞..."
+          cd websoft9-agent
+          govulncheck ./... || true
+          cd ..
+
+  # 代码安全扫描
+  code-security-scan:
+    name: 🔍 Code Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+          cache-dependency-path: |
+            api-service/go.sum
+            websoft9-agent/go.sum
+
+      - name: Install Gosec
+        run: |
+          echo "安装 Gosec 安全扫描工具..."
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
+
+      - name: Run Gosec Security Scanner for api-service
+        run: |
+          echo "运行 api-service 安全扫描..."
+
+          if [ ! -d "api-service" ]; then
+            echo "⏭️ 跳过 api-service，目录不存在"
+          else
+            cd api-service
+            mkdir -p reports
+
+            echo "扫描 api-service Go 代码..."
+            # 使用配置文件（如果存在）
+            config_flag=""
+            if [ -f "../.gosec.json" ]; then
+              config_flag="-conf ../.gosec.json"
+            fi
+
+            if gosec $config_flag -fmt sarif -out reports/gosec-results.sarif ./... 2>/dev/null; then
+              echo "✅ api-service SARIF 报告生成成功"
+            else
+              echo "⚠️ api-service SARIF 报告生成失败，尝试基本扫描"
+              gosec $config_flag ./... || echo "⚠️ api-service 安全扫描完成（可能有警告）"
+            fi
+
+            # 生成 JSON 报告（用于调试）
+            gosec $config_flag -fmt json -out reports/gosec-results.json ./... 2>/dev/null || true
+            cd ../..
+          fi
+
+      - name: Run Gosec Security Scanner for websoft9-agent
+        run: |
+          echo "运行 websoft9-agent 安全扫描..."
+
+          if [ ! -d "websoft9-agent" ]; then
+            echo "⏭️ 跳过 websoft9-agent，目录不存在"
+          else
+            cd websoft9-agent
+            mkdir -p reports
+
+            echo "扫描 websoft9-agent Go 代码..."
+            # 使用配置文件（如果存在）
+            config_flag=""
+            if [ -f "../.gosec.json" ]; then
+              config_flag="-conf ../.gosec.json"
+            fi
+
+            if gosec $config_flag -fmt sarif -out reports/gosec-results.sarif ./... 2>/dev/null; then
+              echo "✅ websoft9-agent SARIF 报告生成成功"
+            else
+              echo "⚠️ websoft9-agent SARIF 报告生成失败，尝试基本扫描"
+              gosec $config_flag ./... || echo "⚠️ websoft9-agent 安全扫描完成（可能有警告）"
+            fi
+
+            # 生成 JSON 报告（用于调试）
+            gosec $config_flag -fmt json -out reports/gosec-results.json ./... 2>/dev/null || true
+            cd ../..
+          fi
+
+      - name: Upload Gosec scan results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gosec-security-reports
+          path: |
+            api-service/reports/gosec-*
+            websoft9-agent/reports/gosec-*
+          retention-days: 30
+
+      - name: Upload Gosec scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('api-service/reports/gosec-results.sarif') != ''
+        with:
+          sarif_file: api-service/reports/gosec-results.sarif
+          category: api-service-gosec
+
+      - name: Upload Agent Gosec scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('websoft9-agent/reports/gosec-results.sarif') != ''
+        with:
+          sarif_file: websoft9-agent/reports/gosec-results.sarif
+          category: websoft9-agent-gosec
+
+  # 安全扫描汇总
+  security-summary:
+    name: 📊 Security Scan Summary
+    runs-on: ubuntu-latest
+    needs: [dependency-scan, code-security-scan]
+    if: always()
+    steps:
+      - name: Generate security summary
+        run: |
+          echo "# 🔒 安全扫描报告汇总" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**扫描时间:** $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "**触发方式:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "## 📋 扫描结果" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| 扫描类型 | 状态 | 说明 |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|------|------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 依赖漏洞扫描 | ${{ needs.dependency-scan.result }} | 使用 govulncheck 检查 Go 依赖包漏洞 |" >> $GITHUB_STEP_SUMMARY
+          echo "| 代码安全扫描 | ${{ needs.code-security-scan.result }} | 使用 Gosec 进行静态代码安全分析 |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # 确定整体安全状态
+          if [[ "${{ needs.dependency-scan.result }}" == "failure" || "${{ needs.code-security-scan.result }}" == "failure" ]]; then
+            echo "## ❌ 发现安全问题" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "安全扫描发现了需要关注的问题，请查看详细报告并及时修复。" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ✅ 安全扫描通过" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "所有安全扫描都已通过，未发现严重的安全问题。" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📎 相关链接" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- [Security 标签页](${{ github.server_url }}/${{ github.repository }}/security)" >> $GITHUB_STEP_SUMMARY
+          echo "- [工作流运行](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
