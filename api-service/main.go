@@ -1,47 +1,59 @@
 package main
 
 import (
-	"api-service/internal/config"
-	"api-service/internal/database"
-	"api-service/internal/router"
-	"api-service/internal/service"
+	"fmt"
 	"log"
+	"net/http"
 )
 
+// User represents a user in the system
+type User struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+// UserService handles user operations
+type UserService struct {
+	users []User
+}
+
+// NewUserService creates a new user service
+func NewUserService() *UserService {
+	return &UserService{
+		users: []User{
+			{ID: 1, Name: "Alice"},
+			{ID: 2, Name: "Bob"},
+		},
+	}
+}
+
+// GetUser returns a user by ID
+func (s *UserService) GetUser(id int) (*User, error) {
+	for _, user := range s.users {
+		if user.ID == id {
+			return &user, nil
+		}
+	}
+	return nil, fmt.Errorf("user not found")
+}
+
+// CreateUser creates a new user
+func (s *UserService) CreateUser(name string) *User {
+	user := User{
+		ID:   len(s.users) + 1,
+		Name: name,
+	}
+	s.users = append(s.users, user)
+	return &user
+}
+
 func main() {
-	// 加载配置
-	cfg, err := config.Load()
-	if err != nil {
-		log.Fatal("Failed to load config:", err)
-	}
+	service := NewUserService()
 
-	// 初始化数据库
-	db, err := database.InitDB(cfg)
-	if err != nil {
-		log.Fatal("Failed to initialize database:", err)
-	}
+	http.HandleFunc("/users", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "Users: %+v", service.users)
+	})
 
-	// 初始化Redis
-	rdb, err := database.InitRedis(cfg)
-	if err != nil {
-		log.Fatal("Failed to initialize Redis:", err)
-	}
-
-	// 初始化InfluxDB
-	influxClient, err := database.InitInfluxDB(cfg)
-	if err != nil {
-		log.Fatal("Failed to initialize InfluxDB:", err)
-	}
-
-	// 初始化服务
-	services := service.NewServices(db, rdb, influxClient, cfg)
-
-	// 初始化路由
-	r := router.SetupRouter(services, cfg)
-
-	// 启动服务器
-	log.Printf("Server starting on port %s", cfg.Server.Port)
-	if err := r.Run(":" + cfg.Server.Port); err != nil {
-		log.Fatal("Failed to start server:", err)
-	}
+	log.Println("Server starting on :8080")
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
