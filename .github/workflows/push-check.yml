@@ -25,18 +25,30 @@ jobs:
           # 获取最新提交消息
           message=$(git log --format=%s -n 1 HEAD)
           echo "提交消息: $message"
+          echo "消息长度: ${#message} 字符"
+
+          # 确保脚本有执行权限
+          chmod +x ./scripts/check-commit-message.sh
 
           # 检查提交消息格式
-          if ! ./scripts/check-commit-message.sh "$message"; then
-            echo "❌ 提交消息格式不正确"
+          echo "运行提交消息检查脚本..."
+          if ./scripts/check-commit-message.sh -v "$message"; then
+            echo "✅ 提交消息格式正确"
+          else
+            echo "❌ ERROR: 提交消息格式不正确"
             echo ""
             echo "请修改提交消息以符合 Conventional Commits 规范:"
             echo "格式: <type>[optional scope]: <description>"
-            echo "示例: feat(auth): add JWT token refresh mechanism"
+            echo ""
+            echo "支持的类型: feat, fix, docs, style, refactor, test, chore, perf, ci"
+            echo "描述长度: 1-100 字符"
+            echo ""
+            echo "示例:"
+            echo "  feat(auth): add JWT token refresh mechanism"
+            echo "  fix(api): handle null pointer in user service"
+            echo "  chore: update dependencies and build scripts"
             exit 1
           fi
-
-          echo "✅ 提交消息格式正确"
 
   # 代码格式检查
   code-format-check:

@@ -79,7 +79,7 @@ check_commit_message() {
     
     # Conventional Commits 正则表达式
     # 格式: <type>[optional scope]: <description>
-    local regex="^(${valid_types})(\([a-zA-Z0-9_-]+\))?: .{1,50}$"
+    local regex="^(${valid_types})(\([a-zA-Z0-9_-]+\))?: .{1,100}$"
     
     if [[ ! "$message" =~ $regex ]]; then
         log_error "提交消息格式不正确"
@@ -93,7 +93,7 @@ check_commit_message() {
         echo ""
         echo "要求:"
         echo "  - 类型必须是: ${valid_types//|/, }"
-        echo "  - 描述长度: 1-50 字符"
+        echo "  - 描述长度: 1-100 字符"
         echo "  - 格式: 类型(可选范围): 描述"
         echo ""
         return 1
