@@ -57,7 +57,9 @@ func (c *GRPCClient) Start(ctx context.Context) error {
 // Stop 停止 gRPC 客户端
 func (c *GRPCClient) Stop() {
 	if c.conn != nil {
-		c.conn.Close()
+		if err := c.conn.Close(); err != nil {
+			logrus.WithError(err).Error("Failed to close gRPC connection")
+		}
 	}
 }
 

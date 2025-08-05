@@ -2,9 +2,11 @@ package task
 
 import (
 	"context"
+	"fmt"
 	"os/exec"
 	"time"
 	"websoft9-agent/internal/constants"
+	"websoft9-agent/pkg/security"
 
 	"github.com/sirupsen/logrus"
 )
@@ -51,7 +53,16 @@ func (h *AppManageHandler) Execute(ctx context.Context, task *Task) (*TaskResult
 }
 
 // SystemCommandHandler 系统命令处理器
-type SystemCommandHandler struct{}
+type SystemCommandHandler struct {
+	validator *security.CommandValidator
+}
+
+// NewSystemCommandHandler 创建系统命令处理器
+func NewSystemCommandHandler() *SystemCommandHandler {
+	return &SystemCommandHandler{
+		validator: security.NewCommandValidator(),
+	}
+}
 
 func (h *SystemCommandHandler) Execute(ctx context.Context, task *Task) (*TaskResult, error) {
 	start := time.Now()
@@ -66,8 +77,30 @@ func (h *SystemCommandHandler) Execute(ctx context.Context, task *Task) (*TaskRe
 		}, nil
 	}
 
+	// 清理输入
+	command = security.SanitizeInput(command)
+
+	// 验证命令安全性
+	if err := h.validator.ValidateCommand(command); err != nil {
+		logrus.Warnf("命令验证失败: %s, 命令: %s", err.Error(), command)
+		return &TaskResult{
+			TaskID:   task.ID,
+			Status:   constants.StatusFailed,
+			Message:  fmt.Sprintf("命令验证失败: %s", err.Error()),
+			Duration: time.Since(start).Milliseconds(),
+		}, nil
+	}
+
 	logrus.Infof("执行系统命令: %s", command)
 
+	// 记录安全审计日志
+	logrus.WithFields(logrus.Fields{
+		"task_id": task.ID,
+		"command": command,
+		"action":  "system_command_execute",
+	}).Info("Security audit: system command execution")
+
+	// #nosec G204 - Command is validated by security.CommandValidator before execution
 	cmd := exec.CommandContext(ctx, "sh", "-c", command)
 	output, err := cmd.CombinedOutput()
 
@@ -80,6 +113,11 @@ func (h *SystemCommandHandler) Execute(ctx context.Context, task *Task) (*TaskRe
 	if err != nil {
 		result.Status = constants.StatusFailed
 		result.Message = err.Error()
+		logrus.WithFields(logrus.Fields{
+			"task_id": task.ID,
+			"command": command,
+			"error":   err.Error(),
+		}).Error("System command execution failed")
 	} else {
 		result.Status = constants.StatusSuccess
 		result.Message = "命令执行成功"
@@ -110,7 +148,16 @@ func (h *FileTransferHandler) Execute(ctx context.Context, task *Task) (*TaskRes
 }
 
 // ServiceManageHandler 系统服务管理处理器
-type ServiceManageHandler struct{}
+type ServiceManageHandler struct {
+	validator *security.CommandValidator
+}
+
+// NewServiceManageHandler 创建系统服务管理处理器
+func NewServiceManageHandler() *ServiceManageHandler {
+	return &ServiceManageHandler{
+		validator: security.NewCommandValidator(),
+	}
+}
 
 func (h *ServiceManageHandler) Execute(ctx context.Context, task *Task) (*TaskResult, error) {
 	start := time.Now()
@@ -135,27 +182,45 @@ func (h *ServiceManageHandler) Execute(ctx context.Context, task *Task) (*TaskRe
 		}, nil
 	}
 
-	logrus.Infof("管理系统服务: %s %s", action, serviceName)
+	// 清理输入
+	serviceName = security.SanitizeInput(serviceName)
+	action = security.SanitizeInput(action)
 
-	var cmd *exec.Cmd
-	switch action {
-	case "start":
-		cmd = exec.CommandContext(ctx, "systemctl", "start", serviceName)
-	case "stop":
-		cmd = exec.CommandContext(ctx, "systemctl", "stop", serviceName)
-	case "restart":
-		cmd = exec.CommandContext(ctx, "systemctl", "restart", serviceName)
-	case "status":
-		cmd = exec.CommandContext(ctx, "systemctl", "status", serviceName)
-	default:
+	// 验证操作类型
+	if err := h.validator.ValidateSystemctlAction(action); err != nil {
+		logrus.Warnf("systemctl 操作验证失败: %s", err.Error())
 		return &TaskResult{
 			TaskID:   task.ID,
 			Status:   constants.StatusFailed,
-			Message:  "不支持的操作: " + action,
+			Message:  fmt.Sprintf("操作验证失败: %s", err.Error()),
 			Duration: time.Since(start).Milliseconds(),
 		}, nil
 	}
 
+	// 验证服务名称
+	if err := h.validator.ValidateServiceName(serviceName); err != nil {
+		logrus.Warnf("服务名称验证失败: %s", err.Error())
+		return &TaskResult{
+			TaskID:   task.ID,
+			Status:   constants.StatusFailed,
+			Message:  fmt.Sprintf("服务名称验证失败: %s", err.Error()),
+			Duration: time.Since(start).Milliseconds(),
+		}, nil
+	}
+
+	logrus.Infof("管理系统服务: %s %s", action, serviceName)
+
+	// 记录安全审计日志
+	logrus.WithFields(logrus.Fields{
+		"task_id":      task.ID,
+		"service_name": serviceName,
+		"action":       action,
+		"operation":    "service_management",
+	}).Info("Security audit: service management operation")
+
+	// 使用参数化命令执行，避免命令注入
+	// #nosec G204 - Action and serviceName are validated by security.CommandValidator
+	cmd := exec.CommandContext(ctx, "systemctl", action, serviceName)
 	output, err := cmd.CombinedOutput()
 
 	result := &TaskResult{
@@ -167,6 +232,12 @@ func (h *ServiceManageHandler) Execute(ctx context.Context, task *Task) (*TaskRe
 	if err != nil {
 		result.Status = constants.StatusFailed
 		result.Message = err.Error()
+		logrus.WithFields(logrus.Fields{
+			"task_id":      task.ID,
+			"service_name": serviceName,
+			"action":       action,
+			"error":        err.Error(),
+		}).Error("Service management operation failed")
 	} else {
 		result.Status = constants.StatusSuccess
 		result.Message = "服务管理操作成功"

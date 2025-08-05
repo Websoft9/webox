@@ -86,7 +86,9 @@ func (m *Manager) Stop() {
 	}
 
 	if m.redisClient != nil {
-		m.redisClient.Close()
+		if err := m.redisClient.Close(); err != nil {
+			logrus.WithError(err).Error("Failed to close Redis client")
+		}
 	}
 }
 
