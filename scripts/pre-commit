@@ -1,0 +1,187 @@
+#!/bin/sh
+# Websoft9 项目 pre-commit hook
+# 在提交前执行代码格式化、代码检查、快速测试和安全扫描
+
+set -e  # 遇到错误立即退出
+
+# 日志函数
+log_info() {
+    printf "[INFO] %s\n" "$1"
+}
+
+log_success() {
+    printf "[SUCCESS] %s\n" "$1"
+}
+
+log_warning() {
+    printf "[WARNING] %s\n" "$1"
+}
+
+log_error() {
+    printf "[ERROR] %s\n" "$1"
+}
+
+# 检查工具是否安装
+check_tool() {
+    local tool=$1
+    local install_cmd=$2
+
+    if ! command -v "$tool" >/dev/null 2>&1; then
+        log_error "$tool is not installed. Please install it first:"
+        log_info "$install_cmd"
+        exit 1
+    fi
+}
+
+# 获取变更的 Go 文件
+get_changed_go_files() {
+    git diff --cached --name-only --diff-filter=ACM | grep '\.go$' || true
+}
+
+# 获取包含 go.mod 的目录
+get_go_modules() {
+    find . -name "go.mod" -not -path "./.git/*" | sed 's|/go.mod||' | sort
+}
+
+# 在指定目录运行命令
+run_in_dir() {
+    local dir=$1
+    local cmd=$2
+    local description=$3
+
+    if [ -d "$dir" ]; then
+        log_info "Running $description in $dir..."
+        (cd "$dir" && eval "$cmd")
+    fi
+}
+
+# 主函数
+main() {
+    log_info "Starting pre-commit checks for Websoft9 project..."
+
+    # 检查是否有 Go 文件变更
+    changed_files=$(get_changed_go_files)
+    if [ -z "$changed_files" ]; then
+        log_info "No Go files changed, skipping Go-specific checks"
+        exit 0
+    fi
+
+    log_info "Changed Go files:"
+    echo "$changed_files" | sed 's/^/  - /'
+
+    # 检查必要工具
+    log_info "Checking required tools..."
+    check_tool "go" "Please install Go: https://golang.org/doc/install"
+    check_tool "golangci-lint" "Please install golangci-lint: https://golangci-lint.run/usage/install/"
+    check_tool "gosec" "Please install gosec: go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest"
+
+    # 获取所有 Go 模块目录
+    go_modules=$(get_go_modules)
+    if [ -z "$go_modules" ]; then
+        log_error "No Go modules found in the project"
+        exit 1
+    fi
+
+    log_info "Found Go modules:"
+    echo "$go_modules" | sed 's/^/  - /'
+
+    # 1. 代码格式化
+    log_info "Step 1/4: Running code formatting with gofmt..."
+    unformatted_files=$(gofmt -l . | grep -v vendor || true)
+    if [ -z "$unformatted_files" ]; then
+        log_success "Code formatting check passed"
+    else
+        log_warning "Code formatting issues found, auto-fixing..."
+        gofmt -w .
+
+        # 检查是否有文件被修改
+        if git diff --name-only | grep -q '\.go$'; then
+            log_warning "Code has been formatted. Please review and add the changes:"
+            git diff --name-only | grep '\.go$' | sed 's/^/  - /'
+            log_error "Commit aborted. Please add the formatted files and commit again."
+            exit 1
+        fi
+        log_success "Code formatting completed"
+    fi
+
+    # 2. 代码检查 - 在每个模块目录中运行
+    log_info "Step 2/4: Running code analysis with golangci-lint..."
+    lint_failed=0
+
+    # 获取项目根目录的绝对路径
+    project_root=$(pwd)
+
+    for module_dir in $go_modules; do
+        config_file=""
+
+        # 检查模块级配置文件
+        if [ -f "$module_dir/.golangci.yml" ]; then
+            config_file="--config .golangci.yml"
+        # 检查根目录配置文件
+        elif [ -f "$project_root/.golangci.yml" ]; then
+            config_file="--config $project_root/.golangci.yml"
+        fi
+
+        if ! run_in_dir "$module_dir" "golangci-lint run $config_file ./..." "golangci-lint"; then
+            lint_failed=1
+        fi
+    done
+
+    if [ $lint_failed -eq 1 ]; then
+        log_error "Code analysis failed. Please fix the issues above."
+        exit 1
+    fi
+    log_success "Code analysis passed"
+
+    # 3. 快速测试 - 在每个模块目录中运行
+    log_info "Step 3/4: Running quick tests..."
+    test_failed=0
+
+    for module_dir in $go_modules; do
+        if ! run_in_dir "$module_dir" "go test -short -race -timeout=30s ./..." "quick tests"; then
+            test_failed=1
+        fi
+    done
+
+    if [ $test_failed -eq 1 ]; then
+        log_error "Tests failed. Please fix the failing tests."
+        exit 1
+    fi
+    log_success "Quick tests passed"
+
+    # 4. 安全扫描 - 在每个模块目录中运行
+    log_info "Step 4/4: Running security scan with gosec..."
+    security_failed=0
+
+    for module_dir in $go_modules; do
+        config_file=""
+
+        # 检查模块级配置文件
+        if [ -f "$module_dir/.gosec.json" ]; then
+            config_file="-conf .gosec.json"
+        # 检查根目录配置文件
+        elif [ -f "$project_root/.gosec.json" ]; then
+            config_file="-conf $project_root/.gosec.json"
+        fi
+
+        if ! run_in_dir "$module_dir" "gosec $config_file -quiet ./..." "security scan"; then
+            security_failed=1
+        fi
+    done
+
+    if [ $security_failed -eq 1 ]; then
+        log_error "Security issues found. Please review and fix the security vulnerabilities."
+        exit 1
+    fi
+    log_success "Security scan passed"
+
+    # 所有检查通过
+    log_success "All pre-commit checks passed! ✨"
+    log_info "Commit is ready to proceed."
+}
+
+# 错误处理
+trap 'log_error "Pre-commit hook failed. Commit aborted."; exit 1' ERR
+
+# 执行主函数
+main "$@"
