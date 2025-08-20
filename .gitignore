@@ -4,5 +4,6 @@
 ### Mac OS ###
 .DS_Store
 
+.git/
 
 .*.drawio.bkp

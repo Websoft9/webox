@@ -29,9 +29,9 @@ func RequestValidator(log logger.Logger) gin.HandlerFunc {
 	return gin.HandlerFunc(func(c *gin.Context) {
 		// 可以在这里添加通用的请求验证逻辑
 		// 比如检查Content-Type、请求大小限制等
-		
+
 		c.Next()
-		
+
 		// 请求处理完成后的清理工作
 	})
 }
