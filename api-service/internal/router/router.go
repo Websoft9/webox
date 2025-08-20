@@ -36,8 +36,15 @@ func SetupRouter(services *service.Services, cfg *config.Config) *gin.Engine {
 		{
 			// 用户相关路由
 			users := protected.Group("/users")
-			users.GET("/profile", userController.GetProfile)
-			users.GET("/", userController.ListUsers)
+			{
+				users.GET("/profile", userController.GetProfile)          // 获取当前用户信息
+				users.GET("/", userController.ListUsers)                  // GET /api/v1/users - 用户列表查询（支持分页、搜索、筛选）
+				users.GET("/:id", userController.GetUserByID)             // GET /api/v1/users/{id} - 用户详情查询
+				users.POST("/", userController.CreateUser)                // POST /api/v1/users - 用户创建
+				users.PUT("/:id", userController.UpdateUser)              // PUT /api/v1/users/{id} - 用户更新
+				users.DELETE("/:id", userController.DeleteUser)           // DELETE /api/v1/users/{id} - 用户删除
+				users.PUT("/:id/password", userController.ChangePassword) // PUT /api/v1/users/{id}/password - 密码修改
+			}
 
 			// 应用相关路由
 			applications := protected.Group("/applications")
