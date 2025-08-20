@@ -16,7 +16,7 @@ type UserRepository interface {
 	Update(user *model.User) error
 	Delete(id uint) error
 	List(offset, limit int) ([]*model.User, int64, error)
-	
+
 	// 新增方法
 	GetByIDWithRoles(id uint) (*model.User, error)
 	ListWithConditions(offset, limit int, conditions map[string]interface{}, sort, order string) ([]*model.User, int64, error)
@@ -101,7 +101,7 @@ func (r *userRepository) ListWithConditions(offset, limit int, conditions map[st
 
 	// 构建查询条件
 	if keyword, ok := conditions["keyword"].(string); ok && keyword != "" {
-		query = query.Where("username LIKE ? OR email LIKE ? OR nickname LIKE ? OR phone LIKE ?", 
+		query = query.Where("username LIKE ? OR email LIKE ? OR nickname LIKE ? OR phone LIKE ?",
 			"%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%")
 	}
 

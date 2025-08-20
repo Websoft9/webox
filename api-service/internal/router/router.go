@@ -37,11 +37,11 @@ func SetupRouter(services *service.Services, cfg *config.Config) *gin.Engine {
 			// 用户相关路由
 			users := protected.Group("/users")
 			users.GET("/profile", userController.GetProfile)
-			users.GET("/", userController.ListUsers)        // 获取用户列表
-			users.POST("/", userController.CreateUser)      // 创建用户
-			users.GET("/:id", userController.GetUser)       // 获取用户详情
-			users.PUT("/:id", userController.UpdateUser)    // 更新用户
-			users.DELETE("/:id", userController.DeleteUser) // 删除用户
+			users.GET("/", userController.ListUsers)                  // 获取用户列表
+			users.POST("/", userController.CreateUser)                // 创建用户
+			users.GET("/:id", userController.GetUser)                 // 获取用户详情
+			users.PUT("/:id", userController.UpdateUser)              // 更新用户
+			users.DELETE("/:id", userController.DeleteUser)           // 删除用户
 			users.PUT("/:id/password", userController.ChangePassword) // 修改密码
 
 			// 应用相关路由
