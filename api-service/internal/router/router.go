@@ -4,73 +4,86 @@ import (
 	"api-service/internal/config"
 	"api-service/internal/controller"
 	"api-service/internal/middleware"
-	"api-service/internal/service"
+	"api-service/pkg/logger"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRouter(services *service.Services, cfg *config.Config) *gin.Engine {
-	r := gin.Default()
+// Controllers 控制器集合
+type Controllers struct {
+	UserController *controller.UserController
+	// 可以添加更多控制器
+	// AppController  *controller.ApplicationController
+}
 
-	// 中间件
+// SetupRouter 设置路由
+func SetupRouter(controllers *Controllers, cfg *config.Config, log logger.Logger) *gin.Engine {
+	// 设置Gin模式
+	gin.SetMode(cfg.Server.Mode)
+	
+	r := gin.New()
+
+	// 全局中间件
+	r.Use(middleware.LoggerMiddleware(log))
 	r.Use(middleware.CORS())
-	r.Use(middleware.Logger())
-	r.Use(middleware.Recovery())
+	r.Use(middleware.ErrorHandler(log))
+	r.Use(middleware.RequestValidator(log))
 
-	// 初始化控制器
-	userController := controller.NewUserController(services.UserService)
-	appController := controller.NewApplicationController(services.ApplicationService)
+	// 健康检查
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status":  "ok",
+			"message": "API服务运行正常",
+		})
+	})
 
-	// API路由组
-	api := r.Group("/api/v1")
+	// API版本1路由组
+	v1 := r.Group("/api/v1")
 	{
-		// 认证相关路由
-		auth := api.Group("/auth")
-		auth.POST("/register", userController.Register)
-		auth.POST("/login", userController.Login)
+		// 认证相关路由（无需JWT验证）
+		auth := v1.Group("/auth")
+		{
+			auth.POST("/register", controllers.UserController.Register)
+			auth.POST("/login", controllers.UserController.Login)
+		}
 
-		// 需要认证的路由
-		protected := api.Group("/")
+		// 需要JWT认证的路由
+		protected := v1.Group("/")
 		protected.Use(middleware.JWTAuth(cfg))
 		{
 			// 用户相关路由
 			users := protected.Group("/users")
-			users.GET("/profile", userController.GetProfile)
-			users.GET("/", userController.ListUsers)
+			{
+				// 当前用户操作
+				users.GET("/profile", controllers.UserController.GetProfile)
+				users.PUT("/profile", controllers.UserController.UpdateProfile)
+				users.PUT("/password", controllers.UserController.ChangePassword)
 
-			// 应用相关路由
-			applications := protected.Group("/applications")
-			applications.POST("/", appController.CreateApplication)
-			applications.GET("/", appController.ListApplications)
-			applications.GET("/:id", appController.GetApplication)
-			applications.POST("/:id/deploy", appController.DeployApplication)
-			applications.POST("/:id/stop", appController.StopApplication)
-			applications.POST("/:id/restart", appController.RestartApplication)
+				// 用户管理操作（需要管理员权限）
+				users.GET("", controllers.UserController.ListUsers)           // 获取用户列表
+				users.GET("/:id", controllers.UserController.GetUser)         // 获取单个用户
+				users.PUT("/:id/status", controllers.UserController.UpdateUserStatus) // 更新用户状态
+				users.DELETE("/:id", controllers.UserController.DeleteUser)   // 删除用户
+			}
 
-			// 监控相关路由
-			monitoring := protected.Group("/monitoring")
-			monitoring.GET("/servers/:id/metrics", func(c *gin.Context) {
-				// TODO: 实现服务器监控数据获取
-			})
-			monitoring.GET("/applications/:id/metrics", func(c *gin.Context) {
-				// TODO: 实现应用监控数据获取
-			})
-
-			// 网关相关路由
-			gateway := protected.Group("/gateway")
-			gateway.GET("/", func(c *gin.Context) {
-				// TODO: 实现网关列表获取
-			})
-			gateway.POST("/", func(c *gin.Context) {
-				// TODO: 实现网关创建
-			})
+			// 可以在这里添加更多受保护的路由
+			// applications := protected.Group("/applications")
+			// {
+			//     applications.POST("/", controllers.AppController.CreateApplication)
+			//     applications.GET("/", controllers.AppController.ListApplications)
+			//     applications.GET("/:id", controllers.AppController.GetApplication)
+			// }
 		}
 	}
 
-	// 健康检查
-	r.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	// 404处理
+	r.NoRoute(func(c *gin.Context) {
+		c.JSON(http.StatusNotFound, gin.H{
+			"code":    http.StatusNotFound,
+			"message": "接口不存在",
+			"path":    c.Request.URL.Path,
+		})
 	})
 
 	return r
