@@ -25,19 +25,22 @@ func SetupRouter(services *service.Services, cfg *config.Config) *gin.Engine {
 	// API路由组
 	api := r.Group("/api/v1")
 	{
-		// 认证相关路由
-		auth := api.Group("/auth")
-		auth.POST("/register", userController.Register)
-		auth.POST("/login", userController.Login)
-
 		// 需要认证的路由
 		protected := api.Group("/")
 		protected.Use(middleware.JWTAuth(cfg))
 		{
-			// 用户相关路由
+			// 用户相关路由 - 按照API设计说明书配置（暂时不添加权限控制）
 			users := protected.Group("/users")
-			users.GET("/profile", userController.GetProfile)
-			users.GET("/", userController.ListUsers)
+			users.GET("/profile", userController.GetProfile)            // 用户资料（保持兼容性）
+			users.GET("/", userController.GetUsers)                      // GET /api/v1/users - 用户列表查询
+			users.GET("/:id", userController.GetUserDetail)             // GET /api/v1/users/{id} - 用户详情查询
+			users.POST("/", userController.CreateUser)                  // POST /api/v1/users - 用户创建
+			users.PUT("/:id", userController.UpdateUser)                // PUT /api/v1/users/{id} - 用户更新
+			users.DELETE("/:id", userController.DeleteUser)             // DELETE /api/v1/users/{id} - 用户删除
+			users.PUT("/:id/password", userController.ChangePassword)   // PUT /api/v1/users/{id}/password - 密码修改
+
+			// 旧版用户列表路由（保持向后兼容性）
+			protected.GET("/users_old", userController.ListUsers)
 
 			// 应用相关路由
 			applications := protected.Group("/applications")
