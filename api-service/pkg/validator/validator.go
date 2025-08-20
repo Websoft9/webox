@@ -161,7 +161,7 @@ func ValidateUserStatus(currentStatus, newStatus string) error {
 	}
 
 	validStatuses := []string{"active", "inactive", "banned"}
-	
+
 	// 检查新状态是否有效
 	isValidStatus := false
 	for _, status := range validStatuses {
@@ -170,7 +170,7 @@ func ValidateUserStatus(currentStatus, newStatus string) error {
 			break
 		}
 	}
-	
+
 	if !isValidStatus {
 		return errors.NewAppError(errors.CodeValidationError, "无效的用户状态")
 	}
