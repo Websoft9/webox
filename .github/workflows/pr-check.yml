@@ -7,7 +7,7 @@ on:
 
 # 添加必要的权限
 permissions:
-  contents: read
+  contents: write # 需要写权限来删除分支
   pull-requests: write
   issues: write
   checks: write
@@ -542,6 +542,7 @@ jobs:
 
               let summary = '## 📊 PR 检查结果汇总\n\n';
               let allPassed = true;
+              let failedJobs = [];
 
               const jobs = [
                 { name: '提交消息检查', key: 'commit-message-check' },
@@ -558,6 +559,7 @@ jobs:
                 if (result === 'failure') {
                   icon = '❌';
                   allPassed = false;
+                  failedJobs.push(job.name);
                 } else if (result === 'cancelled') {
                   icon = '⏹️';
                 } else if (result === 'skipped') {
@@ -572,7 +574,28 @@ jobs:
               if (allPassed) {
                 summary += '🎉 **所有检查通过！** 此 PR 可以合并。';
               } else {
-                summary += '⚠️ **部分检查失败** 请修复失败的检查项后重新提交。';
+                summary += '⚠️ **部分检查失败** 请修复失败的检查项后重新提交。\n\n';
+                summary += '### 🔧 修复建议\n\n';
+
+                if (failedJobs.includes('提交消息检查')) {
+                  summary += '- **提交消息格式**: 请使用 Conventional Commits 格式，如 `feat(auth): add login functionality`\n';
+                }
+                if (failedJobs.includes('代码格式检查')) {
+                  summary += '- **代码格式**: 运行 `gofmt -w .` 和 `golangci-lint run` 修复格式问题\n';
+                }
+                if (failedJobs.includes('单元测试')) {
+                  summary += '- **单元测试**: 修复失败的测试用例，确保测试覆盖率达到要求\n';
+                }
+                if (failedJobs.includes('构建检查')) {
+                  summary += '- **构建问题**: 检查编译错误和依赖问题\n';
+                }
+                if (failedJobs.includes('安全扫描')) {
+                  summary += '- **安全问题**: 修复 Gosec 扫描发现的安全漏洞\n';
+                }
+
+                summary += '\n---\n\n';
+                summary += '💡 **提示**: 如果需要帮助，请查看 [开发规范文档](../docs/开发规范.md) 或联系团队成员。\n\n';
+                summary += '⚠️ **注意**: 连续多次检查失败可能会导致此 PR 被自动关闭，请及时修复问题。';
               }
 
               // 查找现有的汇总评论
@@ -605,6 +628,11 @@ jobs:
                 });
                 console.log('✅ PR 检查汇总评论已创建');
               }
+
+              // 设置输出变量供后续步骤使用
+              core.setOutput('all_passed', allPassed);
+              core.setOutput('failed_jobs', failedJobs.join(','));
+
             } catch (error) {
               console.log('⚠️ 无法创建或更新 PR 检查汇总评论:', error.message);
               console.log('检查结果仍会在工作流日志中显示');
@@ -621,8 +649,206 @@ jobs:
                 { name: '安全扫描', key: 'security-scan' }
               ];
 
+              let allPassed = true;
               for (const job of jobs) {
                 const result = needs[job.key]?.result || 'skipped';
                 console.log(`${job.name}: ${result}`);
+                if (result === 'failure') {
+                  allPassed = false;
+                }
               }
+
+              // 设置输出变量
+              core.setOutput('all_passed', allPassed);
+            }
+
+      - name: Handle failed PR checks
+        if: always()
+        uses: actions/github-script@v7
+        continue-on-error: true
+        with:
+          script: |
+            try {
+              const needs = ${{ toJSON(needs) }};
+
+              // 检查是否有失败的作业
+              let hasFailures = false;
+              const jobs = ['commit-message-check', 'code-format-check', 'unit-tests', 'build-check', 'security-scan'];
+
+              for (const job of jobs) {
+                if (needs[job]?.result === 'failure') {
+                  hasFailures = true;
+                  break;
+                }
+              }
+
+              if (!hasFailures) {
+                console.log('✅ 所有检查通过，无需处理失败情况');
+                return;
+              }
+
+              console.log('⚠️ 检测到检查失败，开始处理...');
+
+              // 获取 PR 信息
+              const { data: pr } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.issue.number,
+              });
+
+              const branchName = pr.head.ref;
+              const prAuthor = pr.user.login;
+              const prTitle = pr.title;
+
+              // 检查是否是 fork 的 PR（不能删除 fork 仓库的分支）
+              const isFork = pr.head.repo.full_name !== pr.base.repo.full_name;
+
+              console.log(`PR 信息: 分支=${branchName}, 作者=${prAuthor}, 标题=${prTitle}, 是否Fork=${isFork}`);
+
+              // 获取 PR 的历史检查失败次数
+              const { data: comments } = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+              });
+
+              // 计算失败次数（通过查找包含"检查失败"的评论）
+              const failureComments = comments.filter(comment =>
+                comment.body.includes('⚠️ **部分检查失败**') ||
+                comment.body.includes('🚨 PR 检查连续失败警告')
+              );
+
+              const failureCount = failureComments.length;
+              const maxFailures = 1; // 最大允许失败次数
+
+              console.log(`当前失败次数: ${failureCount}/${maxFailures}`);
+
+              if (failureCount >= maxFailures) {
+                // 达到最大失败次数，发送最终警告并准备关闭 PR
+                const finalWarning = `## 🚨 PR 自动关闭通知
+
+              @${prAuthor} 您好，
+
+              此 PR 已连续 **${failureCount}** 次检查失败，根据项目规范将被自动关闭。
+
+              ### 📋 失败原因汇总
+              请查看上方的检查结果，修复所有失败项后重新创建 PR。
+
+              ### 🔄 后续操作建议
+              1. 在本地修复所有检查失败的问题
+              2. 确保代码符合项目规范
+              3. 运行本地测试确保通过
+              4. 重新创建 PR
+
+              ### 📚 参考资源
+              - [开发规范文档](../docs/开发规范.md)
+              - [Git 工作流规范](../docs/开发规范.md)
+              - [代码质量标准](../docs/开发规范.md)
+
+              ---
+
+              **此 PR 将在 5 分钟后自动关闭。** 如有疑问，请联系项目维护者。
+              `;
+
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body: finalWarning
+                });
+
+                // 添加标签
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  labels: ['auto-close', 'checks-failed']
+                });
+
+                // 等待 5 分钟后关闭 PR
+                console.log('⏰ 等待 5 分钟后关闭 PR...');
+                await new Promise(resolve => setTimeout(resolve, 5 * 60 * 1000)); // 5 分钟
+
+                // 关闭 PR
+                await github.rest.pulls.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: context.issue.number,
+                  state: 'closed'
+                });
+
+                console.log('🔒 PR 已自动关闭');
+
+                // 如果不是 fork，尝试删除分支
+                if (!isFork && branchName !== 'main' && branchName !== 'develop') {
+                  try {
+                    await github.rest.git.deleteRef({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      ref: `heads/${branchName}`
+                    });
+                    console.log(`🗑️ 分支 ${branchName} 已自动删除`);
+
+                    // 添加删除分支的评论
+                    await github.rest.issues.createComment({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      issue_number: context.issue.number,
+                      body: `🗑️ **分支已删除**: \`${branchName}\` 分支已自动删除。`
+                    });
+                  } catch (deleteError) {
+                    console.log(`⚠️ 无法删除分支 ${branchName}:`, deleteError.message);
+                  }
+                } else {
+                  const reason = isFork ? 'Fork 仓库分支' : '受保护的分支';
+                  console.log(`⏭️ 跳过删除分支: ${reason}`);
+                }
+
+              } else if (failureCount >= Math.floor(maxFailures / 2)) {
+                // 达到一半失败次数，发送警告
+                const warningMessage = `## ⚠️ PR 检查失败警告
+
+              @${prAuthor} 您好，
+
+              此 PR 已连续 **${failureCount}** 次检查失败。为了保持代码质量，请尽快修复以下问题：
+
+              ### 🔧 需要修复的问题
+              请查看上方的详细检查结果和修复建议。
+
+              ### ⏰ 重要提醒
+              - 最多允许连续失败 **${maxFailures}** 次
+              - 超过限制后 PR 将被自动关闭
+              - 剩余机会：**${maxFailures - failureCount}** 次
+
+              ### 💡 建议
+              1. 仔细阅读检查失败的详细信息
+              2. 在本地环境修复所有问题
+              3. 确保本地测试通过后再推送
+
+              感谢您的理解与配合！
+              `;
+
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body: warningMessage
+                });
+
+                // 添加警告标签
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  labels: ['checks-failed', 'needs-fix']
+                });
+
+                console.log(`⚠️ 已发送第 ${failureCount} 次失败警告`);
+              } else {
+                console.log(`📝 记录第 ${failureCount} 次检查失败`);
+              }
+
+            } catch (error) {
+              console.log('⚠️ 处理失败 PR 检查时出错:', error.message);
+              console.log('错误详情:', error);
             }
