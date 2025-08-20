@@ -161,12 +161,12 @@ func (c *UserController) ListUsers(ctx *gin.Context) {
 	// 构建分页响应
 	paginationResp := &struct {
 		*request.UserListRequest
-		Total int64                     `json:"total"`
+		Total int64                      `json:"total"`
 		Users *response.UserListResponse `json:"users"`
 	}{
 		UserListRequest: &req,
-		Total:          total,
-		Users:          users,
+		Total:           total,
+		Users:           users,
 	}
 
 	pkg_response.Success(ctx, "获取用户列表成功", paginationResp)

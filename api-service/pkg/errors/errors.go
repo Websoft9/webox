@@ -7,10 +7,10 @@ import (
 
 // AppError 应用程序自定义错误类型
 type AppError struct {
-	Code       int    `json:"code"`       // 业务错误码
-	Message    string `json:"message"`    // 错误消息
-	Details    string `json:"details"`    // 详细信息
-	HTTPStatus int    `json:"-"`          // HTTP状态码
+	Code       int    `json:"code"`    // 业务错误码
+	Message    string `json:"message"` // 错误消息
+	Details    string `json:"details"` // 详细信息
+	HTTPStatus int    `json:"-"`       // HTTP状态码
 }
 
 // Error 实现error接口
@@ -108,14 +108,14 @@ var (
 	ErrValidationError = NewAppError(CodeValidationError, CodeMessages[CodeValidationError])
 
 	// 用户相关错误
-	ErrUserNotFound         = NewAppError(CodeUserNotFound, CodeMessages[CodeUserNotFound])
-	ErrUserAlreadyExists    = NewAppError(CodeUserAlreadyExists, CodeMessages[CodeUserAlreadyExists])
-	ErrInvalidCredentials   = NewAppError(CodeInvalidCredentials, CodeMessages[CodeInvalidCredentials])
-	ErrUserInactive         = NewAppError(CodeUserInactive, CodeMessages[CodeUserInactive])
-	ErrInvalidPassword      = NewAppError(CodeInvalidPassword, CodeMessages[CodeInvalidPassword])
-	ErrPasswordTooWeak      = NewAppError(CodePasswordTooWeak, CodeMessages[CodePasswordTooWeak])
-	ErrEmailAlreadyExists   = NewAppError(CodeEmailAlreadyExists, CodeMessages[CodeEmailAlreadyExists])
-	ErrInvalidEmail         = NewAppError(CodeInvalidEmail, CodeMessages[CodeInvalidEmail])
-	ErrUsernameReserved     = NewAppError(CodeUsernameReserved, CodeMessages[CodeUsernameReserved])
-	ErrUserQuotaExceeded    = NewAppError(CodeUserQuotaExceeded, CodeMessages[CodeUserQuotaExceeded])
+	ErrUserNotFound       = NewAppError(CodeUserNotFound, CodeMessages[CodeUserNotFound])
+	ErrUserAlreadyExists  = NewAppError(CodeUserAlreadyExists, CodeMessages[CodeUserAlreadyExists])
+	ErrInvalidCredentials = NewAppError(CodeInvalidCredentials, CodeMessages[CodeInvalidCredentials])
+	ErrUserInactive       = NewAppError(CodeUserInactive, CodeMessages[CodeUserInactive])
+	ErrInvalidPassword    = NewAppError(CodeInvalidPassword, CodeMessages[CodeInvalidPassword])
+	ErrPasswordTooWeak    = NewAppError(CodePasswordTooWeak, CodeMessages[CodePasswordTooWeak])
+	ErrEmailAlreadyExists = NewAppError(CodeEmailAlreadyExists, CodeMessages[CodeEmailAlreadyExists])
+	ErrInvalidEmail       = NewAppError(CodeInvalidEmail, CodeMessages[CodeInvalidEmail])
+	ErrUsernameReserved   = NewAppError(CodeUsernameReserved, CodeMessages[CodeUsernameReserved])
+	ErrUserQuotaExceeded  = NewAppError(CodeUserQuotaExceeded, CodeMessages[CodeUserQuotaExceeded])
 )

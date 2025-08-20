@@ -51,7 +51,7 @@ func NewZapLogger(level Level, output io.Writer) Logger {
 	if output == nil {
 		output = os.Stdout
 	}
-	
+
 	core := zapcore.NewCore(
 		zapcore.NewJSONEncoder(encoderConfig),
 		zapcore.AddSync(output),
@@ -60,7 +60,7 @@ func NewZapLogger(level Level, output io.Writer) Logger {
 
 	// 创建logger
 	logger := zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
-	
+
 	return &ZapLogger{
 		logger: logger,
 		sugar:  logger.Sugar(),
@@ -158,15 +158,15 @@ func (z *ZapLogger) convertFields(fields ...Field) []zap.Field {
 // extractContextFields 从上下文中提取字段
 func (z *ZapLogger) extractContextFields(ctx context.Context) []Field {
 	var fields []Field
-	
+
 	// 可以从上下文中提取请求ID、用户ID等信息
 	if requestID := ctx.Value("request_id"); requestID != nil {
 		fields = append(fields, String("request_id", requestID.(string)))
 	}
-	
+
 	if userID := ctx.Value("user_id"); userID != nil {
 		fields = append(fields, Any("user_id", userID))
 	}
-	
+
 	return fields
 }

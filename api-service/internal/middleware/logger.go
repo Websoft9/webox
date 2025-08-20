@@ -11,13 +11,13 @@ import (
 func LoggerMiddleware(log logger.Logger) gin.HandlerFunc {
 	return gin.HandlerFunc(func(c *gin.Context) {
 		startTime := time.Now()
-		
+
 		// 处理请求
 		c.Next()
-		
+
 		// 计算处理时间
 		duration := time.Since(startTime)
-		
+
 		// 记录请求日志
 		log.InfoContext(c, "HTTP请求",
 			logger.String("method", c.Request.Method),

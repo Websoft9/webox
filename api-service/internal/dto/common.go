@@ -2,7 +2,7 @@ package dto
 
 // PaginationRequest 分页请求结构
 type PaginationRequest struct {
-	Page     int `form:"page" json:"page" binding:"omitempty,min=1"`         // 页码，从1开始
+	Page     int `form:"page" json:"page" binding:"omitempty,min=1"`                   // 页码，从1开始
 	PageSize int `form:"page_size" json:"page_size" binding:"omitempty,min=1,max=100"` // 每页数量，最大100
 }
 
@@ -52,8 +52,8 @@ func NewPaginationResponse(page, pageSize int, total int64, data interface{}) *P
 
 // SortRequest 排序请求结构
 type SortRequest struct {
-	Field string `form:"sort_field" json:"sort_field"`     // 排序字段
-	Order string `form:"sort_order" json:"sort_order"`     // 排序方向: asc, desc
+	Field string `form:"sort_field" json:"sort_field"` // 排序字段
+	Order string `form:"sort_order" json:"sort_order"` // 排序方向: asc, desc
 }
 
 // GetSortOrder 获取排序SQL片段
@@ -61,12 +61,12 @@ func (s *SortRequest) GetSortOrder() string {
 	if s.Field == "" {
 		return "id desc" // 默认按ID降序
 	}
-	
+
 	order := "asc"
 	if s.Order == "desc" {
 		order = "desc"
 	}
-	
+
 	return s.Field + " " + order
 }
 

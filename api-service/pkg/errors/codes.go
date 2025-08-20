@@ -12,22 +12,22 @@ const (
 	CodeValidationError = 10006
 
 	// 用户相关错误码 (20000-29999)
-	CodeUserNotFound         = 20001
-	CodeUserAlreadyExists    = 20002
-	CodeInvalidCredentials   = 20003
-	CodeUserInactive         = 20004
-	CodeInvalidPassword      = 20005
-	CodePasswordTooWeak      = 20006
-	CodeEmailAlreadyExists   = 20007
-	CodeInvalidEmail         = 20008
-	CodeUsernameReserved     = 20009
-	CodeUserQuotaExceeded    = 20010
+	CodeUserNotFound       = 20001
+	CodeUserAlreadyExists  = 20002
+	CodeInvalidCredentials = 20003
+	CodeUserInactive       = 20004
+	CodeInvalidPassword    = 20005
+	CodePasswordTooWeak    = 20006
+	CodeEmailAlreadyExists = 20007
+	CodeInvalidEmail       = 20008
+	CodeUsernameReserved   = 20009
+	CodeUserQuotaExceeded  = 20010
 
 	// 应用相关错误码 (30000-39999)
-	CodeAppNotFound          = 30001
-	CodeAppAlreadyExists     = 30002
-	CodeAppDeployFailed      = 30003
-	CodeAppPortConflict      = 30004
+	CodeAppNotFound              = 30001
+	CodeAppAlreadyExists         = 30002
+	CodeAppDeployFailed          = 30003
+	CodeAppPortConflict          = 30004
 	CodeAppResourcesInsufficient = 30005
 )
 
@@ -42,16 +42,16 @@ var CodeMessages = map[int]string{
 	CodeValidationError: "数据验证失败",
 
 	// 用户相关
-	CodeUserNotFound:         "用户不存在",
-	CodeUserAlreadyExists:    "用户名已存在",
-	CodeInvalidCredentials:   "用户名或密码错误",
-	CodeUserInactive:         "用户账号未激活",
-	CodeInvalidPassword:      "密码错误",
-	CodePasswordTooWeak:      "密码强度不足",
-	CodeEmailAlreadyExists:   "邮箱已存在",
-	CodeInvalidEmail:         "邮箱格式无效",
-	CodeUsernameReserved:     "用户名为系统保留字",
-	CodeUserQuotaExceeded:    "用户配额已超限",
+	CodeUserNotFound:       "用户不存在",
+	CodeUserAlreadyExists:  "用户名已存在",
+	CodeInvalidCredentials: "用户名或密码错误",
+	CodeUserInactive:       "用户账号未激活",
+	CodeInvalidPassword:    "密码错误",
+	CodePasswordTooWeak:    "密码强度不足",
+	CodeEmailAlreadyExists: "邮箱已存在",
+	CodeInvalidEmail:       "邮箱格式无效",
+	CodeUsernameReserved:   "用户名为系统保留字",
+	CodeUserQuotaExceeded:  "用户配额已超限",
 
 	// 应用相关
 	CodeAppNotFound:              "应用不存在",
