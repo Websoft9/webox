@@ -2,14 +2,14 @@ package main
 
 import (
 	"api-service/internal/config"
-	"api-service/pkg/utils"
+	"api-service/internal/controller"
 	"api-service/internal/model"
 	"api-service/internal/repository"
-	"api-service/internal/service"
-	"api-service/internal/controller"
 	"api-service/internal/router"
+	"api-service/internal/service"
 	"api-service/pkg/auth"
 	"api-service/pkg/logger"
+	"api-service/pkg/utils"
 	"log"
 )
 

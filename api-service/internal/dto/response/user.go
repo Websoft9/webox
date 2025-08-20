@@ -26,10 +26,10 @@ type UserLoginResponse struct {
 // UserProfileResponse 用户资料响应（包含更多详细信息）
 type UserProfileResponse struct {
 	UserResponse
-	LastLoginAt    *time.Time `json:"last_login_at,omitempty" example:"2023-01-01T12:00:00Z"`
-	LoginCount     int        `json:"login_count" example:"10"`
-	ApplicationCount int      `json:"application_count" example:"5"`
-	WorkflowCount    int      `json:"workflow_count" example:"3"`
+	LastLoginAt      *time.Time `json:"last_login_at,omitempty" example:"2023-01-01T12:00:00Z"`
+	LoginCount       int        `json:"login_count" example:"10"`
+	ApplicationCount int        `json:"application_count" example:"5"`
+	WorkflowCount    int        `json:"workflow_count" example:"3"`
 }
 
 // UserListResponse 用户列表响应

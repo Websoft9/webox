@@ -21,7 +21,7 @@ type Controllers struct {
 func SetupRouter(controllers *Controllers, cfg *config.Config, log logger.Logger) *gin.Engine {
 	// 设置Gin模式
 	gin.SetMode(cfg.Server.Mode)
-	
+
 	r := gin.New()
 
 	// 全局中间件
@@ -61,10 +61,10 @@ func SetupRouter(controllers *Controllers, cfg *config.Config, log logger.Logger
 				users.PUT("/password", controllers.UserController.ChangePassword)
 
 				// 用户管理操作（需要管理员权限）
-				users.GET("", controllers.UserController.ListUsers)           // 获取用户列表
-				users.GET("/:id", controllers.UserController.GetUser)         // 获取单个用户
+				users.GET("", controllers.UserController.ListUsers)                   // 获取用户列表
+				users.GET("/:id", controllers.UserController.GetUser)                 // 获取单个用户
 				users.PUT("/:id/status", controllers.UserController.UpdateUserStatus) // 更新用户状态
-				users.DELETE("/:id", controllers.UserController.DeleteUser)   // 删除用户
+				users.DELETE("/:id", controllers.UserController.DeleteUser)           // 删除用户
 			}
 
 			// 可以在这里添加更多受保护的路由

@@ -28,7 +28,7 @@ func NewJWTAuth(secretKey string, expireTime int) *JWTAuth {
 
 func (j *JWTAuth) GenerateToken(userID uint) (string, time.Time, error) {
 	expiresAt := time.Now().Add(time.Duration(j.expireTime) * time.Second)
-	
+
 	claims := Claims{
 		UserID:   userID,
 		Username: "", // 可以从数据库查询或者从参数传入
@@ -45,14 +45,14 @@ func (j *JWTAuth) GenerateToken(userID uint) (string, time.Time, error) {
 	if err != nil {
 		return "", time.Time{}, err
 	}
-	
+
 	return tokenString, expiresAt, nil
 }
 
 // GenerateTokenWithUserInfo 生成包含用户信息的Token
 func (j *JWTAuth) GenerateTokenWithUserInfo(userID uint, username, role string) (string, time.Time, error) {
 	expiresAt := time.Now().Add(time.Duration(j.expireTime) * time.Second)
-	
+
 	claims := Claims{
 		UserID:   userID,
 		Username: username,
@@ -69,7 +69,7 @@ func (j *JWTAuth) GenerateTokenWithUserInfo(userID uint, username, role string) 
 	if err != nil {
 		return "", time.Time{}, err
 	}
-	
+
 	return tokenString, expiresAt, nil
 }
 
