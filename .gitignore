@@ -4,5 +4,11 @@
 ### Mac OS ###
 .DS_Store
 
+# Build artifacts
+api-service/api-service
+websoft9-agent/build/
+
+# Configuration backups
+*.backup
 
 .*.drawio.bkp

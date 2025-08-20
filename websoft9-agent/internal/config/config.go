@@ -16,6 +16,7 @@ type Config struct {
 	Redis  RedisConfig  `yaml:"redis"`
 	Log    LogConfig    `yaml:"log"`
 	Agent  AgentConfig  `yaml:"agent"`
+	MCP    MCPConfig    `yaml:"mcp"`
 }
 
 // ServerConfig 服务端配置
@@ -45,6 +46,37 @@ type AgentConfig struct {
 	HeartbeatInterval int    `yaml:"heartbeat_interval"`
 	MonitorInterval   int    `yaml:"monitor_interval"`
 	WorkDir           string `yaml:"work_dir"`
+}
+
+// MCPConfig MCP 配置
+type MCPConfig struct {
+	Enabled     bool                   `yaml:"enabled"`
+	ConfigPath  string                 `yaml:"config_path"`
+	Servers     map[string]MCPServer   `yaml:"servers"`
+	GlobalConfig MCPGlobalConfig       `yaml:"config"`
+}
+
+// MCPServer MCP 服务器配置
+type MCPServer struct {
+	Type        string            `yaml:"type"`
+	Command     string            `yaml:"command"`
+	Args        []string          `yaml:"args"`
+	Env         map[string]string `yaml:"env"`
+	WorkingDir  string            `yaml:"working_dir"`
+	Enabled     bool              `yaml:"enabled"`
+	Description string            `yaml:"description"`
+	AutoInstall bool              `yaml:"auto_install"`
+}
+
+// MCPGlobalConfig MCP 全局配置
+type MCPGlobalConfig struct {
+	LogLevel       string `yaml:"log_level"`
+	Timeout        int    `yaml:"timeout"`
+	RetryAttempts  int    `yaml:"retry_attempts"`
+	RetryDelay     int    `yaml:"retry_delay"`
+	AutoGenerate   bool   `yaml:"auto_generate"`
+	NodeOptions    string `yaml:"node_options"`
+	PythonPath     string `yaml:"python_path"`
 }
 
 // Load 加载配置文件
@@ -111,6 +143,72 @@ func setDefaults(config *Config) {
 	}
 	if config.Agent.WorkDir == "" {
 		config.Agent.WorkDir = "/var/lib/websoft9/agent"
+	}
+
+	// MCP 默认值
+	if config.MCP.ConfigPath == "" {
+		config.MCP.ConfigPath = "./configs/mcp.json"
+	}
+	if config.MCP.GlobalConfig.LogLevel == "" {
+		config.MCP.GlobalConfig.LogLevel = "info"
+	}
+	if config.MCP.GlobalConfig.Timeout == 0 {
+		config.MCP.GlobalConfig.Timeout = 30
+	}
+	if config.MCP.GlobalConfig.RetryAttempts == 0 {
+		config.MCP.GlobalConfig.RetryAttempts = 3
+	}
+	if config.MCP.GlobalConfig.RetryDelay == 0 {
+		config.MCP.GlobalConfig.RetryDelay = 5
+	}
+	if config.MCP.GlobalConfig.NodeOptions == "" {
+		config.MCP.GlobalConfig.NodeOptions = "--max-old-space-size=2048"
+	}
+	if config.MCP.GlobalConfig.PythonPath == "" {
+		config.MCP.GlobalConfig.PythonPath = "python3"
+	}
+
+	// 设置默认 MCP 服务器
+	setDefaultMCPServers(config)
+}
+
+// setDefaultMCPServers 设置默认的 MCP 服务器配置
+func setDefaultMCPServers(config *Config) {
+	if config.MCP.Servers == nil {
+		config.MCP.Servers = make(map[string]MCPServer)
+	}
+
+	// 如果没有配置任何服务器，则设置默认服务器
+	if len(config.MCP.Servers) == 0 {
+		config.MCP.Servers["filesystem"] = MCPServer{
+			Type:        "stdio",
+			Command:     "npx",
+			Args:        []string{"-y", "@modelcontextprotocol/server-filesystem"},
+			Enabled:     true,
+			Description: "File system access for reading and writing files",
+			AutoInstall: true,
+			Env: map[string]string{
+				"NODE_OPTIONS": "--max-old-space-size=2048",
+			},
+		}
+
+		config.MCP.Servers["memory"] = MCPServer{
+			Type:        "stdio",
+			Command:     "npx",
+			Args:        []string{"-y", "@modelcontextprotocol/server-memory"},
+			Enabled:     true,
+			Description: "Persistent memory for storing information across conversations",
+			AutoInstall: true,
+		}
+
+		config.MCP.Servers["git"] = MCPServer{
+			Type:        "stdio",
+			Command:     "npx",
+			Args:        []string{"-y", "@modelcontextprotocol/server-git"},
+			Enabled:     true,
+			Description: "Git version control operations",
+			AutoInstall: true,
+		}
 	}
 }
 

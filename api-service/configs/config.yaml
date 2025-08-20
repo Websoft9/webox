@@ -23,3 +23,55 @@ jwt:
 
 grpc:
   port: "9090"
+
+# MCP (Model Context Protocol) Configuration
+mcp:
+  enabled: true
+  config:
+    log_level: "info"
+    timeout: 30
+    retry_attempts: 3
+    retry_delay: 5
+    config_path: "./configs/mcp.json"
+    auto_generate: true
+    node_options: "--max-old-space-size=2048"
+    python_path: "python3"
+  servers:
+    filesystem:
+      type: "stdio"
+      command: "npx"
+      args: ["-y", "@modelcontextprotocol/server-filesystem"]
+      enabled: true
+      description: "File system access for reading and writing files"
+      auto_install: true
+      env:
+        NODE_OPTIONS: "--max-old-space-size=2048"
+    memory:
+      type: "stdio"
+      command: "npx"
+      args: ["-y", "@modelcontextprotocol/server-memory"]
+      enabled: true
+      description: "Persistent memory for storing information across conversations"
+      auto_install: true
+    context7:
+      type: "stdio"
+      command: "npx"
+      args: ["-y", "@upstash/context7-mcp@latest"]
+      enabled: true
+      gallery: true
+      description: "Enhanced context management with Upstash integration"
+      auto_install: true
+    git:
+      type: "stdio"
+      command: "npx"
+      args: ["-y", "@modelcontextprotocol/server-git"]
+      enabled: true
+      description: "Git version control operations"
+      auto_install: true
+    database:
+      type: "stdio"
+      command: "npx"
+      args: ["-y", "@modelcontextprotocol/server-sqlite"]
+      enabled: true
+      description: "SQLite database operations"
+      auto_install: true

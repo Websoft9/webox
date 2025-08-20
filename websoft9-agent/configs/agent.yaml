@@ -24,3 +24,40 @@ agent:
   heartbeat_interval: 30  # 心跳间隔(秒)
   monitor_interval: 60    # 监控采集间隔(秒)
   work_dir: "/var/lib/websoft9/agent"
+
+# MCP (Model Context Protocol) 配置
+mcp:
+  enabled: true
+  config_path: "./configs/mcp.json"
+  config:
+    log_level: "info"
+    timeout: 30
+    retry_attempts: 3
+    retry_delay: 5
+    auto_generate: true
+    node_options: "--max-old-space-size=2048"
+    python_path: "python3"
+  servers:
+    filesystem:
+      type: "stdio"
+      command: "npx"
+      args: ["-y", "@modelcontextprotocol/server-filesystem"]
+      enabled: true
+      description: "File system access for reading and writing files"
+      auto_install: true
+      env:
+        NODE_OPTIONS: "--max-old-space-size=2048"
+    memory:
+      type: "stdio"
+      command: "npx"
+      args: ["-y", "@modelcontextprotocol/server-memory"]
+      enabled: true
+      description: "Persistent memory for storing information across conversations"
+      auto_install: true
+    git:
+      type: "stdio"
+      command: "npx"
+      args: ["-y", "@modelcontextprotocol/server-git"]
+      enabled: true
+      description: "Git version control operations"
+      auto_install: true
