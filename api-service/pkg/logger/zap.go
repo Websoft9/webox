@@ -2,8 +2,11 @@ package logger
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -14,6 +17,72 @@ const (
 	DefaultFilePermission = 0o666 // 默认文件权限
 	ContextFieldCapacity  = 4     // 上下文字段容量
 )
+
+// 允许的日志文件目录前缀（安全路径）
+var allowedLogPaths = []string{
+	"/var/log/",
+	"/tmp/",
+	"./logs/",
+	"./data/",
+}
+
+// createFileOutput 创建文件输出，处理安全验证和文件创建
+func createFileOutput(filename string) io.Writer {
+	if filename == "" {
+		return os.Stdout
+	}
+
+	// 验证文件路径安全性，防止路径遍历攻击
+	if err := validateFilePath(filename); err != nil {
+		// 如果路径不安全，回退到标准输出
+		return os.Stdout
+	}
+
+	// 这里可以扩展支持文件轮转等功能
+	flags := os.O_CREATE | os.O_WRONLY | os.O_APPEND
+	// #nosec G304 - 文件路径已通过 validateFilePath 函数验证安全性
+	if file, err := os.OpenFile(filename, flags, DefaultFilePermission); err == nil {
+		return file
+	}
+
+	// 如果文件创建失败，回退到标准输出
+	return os.Stdout
+}
+
+// validateFilePath 验证文件路径安全性，防止路径遍历攻击
+func validateFilePath(filename string) error {
+	// 清理路径
+	cleanPath := filepath.Clean(filename)
+
+	// 检查是否包含路径遍历字符
+	if strings.Contains(cleanPath, "..") {
+		return fmt.Errorf("path traversal detected in filename: %s", filename)
+	}
+
+	// 检查是否为绝对路径且在允许的目录中
+	if filepath.IsAbs(cleanPath) {
+		allowed := false
+		for _, allowedPath := range allowedLogPaths {
+			if strings.HasPrefix(cleanPath, allowedPath) {
+				allowed = true
+				break
+			}
+		}
+		if !allowed {
+			return fmt.Errorf("absolute path not in allowed directories: %s", filename)
+		}
+	}
+
+	// 检查相对路径是否安全
+	if !filepath.IsAbs(cleanPath) {
+		// 相对路径应该在当前目录或子目录中
+		if strings.HasPrefix(cleanPath, "/") || strings.HasPrefix(cleanPath, "\\") {
+			return fmt.Errorf("invalid relative path: %s", filename)
+		}
+	}
+
+	return nil
+}
 
 // ZapLogger Zap日志实现
 type ZapLogger struct {
@@ -92,13 +161,7 @@ func NewZapLoggerWithConfig(config *Config) Logger {
 	case "stdout", "":
 		output = os.Stdout
 	case "file":
-		if config.Filename != "" {
-			// 这里可以扩展支持文件轮转等功能
-			flags := os.O_CREATE | os.O_WRONLY | os.O_APPEND
-			if file, err := os.OpenFile(config.Filename, flags, DefaultFilePermission); err == nil {
-				output = file
-			}
-		}
+		output = createFileOutput(config.Filename)
 	}
 
 	return NewZapLogger(config.Level, output)
