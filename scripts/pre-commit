@@ -73,7 +73,7 @@ main() {
     log_info "Checking required tools..."
     check_tool "go" "Please install Go: https://golang.org/doc/install"
     check_tool "golangci-lint" "Please install golangci-lint: https://golangci-lint.run/usage/install/"
-    check_tool "gosec" "Please install gosec: go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest"
+    check_tool "gosec" "Please install gosec: go install github.com/securego/gosec/v2/cmd/gosec@latest"
 
     # 获取所有 Go 模块目录
     go_modules=$(get_go_modules)

@@ -298,7 +298,7 @@ jobs:
         working-directory: ${{ matrix.context }}
         run: |
           echo "安装 Gosec..."
-          go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
 
           echo "运行 Gosec 安全扫描..."
           # 使用 || true 确保即使发现安全问题也不会失败
