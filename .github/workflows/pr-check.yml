@@ -594,7 +594,7 @@ jobs:
                 }
 
                 summary += '\n---\n\n';
-                summary += '💡 **提示**: 如果需要帮助，请查看 [开发规范文档](../docs/开发规范.md) 或联系团队成员。\n\n';
+                summary += '💡 **提示**: 如果需要帮助，请查看 [开发规范文档](https://github.com/Websoft9/webox/blob/develop/docs/开发规范.md) 或联系团队成员。\n\n';
                 summary += '⚠️ **注意**: 连续多次检查失败可能会导致此 PR 被自动关闭，请及时修复问题。';
               }
 
@@ -741,13 +741,12 @@ jobs:
               4. 重新创建 PR
 
               ### 📚 参考资源
-              - [开发规范文档](../docs/开发规范.md)
-              - [Git 工作流规范](../docs/开发规范.md)
-              - [代码质量标准](../docs/开发规范.md)
+              - [开发规范文档](https://github.com/Websoft9/webox/blob/develop/docs/开发规范.md)
+              - [Git 工作流规范](https://github.com/Websoft9/webox/blob/develop/docs/开发规范.md#4-版本控制规范)
 
               ---
 
-              **此 PR 将在 5 分钟后自动关闭。** 如有疑问，请联系项目维护者。
+              **此 PR 将在 1 分钟后自动关闭。** 如有疑问，请联系项目维护者。
               `;
 
                 await github.rest.issues.createComment({
@@ -765,9 +764,9 @@ jobs:
                   labels: ['auto-close', 'checks-failed']
                 });
 
-                // 等待 5 分钟后关闭 PR
-                console.log('⏰ 等待 5 分钟后关闭 PR...');
-                await new Promise(resolve => setTimeout(resolve, 5 * 60 * 1000)); // 5 分钟
+                // 等待 1 分钟后关闭 PR
+                console.log('⏰ 等待 1 分钟后关闭 PR...');
+                await new Promise(resolve => setTimeout(resolve, 1 * 60 * 1000)); // 1 分钟
 
                 // 关闭 PR
                 await github.rest.pulls.update({
