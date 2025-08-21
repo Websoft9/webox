@@ -26,20 +26,51 @@ func NewJWTAuth(secretKey string, expireTime int) *JWTAuth {
 	}
 }
 
-func (j *JWTAuth) GenerateToken(userID uint, username, role string) (string, error) {
+func (j *JWTAuth) GenerateToken(userID uint) (string, time.Time, error) {
+	expiresAt := time.Now().Add(time.Duration(j.expireTime) * time.Second)
+
 	claims := Claims{
 		UserID:   userID,
-		Username: username,
-		Role:     role,
+		Username: "", // 可以从数据库查询或者从参数传入
+		Role:     "", // 可以从数据库查询或者从参数传入
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(j.expireTime) * time.Second)),
+			ExpiresAt: jwt.NewNumericDate(expiresAt),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			NotBefore: jwt.NewNumericDate(time.Now()),
 		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(j.secretKey))
+	tokenString, err := token.SignedString([]byte(j.secretKey))
+	if err != nil {
+		return "", time.Time{}, err
+	}
+
+	return tokenString, expiresAt, nil
+}
+
+// GenerateTokenWithUserInfo 生成包含用户信息的Token
+func (j *JWTAuth) GenerateTokenWithUserInfo(userID uint, username, role string) (string, time.Time, error) {
+	expiresAt := time.Now().Add(time.Duration(j.expireTime) * time.Second)
+
+	claims := Claims{
+		UserID:   userID,
+		Username: username,
+		Role:     role,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expiresAt),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			NotBefore: jwt.NewNumericDate(time.Now()),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString([]byte(j.secretKey))
+	if err != nil {
+		return "", time.Time{}, err
+	}
+
+	return tokenString, expiresAt, nil
 }
 
 func (j *JWTAuth) ValidateToken(tokenString string) (*Claims, error) {
