@@ -10,11 +10,12 @@ import (
 // ErrorHandlerMiddleware 统一错误处理中间件
 func ErrorHandlerMiddleware() gin.HandlerFunc {
 	return gin.CustomRecovery(func(c *gin.Context, recovered interface{}) {
-		if err, ok := recovered.(string); ok {
+		switch err := recovered.(type) {
+		case string:
 			HandleError(c, NewAppError(CodeInternalError, err))
-		} else if err, ok := recovered.(error); ok {
+		case error:
 			HandleError(c, WrapError(err, CodeInternalError, "服务器内部错误"))
-		} else {
+		default:
 			HandleError(c, ErrInternalError)
 		}
 		c.Abort()
