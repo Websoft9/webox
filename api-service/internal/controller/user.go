@@ -4,6 +4,7 @@ import (
 	"api-service/internal/dto/request"
 	"api-service/internal/dto/response"
 	"api-service/internal/interface/service"
+	"api-service/internal/middleware"
 	"api-service/pkg/errors"
 	"api-service/pkg/logger"
 	pkg_response "api-service/pkg/response"
@@ -31,7 +32,8 @@ func NewUserController(userService service.UserService, logger logger.Logger) *U
 func (c *UserController) bindAndValidateRequest(ctx *gin.Context, req interface{}, action string) bool {
 	if err := ctx.ShouldBindJSON(req); err != nil {
 		c.logger.WarnContext(ctx, action+"请求参数绑定失败", logger.ErrorField(err))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, "请求参数无效"))
+		errorMsg := middleware.T(ctx, "common.validation_failed")
+		errors.HandleError(ctx, errors.NewAppErrorWithI18n(errors.CodeValidationError, errorMsg, "common.validation_failed"))
 		return false
 	}
 	return true
@@ -70,7 +72,7 @@ func (c *UserController) Register(ctx *gin.Context) {
 	var req request.UserRegisterRequest
 	c.handleUserAuth(ctx, &req, "注册", func(ctx context.Context, r interface{}) (interface{}, error) {
 		return c.userService.Register(ctx, r.(*request.UserRegisterRequest))
-	}, "用户注册成功")
+	}, middleware.T(ctx, "user.created_success"))
 }
 
 // Login 用户登录
@@ -78,7 +80,7 @@ func (c *UserController) Login(ctx *gin.Context) {
 	var req request.UserLoginRequest
 	c.handleUserAuth(ctx, &req, "登录", func(ctx context.Context, r interface{}) (interface{}, error) {
 		return c.userService.Login(ctx, r.(*request.UserLoginRequest))
-	}, "登录成功")
+	}, middleware.T(ctx, "user.login_success"))
 }
 
 // GetProfile 获取用户资料
@@ -96,7 +98,8 @@ func (c *UserController) GetProfile(ctx *gin.Context) {
 		return
 	}
 
-	pkg_response.Success(ctx, "获取用户资料成功", profile)
+	successMsg := middleware.T(ctx, "common.success")
+	pkg_response.Success(ctx, successMsg, profile)
 }
 
 // UpdateProfile 更新用户资料

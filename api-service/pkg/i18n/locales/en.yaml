@@ -1,0 +1,41 @@
+# User module messages
+user:
+  not_found: "User not found"
+  created_success: "User created successfully"
+  updated_success: "User updated successfully"
+  deleted_success: "User deleted successfully"
+  invalid_credentials: "Invalid username or password"
+  login_success: "Login successful"
+  logout_success: "Logout successful"
+  already_exists: "User already exists"
+  username_required: "Username is required"
+  password_required: "Password is required"
+  email_required: "Email is required"
+  invalid_email: "Invalid email format"
+  password_too_short: "Password must be at least 8 characters"
+
+# Authentication messages
+auth:
+  token_invalid: "Invalid token"
+  token_expired: "Token has expired"
+  token_missing: "Authorization token is missing"
+  permission_denied: "Permission denied"
+  unauthorized: "Unauthorized access"
+
+# Common messages
+common:
+  success: "Operation successful"
+  failed: "Operation failed"
+  invalid_request: "Invalid request"
+  internal_error: "Internal server error"
+  validation_failed: "Validation failed"
+  not_found: "Resource not found"
+  bad_request: "Bad request"
+  forbidden: "Access forbidden"
+
+# Error messages
+error:
+  database_error: "Database operation failed"
+  network_error: "Network connection error"
+  timeout_error: "Request timeout"
+  unknown_error: "Unknown error occurred"

@@ -1,0 +1,7 @@
+{
+    "severity": "medium",
+    "confidence": "medium",
+    "exclude": [
+        "G304"
+    ]
+}

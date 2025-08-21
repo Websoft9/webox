@@ -3,6 +3,9 @@
 # Websoft9 提交消息格式检查脚本
 # 基于 Conventional Commits 规范
 # https://www.conventionalcommits.org/
+# 
+# 这是 Git commit-msg hook，会在提交时自动运行
+# 基于 scripts/check-commit-message.sh 实现
 
 set -e
 
@@ -12,33 +15,6 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
-
-# 帮助信息
-show_help() {
-    echo "Usage: $0 [OPTIONS] <commit-message>"
-    echo ""
-    echo "检查提交消息是否符合 Conventional Commits 规范"
-    echo ""
-    echo "Options:"
-    echo "  -h, --help     显示帮助信息"
-    echo "  -f, --file     从文件读取提交消息"
-    echo "  -v, --verbose  显示详细信息"
-    echo ""
-    echo "Examples:"
-    echo "  $0 'feat(auth): add JWT token refresh mechanism'"
-    echo "  $0 -f .git/COMMIT_EDITMSG"
-    echo ""
-    echo "支持的提交类型："
-    echo "  feat     - 新功能"
-    echo "  fix      - Bug 修复"
-    echo "  docs     - 文档更新"
-    echo "  style    - 代码格式调整"
-    echo "  refactor - 代码重构"
-    echo "  test     - 测试相关"
-    echo "  chore    - 构建过程或辅助工具的变动"
-    echo "  perf     - 性能优化"
-    echo "  ci       - CI/CD 相关"
-}
 
 # 日志函数
 log_error() {
@@ -60,7 +36,6 @@ log_info() {
 # 检查提交消息格式
 check_commit_message() {
     local message="$1"
-    local verbose="$2"
     
     if [ -z "$message" ]; then
         log_error "提交消息不能为空"
@@ -70,8 +45,10 @@ check_commit_message() {
     # 移除前后空白字符
     message=$(echo "$message" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
     
-    if [ "$verbose" = "true" ]; then
-        log_info "检查提交消息: '$message'"
+    # 跳过合并提交和 revert 提交
+    if [[ "$message" =~ ^Merge\ branch|^Revert\ |^Merge\ pull\ request ]]; then
+        log_info "跳过合并/回滚提交检查"
+        return 0
     fi
     
     # 定义允许的提交类型
@@ -90,11 +67,23 @@ check_commit_message() {
         echo "  feat(auth): add JWT token refresh mechanism"
         echo "  fix(api): handle null pointer in user service"
         echo "  docs(readme): update installation instructions"
+        echo "  refactor(i18n): add internationalization support"
         echo ""
         echo "要求:"
         echo "  - 类型必须是: ${valid_types//|/, }"
         echo "  - 描述长度: 1-100 字符"
         echo "  - 格式: 类型(可选范围): 描述"
+        echo ""
+        echo "支持的提交类型："
+        echo "  feat     - 新功能"
+        echo "  fix      - Bug 修复"
+        echo "  docs     - 文档更新"
+        echo "  style    - 代码格式调整"
+        echo "  refactor - 代码重构"
+        echo "  test     - 测试相关"
+        echo "  chore    - 构建过程或辅助工具的变动"
+        echo "  perf     - 性能优化"
+        echo "  ci       - CI/CD 相关"
         echo ""
         return 1
     fi
@@ -110,14 +99,6 @@ check_commit_message() {
     fi
     
     description=$(echo "$message" | sed -E "s/^(${valid_types})(\([^)]+\))?: (.*)/\3/")
-    
-    if [ "$verbose" = "true" ]; then
-        log_info "类型: $type"
-        if [ -n "$scope" ]; then
-            log_info "范围: $scope"
-        fi
-        log_info "描述: $description"
-    fi
     
     # 检查描述是否以小写字母开头
     if [[ "$description" =~ ^[A-Z] ]]; then
@@ -141,78 +122,38 @@ check_commit_message() {
     return 0
 }
 
-# 主函数
+# 主函数 - Git hook 专用
 main() {
-    local commit_message=""
-    local from_file=false
-    local verbose=false
+    local commit_msg_file="$1"
     
-    # 解析命令行参数
-    while [[ $# -gt 0 ]]; do
-        case $1 in
-            -h|--help)
-                show_help
-                exit 0
-                ;;
-            -f|--file)
-                from_file=true
-                shift
-                if [[ $# -gt 0 ]]; then
-                    commit_message="$1"
-                else
-                    log_error "选项 -f 需要指定文件路径"
-                    exit 1
-                fi
-                ;;
-            -v|--verbose)
-                verbose=true
-                ;;
-            -*)
-                log_error "未知选项: $1"
-                show_help
-                exit 1
-                ;;
-            *)
-                if [ -z "$commit_message" ]; then
-                    commit_message="$1"
-                else
-                    log_error "只能指定一个提交消息"
-                    exit 1
-                fi
-                ;;
-        esac
-        shift
-    done
-    
-    # 如果从文件读取
-    if [ "$from_file" = true ]; then
-        if [ ! -f "$commit_message" ]; then
-            log_error "文件不存在: $commit_message"
-            exit 1
-        fi
-        commit_message=$(head -n 1 "$commit_message")
+    # 检查是否提供了提交消息文件
+    if [ -z "$commit_msg_file" ]; then
+        log_error "缺少提交消息文件参数"
+        exit 1
     fi
     
-    # 如果没有提供提交消息，尝试从标准输入读取
-    if [ -z "$commit_message" ]; then
-        if [ -t 0 ]; then
-            log_error "请提供提交消息"
-            show_help
-            exit 1
-        else
-            commit_message=$(head -n 1)
-        fi
+    # 检查文件是否存在
+    if [ ! -f "$commit_msg_file" ]; then
+        log_error "提交消息文件不存在: $commit_msg_file"
+        exit 1
     fi
+    
+    # 读取提交消息（只读第一行）
+    local commit_message=$(head -n 1 "$commit_msg_file")
     
     # 检查提交消息
-    if check_commit_message "$commit_message" "$verbose"; then
+    if check_commit_message "$commit_message"; then
         exit 0
     else
+        echo ""
+        log_error "提交被拒绝。请修改提交消息后重试。"
+        echo ""
+        echo "可以使用以下命令修改提交消息："
+        echo "  git commit --amend -m \"new message\""
+        echo ""
         exit 1
     fi
 }
 
-# 如果脚本被直接执行
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    main "$@"
-fi
+# 执行主函数，传入 Git 提供的参数
+main "$@"

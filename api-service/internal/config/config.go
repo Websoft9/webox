@@ -13,6 +13,7 @@ type Config struct {
 	InfluxDB InfluxDBConfig `mapstructure:"influxdb"`
 	JWT      JWTConfig      `mapstructure:"jwt"`
 	GRPC     GRPCConfig     `mapstructure:"grpc"`
+	I18n     I18nConfig     `mapstructure:"i18n"`
 }
 
 type ServerConfig struct {
@@ -45,6 +46,11 @@ type JWTConfig struct {
 
 type GRPCConfig struct {
 	Port string `mapstructure:"port"`
+}
+
+type I18nConfig struct {
+	DefaultLanguage    string   `mapstructure:"default_language"`
+	SupportedLanguages []string `mapstructure:"supported_languages"`
 }
 
 func Load() (*Config, error) {

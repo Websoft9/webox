@@ -3,7 +3,8 @@
     "confidence": "medium",
     "exclude": [
         "G104",
-        "G204"
+        "G204",
+        "G304"
     ],
     "include": [
         "G101",

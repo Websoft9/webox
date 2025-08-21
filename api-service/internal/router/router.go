@@ -13,6 +13,7 @@ import (
 // Controllers 控制器集合
 type Controllers struct {
 	UserController *controller.UserController
+	I18nController *controller.I18nController
 	// 可以添加更多控制器
 	// AppController  *controller.ApplicationController
 }
@@ -27,6 +28,7 @@ func SetupRouter(controllers *Controllers, cfg *config.Config, log logger.Logger
 	// 全局中间件
 	r.Use(middleware.LoggerMiddleware(log))
 	r.Use(middleware.CORS())
+	r.Use(middleware.I18nMiddleware())
 	r.Use(middleware.ErrorHandler(log))
 	r.Use(middleware.RequestValidator(log))
 
@@ -45,6 +47,14 @@ func SetupRouter(controllers *Controllers, cfg *config.Config, log logger.Logger
 	auth := v1.Group("/auth")
 	auth.POST("/register", controllers.UserController.Register)
 	auth.POST("/login", controllers.UserController.Login)
+
+	// i18n相关路由（无需JWT验证）
+	if controllers.I18nController != nil {
+		i18nGroup := v1.Group("/i18n")
+		i18nGroup.GET("/languages", controllers.I18nController.GetLanguages)
+		i18nGroup.GET("/translations/:lang", controllers.I18nController.GetTranslations)
+		i18nGroup.GET("/test", controllers.I18nController.TestI18n)
+	}
 
 	// 需要JWT认证的路由
 	protected := v1.Group("/")
