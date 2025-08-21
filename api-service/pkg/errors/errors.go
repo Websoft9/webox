@@ -11,6 +11,7 @@ type AppError struct {
 	Message    string `json:"message"` // 错误消息
 	Details    string `json:"details"` // 详细信息
 	HTTPStatus int    `json:"-"`       // HTTP状态码
+	I18nKey    string `json:"-"`       // i18n消息键
 }
 
 // Error 实现error接口
@@ -21,12 +22,27 @@ func (e *AppError) Error() string {
 	return fmt.Sprintf("Code: %d, Message: %s", e.Code, e.Message)
 }
 
+// GetI18nKey 获取i18n键
+func (e *AppError) GetI18nKey() string {
+	return e.I18nKey
+}
+
 // NewAppError 创建新的应用错误
 func NewAppError(code int, message string) *AppError {
 	return &AppError{
 		Code:       code,
 		Message:    message,
 		HTTPStatus: getHTTPStatusByCode(code),
+	}
+}
+
+// NewAppErrorWithI18n 创建带i18n键的应用错误
+func NewAppErrorWithI18n(code int, message, i18nKey string) *AppError {
+	return &AppError{
+		Code:       code,
+		Message:    message,
+		HTTPStatus: getHTTPStatusByCode(code),
+		I18nKey:    i18nKey,
 	}
 }
 
@@ -95,22 +111,31 @@ func getDefaultStatusByCodeRange(code int) int {
 
 // 预定义的常见错误
 var (
-	ErrInternalError   = NewAppError(CodeInternalError, CodeMessages[CodeInternalError])
-	ErrInvalidRequest  = NewAppError(CodeInvalidRequest, CodeMessages[CodeInvalidRequest])
-	ErrUnauthorized    = NewAppError(CodeUnauthorized, CodeMessages[CodeUnauthorized])
-	ErrForbidden       = NewAppError(CodeForbidden, CodeMessages[CodeForbidden])
-	ErrNotFound        = NewAppError(CodeNotFound, CodeMessages[CodeNotFound])
-	ErrValidationError = NewAppError(CodeValidationError, CodeMessages[CodeValidationError])
+	ErrInternalError  = NewAppErrorWithI18n(CodeInternalError, CodeMessages[CodeInternalError], "error.internal_error")
+	ErrInvalidRequest = NewAppErrorWithI18n(CodeInvalidRequest, CodeMessages[CodeInvalidRequest],
+		"common.invalid_request")
+	ErrUnauthorized    = NewAppErrorWithI18n(CodeUnauthorized, CodeMessages[CodeUnauthorized], "auth.unauthorized")
+	ErrForbidden       = NewAppErrorWithI18n(CodeForbidden, CodeMessages[CodeForbidden], "common.forbidden")
+	ErrNotFound        = NewAppErrorWithI18n(CodeNotFound, CodeMessages[CodeNotFound], "common.not_found")
+	ErrValidationError = NewAppErrorWithI18n(CodeValidationError, CodeMessages[CodeValidationError],
+		"common.validation_failed")
 
 	// 用户相关错误
-	ErrUserNotFound       = NewAppError(CodeUserNotFound, CodeMessages[CodeUserNotFound])
-	ErrUserAlreadyExists  = NewAppError(CodeUserAlreadyExists, CodeMessages[CodeUserAlreadyExists])
-	ErrInvalidCredentials = NewAppError(CodeInvalidCredentials, CodeMessages[CodeInvalidCredentials])
-	ErrUserInactive       = NewAppError(CodeUserInactive, CodeMessages[CodeUserInactive])
-	ErrInvalidPassword    = NewAppError(CodeInvalidPassword, CodeMessages[CodeInvalidPassword])
-	ErrPasswordTooWeak    = NewAppError(CodePasswordTooWeak, CodeMessages[CodePasswordTooWeak])
-	ErrEmailAlreadyExists = NewAppError(CodeEmailAlreadyExists, CodeMessages[CodeEmailAlreadyExists])
-	ErrInvalidEmail       = NewAppError(CodeInvalidEmail, CodeMessages[CodeInvalidEmail])
-	ErrUsernameReserved   = NewAppError(CodeUsernameReserved, CodeMessages[CodeUsernameReserved])
-	ErrUserQuotaExceeded  = NewAppError(CodeUserQuotaExceeded, CodeMessages[CodeUserQuotaExceeded])
+	ErrUserNotFound      = NewAppErrorWithI18n(CodeUserNotFound, CodeMessages[CodeUserNotFound], "user.not_found")
+	ErrUserAlreadyExists = NewAppErrorWithI18n(CodeUserAlreadyExists, CodeMessages[CodeUserAlreadyExists],
+		"user.already_exists")
+	ErrInvalidCredentials = NewAppErrorWithI18n(CodeInvalidCredentials, CodeMessages[CodeInvalidCredentials],
+		"user.invalid_credentials")
+	ErrUserInactive    = NewAppErrorWithI18n(CodeUserInactive, CodeMessages[CodeUserInactive], "auth.permission_denied")
+	ErrInvalidPassword = NewAppErrorWithI18n(CodeInvalidPassword, CodeMessages[CodeInvalidPassword],
+		"user.password_required")
+	ErrPasswordTooWeak = NewAppErrorWithI18n(CodePasswordTooWeak, CodeMessages[CodePasswordTooWeak],
+		"user.password_too_short")
+	ErrEmailAlreadyExists = NewAppErrorWithI18n(CodeEmailAlreadyExists, CodeMessages[CodeEmailAlreadyExists],
+		"user.already_exists")
+	ErrInvalidEmail     = NewAppErrorWithI18n(CodeInvalidEmail, CodeMessages[CodeInvalidEmail], "user.invalid_email")
+	ErrUsernameReserved = NewAppErrorWithI18n(CodeUsernameReserved, CodeMessages[CodeUsernameReserved],
+		"user.username_required")
+	ErrUserQuotaExceeded = NewAppErrorWithI18n(CodeUserQuotaExceeded, CodeMessages[CodeUserQuotaExceeded],
+		"common.forbidden")
 )

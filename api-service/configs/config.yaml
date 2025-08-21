@@ -23,3 +23,7 @@ jwt:
 
 grpc:
   port: "9090"
+
+i18n:
+  default_language: "en"
+  supported_languages: ["en", "zh"]
