@@ -50,49 +50,44 @@ func WrapError(err error, code int, message string) *AppError {
 	}
 }
 
+// HTTP状态码映射表
+var codeToHTTPStatus = map[int]int{
+	CodeSuccess: http.StatusOK,
+	// 通用错误
+	CodeInvalidRequest:  http.StatusBadRequest,
+	CodeValidationError: http.StatusBadRequest,
+	CodeUnauthorized:    http.StatusUnauthorized,
+	CodeForbidden:       http.StatusForbidden,
+	CodeNotFound:        http.StatusNotFound,
+	// 用户相关错误
+	CodeUserNotFound:       http.StatusNotFound,
+	CodeUserAlreadyExists:  http.StatusConflict,
+	CodeEmailAlreadyExists: http.StatusConflict,
+	CodeInvalidCredentials: http.StatusUnauthorized,
+	CodeInvalidPassword:    http.StatusUnauthorized,
+	CodeUserInactive:       http.StatusForbidden,
+	// 应用相关错误
+	CodeAppNotFound:      http.StatusNotFound,
+	CodeAppAlreadyExists: http.StatusConflict,
+}
+
 // 根据业务错误码映射HTTP状态码
 func getHTTPStatusByCode(code int) int {
+	if status, exists := codeToHTTPStatus[code]; exists {
+		return status
+	}
+	return getDefaultStatusByCodeRange(code)
+}
+
+// 根据错误码范围获取默认HTTP状态码
+func getDefaultStatusByCodeRange(code int) int {
 	switch {
-	case code == CodeSuccess:
-		return http.StatusOK
 	case code >= 10000 && code < 20000:
-		// 通用错误
-		switch code {
-		case CodeInvalidRequest, CodeValidationError:
-			return http.StatusBadRequest
-		case CodeUnauthorized:
-			return http.StatusUnauthorized
-		case CodeForbidden:
-			return http.StatusForbidden
-		case CodeNotFound:
-			return http.StatusNotFound
-		default:
-			return http.StatusInternalServerError
-		}
+		return http.StatusInternalServerError
 	case code >= 20000 && code < 30000:
-		// 用户相关错误
-		switch code {
-		case CodeUserNotFound:
-			return http.StatusNotFound
-		case CodeUserAlreadyExists, CodeEmailAlreadyExists:
-			return http.StatusConflict
-		case CodeInvalidCredentials, CodeInvalidPassword:
-			return http.StatusUnauthorized
-		case CodeUserInactive, CodeForbidden:
-			return http.StatusForbidden
-		default:
-			return http.StatusBadRequest
-		}
+		return http.StatusBadRequest
 	case code >= 30000 && code < 40000:
-		// 应用相关错误
-		switch code {
-		case CodeAppNotFound:
-			return http.StatusNotFound
-		case CodeAppAlreadyExists:
-			return http.StatusConflict
-		default:
-			return http.StatusBadRequest
-		}
+		return http.StatusBadRequest
 	default:
 		return http.StatusInternalServerError
 	}

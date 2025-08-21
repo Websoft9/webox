@@ -7,6 +7,15 @@ import (
 	"unicode"
 )
 
+// 密码验证相关常量
+const (
+	MinPasswordRequirements = 2   // 最少满足的密码要求数量
+	EmailPartsCount         = 2   // 邮箱地址@分割后的部分数量
+	MaxApplications         = 10  // 应用最大数量
+	MaxWorkflows            = 5   // 工作流最大数量
+	MaxFiles                = 100 // 文件最大数量
+)
+
 // 系统保留用户名
 var reservedUsernames = map[string]bool{
 	"admin":     true,
@@ -107,7 +116,7 @@ func ValidatePassword(password string) error {
 		requirements++
 	}
 
-	if requirements < 2 {
+	if requirements < MinPasswordRequirements {
 		return errors.ErrPasswordTooWeak
 	}
 
@@ -130,14 +139,14 @@ func ValidateEmail(email string) error {
 	// 域名白名单验证（如果配置了白名单）
 	if len(allowedEmailDomains) > 0 {
 		parts := strings.Split(email, "@")
-		if len(parts) != 2 {
+		if len(parts) != EmailPartsCount {
 			return errors.ErrInvalidEmail
 		}
 
 		domain := strings.ToLower(parts[1])
 		allowed := false
 		for _, allowedDomain := range allowedEmailDomains {
-			if domain == strings.ToLower(allowedDomain) {
+			if strings.EqualFold(domain, allowedDomain) {
 				allowed = true
 				break
 			}
@@ -192,7 +201,10 @@ func ValidateUserStatus(currentStatus, newStatus string) error {
 func ValidateUserPermission(userRole, requiredPermission string) error {
 	// 定义角色权限映射
 	rolePermissions := map[string][]string{
-		"admin": {"user:create", "user:read", "user:update", "user:delete", "app:create", "app:read", "app:update", "app:delete"},
+		"admin": {
+			"user:create", "user:read", "user:update", "user:delete",
+			"app:create", "app:read", "app:update", "app:delete",
+		},
 		"user":  {"user:read", "app:create", "app:read", "app:update"},
 		"guest": {"user:read", "app:read"},
 	}
@@ -215,9 +227,9 @@ func ValidateUserPermission(userRole, requiredPermission string) error {
 func ValidateResourceQuota(userID uint, resourceType string, currentCount int) error {
 	// 定义资源配额限制
 	quotaLimits := map[string]int{
-		"applications": 10,
-		"workflows":    5,
-		"files":        100,
+		"applications": MaxApplications,
+		"workflows":    MaxWorkflows,
+		"files":        MaxFiles,
 	}
 
 	limit, exists := quotaLimits[resourceType]

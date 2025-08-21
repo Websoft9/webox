@@ -10,13 +10,14 @@ import (
 // ErrorHandler 错误处理中间件
 func ErrorHandler(log logger.Logger) gin.HandlerFunc {
 	return gin.CustomRecovery(func(c *gin.Context, recovered interface{}) {
-		if err, ok := recovered.(string); ok {
+		switch err := recovered.(type) {
+		case string:
 			log.ErrorContext(c, "系统发生panic", logger.String("error", err))
 			errors.HandleError(c, errors.NewAppError(errors.CodeInternalError, err))
-		} else if err, ok := recovered.(error); ok {
+		case error:
 			log.ErrorContext(c, "系统发生panic", logger.ErrorField(err))
 			errors.HandleError(c, errors.WrapError(err, errors.CodeInternalError, "服务器内部错误"))
-		} else {
+		default:
 			log.ErrorContext(c, "系统发生panic", logger.Any("error", recovered))
 			errors.HandleError(c, errors.ErrInternalError)
 		}

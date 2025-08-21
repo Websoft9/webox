@@ -1,5 +1,17 @@
 package dto
 
+// 分页相关常量
+const (
+	DefaultPageSize int = 10  // 默认每页数量
+	MaxPageSize     int = 100 // 最大每页数量
+)
+
+// 排序相关常量
+const (
+	SortOrderAsc  = "asc"
+	SortOrderDesc = "desc"
+)
+
 // PaginationRequest 分页请求结构
 type PaginationRequest struct {
 	Page     int `form:"page" json:"page" binding:"omitempty,min=1"`                   // 页码，从1开始
@@ -17,10 +29,10 @@ func (p *PaginationRequest) GetOffset() int {
 // GetPageSize 获取每页数量
 func (p *PaginationRequest) GetPageSize() int {
 	if p.PageSize <= 0 {
-		p.PageSize = 10 // 默认每页10条
+		p.PageSize = DefaultPageSize
 	}
-	if p.PageSize > 100 {
-		p.PageSize = 100 // 最大每页100条
+	if p.PageSize > MaxPageSize {
+		p.PageSize = MaxPageSize
 	}
 	return p.PageSize
 }
@@ -62,9 +74,9 @@ func (s *SortRequest) GetSortOrder() string {
 		return "id desc" // 默认按ID降序
 	}
 
-	order := "asc"
-	if s.Order == "desc" {
-		order = "desc"
+	order := SortOrderAsc
+	if s.Order == SortOrderDesc {
+		order = SortOrderDesc
 	}
 
 	return s.Field + " " + order

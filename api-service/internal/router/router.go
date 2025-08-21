@@ -40,42 +40,30 @@ func SetupRouter(controllers *Controllers, cfg *config.Config, log logger.Logger
 
 	// API版本1路由组
 	v1 := r.Group("/api/v1")
-	{
-		// 认证相关路由（无需JWT验证）
-		auth := v1.Group("/auth")
-		{
-			auth.POST("/register", controllers.UserController.Register)
-			auth.POST("/login", controllers.UserController.Login)
-		}
 
-		// 需要JWT认证的路由
-		protected := v1.Group("/")
-		protected.Use(middleware.JWTAuth(cfg))
-		{
-			// 用户相关路由
-			users := protected.Group("/users")
-			{
-				// 当前用户操作
-				users.GET("/profile", controllers.UserController.GetProfile)
-				users.PUT("/profile", controllers.UserController.UpdateProfile)
-				users.PUT("/password", controllers.UserController.ChangePassword)
+	// 认证相关路由（无需JWT验证）
+	auth := v1.Group("/auth")
+	auth.POST("/register", controllers.UserController.Register)
+	auth.POST("/login", controllers.UserController.Login)
 
-				// 用户管理操作（需要管理员权限）
-				users.GET("", controllers.UserController.ListUsers)                   // 获取用户列表
-				users.GET("/:id", controllers.UserController.GetUser)                 // 获取单个用户
-				users.PUT("/:id/status", controllers.UserController.UpdateUserStatus) // 更新用户状态
-				users.DELETE("/:id", controllers.UserController.DeleteUser)           // 删除用户
-			}
+	// 需要JWT认证的路由
+	protected := v1.Group("/")
+	protected.Use(middleware.JWTAuth(cfg))
 
-			// 可以在这里添加更多受保护的路由
-			// applications := protected.Group("/applications")
-			// {
-			//     applications.POST("/", controllers.AppController.CreateApplication)
-			//     applications.GET("/", controllers.AppController.ListApplications)
-			//     applications.GET("/:id", controllers.AppController.GetApplication)
-			// }
-		}
-	}
+	// 用户相关路由
+	users := protected.Group("/users")
+	// 当前用户操作
+	users.GET("/profile", controllers.UserController.GetProfile)
+	users.PUT("/profile", controllers.UserController.UpdateProfile)
+	users.PUT("/password", controllers.UserController.ChangePassword)
+
+	// 用户管理操作（需要管理员权限）
+	users.GET("", controllers.UserController.ListUsers)                   // 获取用户列表
+	users.GET("/:id", controllers.UserController.GetUser)                 // 获取单个用户
+	users.PUT("/:id/status", controllers.UserController.UpdateUserStatus) // 更新用户状态
+	users.DELETE("/:id", controllers.UserController.DeleteUser)           // 删除用户
+
+	// TODO: 应用相关路由将在后续版本中实现
 
 	// 404处理
 	r.NoRoute(func(c *gin.Context) {

@@ -134,23 +134,50 @@ docker run --privileged websoft9/agent
 ```text
 webox/
 ├── api-service/              # 后端 API 服务
-│   ├── main.go
-│   ├── internal/
-│   │   ├── config/          # 配置管理
-│   │   ├── controller/      # 控制器层
-│   │   ├── service/         # 业务逻辑层
-│   │   ├── repository/      # 数据访问层
-│   │   ├── middleware/      # 中间件
-│   │   └── model/          # 数据模型
-│   ├── pkg/                # 公共包
-│   └── docs/               # API 文档
+│   ├── main.go              # 应用入口文件
+│   ├── cmd/                 # 命令行工具
+│   │   └── server/         # 服务器启动命令
+│   ├── configs/            # 配置文件
+│   │   └── config.yaml     # 应用配置
+│   ├── internal/           # 内部包
+│   │   ├── config/         # 配置管理
+│   │   ├── constants/      # 常量定义
+│   │   ├── controller/     # 控制器层 (HTTP 处理)
+│   │   ├── dto/           # 数据传输对象
+│   │   │   ├── request/   # 请求 DTO
+│   │   │   └── response/  # 响应 DTO
+│   │   ├── interface/     # 接口定义
+│   │   │   ├── repository/ # 仓储接口
+│   │   │   └── service/   # 服务接口
+│   │   ├── middleware/    # 中间件
+│   │   ├── model/         # 数据模型
+│   │   ├── repository/    # 数据访问层
+│   │   ├── router/        # 路由配置
+│   │   └── service/       # 业务逻辑层
+│   ├── pkg/               # 公共包
+│   │   ├── auth/          # 认证相关
+│   │   ├── errors/        # 错误处理
+│   │   ├── logger/        # 日志处理
+│   │   ├── response/      # 响应封装
+│   │   ├── utils/         # 工具函数
+│   │   └── validator/     # 数据验证
+│   ├── scripts/           # 脚本文件
+│   └── docs/              # API 文档
 └── websoft9-agent/         # 客户端代理
     ├── cmd/                # 命令行入口
-    ├── internal/           # 内部包
+    │   └── agent/         # 代理启动命令
+    ├── configs/           # 配置文件
+    │   └── agent.yaml     # 代理配置
+    ├── internal/          # 内部包
     │   ├── agent/         # 代理核心逻辑
+    │   ├── communication/ # 通信管理 (gRPC)
+    │   ├── config/        # 配置管理
+    │   ├── constants/     # 常量定义
     │   ├── monitor/       # 监控数据采集
-    │   └── executor/      # 任务执行器
-    └── pkg/               # 公共包
+    │   └── task/          # 任务执行器
+    ├── pkg/               # 公共包
+    │   └── security/      # 安全验证
+    └── scripts/           # 脚本文件
 ```
 
 ## 开发规范

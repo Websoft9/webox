@@ -9,10 +9,17 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+// 常量定义
+const (
+	DefaultFilePermission = 0o666 // 默认文件权限
+	ContextFieldCapacity  = 4     // 上下文字段容量
+)
+
 // ZapLogger Zap日志实现
 type ZapLogger struct {
-	logger *zap.Logger
-	sugar  *zap.SugaredLogger
+	logger      *zap.Logger
+	sugar       *zap.SugaredLogger
+	atomicLevel zap.AtomicLevel // 支持动态级别调整
 }
 
 // NewZapLogger 创建新的Zap日志实例
@@ -32,7 +39,7 @@ func NewZapLogger(level Level, output io.Writer) Logger {
 		EncodeCaller:   zapcore.ShortCallerEncoder,
 	}
 
-	// 设置日志级别
+	// 设置日志级别 - 使用AtomicLevel支持动态调整
 	zapLevel := zapcore.InfoLevel
 	switch level {
 	case DebugLevel:
@@ -47,6 +54,8 @@ func NewZapLogger(level Level, output io.Writer) Logger {
 		zapLevel = zapcore.FatalLevel
 	}
 
+	atomicLevel := zap.NewAtomicLevelAt(zapLevel)
+
 	// 创建核心
 	if output == nil {
 		output = os.Stdout
@@ -55,21 +64,44 @@ func NewZapLogger(level Level, output io.Writer) Logger {
 	core := zapcore.NewCore(
 		zapcore.NewJSONEncoder(encoderConfig),
 		zapcore.AddSync(output),
-		zapLevel,
+		atomicLevel,
 	)
 
 	// 创建logger
 	logger := zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
 
 	return &ZapLogger{
-		logger: logger,
-		sugar:  logger.Sugar(),
+		logger:      logger,
+		sugar:       logger.Sugar(),
+		atomicLevel: atomicLevel,
 	}
 }
 
 // NewDefaultZapLogger 创建默认Zap日志实例
 func NewDefaultZapLogger() Logger {
 	return NewZapLogger(InfoLevel, os.Stdout)
+}
+
+// NewZapLoggerWithConfig 根据配置创建Zap日志实例
+func NewZapLoggerWithConfig(config *Config) Logger {
+	// 确定输出目标
+	var output io.Writer = os.Stdout
+	switch config.Output {
+	case "stderr":
+		output = os.Stderr
+	case "stdout", "":
+		output = os.Stdout
+	case "file":
+		if config.Filename != "" {
+			// 这里可以扩展支持文件轮转等功能
+			flags := os.O_CREATE | os.O_WRONLY | os.O_APPEND
+			if file, err := os.OpenFile(config.Filename, flags, DefaultFilePermission); err == nil {
+				output = file
+			}
+		}
+	}
+
+	return NewZapLogger(config.Level, output)
 }
 
 // Debug 调试级别日志
@@ -121,11 +153,36 @@ func (z *ZapLogger) ErrorContext(ctx context.Context, msg string, fields ...Fiel
 	z.Error(msg, fields...)
 }
 
+// IsDebugEnabled 检查是否启用调试日志
+func (z *ZapLogger) IsDebugEnabled() bool {
+	return z.logger.Core().Enabled(zapcore.DebugLevel)
+}
+
+// IsInfoEnabled 检查是否启用信息日志
+func (z *ZapLogger) IsInfoEnabled() bool {
+	return z.logger.Core().Enabled(zapcore.InfoLevel)
+}
+
+// IsWarnEnabled 检查是否启用警告日志
+func (z *ZapLogger) IsWarnEnabled() bool {
+	return z.logger.Core().Enabled(zapcore.WarnLevel)
+}
+
+// IsErrorEnabled 检查是否启用错误日志
+func (z *ZapLogger) IsErrorEnabled() bool {
+	return z.logger.Core().Enabled(zapcore.ErrorLevel)
+}
+
 // WithFields 添加字段
 func (z *ZapLogger) WithFields(fields ...Field) Logger {
+	if len(fields) == 0 {
+		return z
+	}
+
 	return &ZapLogger{
-		logger: z.logger.With(z.convertFields(fields...)...),
-		sugar:  z.logger.Sugar(),
+		logger:      z.logger.With(z.convertFields(fields...)...),
+		sugar:       z.sugar,
+		atomicLevel: z.atomicLevel,
 	}
 }
 
@@ -136,8 +193,20 @@ func (z *ZapLogger) WithContext(ctx context.Context) Logger {
 
 // SetLevel 设置日志级别
 func (z *ZapLogger) SetLevel(level Level) {
-	// Zap的级别在创建时设置，这里可以记录但不能动态修改
-	// 实际项目中可能需要使用zap.AtomicLevel来支持动态修改
+	zapLevel := zapcore.InfoLevel
+	switch level {
+	case DebugLevel:
+		zapLevel = zapcore.DebugLevel
+	case InfoLevel:
+		zapLevel = zapcore.InfoLevel
+	case WarnLevel:
+		zapLevel = zapcore.WarnLevel
+	case ErrorLevel:
+		zapLevel = zapcore.ErrorLevel
+	case FatalLevel:
+		zapLevel = zapcore.FatalLevel
+	}
+	z.atomicLevel.SetLevel(zapLevel)
 }
 
 // SetOutput 设置输出
@@ -146,27 +215,95 @@ func (z *ZapLogger) SetOutput(w io.Writer) {
 	// 实际项目中可能需要重新创建logger
 }
 
-// convertFields 转换字段格式
+// convertFields 转换字段格式 - 优化性能
 func (z *ZapLogger) convertFields(fields ...Field) []zap.Field {
-	zapFields := make([]zap.Field, len(fields))
-	for i, field := range fields {
-		zapFields[i] = zap.Any(field.Key, field.Value)
+	if len(fields) == 0 {
+		return nil
+	}
+
+	zapFields := make([]zap.Field, 0, len(fields))
+	for _, field := range fields {
+		// 根据类型优化字段转换
+		switch v := field.Value.(type) {
+		case string:
+			zapFields = append(zapFields, zap.String(field.Key, v))
+		case int:
+			zapFields = append(zapFields, zap.Int(field.Key, v))
+		case int64:
+			zapFields = append(zapFields, zap.Int64(field.Key, v))
+		case uint:
+			zapFields = append(zapFields, zap.Uint(field.Key, v))
+		case float64:
+			zapFields = append(zapFields, zap.Float64(field.Key, v))
+		case bool:
+			zapFields = append(zapFields, zap.Bool(field.Key, v))
+		case error:
+			if v != nil {
+				zapFields = append(zapFields, zap.Error(v))
+			}
+		default:
+			zapFields = append(zapFields, zap.Any(field.Key, v))
+		}
 	}
 	return zapFields
 }
 
-// extractContextFields 从上下文中提取字段
+// extractContextFields 从上下文中提取字段 - 优化版本
 func (z *ZapLogger) extractContextFields(ctx context.Context) []Field {
-	var fields []Field
-
-	// 可以从上下文中提取请求ID、用户ID等信息
-	if requestID := ctx.Value("request_id"); requestID != nil {
-		fields = append(fields, String("request_id", requestID.(string)))
+	if ctx == nil {
+		return nil
 	}
 
+	fields := make([]Field, 0, ContextFieldCapacity) // 预分配容量
+
+	// 使用辅助函数提取各种字段
+	fields = z.extractRequestID(ctx, fields)
+	fields = z.extractUserInfo(ctx, fields)
+	fields = z.extractTraceInfo(ctx, fields)
+
+	return fields
+}
+
+// extractRequestID 提取请求ID
+func (z *ZapLogger) extractRequestID(ctx context.Context, fields []Field) []Field {
+	if requestID := ctx.Value("request_id"); requestID != nil {
+		if rid, ok := requestID.(string); ok && rid != "" {
+			fields = append(fields, String("request_id", rid))
+		}
+	}
+	return fields
+}
+
+// extractUserInfo 提取用户相关信息
+func (z *ZapLogger) extractUserInfo(ctx context.Context, fields []Field) []Field {
+	// 提取用户ID
 	if userID := ctx.Value("user_id"); userID != nil {
 		fields = append(fields, Any("user_id", userID))
 	}
 
+	// 提取用户名
+	if username := ctx.Value("username"); username != nil {
+		if un, ok := username.(string); ok && un != "" {
+			fields = append(fields, String("username", un))
+		}
+	}
+
+	// 提取用户角色
+	if role := ctx.Value("role"); role != nil {
+		if r, ok := role.(string); ok && r != "" {
+			fields = append(fields, String("role", r))
+		}
+	}
+
+	return fields
+}
+
+// extractTraceInfo 提取追踪相关信息
+func (z *ZapLogger) extractTraceInfo(ctx context.Context, fields []Field) []Field {
+	if traceID := ctx.Value("trace_id"); traceID != nil {
+		if tid, ok := traceID.(string); ok && tid != "" {
+			fields = append(fields, String("trace_id", tid))
+		}
+	}
 	return fields
 }

@@ -7,6 +7,7 @@ import (
 	"api-service/pkg/errors"
 	"api-service/pkg/logger"
 	pkg_response "api-service/pkg/response"
+	"context"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -26,44 +27,58 @@ func NewUserController(userService service.UserService, logger logger.Logger) *U
 	}
 }
 
-// Register 用户注册
-func (c *UserController) Register(ctx *gin.Context) {
-	var req request.UserRegisterRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		c.logger.WarnContext(ctx, "注册请求参数绑定失败", logger.ErrorField(err))
+// bindAndValidateRequest 绑定并验证请求参数的通用方法
+func (c *UserController) bindAndValidateRequest(ctx *gin.Context, req interface{}, action string) bool {
+	if err := ctx.ShouldBindJSON(req); err != nil {
+		c.logger.WarnContext(ctx, action+"请求参数绑定失败", logger.ErrorField(err))
 		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, "请求参数无效"))
+		return false
+	}
+	return true
+}
+
+// handleUserAuth 处理用户认证相关请求的通用方法
+func (c *UserController) handleUserAuth(
+	ctx *gin.Context,
+	req interface{},
+	action string,
+	serviceFunc func(context.Context, interface{}) (interface{}, error),
+	successMessage string,
+) {
+	if !c.bindAndValidateRequest(ctx, req, action) {
 		return
 	}
 
-	user, err := c.userService.Register(ctx, &req)
+	result, err := serviceFunc(ctx, req)
 	if err != nil {
-		c.logger.ErrorContext(ctx, "用户注册失败", logger.String("username", req.Username), logger.ErrorField(err))
+		// 根据action类型选择日志级别
+		if action == "登录" {
+			c.logger.WarnContext(ctx, "用户"+action+"失败", logger.ErrorField(err))
+		} else {
+			c.logger.ErrorContext(ctx, "用户"+action+"失败", logger.ErrorField(err))
+		}
 		errors.HandleError(ctx, err)
 		return
 	}
 
-	c.logger.InfoContext(ctx, "用户注册成功", logger.String("username", req.Username))
-	pkg_response.Success(ctx, "用户注册成功", user)
+	c.logger.InfoContext(ctx, "用户"+action+"成功")
+	pkg_response.Success(ctx, successMessage, result)
+}
+
+// Register 用户注册
+func (c *UserController) Register(ctx *gin.Context) {
+	var req request.UserRegisterRequest
+	c.handleUserAuth(ctx, &req, "注册", func(ctx context.Context, r interface{}) (interface{}, error) {
+		return c.userService.Register(ctx, r.(*request.UserRegisterRequest))
+	}, "用户注册成功")
 }
 
 // Login 用户登录
 func (c *UserController) Login(ctx *gin.Context) {
 	var req request.UserLoginRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		c.logger.WarnContext(ctx, "登录请求参数绑定失败", logger.ErrorField(err))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, "请求参数无效"))
-		return
-	}
-
-	loginResp, err := c.userService.Login(ctx, &req)
-	if err != nil {
-		c.logger.WarnContext(ctx, "用户登录失败", logger.String("username", req.Username), logger.ErrorField(err))
-		errors.HandleError(ctx, err)
-		return
-	}
-
-	c.logger.InfoContext(ctx, "用户登录成功", logger.String("username", req.Username))
-	pkg_response.Success(ctx, "登录成功", loginResp)
+	c.handleUserAuth(ctx, &req, "登录", func(ctx context.Context, r interface{}) (interface{}, error) {
+		return c.userService.Login(ctx, r.(*request.UserLoginRequest))
+	}, "登录成功")
 }
 
 // GetProfile 获取用户资料
@@ -211,16 +226,16 @@ func (c *UserController) UpdateUserStatus(ctx *gin.Context) {
 	}
 
 	var req request.UserUpdateStatusRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		c.logger.WarnContext(ctx, "更新用户状态请求参数绑定失败", logger.ErrorField(err))
+	if bindErr := ctx.ShouldBindJSON(&req); bindErr != nil {
+		c.logger.WarnContext(ctx, "更新用户状态请求参数绑定失败", logger.ErrorField(bindErr))
 		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, "请求参数无效"))
 		return
 	}
 
-	err = c.userService.UpdateUserStatus(ctx, userID, &req)
-	if err != nil {
-		c.logger.ErrorContext(ctx, "更新用户状态失败", logger.Uint("target_user_id", userID), logger.ErrorField(err))
-		errors.HandleError(ctx, err)
+	updateErr := c.userService.UpdateUserStatus(ctx, userID, &req)
+	if updateErr != nil {
+		c.logger.ErrorContext(ctx, "更新用户状态失败", logger.Uint("target_user_id", userID), logger.ErrorField(updateErr))
+		errors.HandleError(ctx, updateErr)
 		return
 	}
 

@@ -65,7 +65,11 @@ func (r *userRepository) Delete(ctx context.Context, id uint) error {
 }
 
 // List 获取用户列表
-func (r *userRepository) List(ctx context.Context, offset, limit int, filters map[string]interface{}) ([]*model.User, int64, error) {
+func (r *userRepository) List(
+	ctx context.Context,
+	offset, limit int,
+	filters map[string]interface{},
+) ([]*model.User, int64, error) {
 	var users []*model.User
 	var total int64
 
@@ -147,7 +151,11 @@ func (r *userRepository) GetActiveUsers(ctx context.Context, offset, limit int) 
 }
 
 // GetUsersByRole 根据角色获取用户列表
-func (r *userRepository) GetUsersByRole(ctx context.Context, role string, offset, limit int) ([]*model.User, int64, error) {
+func (r *userRepository) GetUsersByRole(
+	ctx context.Context,
+	role string,
+	offset, limit int,
+) ([]*model.User, int64, error) {
 	var users []*model.User
 	var total int64
 

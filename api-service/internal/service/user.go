@@ -17,6 +17,13 @@ import (
 	"gorm.io/gorm"
 )
 
+// 用户状态常量
+const (
+	UserStatusActive   = "active"
+	UserStatusInactive = "inactive"
+	UserStatusBanned   = "banned"
+)
+
 // userService 用户业务逻辑实现
 type userService struct {
 	userRepo repository.UserRepository
@@ -25,7 +32,11 @@ type userService struct {
 }
 
 // NewUserService 创建新的用户Service实例
-func NewUserService(userRepo repository.UserRepository, jwtAuth *auth.JWTAuth, logger logger.Logger) service.UserService {
+func NewUserService(
+	userRepo repository.UserRepository,
+	jwtAuth *auth.JWTAuth,
+	logger logger.Logger,
+) service.UserService {
 	return &userService{
 		userRepo: userRepo,
 		jwtAuth:  jwtAuth,
@@ -119,13 +130,13 @@ func (s *userService) Login(ctx context.Context, req *request.UserLoginRequest) 
 	}
 
 	// 2. 检查用户状态
-	if user.Status != "active" {
+	if user.Status != UserStatusActive {
 		s.logger.WarnContext(ctx, "用户账号未激活", logger.String("username", req.Username), logger.String("status", user.Status))
 		return nil, errors.ErrUserInactive
 	}
 
 	// 3. 验证密码
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
+	if bcryptErr := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); bcryptErr != nil {
 		s.logger.WarnContext(ctx, "密码验证失败", logger.String("username", req.Username))
 		return nil, errors.ErrInvalidCredentials
 	}
@@ -197,7 +208,11 @@ func (s *userService) GetProfile(ctx context.Context, userID uint) (*response.Us
 }
 
 // UpdateProfile 更新用户资料
-func (s *userService) UpdateProfile(ctx context.Context, userID uint, req *request.UserUpdateProfileRequest) (*response.UserResponse, error) {
+func (s *userService) UpdateProfile(
+	ctx context.Context,
+	userID uint,
+	req *request.UserUpdateProfileRequest,
+) (*response.UserResponse, error) {
 	s.logger.InfoContext(ctx, "更新用户资料", logger.Uint("user_id", userID))
 
 	// 1. 获取用户
@@ -262,14 +277,14 @@ func (s *userService) ChangePassword(ctx context.Context, userID uint, req *requ
 	}
 
 	// 2. 验证旧密码
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.OldPassword)); err != nil {
+	if bcryptErr := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.OldPassword)); bcryptErr != nil {
 		s.logger.WarnContext(ctx, "旧密码验证失败", logger.Uint("user_id", userID))
 		return errors.ErrInvalidPassword
 	}
 
 	// 3. 验证新密码强度
-	if err := validator.ValidatePassword(req.NewPassword); err != nil {
-		return err
+	if validErr := validator.ValidatePassword(req.NewPassword); validErr != nil {
+		return validErr
 	}
 
 	// 4. 加密新密码
@@ -292,7 +307,10 @@ func (s *userService) ChangePassword(ctx context.Context, userID uint, req *requ
 }
 
 // ListUsers 获取用户列表
-func (s *userService) ListUsers(ctx context.Context, req *request.UserListRequest) (*response.UserListResponse, int64, error) {
+func (s *userService) ListUsers(
+	ctx context.Context,
+	req *request.UserListRequest,
+) (*response.UserListResponse, int64, error) {
 	s.logger.InfoContext(ctx, "获取用户列表")
 
 	// 1. 构建过滤条件

@@ -35,8 +35,8 @@ func main() {
 	zapLogger.Info("数据库连接成功")
 
 	// 4. 数据库迁移
-	if err := db.AutoMigrate(&model.User{}); err != nil {
-		log.Fatal("Failed to migrate database:", err)
+	if migrateErr := db.AutoMigrate(&model.User{}); migrateErr != nil {
+		log.Fatal("Failed to migrate database:", migrateErr)
 	}
 	zapLogger.Info("数据库迁移完成")
 
