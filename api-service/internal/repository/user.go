@@ -105,7 +105,7 @@ func (r *userRepository) Search(ctx context.Context, keyword string, offset, lim
 	// 构建搜索条件
 	searchCondition := fmt.Sprintf("%%%s%%", keyword)
 	query := r.db.WithContext(ctx).Model(&model.User{}).Where(
-		"username LIKE ? OR email LIKE ? OR first_name LIKE ? OR last_name LIKE ?",
+		"username LIKE ? OR email LIKE ? OR nickname LIKE ? OR phone LIKE ?",
 		searchCondition, searchCondition, searchCondition, searchCondition,
 	)
 
@@ -138,7 +138,7 @@ func (r *userRepository) GetActiveUsers(ctx context.Context, offset, limit int) 
 	var users []*model.User
 	var total int64
 
-	query := r.db.WithContext(ctx).Model(&model.User{}).Where("status = ?", "active")
+	query := r.db.WithContext(ctx).Model(&model.User{}).Where("status = ?", 1)
 
 	// 获取总数
 	if err := query.Count(&total).Error; err != nil {
@@ -150,29 +150,10 @@ func (r *userRepository) GetActiveUsers(ctx context.Context, offset, limit int) 
 	return users, total, err
 }
 
-// GetUsersByRole 根据角色获取用户列表
-func (r *userRepository) GetUsersByRole(
-	ctx context.Context,
-	role string,
-	offset, limit int,
-) ([]*model.User, int64, error) {
-	var users []*model.User
-	var total int64
-
-	query := r.db.WithContext(ctx).Model(&model.User{}).Where("role = ?", role)
-
-	// 获取总数
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-
-	// 获取数据
-	err := query.Offset(offset).Limit(limit).Order("created_at desc").Find(&users).Error
-	return users, total, err
-}
+// GetUsersByRole 根据角色获取用户列表 (移除此方法，因为角色管理不在当前范围)
 
 // CountByStatus 根据状态统计用户数量
-func (r *userRepository) CountByStatus(ctx context.Context, status string) (int64, error) {
+func (r *userRepository) CountByStatus(ctx context.Context, status int) (int64, error) {
 	var count int64
 	err := r.db.WithContext(ctx).Model(&model.User{}).Where("status = ?", status).Count(&count).Error
 	return count, err

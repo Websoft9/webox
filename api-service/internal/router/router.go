@@ -58,8 +58,11 @@ func SetupRouter(controllers *Controllers, cfg *config.Config, log logger.Logger
 	users.PUT("/password", controllers.UserController.ChangePassword)
 
 	// 用户管理操作（需要管理员权限）
+	users.POST("", controllers.UserController.CreateUser)                 // 创建用户
 	users.GET("", controllers.UserController.ListUsers)                   // 获取用户列表
 	users.GET("/:id", controllers.UserController.GetUser)                 // 获取单个用户
+	users.PUT("/:id", controllers.UserController.UpdateUser)              // 更新用户信息
+	users.PUT("/:id/password", controllers.UserController.ChangePassword) // 修改用户密码
 	users.PUT("/:id/status", controllers.UserController.UpdateUserStatus) // 更新用户状态
 	users.DELETE("/:id", controllers.UserController.DeleteUser)           // 删除用户
 

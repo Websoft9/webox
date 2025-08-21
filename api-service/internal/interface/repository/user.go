@@ -23,10 +23,9 @@ type UserRepository interface {
 	ExistsByUsername(ctx context.Context, username string) (bool, error)
 	ExistsByEmail(ctx context.Context, email string) (bool, error)
 	GetActiveUsers(ctx context.Context, offset, limit int) ([]*model.User, int64, error)
-	GetUsersByRole(ctx context.Context, role string, offset, limit int) ([]*model.User, int64, error)
 
 	// 统计信息
-	CountByStatus(ctx context.Context, status string) (int64, error)
+	CountByStatus(ctx context.Context, status int) (int64, error)
 	GetUserStats(ctx context.Context, userID uint) (*UserStats, error)
 }
 

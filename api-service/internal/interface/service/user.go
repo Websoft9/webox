@@ -16,10 +16,13 @@ type UserService interface {
 	GetProfile(ctx context.Context, userID uint) (*response.UserProfileResponse, error)
 	UpdateProfile(ctx context.Context, userID uint, req *request.UserUpdateProfileRequest) (*response.UserResponse, error)
 	ChangePassword(ctx context.Context, userID uint, req *request.UserChangePasswordRequest) error
+	AdminChangePassword(ctx context.Context, userID uint, req *request.AdminChangePasswordRequest) error
 
 	// 用户管理（管理员功能）
+	CreateUser(ctx context.Context, req *request.UserCreateRequest) (*response.UserResponse, error)
 	ListUsers(ctx context.Context, req *request.UserListRequest) (*response.UserListResponse, int64, error)
 	GetUser(ctx context.Context, userID uint) (*response.UserResponse, error)
+	UpdateUser(ctx context.Context, userID uint, req *request.UserUpdateRequest) (*response.UserResponse, error)
 	UpdateUserStatus(ctx context.Context, userID uint, req *request.UserUpdateStatusRequest) error
 	DeleteUser(ctx context.Context, userID uint) error
 
