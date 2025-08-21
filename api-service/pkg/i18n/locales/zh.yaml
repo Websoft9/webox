@@ -1,0 +1,41 @@
+# User module messages
+user:
+  not_found: "用户不存在"
+  created_success: "用户创建成功"
+  updated_success: "用户更新成功"
+  deleted_success: "用户删除成功"
+  invalid_credentials: "用户名或密码错误"
+  login_success: "登录成功"
+  logout_success: "退出登录成功"
+  already_exists: "用户已存在"
+  username_required: "用户名不能为空"
+  password_required: "密码不能为空"
+  email_required: "邮箱不能为空"
+  invalid_email: "邮箱格式不正确"
+  password_too_short: "密码长度至少8位"
+
+# Authentication messages
+auth:
+  token_invalid: "无效的令牌"
+  token_expired: "令牌已过期"
+  token_missing: "缺少授权令牌"
+  permission_denied: "权限不足"
+  unauthorized: "未授权访问"
+
+# Common messages
+common:
+  success: "操作成功"
+  failed: "操作失败"
+  invalid_request: "请求无效"
+  internal_error: "服务器内部错误"
+  validation_failed: "数据验证失败"
+  not_found: "资源不存在"
+  bad_request: "请求错误"
+  forbidden: "访问被禁止"
+
+# Error messages
+error:
+  database_error: "数据库操作失败"
+  network_error: "网络连接错误"
+  timeout_error: "请求超时"
+  unknown_error: "未知错误"

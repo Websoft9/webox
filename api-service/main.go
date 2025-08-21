@@ -8,6 +8,7 @@ import (
 	"api-service/internal/router"
 	"api-service/internal/service"
 	"api-service/pkg/auth"
+	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
 	"api-service/pkg/utils"
 	"log"
@@ -27,51 +28,59 @@ func main() {
 	}
 	zapLogger.Info("配置加载成功")
 
-	// 3. 初始化数据库
+	// 3. 初始化i18n
+	if i18nErr := i18n.Init(); i18nErr != nil {
+		log.Fatal("Failed to initialize i18n:", i18nErr)
+	}
+	zapLogger.Info("国际化初始化成功")
+
+	// 4. 初始化数据库
 	db, err := utils.InitDB(cfg)
 	if err != nil {
 		log.Fatal("Failed to initialize database:", err)
 	}
 	zapLogger.Info("数据库连接成功")
 
-	// 4. 数据库迁移
+	// 5. 数据库迁移
 	if migrateErr := db.AutoMigrate(&model.User{}); migrateErr != nil {
 		log.Fatal("Failed to migrate database:", migrateErr)
 	}
 	zapLogger.Info("数据库迁移完成")
 
-	// 5. 初始化Redis
+	// 6. 初始化Redis
 	_, err = utils.InitRedis(cfg)
 	if err != nil {
 		log.Fatal("Failed to initialize Redis:", err)
 	}
 	zapLogger.Info("Redis连接成功")
 
-	// 6. 初始化InfluxDB
+	// 7. 初始化InfluxDB
 	_, err = utils.InitInfluxDB(cfg)
 	if err != nil {
 		log.Fatal("Failed to initialize InfluxDB:", err)
 	}
 	zapLogger.Info("InfluxDB连接成功")
 
-	// 7. 初始化JWT认证
+	// 8. 初始化JWT认证
 	jwtAuth := auth.NewJWTAuth(cfg.JWT.Secret, cfg.JWT.ExpireTime)
 
-	// 8. 初始化Repository层
+	// 9. 初始化Repository层
 	userRepo := repository.NewUserRepository(db)
 
-	// 9. 初始化Service层
+	// 10. 初始化Service层
 	userService := service.NewUserService(userRepo, jwtAuth, zapLogger)
 
-	// 10. 初始化Controller层
+	// 11. 初始化Controller层
 	userController := controller.NewUserController(userService, zapLogger)
+	i18nController := controller.NewI18nController()
 
-	// 11. 初始化路由
+	// 12. 初始化路由
 	r := router.SetupRouter(&router.Controllers{
 		UserController: userController,
+		I18nController: i18nController,
 	}, cfg, zapLogger)
 
-	// 12. 启动服务器
+	// 13. 启动服务器
 	zapLogger.Info("服务器启动", logger.String("port", cfg.Server.Port))
 	if err := r.Run(":" + cfg.Server.Port); err != nil {
 		log.Fatal("Failed to start server:", err)
