@@ -719,10 +719,10 @@ func (r *userRepository) GetByUsername(ctx context.Context, username string) (*U
 
 ### 资源链接
 
-- [项目文档](./webox/docs/)
-- [API 文档](./webox/api-service/docs/)
-- [开发规范](./webox/docs/开发规范.md)
-- [架构设计](./webox/docs/designs/)
+- [项目文档](./docs/)
+- [API 文档](./api-service/docs/)
+- [开发规范](./docs/开发规范.md)
+- [架构设计](./docs/designs/)
 
 ## 致谢
 
