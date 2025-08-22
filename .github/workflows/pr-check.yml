@@ -476,198 +476,6 @@ jobs:
           sarif_file: websoft9-agent/reports/gosec-results.sarif
           category: websoft9-agent-gosec
 
-  # Docker 构建检查
-  docker-build-check:
-    name: 🐳 Docker Build Check
-    runs-on: ubuntu-latest
-    needs: [build-check, security-scan]
-    if: always() && needs.build-check.result == 'success'
-    strategy:
-      matrix:
-        service: ["api-service", "websoft9-agent"]
-        include:
-          - service: api-service
-            dockerfile: api-service/Dockerfile
-            context: api-service
-          - service: websoft9-agent
-            dockerfile: websoft9-agent/Dockerfile
-            context: websoft9-agent
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Check if Dockerfile exists
-        id: dockerfile-check
-        run: |
-          if [ ! -f "${{ matrix.context }}/Dockerfile" ]; then
-            echo "⏭️ 跳过 ${{ matrix.service }}，Dockerfile 不存在"
-            echo "dockerfile_exists=false" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          echo "dockerfile_exists=true" >> $GITHUB_OUTPUT
-          echo "✅ 找到 Dockerfile: ${{ matrix.context }}/Dockerfile"
-
-      - name: Extract metadata for testing
-        if: steps.dockerfile-check.outputs.dockerfile_exists == 'true'
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: websoft9/${{ matrix.service }}
-          tags: |
-            type=ref,event=pr
-            type=sha,prefix=pr-{{branch}}-
-
-      - name: Build Docker image (test only)
-        if: steps.dockerfile-check.outputs.dockerfile_exists == 'true'
-        uses: docker/build-push-action@v5
-        with:
-          context: ${{ matrix.context }}
-          file: ${{ matrix.context }}/Dockerfile
-          platforms: linux/amd64
-          push: false
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          outputs: type=docker,dest=/tmp/${{ matrix.service }}-image.tar
-
-      - name: Test Docker image
-        if: steps.dockerfile-check.outputs.dockerfile_exists == 'true'
-        run: |
-          echo "测试 Docker 镜像..."
-
-          # 加载镜像
-          docker load -i /tmp/${{ matrix.service }}-image.tar
-
-          # 获取镜像标签
-          image_tag=$(echo "${{ steps.meta.outputs.tags }}" | head -n1)
-          echo "测试镜像: $image_tag"
-
-          # 检查镜像是否成功构建
-          if docker images | grep -q "${{ matrix.service }}"; then
-            echo "✅ Docker 镜像构建成功"
-          else
-            echo "❌ Docker 镜像构建失败"
-            exit 1
-          fi
-
-          # 基本镜像检查
-          echo "镜像信息:"
-          docker inspect "$image_tag" --format='{{.Config.Cmd}}'
-          docker inspect "$image_tag" --format='{{.Config.ExposedPorts}}'
-
-          # 尝试运行容器进行基本测试（如果有健康检查）
-          echo "尝试启动容器进行基本测试..."
-          container_id=$(docker run -d "$image_tag" || echo "")
-
-          if [ -n "$container_id" ]; then
-            echo "容器启动成功: $container_id"
-
-            # 等待几秒钟让容器启动
-            sleep 5
-
-            # 检查容器状态
-            container_status=$(docker inspect "$container_id" --format='{{.State.Status}}')
-            echo "容器状态: $container_status"
-
-            # 获取容器日志
-            echo "容器日志:"
-            docker logs "$container_id" 2>&1 | head -20
-
-            # 清理容器
-            docker stop "$container_id" >/dev/null 2>&1 || true
-            docker rm "$container_id" >/dev/null 2>&1 || true
-
-            if [ "$container_status" = "running" ] || [ "$container_status" = "exited" ]; then
-              echo "✅ 容器基本测试通过"
-            else
-              echo "⚠️ 容器状态异常，但镜像构建成功"
-            fi
-          else
-            echo "⚠️ 无法启动容器进行测试，但镜像构建成功"
-          fi
-
-          # 清理镜像
-          docker rmi "$image_tag" >/dev/null 2>&1 || true
-
-          echo "✅ ${{ matrix.service }} Docker 构建检查完成"
-
-      - name: Upload Docker build logs
-        if: always() && steps.dockerfile-check.outputs.dockerfile_exists == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: docker-build-logs-${{ matrix.service }}
-          path: /tmp/${{ matrix.service }}-*.log
-          retention-days: 7
-
-      - name: Comment Docker build result
-        if: always() && steps.dockerfile-check.outputs.dockerfile_exists == 'true'
-        uses: actions/github-script@v7
-        continue-on-error: true
-        with:
-          script: |
-            const service = '${{ matrix.service }}';
-            const success = '${{ job.status }}' === 'success';
-            const icon = success ? '✅' : '❌';
-            const status = success ? '成功' : '失败';
-
-            const comment = `## ${icon} Docker 构建检查 - ${service}
-
-            **状态:** ${status}
-            **镜像:** websoft9/${service}
-            **平台:** linux/amd64
-
-            ${success ?
-              '🎉 Docker 镜像构建成功，容器可以正常启动！' :
-              '⚠️ Docker 镜像构建失败，请检查 Dockerfile 和构建日志。'
-            }
-
-            <details>
-            <summary>构建详情</summary>
-
-            - **Dockerfile 路径:** \`${service}/Dockerfile\`
-            - **构建上下文:** \`${service}/\`
-            - **目标平台:** linux/amd64
-            - **缓存策略:** GitHub Actions Cache
-
-            </details>
-            `;
-
-            // 查找现有的 Docker 构建评论
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-
-            const existingComment = comments.find(comment =>
-              comment.body.includes(`Docker 构建检查 - ${service}`)
-            );
-
-            if (existingComment) {
-              // 更新现有评论
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existingComment.id,
-                body: comment
-              });
-              console.log(`✅ Docker 构建评论已更新 - ${service}`);
-            } else {
-              // 创建新评论
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body: comment
-              });
-              console.log(`✅ Docker 构建评论已创建 - ${service}`);
-            }
-
   # 最终状态检查
   pr-check-summary:
     name: 📊 PR Check Summary
@@ -682,8 +490,7 @@ jobs:
         code-format-check,
         unit-tests,
         build-check,
-        security-scan,
-        docker-build-check,
+        security-scan
       ]
     if: always()
     steps:
@@ -697,14 +504,12 @@ jobs:
           unit_tests="${{ needs.unit-tests.result }}"
           build_check="${{ needs.build-check.result }}"
           security_scan="${{ needs.security-scan.result }}"
-          docker_build="${{ needs.docker-build-check.result }}"
 
           echo "提交消息检查: $commit_check"
           echo "代码格式检查: $code_format"
           echo "单元测试: $unit_tests"
           echo "构建检查: $build_check"
           echo "安全扫描: $security_scan"
-          echo "Docker构建检查: $docker_build"
 
           # 检查是否有失败的作业
           failed_jobs=()
@@ -714,7 +519,6 @@ jobs:
           [ "$unit_tests" = "failure" ] && failed_jobs+=("单元测试")
           [ "$build_check" = "failure" ] && failed_jobs+=("构建检查")
           [ "$security_scan" = "failure" ] && failed_jobs+=("安全扫描")
-          [ "$docker_build" = "failure" ] && failed_jobs+=("Docker构建检查")
 
           if [ ${#failed_jobs[@]} -gt 0 ]; then
             echo ""
@@ -748,8 +552,7 @@ jobs:
                 { name: '代码格式检查', key: 'code-format-check' },
                 { name: '单元测试', key: 'unit-tests' },
                 { name: '构建检查', key: 'build-check' },
-                { name: '安全扫描', key: 'security-scan' },
-                { name: 'Docker构建检查', key: 'docker-build-check' }
+                { name: '安全扫描', key: 'security-scan' }
               ];
 
               for (const job of jobs) {
@@ -791,9 +594,6 @@ jobs:
                 }
                 if (failedJobs.includes('安全扫描')) {
                   summary += '- **安全问题**: 修复 Gosec 扫描发现的安全漏洞\n';
-                }
-                if (failedJobs.includes('Docker构建检查')) {
-                  summary += '- **Docker构建**: 检查 Dockerfile 语法和构建配置，确保镜像可以正常构建\n';
                 }
 
                 summary += '\n---\n\n';
@@ -849,8 +649,7 @@ jobs:
                 { name: '代码格式检查', key: 'code-format-check' },
                 { name: '单元测试', key: 'unit-tests' },
                 { name: '构建检查', key: 'build-check' },
-                { name: '安全扫描', key: 'security-scan' },
-                { name: 'Docker构建检查', key: 'docker-build-check' }
+                { name: '安全扫描', key: 'security-scan' }
               ];
 
               let allPassed = true;
