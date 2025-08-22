@@ -16,15 +16,24 @@ var localeFS embed.FS
 // Bundle holds the i18n bundle
 var Bundle *i18n.Bundle
 
-// SupportedLanguages contains all supported languages
-var SupportedLanguages = []string{"en", "zh"}
+// SupportedLanguages contains all supported languages (will be initialized from config)
+var SupportedLanguages []string
 
-// DefaultLanguage is the fallback language
-const DefaultLanguage = "en"
+// DefaultLanguage is the fallback language (will be initialized from config)
+var DefaultLanguage string
 
 // Init initializes the i18n bundle
 func Init() error {
-	Bundle = i18n.NewBundle(language.English)
+	return InitWithConfig("en-US", []string{"en-US", "zh-CN"})
+}
+
+// InitWithConfig initializes the i18n bundle with custom configuration
+func InitWithConfig(defaultLang string, supportedLangs []string) error {
+	// Set configuration
+	DefaultLanguage = defaultLang
+	SupportedLanguages = supportedLangs
+
+	Bundle = i18n.NewBundle(language.AmericanEnglish)
 	Bundle.RegisterUnmarshalFunc("yaml", yaml.Unmarshal)
 
 	// Load all locale files from embedded filesystem
@@ -106,19 +115,30 @@ func TWithPlural(key, lang string, count int, templateData ...map[string]interfa
 	return message
 }
 
-// normalizeLanguage normalizes language codes (e.g., "zh-CN" -> "zh")
+// NormalizeLanguage normalizes language codes to standard format (exported version)
+func NormalizeLanguage(lang string) string {
+	return normalizeLanguage(lang)
+}
+
+// normalizeLanguage normalizes language codes to standard format
 func normalizeLanguage(lang string) string {
 	if lang == "" {
 		return DefaultLanguage
 	}
 
-	// Extract main language code
-	parts := strings.Split(lang, "-")
-	if len(parts) > 0 {
-		return strings.ToLower(parts[0])
-	}
+	// Convert to lowercase for comparison
+	lang = strings.ToLower(strings.TrimSpace(lang))
 
-	return strings.ToLower(lang)
+	// Handle common variations and normalize to standard format
+	switch {
+	case lang == "en" || lang == "en-us" || strings.HasPrefix(lang, "en-"):
+		return "en-US"
+	case lang == "zh" || lang == "zh-cn" || lang == "zh-hans" || lang == "zh-tw" || lang == "zh-hant" || strings.HasPrefix(lang, "zh-"):
+		return "zh-CN"
+	default:
+		// Return as-is for other languages, but check if it's in our supported list
+		return lang
+	}
 }
 
 // isLanguageSupported checks if a language is supported
@@ -210,15 +230,20 @@ func GetLanguageInfo(lang string) map[string]interface{} {
 
 	// Add language names
 	switch lang {
-	case "en":
+	case "en-US":
 		info["name"] = EnglishName
 		info["native_name"] = EnglishName
-	case "zh":
+		info["region"] = "United States"
+		info["iso_code"] = "en-US"
+	case "zh-CN":
 		info["name"] = ChineseName
 		info["native_name"] = "中文"
+		info["region"] = "China"
+		info["iso_code"] = "zh-CN"
 	default:
 		info["name"] = lang
 		info["native_name"] = lang
+		info["iso_code"] = lang
 	}
 
 	return info

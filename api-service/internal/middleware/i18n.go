@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"api-service/pkg/i18n"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -30,8 +29,8 @@ func I18nMiddleware() gin.HandlerFunc {
 			lang = i18n.DefaultLanguage
 		}
 
-		// Normalize and validate language
-		lang = strings.ToLower(strings.TrimSpace(lang))
+		// Normalize language to standard format
+		lang = i18n.NormalizeLanguage(lang)
 
 		// Store language in context for later use
 		c.Set("language", lang)

@@ -29,7 +29,7 @@ func main() {
 	zapLogger.Info("配置加载成功")
 
 	// 3. 初始化i18n
-	if i18nErr := i18n.Init(); i18nErr != nil {
+	if i18nErr := i18n.InitWithConfig(cfg.I18n.DefaultLanguage, cfg.I18n.SupportedLanguages); i18nErr != nil {
 		log.Fatal("Failed to initialize i18n:", i18nErr)
 	}
 	zapLogger.Info("国际化初始化成功")
