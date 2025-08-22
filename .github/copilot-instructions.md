@@ -1,131 +1,127 @@
 # GitHub Copilot Instructions for Websoft9
 
-## Project Architecture Overview
+## Project Overview
+Websoft9: Cloud application management platform with two Go services:
+- **api-service**: REST API (Gin + GORM + SQLite/Redis + i18n)  
+- **websoft9-agent**: System agent (monitoring + task execution)
 
-Websoft9 is a cloud application management platform with two main Go services:
+## Core Patterns (MANDATORY)
 
-- **api-service**: Core backend API (Gin + GORM + SQLite/Redis/InfluxDB)
-- **websoft9-agent**: Node agent for task execution and monitoring (gRPC client)
-
-Communication flow: `Client → API Service → gRPC → Agent → Docker/System operations`
-
-## Code Patterns & Conventions
-
-### Layered Architecture (api-service)
-Follow the established 4-layer pattern with dependency injection:
-
+### 1. Layered Architecture
 ```go
-// Controller → Service → Repository → Model
 internal/
-├── controller/user.go       # HTTP handlers, single noun naming
-├── service/user.go         # Business logic implementation  
-├── repository/user.go      # Data access with context.Context
-└── interface/              # Contracts for dependency inversion
-    ├── service/user.go     # Service interfaces
-    └── repository/user.go  # Repository interfaces
+├── controller/     # HTTP handlers
+├── service/        # Business logic  
+├── repository/     # Data access
+├── interface/      # Contracts
+├── model/          # Domain models
+└── dto/           # Request/Response DTOs
 ```
 
-### Error Handling Pattern
-Use the centralized error system in `pkg/errors/`:
-
+### 2. Error Handling (REQUIRED)
 ```go
-// Service layer - wrap and return custom errors
-if err != nil {
-    return nil, errors.WrapError(err, errors.CodeInternalError, "创建用户失败")
+// Use centralized errors
+if existingUser != nil {
+    return nil, errors.NewAppError(errors.CodeConflict, "用户已存在")
 }
 
-// Controller layer - let middleware handle errors
+// Controllers use middleware
 if err != nil {
     errors.HandleError(ctx, err)
     return
 }
 ```
 
-### Logging Pattern
-Use structured logging with context throughout:
-
+### 3. Context Usage (CRITICAL)
 ```go
-s.logger.InfoContext(ctx, "用户注册开始", 
-    logger.String("username", req.Username))
+// ALWAYS pass context through all layers
+func (s *service) Method(ctx context.Context, req *dto.Request) error {
+    return s.repo.Method(ctx, data)
+}
+
+// ALWAYS use WithContext for database
+return r.db.WithContext(ctx).Create(user).Error
 ```
 
-### DTO Pattern
-Always use request/response DTOs for API boundaries:
-- `internal/dto/request/` - Input validation with binding tags
-- `internal/dto/response/` - Output formatting, exclude sensitive fields
+## Go Rules
 
-## Development Workflows
+### Naming
+- Files: `user.go` (not `user_controller.go`)
+- Interfaces: `UserService` (not `IUserService`)
+- Methods: PascalCase exported, camelCase private
 
-### Building & Testing
-```bash
-# API Service
-cd api-service
-make build          # Build binary
-make run            # Development server
-make test           # Run tests
-make dev            # Hot reload (requires air)
-
-# Agent
-cd websoft9-agent  
-make build          # Build agent
-make test           # Run tests
-```
-
-### Database Operations
-- SQLite for development: `data/websoft9.db` 
-- Auto-migration in `main.go`: `db.AutoMigrate(&model.User{})`
-- Repository pattern with context: `func (r *repo) Create(ctx context.Context, user *model.User) error`
-
-### Docker Development
-```bash
-# Full stack with Redis
-docker-compose -f docker/docker-compose.yml up
-
-# Single service builds
-make docker-build && make docker-run
-```
-
-## Agent-Specific Patterns
-
-### Task Execution
-Agent follows this pattern for all operations:
+### Memory & Performance
 ```go
-// internal/task/executor.go - handles tasks from gRPC
-type TaskResult struct {
-    ID     string `json:"id"`
-    Status string `json:"status"`  // success/failed/running
-    Output string `json:"output"`
+// Use pointers for large structs
+func (s *service) UpdateUser(ctx context.Context, user *model.User) error
+
+// Always close resources
+defer file.Close()
+
+// Prefer interfaces for dependencies
+type UserService interface { /* methods */ }
+```
+
+### Error Patterns
+```go
+// Early return
+if err := validate(req); err != nil {
+    return nil, err
+}
+
+// Never ignore errors
+result, err := operation()
+if err != nil {
+    return errors.NewAppError(errors.CodeInternalError, "操作失败")
 }
 ```
 
-### Monitoring Collection
-- System metrics → InfluxDB (CPU, memory, disk, network)
-- Container monitoring via Docker API
-- Health checks (HTTP/TCP probes)
+## API Design
+```go
+// Current routes
+POST   /api/v1/auth/register
+POST   /api/v1/auth/login
+GET    /api/v1/users/profile
+PUT    /api/v1/users/profile
 
-### Security Validation
-All agent operations use `pkg/security/validator.go`:
-- Command validation before execution
-- Path sanitization for file operations
-- Input validation for all external data
+// DTOs with validation
+type UserRegisterRequest struct {
+    Username string `json:"username" binding:"required,min=3,max=20"`
+    Email    string `json:"email" binding:"required,email"`
+    Password string `json:"password" binding:"required,min=6"`
+}
+```
 
-## Dependencies & Integration
+## Anti-Patterns (NEVER)
+```go
+// ❌ Don't ignore context
+func (r *repo) Get(id uint) error
 
-### Key External Services
-- **Redis**: Session storage and task queues
-- **InfluxDB**: Time-series monitoring data
-- **gRPC**: Agent ↔ API Service communication
-- **Docker Engine API**: Container operations
+// ❌ Don't use panic in business logic  
+if user == nil { panic("user is nil") }
 
-### Testing Strategy
-- Unit tests for business logic: `*_test.go`
-- Integration tests in CI pipeline
-- Security validation tests for agent operations
+// ❌ Don't ignore errors
+result, _ := operation()
 
-## Common Gotchas
+// ✅ DO this instead
+func (r *repo) Get(ctx context.Context, id uint) error {
+    return r.db.WithContext(ctx).First(&user, id).Error
+}
+```
 
-1. **Context Usage**: Always pass context.Context through all layers for cancellation
-2. **Error Wrapping**: Use `errors.WrapError()` not standard library wrapping
-3. **Agent Privileges**: Agent must run as root for system operations
-4. **File Naming**: Use single nouns (`user.go` not `user_controller.go`)
-5. **gRPC Health**: Agent maintains heartbeat to API service
+## Key Dependencies
+- **Gin**: HTTP framework
+- **GORM**: ORM with SQLite
+- **Redis**: Sessions & caching
+- **i18n**: en-US (default), zh-CN
+
+## Development
+```bash
+# Quick start
+cd api-service && make dev
+./scripts/run-tests.sh
+cd docker && docker-compose up -d
+```
+
+---
+*Keep examples project-specific and concrete.*

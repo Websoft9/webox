@@ -86,4 +86,6 @@ func setDefaults() {
 	viper.SetDefault("jwt.secret", "change-this-secret-key-in-production")
 	viper.SetDefault("jwt.expire_time", constants.DefaultJWTExpireTime)
 	viper.SetDefault("grpc.port", "9090")
+	viper.SetDefault("i18n.default_language", "en-US")
+	viper.SetDefault("i18n.supported_languages", []string{"en-US", "zh-CN"})
 }

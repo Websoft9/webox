@@ -25,5 +25,5 @@ grpc:
   port: "9090"
 
 i18n:
-  default_language: "en"
-  supported_languages: ["en", "zh"]
+  default_language: "en-US"
+  supported_languages: ["en-US", "zh-CN"]
