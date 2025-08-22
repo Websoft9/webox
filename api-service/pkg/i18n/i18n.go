@@ -13,6 +13,12 @@ import (
 //go:embed locales/*.yaml
 var localeFS embed.FS
 
+// Language constants
+const (
+	LangEnUS = "en-US"
+	LangZhCN = "zh-CN"
+)
+
 // Bundle holds the i18n bundle
 var Bundle *i18n.Bundle
 
@@ -24,7 +30,7 @@ var DefaultLanguage string
 
 // Init initializes the i18n bundle
 func Init() error {
-	return InitWithConfig("en-US", []string{"en-US", "zh-CN"})
+	return InitWithConfig(LangEnUS, []string{LangEnUS, LangZhCN})
 }
 
 // InitWithConfig initializes the i18n bundle with custom configuration
@@ -132,9 +138,10 @@ func normalizeLanguage(lang string) string {
 	// Handle common variations and normalize to standard format
 	switch {
 	case lang == "en" || lang == "en-us" || strings.HasPrefix(lang, "en-"):
-		return "en-US"
-	case lang == "zh" || lang == "zh-cn" || lang == "zh-hans" || lang == "zh-tw" || lang == "zh-hant" || strings.HasPrefix(lang, "zh-"):
-		return "zh-CN"
+		return LangEnUS
+	case lang == "zh" || lang == "zh-cn" || lang == "zh-hans" ||
+		lang == "zh-tw" || lang == "zh-hant" || strings.HasPrefix(lang, "zh-"):
+		return LangZhCN
 	default:
 		// Return as-is for other languages, but check if it's in our supported list
 		return lang
@@ -230,16 +237,16 @@ func GetLanguageInfo(lang string) map[string]interface{} {
 
 	// Add language names
 	switch lang {
-	case "en-US":
+	case LangEnUS:
 		info["name"] = EnglishName
 		info["native_name"] = EnglishName
 		info["region"] = "United States"
-		info["iso_code"] = "en-US"
-	case "zh-CN":
+		info["iso_code"] = LangEnUS
+	case LangZhCN:
 		info["name"] = ChineseName
 		info["native_name"] = "中文"
 		info["region"] = "China"
-		info["iso_code"] = "zh-CN"
+		info["iso_code"] = LangZhCN
 	default:
 		info["name"] = lang
 		info["native_name"] = lang
