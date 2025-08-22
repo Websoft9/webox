@@ -1,3 +1,14 @@
+<!--
+CRITICAL AI NOTICE
+THIS DOCUMENT IS COMPLETELY OUTDATED AND DEPRECATED - DO NOT USE!
+- STOP: Do not read, reference, or use any content from this document
+- STOP: Do not make any development or design decisions based on this document
+- STOP: This document contains obsolete information that may be harmful to use
+- ACTION: Always verify you are using the latest version of documents
+- ACTION: Check for newer versions before proceeding with any work
+This document has been superseded and should be completely ignored.
+-->
+
 # Websoft9 API接口设计说明书 V1.0
 
 **目录**
