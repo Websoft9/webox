@@ -27,24 +27,27 @@ Websoft9 is a modern cloud application management solution platform with layered
 
 - **Backend**: Go 1.24+, Gin, GORM, SQLite/MySQL, Redis, InfluxDB
 - **Frontend**: Vue 3, TypeScript, Element Plus, Pinia
-- **Infrastructure**: Docker, Kubernetes, GitHub Actions
+- **Infrastructure**: Docker, GitHub Actions
 
 ## Development Environment Setup
 
 ### Environment Requirements
 
 - Go 1.24+
+  - [golangci-lint 1.64.8](https://github.com/golangci/golangci-lint)
+  - [gosec 2.22.7+](https://github.com/securego/gosec)
 - Node.js 18+
 - Docker 20.10+
 - Git 2.30+
+- Linux
 
 ### Quick Start
 
 1. **Fork and Clone Repository**
 
    ```bash
-   git clone https://github.com/your-username/websoft9.git
-   cd websoft9/webox
+   git clone https://github.com/Websoft9/webox.git
+   cd webox
    ```
 
 2. **Setup Development Environment**
@@ -86,6 +89,7 @@ Websoft9 is a modern cloud application management solution platform with layered
 - Follow [Go Code Review Comments](https://github.com/golang/go/wiki/CodeReviewComments)
 - Use `gofmt` and `goimports` to format code
 - Use `golangci-lint` for code checking
+- Use `gosec` for security checks
 
 ```go
 // Correct function comments and naming

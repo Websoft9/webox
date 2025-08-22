@@ -27,24 +27,35 @@ Websoft9 是一个现代化的云应用管理解决方案平台，采用分层�
 
 - **后端**: Go 1.24+, Gin, GORM, SQLite/MySQL, Redis, InfluxDB
 - **前端**: Vue 3, TypeScript, Element Plus, Pinia
-- **基础设施**: Docker, Kubernetes, GitHub Actions
+- **基础设施**: Docker, GitHub Actions
 
 ## 开发环境搭建
 
 ### 环境要求
 
 - Go 1.24+
+  - [golangci-lint 1.64.8](https://github.com/golangci/golangci-lint)
+  - [gosec 2.22.7+](https://github.com/securego/gosec)
 - Node.js 18+
 - Docker 20.10+
 - Git 2.30+
+- Linux
+
+>
+> **仅针对中国站用户，请使用代理**
+>
+> ```shell
+> go env -w GOPROXY=<https://mirrors.aliyun.com/goproxy/,direct>
+> ```
+>
 
 ### 快速开始
 
 1. **Fork 并克隆仓库**
 
    ```bash
-   git clone https://github.com/your-username/websoft9.git
-   cd websoft9/webox
+   git clone https://github.com/Websoft9/webox.git
+   cd webox
    ```
 
 2. **设置开发环境**
@@ -53,10 +64,10 @@ Websoft9 是一个现代化的云应用管理解决方案平台，采用分层�
    # 安装 Go 依赖
    cd api-service
    go mod tidy
-   
+
    # 初始化数据库
    make init-db
-   
+
    # 启动 API 服务
    make run
    ```
@@ -86,6 +97,7 @@ Websoft9 是一个现代化的云应用管理解决方案平台，采用分层�
 - 遵循 [Go Code Review Comments](https://github.com/golang/go/wiki/CodeReviewComments)
 - 使用 `gofmt` 和 `goimports` 格式化代码
 - 使用 `golangci-lint` 进行代码检查
+- 使用 `gosec` 进行安全检查
 
 ```go
 // 正确的函数注释和命名
@@ -96,13 +108,13 @@ func (s *UserService) CreateUser(ctx context.Context, req *CreateUserRequest) (*
     if err := s.validateCreateUserRequest(req); err != nil {
         return nil, errors.Wrap(err, "invalid create user request")
     }
-    
+
     // 创建用户
     user, err := s.repo.Create(ctx, req)
     if err != nil {
         return nil, errors.Wrap(err, "failed to create user in database")
     }
-    
+
     return user, nil
 }
 ```
@@ -211,15 +223,15 @@ func (s *UserService) CreateUser(ctx context.Context, req *CreateUserRequest) (*
         "operation": "CreateUser",
         "username":  req.Username,
     })
-    
+
     logger.Info("Creating new user")
-    
+
     user, err := s.repo.Create(req)
     if err != nil {
         logger.WithError(err).Error("Failed to create user")
         return nil, err
     }
-    
+
     logger.WithField("user_id", user.ID).Info("User created successfully")
     return user, nil
 }
@@ -304,7 +316,7 @@ Closes #123
    # 编写代码
    # 添加测试
    # 更新文档
-   
+
    git add .
    git commit -m "feat(user): add user creation functionality"
    ```
@@ -510,10 +522,10 @@ func TestUserService_CreateUser(t *testing.T) {
         t.Run(tt.name, func(t *testing.T) {
             repo := &MockUserRepository{}
             tt.setup(repo)
-            
+
             service := NewUserService(repo)
             got, err := service.CreateUser(context.Background(), tt.request)
-            
+
             if tt.wantErr {
                 assert.Error(t, err)
                 assert.Nil(t, got)
@@ -521,7 +533,7 @@ func TestUserService_CreateUser(t *testing.T) {
                 assert.NoError(t, err)
                 assert.Equal(t, tt.want, got)
             }
-            
+
             repo.AssertExpectations(t)
         })
     }
@@ -605,12 +617,12 @@ func (r *CreateUserRequest) Validate() error {
     if err := validate.Struct(r); err != nil {
         return errors.Wrap(err, "validation failed")
     }
-    
+
     // 自定义验证
     if err := ValidatePasswordStrength(r.Password); err != nil {
         return err
     }
-    
+
     return nil
 }
 
