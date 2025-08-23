@@ -18,9 +18,13 @@ type UserLoginRequest struct {
 // UserUpdateProfileRequest 用户更新资料请求
 type UserUpdateProfileRequest struct {
 	Email     *string `json:"email,omitempty" binding:"omitempty,email" example:"newemail@example.com"`
-	FirstName *string `json:"first_name,omitempty" binding:"omitempty,max=50" example:"John"`
-	LastName  *string `json:"last_name,omitempty" binding:"omitempty,max=50" example:"Doe"`
+	Nickname  *string `json:"nickname,omitempty" binding:"omitempty,max=64" example:"John Doe"`
+	Phone     *string `json:"phone,omitempty" binding:"omitempty,max=20" example:"+1234567890"`
 	Avatar    *string `json:"avatar,omitempty" binding:"omitempty,url" example:"https://example.com/avatar.jpg"`
+	Gender    *int    `json:"gender,omitempty" binding:"omitempty,min=0,max=2" example:"1"`
+	Signature *string `json:"signature,omitempty" binding:"omitempty,max=255" example:"This is my signature"`
+	Timezone  *string `json:"timezone,omitempty" binding:"omitempty,max=64" example:"Asia/Shanghai"`
+	Language  *string `json:"language,omitempty" binding:"omitempty,max=10" example:"zh-CN"`
 }
 
 // UserChangePasswordRequest 用户修改密码请求
@@ -32,11 +36,49 @@ type UserChangePasswordRequest struct {
 // UserListRequest 用户列表请求
 type UserListRequest struct {
 	dto.BaseListRequest
-	Status string `form:"status" json:"status" binding:"omitempty,oneof=active inactive banned" example:"active"`
-	Role   string `form:"role" json:"role" binding:"omitempty,oneof=admin user guest" example:"user"`
+	Status   *int    `form:"status" json:"status" binding:"omitempty,min=0,max=1" example:"1"`
+	GroupID  *uint   `form:"group_id" json:"group_id" binding:"omitempty,min=1" example:"1"`
+	Keyword  *string `form:"keyword" json:"keyword" binding:"omitempty" example:"john"`
+	Gender   *int    `form:"gender" json:"gender" binding:"omitempty,min=0,max=2" example:"1"`
+	Language *string `form:"language" json:"language" binding:"omitempty" example:"zh-CN"`
+}
+
+// UserCreateRequest 创建用户请求
+type UserCreateRequest struct {
+	GroupID   uint    `json:"group_id" binding:"required,min=1" example:"1"`
+	Username  string  `json:"username" binding:"required,min=3,max=64" example:"johndoe"`
+	Email     string  `json:"email" binding:"required,email" example:"john@example.com"`
+	Password  string  `json:"password" binding:"required,min=6" example:"password123"`
+	Nickname  *string `json:"nickname,omitempty" binding:"omitempty,max=64" example:"John Doe"`
+	Phone     *string `json:"phone,omitempty" binding:"omitempty,max=20" example:"+1234567890"`
+	Avatar    *string `json:"avatar,omitempty" binding:"omitempty,url" example:"https://example.com/avatar.jpg"`
+	Gender    *int    `json:"gender,omitempty" binding:"omitempty,min=0,max=2" example:"1"`
+	Signature *string `json:"signature,omitempty" binding:"omitempty,max=255" example:"This is my signature"`
+	Status    *int    `json:"status,omitempty" binding:"omitempty,min=0,max=1" example:"1"`
+	Timezone  *string `json:"timezone,omitempty" binding:"omitempty,max=64" example:"Asia/Shanghai"`
+	Language  *string `json:"language,omitempty" binding:"omitempty,max=10" example:"zh-CN"`
+}
+
+// UserUpdateRequest 更新用户请求
+type UserUpdateRequest struct {
+	GroupID   *uint   `json:"group_id,omitempty" binding:"omitempty,min=1" example:"1"`
+	Username  *string `json:"username,omitempty" binding:"omitempty,min=3,max=64" example:"johndoe"`
+	Email     *string `json:"email,omitempty" binding:"omitempty,email" example:"newemail@example.com"`
+	Nickname  *string `json:"nickname,omitempty" binding:"omitempty,max=64" example:"John Doe"`
+	Phone     *string `json:"phone,omitempty" binding:"omitempty,max=20" example:"+1234567890"`
+	Avatar    *string `json:"avatar,omitempty" binding:"omitempty,url" example:"https://example.com/avatar.jpg"`
+	Gender    *int    `json:"gender,omitempty" binding:"omitempty,min=0,max=2" example:"1"`
+	Signature *string `json:"signature,omitempty" binding:"omitempty,max=255" example:"This is my signature"`
+	Timezone  *string `json:"timezone,omitempty" binding:"omitempty,max=64" example:"Asia/Shanghai"`
+	Language  *string `json:"language,omitempty" binding:"omitempty,max=10" example:"zh-CN"`
 }
 
 // UserUpdateStatusRequest 用户状态更新请求
 type UserUpdateStatusRequest struct {
-	Status string `json:"status" binding:"required,oneof=active inactive banned" example:"active"`
+	Status int `json:"status" binding:"required,min=0,max=1" example:"1"`
+}
+
+// UserPasswordUpdateRequest 管理员修改用户密码请求
+type UserPasswordUpdateRequest struct {
+	NewPassword string `json:"new_password" binding:"required,min=6" example:"newpassword123"`
 }

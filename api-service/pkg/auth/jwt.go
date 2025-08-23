@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"api-service/internal/constants"
 	"errors"
 	"time"
 
@@ -87,4 +88,32 @@ func (j *JWTAuth) ValidateToken(tokenString string) (*Claims, error) {
 	}
 
 	return nil, errors.New("invalid token")
+}
+
+// 全局JWT实例 - 需要在初始化时设置
+var globalJWT *JWTAuth
+
+// InitJWT 初始化全局JWT实例
+func InitJWT(secretKey string, expireTime int) {
+	globalJWT = NewJWTAuth(secretKey, expireTime)
+}
+
+// GenerateToken 生成Token（全局函数）
+func GenerateToken(userID uint, username string) (string, error) {
+	if globalJWT == nil {
+		// 如果没有初始化，使用默认配置
+		globalJWT = NewJWTAuth("default-secret-key", constants.DefaultJWTExpireTime)
+	}
+
+	token, _, err := globalJWT.GenerateTokenWithUserInfo(userID, username, "user")
+	return token, err
+}
+
+// ValidateToken 验证Token（全局函数）
+func ValidateToken(tokenString string) (*Claims, error) {
+	if globalJWT == nil {
+		globalJWT = NewJWTAuth("default-secret-key", constants.DefaultJWTExpireTime)
+	}
+
+	return globalJWT.ValidateToken(tokenString)
 }

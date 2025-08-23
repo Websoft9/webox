@@ -139,3 +139,32 @@ var (
 	ErrUserQuotaExceeded = NewAppErrorWithI18n(CodeUserQuotaExceeded, CodeMessages[CodeUserQuotaExceeded],
 		"common.forbidden")
 )
+
+// Is 检查错误是否匹配
+func Is(err, target error) bool {
+	if err == target {
+		return true
+	}
+
+	// 检查是否为AppError类型
+	if appErr, ok := err.(*AppError); ok {
+		if targetAppErr, ok := target.(*AppError); ok {
+			return appErr.Code == targetAppErr.Code
+		}
+	}
+
+	// 回退到标准库的errors.Is行为
+	for {
+		if err == target {
+			return true
+		}
+		if x, ok := err.(interface{ Unwrap() error }); ok {
+			err = x.Unwrap()
+			if err == nil {
+				return false
+			}
+		} else {
+			return false
+		}
+	}
+}

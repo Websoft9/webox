@@ -195,7 +195,7 @@ func (c *UserController) GetUser(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := c.getIDFromPath(ctx, "id")
+	userID, err := c.getIDFromPath(ctx)
 	if err != nil {
 		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, "无效的用户ID"))
 		return
@@ -219,7 +219,7 @@ func (c *UserController) UpdateUserStatus(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := c.getIDFromPath(ctx, "id")
+	userID, err := c.getIDFromPath(ctx)
 	if err != nil {
 		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, "无效的用户ID"))
 		return
@@ -239,7 +239,7 @@ func (c *UserController) UpdateUserStatus(ctx *gin.Context) {
 		return
 	}
 
-	c.logger.InfoContext(ctx, "用户状态更新成功", logger.Uint("target_user_id", userID), logger.String("new_status", req.Status))
+	c.logger.InfoContext(ctx, "用户状态更新成功", logger.Uint("target_user_id", userID), logger.Int("new_status", req.Status))
 	pkg_response.Success(ctx, "用户状态更新成功", nil)
 }
 
@@ -251,7 +251,7 @@ func (c *UserController) DeleteUser(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := c.getIDFromPath(ctx, "id")
+	userID, err := c.getIDFromPath(ctx)
 	if err != nil {
 		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, "无效的用户ID"))
 		return
@@ -297,11 +297,101 @@ func (c *UserController) checkAdminPermission(ctx *gin.Context) error {
 }
 
 // getIDFromPath 从路径参数中获取ID
-func (c *UserController) getIDFromPath(ctx *gin.Context, paramName string) (uint, error) {
-	idStr := ctx.Param(paramName)
+func (c *UserController) getIDFromPath(ctx *gin.Context) (uint, error) {
+	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
 		return 0, err
 	}
 	return uint(id), nil
+}
+
+// CreateUser 创建用户（管理员功能）
+func (c *UserController) CreateUser(ctx *gin.Context) {
+	// 检查管理员权限
+	if err := c.checkAdminPermission(ctx); err != nil {
+		errors.HandleError(ctx, err)
+		return
+	}
+
+	var req request.UserCreateRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		c.logger.WarnContext(ctx, "创建用户请求参数绑定失败", logger.ErrorField(err))
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, "请求参数无效"))
+		return
+	}
+
+	user, err := c.userService.CreateUser(ctx, &req)
+	if err != nil {
+		c.logger.ErrorContext(ctx, "创建用户失败", logger.String("username", req.Username), logger.ErrorField(err))
+		errors.HandleError(ctx, err)
+		return
+	}
+
+	c.logger.InfoContext(ctx, "用户创建成功", logger.String("username", req.Username), logger.Uint("user_id", user.ID))
+	pkg_response.Success(ctx, "用户创建成功", user)
+}
+
+// UpdateUser 更新用户（管理员功能）
+func (c *UserController) UpdateUser(ctx *gin.Context) {
+	// 检查管理员权限
+	if err := c.checkAdminPermission(ctx); err != nil {
+		errors.HandleError(ctx, err)
+		return
+	}
+
+	userID, err := c.getIDFromPath(ctx)
+	if err != nil {
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, "无效的用户ID"))
+		return
+	}
+
+	var req request.UserUpdateRequest
+	if bindErr := ctx.ShouldBindJSON(&req); bindErr != nil {
+		c.logger.WarnContext(ctx, "更新用户请求参数绑定失败", logger.ErrorField(bindErr))
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, "请求参数无效"))
+		return
+	}
+
+	user, err := c.userService.UpdateUser(ctx, userID, &req)
+	if err != nil {
+		c.logger.ErrorContext(ctx, "更新用户失败", logger.Uint("user_id", userID), logger.ErrorField(err))
+		errors.HandleError(ctx, err)
+		return
+	}
+
+	c.logger.InfoContext(ctx, "用户更新成功", logger.Uint("user_id", userID))
+	pkg_response.Success(ctx, "用户更新成功", user)
+}
+
+// UpdateUserPassword 管理员修改用户密码
+func (c *UserController) UpdateUserPassword(ctx *gin.Context) {
+	// 检查管理员权限
+	if err := c.checkAdminPermission(ctx); err != nil {
+		errors.HandleError(ctx, err)
+		return
+	}
+
+	userID, err := c.getIDFromPath(ctx)
+	if err != nil {
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, "无效的用户ID"))
+		return
+	}
+
+	var req request.UserPasswordUpdateRequest
+	if bindErr := ctx.ShouldBindJSON(&req); bindErr != nil {
+		c.logger.WarnContext(ctx, "修改密码请求参数绑定失败", logger.ErrorField(bindErr))
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, "请求参数无效"))
+		return
+	}
+
+	err = c.userService.UpdateUserPassword(ctx, userID, &req)
+	if err != nil {
+		c.logger.ErrorContext(ctx, "管理员修改用户密码失败", logger.Uint("user_id", userID), logger.ErrorField(err))
+		errors.HandleError(ctx, err)
+		return
+	}
+
+	c.logger.InfoContext(ctx, "管理员修改用户密码成功", logger.Uint("user_id", userID))
+	pkg_response.Success(ctx, "密码修改成功", nil)
 }
