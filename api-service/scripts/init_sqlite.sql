@@ -433,17 +433,6 @@ CREATE TABLE permissions (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- 用户角色关联表
-CREATE TABLE user_roles (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL REFERENCES users(id),
-    role_id INTEGER NOT NULL REFERENCES roles(id),
-    granted_by INTEGER,
-    granted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    status INTEGER DEFAULT 1,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(user_id, role_id)
-);
 
 -- 角色权限关联表
 CREATE TABLE role_permissions (
@@ -578,8 +567,6 @@ CREATE INDEX idx_app_instances_template ON app_instances(template_id);
 -- 用户权限相关索引
 CREATE INDEX idx_users_group ON users(group_id);
 CREATE INDEX idx_users_status ON users(status);
-CREATE INDEX idx_user_roles_user ON user_roles(user_id);
-CREATE INDEX idx_user_roles_role ON user_roles(role_id);
 CREATE INDEX idx_role_permissions_role ON role_permissions(role_id);
 CREATE INDEX idx_role_permissions_permission ON role_permissions(permission_id);
 

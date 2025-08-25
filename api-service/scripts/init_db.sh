@@ -21,7 +21,7 @@ DB_PASS=""
 SQLITE_PATH="./data/websoft9.db"
 
 # Path to the flag file
-FLAG_FILE="/var/lib/websoft9_db_initialized"
+FLAG_FILE="./data/.websoft9_db_initialized"
 
 # Function to print colored output
 print_info() {
