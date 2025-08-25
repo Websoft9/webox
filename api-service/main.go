@@ -62,13 +62,13 @@ func main() {
 	zapLogger.Info("InfluxDB连接成功")
 
 	// 8. 初始化JWT认证
-	jwtAuth := auth.NewJWTAuth(cfg.JWT.Secret, cfg.JWT.ExpireTime)
+	auth.InitJWT(cfg.JWT.Secret, cfg.JWT.ExpireTime)
 
 	// 9. 初始化Repository层
 	userRepo := repository.NewUserRepository(db)
 
 	// 10. 初始化Service层
-	userService := service.NewUserService(userRepo, jwtAuth, zapLogger)
+	userService := service.NewUserService(userRepo, zapLogger)
 
 	// 11. 初始化Controller层
 	userController := controller.NewUserController(userService, zapLogger)

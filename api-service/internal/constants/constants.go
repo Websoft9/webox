@@ -38,6 +38,7 @@ const (
 // 时间相关常量
 const (
 	DefaultJWTExpireTime       = 3600 // 1小时
+	TokenExpireHours           = 24   // 24小时
 	DefaultShutdownTimeout     = 30 * time.Second
 	DefaultReadTimeout         = 30 * time.Second
 	DefaultWriteTimeout        = 30 * time.Second

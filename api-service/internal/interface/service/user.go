@@ -19,8 +19,11 @@ type UserService interface {
 
 	// 用户管理（管理员功能）
 	ListUsers(ctx context.Context, req *request.UserListRequest) (*response.UserListResponse, int64, error)
+	CreateUser(ctx context.Context, req *request.UserCreateRequest) (*response.UserResponse, error)
 	GetUser(ctx context.Context, userID uint) (*response.UserResponse, error)
+	UpdateUser(ctx context.Context, userID uint, req *request.UserUpdateRequest) (*response.UserResponse, error)
 	UpdateUserStatus(ctx context.Context, userID uint, req *request.UserUpdateStatusRequest) error
+	UpdateUserPassword(ctx context.Context, userID uint, req *request.UserPasswordUpdateRequest) error
 	DeleteUser(ctx context.Context, userID uint) error
 
 	// 业务验证

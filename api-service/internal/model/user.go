@@ -8,20 +8,29 @@ import (
 
 // User 用户模型
 type User struct {
-	ID          uint           `json:"id" gorm:"primarykey"`
-	Username    string         `json:"username" gorm:"uniqueIndex;not null;size:50" binding:"required"`
-	Email       string         `json:"email" gorm:"uniqueIndex;not null;size:100" binding:"required,email"`
-	Password    string         `json:"-" gorm:"not null;size:255"`
-	FirstName   string         `json:"first_name" gorm:"size:50"`
-	LastName    string         `json:"last_name" gorm:"size:50"`
-	Avatar      string         `json:"avatar" gorm:"size:255"`
-	Status      string         `json:"status" gorm:"not null;default:active;size:20"` // active, inactive, banned
-	Role        string         `json:"role" gorm:"not null;default:user;size:20"`     // admin, user, guest
-	LastLoginAt *time.Time     `json:"last_login_at"`
-	LoginCount  int            `json:"login_count" gorm:"default:0"`
-	CreatedAt   time.Time      `json:"created_at"`
-	UpdatedAt   time.Time      `json:"updated_at"`
-	DeletedAt   gorm.DeletedAt `json:"-" gorm:"index"`
+	ID           uint           `json:"id" gorm:"primarykey"`
+	GroupID      uint           `json:"group_id" gorm:"not null"`
+	Username     string         `json:"username" gorm:"uniqueIndex;not null;size:64"`
+	Email        string         `json:"email" gorm:"uniqueIndex;not null;size:255"`
+	PasswordHash string         `json:"-" gorm:"column:password_hash;not null;size:255"`
+	Password     string         `json:"-" gorm:"-"` // 临时字段，不映射到数据库
+	Nickname     string         `json:"nickname" gorm:"size:64"`
+	Avatar       string         `json:"avatar" gorm:"size:255"`
+	Phone        string         `json:"phone" gorm:"size:20"`
+	Gender       int            `json:"gender" gorm:"default:0"` // 0:未知, 1:男, 2:女
+	Signature    string         `json:"signature" gorm:"size:255"`
+	Status       int            `json:"status" gorm:"default:1"` // 1:active, 0:inactive
+	LastLoginAt  *time.Time     `json:"last_login_at"`
+	LastLoginIP  string         `json:"last_login_ip" gorm:"size:45"`
+	Timezone     string         `json:"timezone" gorm:"size:64;default:UTC"`
+	Language     string         `json:"language" gorm:"size:10;default:zh-CN"`
+	CreatedAt    time.Time      `json:"created_at"`
+	UpdatedAt    time.Time      `json:"updated_at"`
+	DeletedAt    gorm.DeletedAt `json:"-" gorm:"index"`
+
+	// 关联字段 (不会直接映射到数据库，需要时通过 Preload 加载)
+	Group *UserGroup `json:"group,omitempty" gorm:"foreignKey:GroupID"`
+	Roles []Role     `json:"roles,omitempty" gorm:"many2many:user_roles"`
 }
 
 // TableName 指定表名
@@ -31,55 +40,48 @@ func (User) TableName() string {
 
 // IsActive 检查用户是否为活跃状态
 func (u *User) IsActive() bool {
-	return u.Status == "active"
+	return u.Status == 1
 }
 
-// IsAdmin 检查用户是否为管理员
-func (u *User) IsAdmin() bool {
-	return u.Role == "admin"
+// GetDisplayName 获取用户显示名称
+func (u *User) GetDisplayName() string {
+	if u.Nickname != "" {
+		return u.Nickname
+	}
+	return u.Username
 }
 
-// GetFullName 获取用户全名
-func (u *User) GetFullName() string {
-	if u.FirstName == "" && u.LastName == "" {
-		return u.Username
-	}
-	return u.FirstName + " " + u.LastName
+// UserGroup 用户组模型
+type UserGroup struct {
+	ID          uint      `json:"id" gorm:"primarykey"`
+	Name        string    `json:"name" gorm:"not null;size:64"`
+	Code        string    `json:"code" gorm:"uniqueIndex;not null;size:32"`
+	Description string    `json:"description" gorm:"type:text"`
+	SortOrder   int       `json:"sort_order" gorm:"default:0"`
+	Status      int       `json:"status" gorm:"default:1"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
-// CanPerformAction 检查用户是否可以执行特定操作
-func (u *User) CanPerformAction(action string) bool {
-	if !u.IsActive() {
-		return false
-	}
+// TableName 指定用户组表名
+func (UserGroup) TableName() string {
+	return "user_groups"
+}
 
-	// 管理员可以执行所有操作
-	if u.IsAdmin() {
-		return true
-	}
+// Role 角色模型
+type Role struct {
+	ID          uint      `json:"id" gorm:"primarykey"`
+	Name        string    `json:"name" gorm:"uniqueIndex;not null;size:64"`
+	Code        string    `json:"code" gorm:"uniqueIndex;not null;size:32"`
+	Description string    `json:"description" gorm:"type:text"`
+	IsSystem    int       `json:"is_system" gorm:"default:0"`
+	SortOrder   int       `json:"sort_order" gorm:"default:0"`
+	Status      int       `json:"status" gorm:"default:1"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
 
-	// 根据角色检查权限
-	switch u.Role {
-	case "user":
-		// 普通用户权限
-		allowedActions := []string{
-			"user:read", "user:update_self",
-			"app:create", "app:read", "app:update_self", "app:delete_self",
-		}
-		for _, allowed := range allowedActions {
-			if action == allowed {
-				return true
-			}
-		}
-	case "guest":
-		// 访客权限
-		allowedActions := []string{"user:read", "app:read"}
-		for _, allowed := range allowedActions {
-			if action == allowed {
-				return true
-			}
-		}
-	}
-
-	return false
+// TableName 指定角色表名
+func (Role) TableName() string {
+	return "roles"
 }

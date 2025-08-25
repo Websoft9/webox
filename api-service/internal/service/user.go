@@ -1,6 +1,7 @@
 package service
 
 import (
+	"api-service/internal/constants"
 	"api-service/internal/dto/request"
 	"api-service/internal/dto/response"
 	"api-service/internal/interface/repository"
@@ -9,163 +10,125 @@ import (
 	"api-service/pkg/auth"
 	"api-service/pkg/errors"
 	"api-service/pkg/logger"
-	"api-service/pkg/validator"
+	"api-service/pkg/utils"
 	"context"
 	"time"
 
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
 // 用户状态常量
 const (
-	UserStatusActive   = "active"
-	UserStatusInactive = "inactive"
-	UserStatusBanned   = "banned"
+	UserStatusActive   = 1
+	UserStatusInactive = 0
 )
 
-// userService 用户业务逻辑实现
 type userService struct {
 	userRepo repository.UserRepository
-	jwtAuth  *auth.JWTAuth
 	logger   logger.Logger
 }
 
-// NewUserService 创建新的用户Service实例
-func NewUserService(
-	userRepo repository.UserRepository,
-	jwtAuth *auth.JWTAuth,
-	logger logger.Logger,
-) service.UserService {
+func NewUserService(userRepo repository.UserRepository, logger logger.Logger) service.UserService {
 	return &userService{
 		userRepo: userRepo,
-		jwtAuth:  jwtAuth,
 		logger:   logger,
 	}
 }
 
 // Register 用户注册
 func (s *userService) Register(ctx context.Context, req *request.UserRegisterRequest) (*response.UserResponse, error) {
-	s.logger.InfoContext(ctx, "用户注册开始", logger.String("username", req.Username))
+	s.logger.InfoContext(ctx, "开始用户注册", logger.String("username", req.Username))
 
-	// 1. 业务验证
-	if err := validator.ValidateUsername(req.Username); err != nil {
-		s.logger.WarnContext(ctx, "用户名验证失败", logger.String("username", req.Username), logger.ErrorField(err))
-		return nil, err
-	}
-
-	if err := validator.ValidateEmail(req.Email); err != nil {
-		s.logger.WarnContext(ctx, "邮箱验证失败", logger.String("email", req.Email), logger.ErrorField(err))
-		return nil, err
-	}
-
-	if err := validator.ValidatePassword(req.Password); err != nil {
-		s.logger.WarnContext(ctx, "密码验证失败", logger.ErrorField(err))
-		return nil, err
-	}
-
-	// 2. 检查用户名是否已存在
+	// 1. 检查用户名是否存在
 	exists, err := s.userRepo.ExistsByUsername(ctx, req.Username)
 	if err != nil {
-		s.logger.ErrorContext(ctx, "检查用户名存在性失败", logger.String("username", req.Username), logger.ErrorField(err))
+		s.logger.ErrorContext(ctx, "检查用户名失败", logger.ErrorField(err))
 		return nil, errors.WrapError(err, errors.CodeInternalError, "检查用户名失败")
 	}
 	if exists {
-		return nil, errors.ErrUserAlreadyExists
+		return nil, errors.NewAppError(errors.CodeUserAlreadyExists, "用户名已存在")
 	}
 
-	// 3. 检查邮箱是否已存在
+	// 2. 检查邮箱是否存在
 	exists, err = s.userRepo.ExistsByEmail(ctx, req.Email)
 	if err != nil {
-		s.logger.ErrorContext(ctx, "检查邮箱存在性失败", logger.String("email", req.Email), logger.ErrorField(err))
+		s.logger.ErrorContext(ctx, "检查邮箱失败", logger.ErrorField(err))
 		return nil, errors.WrapError(err, errors.CodeInternalError, "检查邮箱失败")
 	}
 	if exists {
-		return nil, errors.ErrEmailAlreadyExists
+		return nil, errors.NewAppError(errors.CodeEmailAlreadyExists, "邮箱已存在")
 	}
 
-	// 4. 密码加密
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-	if err != nil {
-		s.logger.ErrorContext(ctx, "密码加密失败", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, "密码加密失败")
-	}
+	// 3. 加密密码
+	hashedPassword := utils.SHA256Hash(req.Password)
 
-	// 5. 创建用户模型
+	// 4. 创建用户
 	user := &model.User{
-		Username:  req.Username,
-		Email:     req.Email,
-		Password:  string(hashedPassword),
-		Status:    "active",
-		Role:      "user",
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		Username:     req.Username,
+		Email:        req.Email,
+		PasswordHash: hashedPassword,
+		Status:       UserStatusActive,
 	}
 
-	// 6. 保存到数据库
-	if err := s.userRepo.Create(ctx, user); err != nil {
-		s.logger.ErrorContext(ctx, "创建用户失败", logger.String("username", req.Username), logger.ErrorField(err))
+	err = s.userRepo.Create(ctx, user)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "创建用户失败", logger.ErrorField(err))
 		return nil, errors.WrapError(err, errors.CodeInternalError, "创建用户失败")
 	}
 
-	s.logger.InfoContext(ctx, "用户注册成功", logger.String("username", req.Username), logger.Uint("user_id", user.ID))
+	s.logger.InfoContext(ctx, "用户注册成功", logger.Uint("user_id", user.ID))
 
-	// 7. 返回响应
-	return s.convertToUserResponse(user), nil
+	return s.buildUserResponse(user), nil
 }
 
 // Login 用户登录
 func (s *userService) Login(ctx context.Context, req *request.UserLoginRequest) (*response.UserLoginResponse, error) {
-	s.logger.InfoContext(ctx, "用户登录开始", logger.String("username", req.Username))
+	s.logger.InfoContext(ctx, "开始用户登录", logger.String("username", req.Username))
 
-	// 1. 获取用户
+	// 1. 根据用户名查找用户
 	user, err := s.userRepo.GetByUsername(ctx, req.Username)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			s.logger.WarnContext(ctx, "用户不存在", logger.String("username", req.Username))
 			return nil, errors.ErrInvalidCredentials
 		}
-		s.logger.ErrorContext(ctx, "获取用户失败", logger.String("username", req.Username), logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, "获取用户信息失败")
+		s.logger.ErrorContext(ctx, "查找用户失败", logger.ErrorField(err))
+		return nil, errors.WrapError(err, errors.CodeInternalError, "查找用户失败")
 	}
 
 	// 2. 检查用户状态
 	if user.Status != UserStatusActive {
-		s.logger.WarnContext(ctx, "用户账号未激活", logger.String("username", req.Username), logger.String("status", user.Status))
-		return nil, errors.ErrUserInactive
+		s.logger.WarnContext(ctx, "用户已被禁用", logger.String("username", req.Username))
+		return nil, errors.NewAppError(errors.CodeForbidden, "用户已被禁用")
 	}
 
 	// 3. 验证密码
-	if bcryptErr := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); bcryptErr != nil {
+	if user.PasswordHash != utils.SHA256Hash(req.Password) {
 		s.logger.WarnContext(ctx, "密码验证失败", logger.String("username", req.Username))
 		return nil, errors.ErrInvalidCredentials
 	}
 
-	// 4. 生成JWT Token
-	token, expiresAt, err := s.jwtAuth.GenerateTokenWithUserInfo(user.ID, user.Username, user.Role)
+	// 4. 生成 JWT
+	token, err := auth.GenerateToken(user.ID, user.Username)
 	if err != nil {
-		s.logger.ErrorContext(ctx, "生成Token失败", logger.Uint("user_id", user.ID), logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, "生成认证令牌失败")
+		s.logger.ErrorContext(ctx, "生成token失败", logger.ErrorField(err))
+		return nil, errors.WrapError(err, errors.CodeInternalError, "生成token失败")
 	}
 
-	// 5. 更新登录信息
+	// 5. 更新最后登录时间
 	now := time.Now()
 	user.LastLoginAt = &now
-	user.LoginCount++
-	user.UpdatedAt = now
-
 	if err := s.userRepo.Update(ctx, user); err != nil {
-		s.logger.WarnContext(ctx, "更新登录信息失败", logger.Uint("user_id", user.ID), logger.ErrorField(err))
-		// 这里不返回错误，因为登录已经成功，只是统计信息更新失败
+		s.logger.WarnContext(ctx, "更新登录时间失败", logger.ErrorField(err))
+		// 这里不返回错误，因为登录已经成功
 	}
 
-	s.logger.InfoContext(ctx, "用户登录成功", logger.String("username", req.Username), logger.Uint("user_id", user.ID))
+	s.logger.InfoContext(ctx, "用户登录成功", logger.Uint("user_id", user.ID))
 
-	// 6. 返回响应
 	return &response.UserLoginResponse{
 		Token:     token,
-		ExpiresAt: expiresAt,
-		User:      *s.convertToUserResponse(user),
+		ExpiresAt: time.Now().Add(constants.TokenExpireHours * time.Hour), // 24小时过期
+		User:      *s.buildUserResponse(user),
 	}, nil
 }
 
@@ -173,32 +136,25 @@ func (s *userService) Login(ctx context.Context, req *request.UserLoginRequest) 
 func (s *userService) GetProfile(ctx context.Context, userID uint) (*response.UserProfileResponse, error) {
 	s.logger.InfoContext(ctx, "获取用户资料", logger.Uint("user_id", userID))
 
-	// 1. 获取用户基本信息
-	user, err := s.userRepo.GetByID(ctx, userID)
+	user, err := s.userRepo.GetByIDWithRelations(ctx, userID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, errors.ErrUserNotFound
+			return nil, errors.NewAppError(errors.CodeNotFound, "用户不存在")
 		}
-		s.logger.ErrorContext(ctx, "获取用户失败", logger.Uint("user_id", userID), logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, "获取用户信息失败")
+		s.logger.ErrorContext(ctx, "获取用户失败", logger.ErrorField(err))
+		return nil, errors.WrapError(err, errors.CodeInternalError, "获取用户失败")
 	}
 
-	// 2. 获取用户统计信息
+	// 获取统计信息
 	stats, err := s.userRepo.GetUserStats(ctx, userID)
 	if err != nil {
-		s.logger.WarnContext(ctx, "获取用户统计信息失败", logger.Uint("user_id", userID), logger.ErrorField(err))
-		// 统计信息获取失败时使用默认值
-		stats = &repository.UserStats{
-			LoginCount:       user.LoginCount,
-			ApplicationCount: 0,
-			WorkflowCount:    0,
-		}
+		s.logger.WarnContext(ctx, "获取用户统计失败", logger.ErrorField(err))
+		// 使用默认值
+		stats = &repository.UserStats{}
 	}
 
-	// 3. 构建响应
 	profile := &response.UserProfileResponse{
-		UserResponse:     *s.convertToUserResponse(user),
-		LastLoginAt:      user.LastLoginAt,
+		UserResponse:     *s.buildUserResponse(user),
 		LoginCount:       stats.LoginCount,
 		ApplicationCount: stats.ApplicationCount,
 		WorkflowCount:    stats.WorkflowCount,
@@ -215,7 +171,7 @@ func (s *userService) UpdateProfile(
 ) (*response.UserResponse, error) {
 	s.logger.InfoContext(ctx, "更新用户资料", logger.Uint("user_id", userID))
 
-	// 1. 获取用户
+	// 1. 获取当前用户
 	user, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -224,176 +180,204 @@ func (s *userService) UpdateProfile(
 		return nil, errors.WrapError(err, errors.CodeInternalError, "获取用户信息失败")
 	}
 
-	// 2. 验证邮箱唯一性（如果要更新邮箱）
+	// 2. 检查邮箱唯一性（如果要更新邮箱）
 	if req.Email != nil && *req.Email != user.Email {
-		if err := validator.ValidateEmail(*req.Email); err != nil {
+		if err := s.validateEmailUniqueness(ctx, *req.Email, userID); err != nil {
 			return nil, err
 		}
-
-		exists, err := s.userRepo.ExistsByEmail(ctx, *req.Email)
-		if err != nil {
-			return nil, errors.WrapError(err, errors.CodeInternalError, "检查邮箱失败")
-		}
-		if exists {
-			return nil, errors.ErrEmailAlreadyExists
-		}
-		user.Email = *req.Email
 	}
 
-	// 3. 更新其他字段
-	if req.FirstName != nil {
-		user.FirstName = *req.FirstName
-	}
-	if req.LastName != nil {
-		user.LastName = *req.LastName
-	}
-	if req.Avatar != nil {
-		user.Avatar = *req.Avatar
-	}
-
-	user.UpdatedAt = time.Now()
+	// 3. 更新用户字段
+	s.updateUserFields(user, req)
 
 	// 4. 保存更新
 	if err := s.userRepo.Update(ctx, user); err != nil {
-		s.logger.ErrorContext(ctx, "更新用户资料失败", logger.Uint("user_id", userID), logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, "更新用户资料失败")
+		s.logger.ErrorContext(ctx, "更新用户失败", logger.ErrorField(err))
+		return nil, errors.WrapError(err, errors.CodeInternalError, "更新用户失败")
 	}
 
 	s.logger.InfoContext(ctx, "用户资料更新成功", logger.Uint("user_id", userID))
-	return s.convertToUserResponse(user), nil
+
+	return s.buildUserResponse(user), nil
 }
 
 // ChangePassword 修改密码
 func (s *userService) ChangePassword(ctx context.Context, userID uint, req *request.UserChangePasswordRequest) error {
 	s.logger.InfoContext(ctx, "修改用户密码", logger.Uint("user_id", userID))
 
-	// 1. 获取用户
+	// 1. 获取用户信息
 	user, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return errors.ErrUserNotFound
+			return errors.NewAppError(errors.CodeNotFound, "用户不存在")
 		}
 		return errors.WrapError(err, errors.CodeInternalError, "获取用户信息失败")
 	}
 
 	// 2. 验证旧密码
-	if bcryptErr := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.OldPassword)); bcryptErr != nil {
+	if user.PasswordHash != utils.SHA256Hash(req.OldPassword) {
 		s.logger.WarnContext(ctx, "旧密码验证失败", logger.Uint("user_id", userID))
-		return errors.ErrInvalidPassword
+		return errors.ErrInvalidCredentials
 	}
 
-	// 3. 验证新密码强度
-	if validErr := validator.ValidatePassword(req.NewPassword); validErr != nil {
-		return validErr
-	}
+	// 3. 加密新密码
+	hashedPassword := utils.SHA256Hash(req.NewPassword)
 
-	// 4. 加密新密码
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
-	if err != nil {
-		return errors.WrapError(err, errors.CodeInternalError, "密码加密失败")
-	}
-
-	// 5. 更新密码
-	user.Password = string(hashedPassword)
-	user.UpdatedAt = time.Now()
-
+	// 4. 更新密码
+	user.PasswordHash = hashedPassword
 	if err := s.userRepo.Update(ctx, user); err != nil {
-		s.logger.ErrorContext(ctx, "更新密码失败", logger.Uint("user_id", userID), logger.ErrorField(err))
+		s.logger.ErrorContext(ctx, "更新密码失败", logger.ErrorField(err))
 		return errors.WrapError(err, errors.CodeInternalError, "更新密码失败")
 	}
 
-	s.logger.InfoContext(ctx, "用户密码修改成功", logger.Uint("user_id", userID))
+	s.logger.InfoContext(ctx, "密码修改成功", logger.Uint("user_id", userID))
+
 	return nil
 }
 
 // ListUsers 获取用户列表
-func (s *userService) ListUsers(
-	ctx context.Context,
-	req *request.UserListRequest,
-) (*response.UserListResponse, int64, error) {
-	s.logger.InfoContext(ctx, "获取用户列表")
+func (s *userService) ListUsers(ctx context.Context,
+	req *request.UserListRequest) (*response.UserListResponse, int64, error) {
+	s.logger.InfoContext(ctx, "获取用户列表",
+		logger.Int("page", req.Page),
+		logger.Int("pageSize", req.PageSize))
 
-	// 1. 构建过滤条件
+	// 构建过滤器
 	filters := make(map[string]interface{})
-	if req.Status != "" {
-		filters["status"] = req.Status
+	if req.Status != nil {
+		filters["status"] = *req.Status
 	}
-	if req.Role != "" {
-		filters["role"] = req.Role
+	if req.GroupID != nil {
+		filters["group_id"] = *req.GroupID
 	}
-
-	// 2. 获取数据
-	var users []*model.User
-	var total int64
-	var err error
-
-	if req.Keyword != "" {
-		// 搜索模式
-		users, total, err = s.userRepo.Search(ctx, req.Keyword, req.GetOffset(), req.GetPageSize())
-	} else {
-		// 列表模式
-		users, total, err = s.userRepo.List(ctx, req.GetOffset(), req.GetPageSize(), filters)
+	if req.Gender != nil {
+		filters["gender"] = *req.Gender
+	}
+	if req.Language != nil {
+		filters["language"] = *req.Language
+	}
+	if req.Keyword != nil && *req.Keyword != "" {
+		filters["keyword"] = *req.Keyword
 	}
 
+	// 获取用户列表
+	users, total, err := s.userRepo.ListWithRelations(ctx, req.GetOffset(), req.GetPageSize(), filters)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "获取用户列表失败", logger.ErrorField(err))
 		return nil, 0, errors.WrapError(err, errors.CodeInternalError, "获取用户列表失败")
 	}
 
-	// 3. 转换响应
-	userResponses := make([]response.UserResponse, len(users))
-	for i, user := range users {
-		userResponses[i] = *s.convertToUserResponse(user)
+	// 转换为响应格式
+	userList := make([]response.UserResponse, 0, len(users))
+	for _, user := range users {
+		userList = append(userList, *s.buildUserResponse(user))
 	}
 
-	return &response.UserListResponse{Users: userResponses}, total, nil
+	return &response.UserListResponse{
+		Users: userList,
+		Total: total,
+	}, total, nil
 }
 
-// GetUser 获取单个用户信息（管理员功能）
+// GetUser 获取用户详情
 func (s *userService) GetUser(ctx context.Context, userID uint) (*response.UserResponse, error) {
-	user, err := s.userRepo.GetByID(ctx, userID)
+	s.logger.InfoContext(ctx, "获取用户详情", logger.Uint("user_id", userID))
+
+	user, err := s.userRepo.GetByIDWithRelations(ctx, userID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, errors.ErrUserNotFound
+			return nil, errors.NewAppError(errors.CodeNotFound, "用户不存在")
 		}
-		return nil, errors.WrapError(err, errors.CodeInternalError, "获取用户信息失败")
+		s.logger.ErrorContext(ctx, "获取用户失败", logger.ErrorField(err))
+		return nil, errors.WrapError(err, errors.CodeInternalError, "获取用户失败")
 	}
 
-	return s.convertToUserResponse(user), nil
+	return s.buildUserResponse(user), nil
 }
 
-// UpdateUserStatus 更新用户状态（管理员功能）
-func (s *userService) UpdateUserStatus(ctx context.Context, userID uint, req *request.UserUpdateStatusRequest) error {
-	s.logger.InfoContext(ctx, "更新用户状态", logger.Uint("user_id", userID), logger.String("new_status", req.Status))
+// CreateUser 创建用户
+func (s *userService) CreateUser(ctx context.Context, req *request.UserCreateRequest) (*response.UserResponse, error) {
+	s.logger.InfoContext(ctx, "创建用户", logger.String("username", req.Username))
 
-	// 1. 获取用户
+	// 1. 验证用户创建
+	if err := s.validateUserCreation(ctx, req); err != nil {
+		return nil, err
+	}
+
+	// 2. 创建用户对象
+	user := s.createUserFromRequest(req)
+
+	// 3. 保存用户
+	err := s.userRepo.Create(ctx, user)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "创建用户失败", logger.ErrorField(err))
+		return nil, errors.WrapError(err, errors.CodeInternalError, "创建用户失败")
+	}
+
+	s.logger.InfoContext(ctx, "用户创建成功", logger.Uint("user_id", user.ID))
+
+	return s.buildUserResponse(user), nil
+}
+
+// UpdateUser 更新用户
+func (s *userService) UpdateUser(ctx context.Context,
+	userID uint, req *request.UserUpdateRequest) (*response.UserResponse, error) {
+	s.logger.InfoContext(ctx, "更新用户", logger.Uint("user_id", userID))
+
+	// 1. 获取当前用户
 	user, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return errors.ErrUserNotFound
+			return nil, errors.NewAppError(errors.CodeNotFound, "用户不存在")
+		}
+		s.logger.ErrorContext(ctx, "获取用户失败", logger.ErrorField(err))
+		return nil, errors.WrapError(err, errors.CodeInternalError, "获取用户失败")
+	}
+
+	// 2. 如果要更新邮箱，检查邮箱是否已存在
+	if req.Email != nil && *req.Email != user.Email {
+		if err := s.validateEmailUniqueness(ctx, *req.Email, userID); err != nil {
+			return nil, err
+		}
+	}
+
+	// 3. 更新用户信息
+	s.updateUserFromRequest(user, req)
+
+	// 4. 保存更新
+	if err := s.userRepo.Update(ctx, user); err != nil {
+		s.logger.ErrorContext(ctx, "更新用户失败", logger.ErrorField(err))
+		return nil, errors.WrapError(err, errors.CodeInternalError, "更新用户失败")
+	}
+
+	s.logger.InfoContext(ctx, "用户更新成功", logger.Uint("user_id", userID))
+
+	return s.buildUserResponse(user), nil
+}
+
+// UpdateUserStatus 更新用户状态
+func (s *userService) UpdateUserStatus(ctx context.Context, userID uint, req *request.UserUpdateStatusRequest) error {
+	s.logger.InfoContext(ctx, "更新用户状态", logger.Uint("user_id", userID), logger.Int("status", req.Status))
+
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return errors.NewAppError(errors.CodeNotFound, "用户不存在")
 		}
 		return errors.WrapError(err, errors.CodeInternalError, "获取用户信息失败")
 	}
 
-	// 2. 验证状态转换
-	if err := validator.ValidateUserStatus(user.Status, req.Status); err != nil {
-		return err
-	}
-
-	// 3. 更新状态
 	user.Status = req.Status
-	user.UpdatedAt = time.Now()
-
 	if err := s.userRepo.Update(ctx, user); err != nil {
-		s.logger.ErrorContext(ctx, "更新用户状态失败", logger.Uint("user_id", userID), logger.ErrorField(err))
+		s.logger.ErrorContext(ctx, "更新用户状态失败", logger.ErrorField(err))
 		return errors.WrapError(err, errors.CodeInternalError, "更新用户状态失败")
 	}
 
-	s.logger.InfoContext(ctx, "用户状态更新成功", logger.Uint("user_id", userID), logger.String("new_status", req.Status))
+	s.logger.InfoContext(ctx, "用户状态更新成功", logger.Uint("user_id", userID))
 	return nil
 }
 
-// DeleteUser 删除用户（管理员功能）
+// DeleteUser 删除用户
 func (s *userService) DeleteUser(ctx context.Context, userID uint) error {
 	s.logger.InfoContext(ctx, "删除用户", logger.Uint("user_id", userID))
 
@@ -401,14 +385,15 @@ func (s *userService) DeleteUser(ctx context.Context, userID uint) error {
 	_, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return errors.ErrUserNotFound
+			return errors.NewAppError(errors.CodeNotFound, "用户不存在")
 		}
-		return errors.WrapError(err, errors.CodeInternalError, "获取用户信息失败")
+		s.logger.ErrorContext(ctx, "检查用户失败", logger.ErrorField(err))
+		return errors.WrapError(err, errors.CodeInternalError, "检查用户失败")
 	}
 
-	// 2. 执行删除
+	// 2. 删除用户
 	if err := s.userRepo.Delete(ctx, userID); err != nil {
-		s.logger.ErrorContext(ctx, "删除用户失败", logger.Uint("user_id", userID), logger.ErrorField(err))
+		s.logger.ErrorContext(ctx, "删除用户失败", logger.ErrorField(err))
 		return errors.WrapError(err, errors.CodeInternalError, "删除用户失败")
 	}
 
@@ -416,57 +401,228 @@ func (s *userService) DeleteUser(ctx context.Context, userID uint) error {
 	return nil
 }
 
-// ValidateUserAccess 验证用户访问权限
-func (s *userService) ValidateUserAccess(ctx context.Context, userID uint, resource string) error {
+// UpdateUserPassword 更新用户密码（管理员操作）
+func (s *userService) UpdateUserPassword(
+	ctx context.Context, userID uint, req *request.UserPasswordUpdateRequest,
+) error {
+	s.logger.InfoContext(ctx, "更新用户密码", logger.Uint("user_id", userID))
+
+	// 1. 检查用户是否存在
 	user, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return errors.ErrUserNotFound
+			return errors.NewAppError(errors.CodeNotFound, "用户不存在")
 		}
 		return errors.WrapError(err, errors.CodeInternalError, "获取用户信息失败")
 	}
 
-	// 检查用户状态
-	if user.Status != "active" {
-		return errors.ErrUserInactive
+	// 2. 加密新密码
+	hashedPassword := utils.SHA256Hash(req.NewPassword)
+
+	// 3. 更新密码
+	user.PasswordHash = hashedPassword
+	if err := s.userRepo.Update(ctx, user); err != nil {
+		s.logger.ErrorContext(ctx, "更新密码失败", logger.ErrorField(err))
+		return errors.WrapError(err, errors.CodeInternalError, "更新密码失败")
 	}
 
-	// 检查权限
-	return validator.ValidateUserPermission(user.Role, resource)
+	s.logger.InfoContext(ctx, "用户密码更新成功", logger.Uint("user_id", userID))
+	return nil
+}
+
+// ValidateUserAccess 验证用户访问权限
+func (s *userService) ValidateUserAccess(ctx context.Context, userID uint, resource string) error {
+	// TODO: 实现具体的权限验证逻辑
+	return nil
 }
 
 // CheckUserQuota 检查用户配额
 func (s *userService) CheckUserQuota(ctx context.Context, userID uint, resourceType string) error {
-	stats, err := s.userRepo.GetUserStats(ctx, userID)
-	if err != nil {
-		return errors.WrapError(err, errors.CodeInternalError, "获取用户统计信息失败")
-	}
-
-	var currentCount int
-	switch resourceType {
-	case "applications":
-		currentCount = stats.ApplicationCount
-	case "workflows":
-		currentCount = stats.WorkflowCount
-	default:
-		currentCount = 0
-	}
-
-	return validator.ValidateResourceQuota(userID, resourceType, currentCount)
+	// TODO: 实现具体的配额检查逻辑
+	return nil
 }
 
-// convertToUserResponse 转换用户模型为响应结构
-func (s *userService) convertToUserResponse(user *model.User) *response.UserResponse {
-	return &response.UserResponse{
-		ID:        user.ID,
-		Username:  user.Username,
-		Email:     user.Email,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Avatar:    user.Avatar,
-		Status:    user.Status,
-		Role:      user.Role,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
+// 辅助函数
+
+// validateEmailUniqueness 验证邮箱唯一性
+func (s *userService) validateEmailUniqueness(ctx context.Context, email string, userID uint) error {
+	exists, err := s.userRepo.ExistsByEmailExcludeID(ctx, email, userID)
+	if err != nil {
+		return errors.WrapError(err, errors.CodeInternalError, "检查邮箱唯一性失败")
 	}
+	if exists {
+		return errors.NewAppError(errors.CodeEmailAlreadyExists, "邮箱已存在")
+	}
+	return nil
+}
+
+// updateUserFields 更新用户字段
+func (s *userService) updateUserFields(user *model.User, req *request.UserUpdateProfileRequest) {
+	if req.Email != nil {
+		user.Email = *req.Email
+	}
+	if req.Nickname != nil {
+		user.Nickname = *req.Nickname
+	}
+	if req.Phone != nil {
+		user.Phone = *req.Phone
+	}
+	if req.Avatar != nil {
+		user.Avatar = *req.Avatar
+	}
+	if req.Gender != nil {
+		user.Gender = *req.Gender
+	}
+	if req.Signature != nil {
+		user.Signature = *req.Signature
+	}
+	if req.Timezone != nil {
+		user.Timezone = *req.Timezone
+	}
+	if req.Language != nil {
+		user.Language = *req.Language
+	}
+}
+
+// validateUserCreation 验证用户创建
+func (s *userService) validateUserCreation(ctx context.Context, req *request.UserCreateRequest) error {
+	// 检查用户名是否存在
+	exists, err := s.userRepo.ExistsByUsername(ctx, req.Username)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "检查用户名失败", logger.ErrorField(err))
+		return errors.WrapError(err, errors.CodeInternalError, "检查用户名失败")
+	}
+	if exists {
+		return errors.NewAppError(errors.CodeUserAlreadyExists, "用户名已存在")
+	}
+
+	// 检查邮箱是否存在
+	exists, err = s.userRepo.ExistsByEmail(ctx, req.Email)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "检查邮箱失败", logger.ErrorField(err))
+		return errors.WrapError(err, errors.CodeInternalError, "检查邮箱失败")
+	}
+	if exists {
+		return errors.NewAppError(errors.CodeEmailAlreadyExists, "邮箱已存在")
+	}
+	return nil
+}
+
+// createUserFromRequest 从请求创建用户对象
+func (s *userService) createUserFromRequest(req *request.UserCreateRequest) *model.User {
+	user := &model.User{
+		GroupID:      req.GroupID,
+		Username:     req.Username,
+		Email:        req.Email,
+		PasswordHash: utils.SHA256Hash(req.Password),
+		Status:       1, // 默认激活
+	}
+
+	// 设置可选字段
+	if req.Nickname != nil {
+		user.Nickname = *req.Nickname
+	}
+	if req.Phone != nil {
+		user.Phone = *req.Phone
+	}
+	if req.Avatar != nil {
+		user.Avatar = *req.Avatar
+	}
+	if req.Gender != nil {
+		user.Gender = *req.Gender
+	}
+	if req.Signature != nil {
+		user.Signature = *req.Signature
+	}
+	if req.Status != nil {
+		user.Status = *req.Status
+	}
+	if req.Timezone != nil {
+		user.Timezone = *req.Timezone
+	}
+	if req.Language != nil {
+		user.Language = *req.Language
+	}
+
+	return user
+}
+
+// updateUserFromRequest 从请求更新用户对象
+func (s *userService) updateUserFromRequest(user *model.User, req *request.UserUpdateRequest) {
+	if req.GroupID != nil {
+		user.GroupID = *req.GroupID
+	}
+	if req.Username != nil {
+		user.Username = *req.Username
+	}
+	if req.Email != nil {
+		user.Email = *req.Email
+	}
+	if req.Nickname != nil {
+		user.Nickname = *req.Nickname
+	}
+	if req.Phone != nil {
+		user.Phone = *req.Phone
+	}
+	if req.Avatar != nil {
+		user.Avatar = *req.Avatar
+	}
+	if req.Gender != nil {
+		user.Gender = *req.Gender
+	}
+	if req.Signature != nil {
+		user.Signature = *req.Signature
+	}
+	if req.Timezone != nil {
+		user.Timezone = *req.Timezone
+	}
+	if req.Language != nil {
+		user.Language = *req.Language
+	}
+}
+
+// buildUserResponse 构建用户响应
+func (s *userService) buildUserResponse(user *model.User) *response.UserResponse {
+	resp := &response.UserResponse{
+		ID:          user.ID,
+		GroupID:     user.GroupID,
+		Username:    user.Username,
+		Email:       user.Email,
+		Nickname:    user.Nickname,
+		Phone:       user.Phone,
+		Avatar:      user.Avatar,
+		Gender:      user.Gender,
+		Signature:   user.Signature,
+		Status:      user.Status,
+		LastLoginAt: user.LastLoginAt,
+		LastLoginIP: user.LastLoginIP,
+		Timezone:    user.Timezone,
+		Language:    user.Language,
+		CreatedAt:   user.CreatedAt,
+		UpdatedAt:   user.UpdatedAt,
+	}
+
+	if user.Group != nil {
+		resp.Group = &response.UserGroupResponse{
+			ID:          user.Group.ID,
+			Name:        user.Group.Name,
+			Code:        user.Group.Code,
+			Description: user.Group.Description,
+		}
+	}
+
+	if len(user.Roles) > 0 {
+		resp.Roles = make([]response.RoleResponse, len(user.Roles))
+		for i := range user.Roles {
+			role := &user.Roles[i]
+			resp.Roles[i] = response.RoleResponse{
+				ID:          role.ID,
+				Name:        role.Name,
+				Code:        role.Code,
+				Description: role.Description,
+			}
+		}
+	}
+
+	return resp
 }
