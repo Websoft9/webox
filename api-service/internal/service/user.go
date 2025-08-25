@@ -37,13 +37,13 @@ func NewUserService(userRepo repository.UserRepository, logger logger.Logger) se
 
 // Register 用户注册
 func (s *userService) Register(ctx context.Context, req *request.UserRegisterRequest) (*response.UserResponse, error) {
-	s.logger.InfoContext(ctx, "开始用户注册", logger.String("username", req.Username))
+	s.logger.InfoContext(ctx, "Starting user registration", logger.String("username", req.Username))
 
 	// 1. 检查用户名是否存在
 	exists, err := s.userRepo.ExistsByUsername(ctx, req.Username)
 	if err != nil {
-		s.logger.ErrorContext(ctx, "检查用户名失败", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, "检查用户名失败")
+		s.logger.ErrorContext(ctx, "Failed to check username", logger.ErrorField(err))
+		return nil, errors.WrapError(err, errors.CodeInternalError, "Failed to check username")
 	}
 	if exists {
 		return nil, errors.NewAppError(errors.CodeUserAlreadyExists, "用户名已存在")
@@ -52,8 +52,8 @@ func (s *userService) Register(ctx context.Context, req *request.UserRegisterReq
 	// 2. 检查邮箱是否存在
 	exists, err = s.userRepo.ExistsByEmail(ctx, req.Email)
 	if err != nil {
-		s.logger.ErrorContext(ctx, "检查邮箱失败", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, "检查邮箱失败")
+		s.logger.ErrorContext(ctx, "Failed to check email", logger.ErrorField(err))
+		return nil, errors.WrapError(err, errors.CodeInternalError, "Failed to check email")
 	}
 	if exists {
 		return nil, errors.NewAppError(errors.CodeEmailAlreadyExists, "邮箱已存在")
@@ -62,7 +62,7 @@ func (s *userService) Register(ctx context.Context, req *request.UserRegisterReq
 	// 3. 加密密码
 	hashedPassword := utils.SHA256Hash(req.Password)
 
-	// 4. 创建用户
+	// 4. Creating user
 	user := &model.User{
 		Username:     req.Username,
 		Email:        req.Email,
@@ -72,58 +72,58 @@ func (s *userService) Register(ctx context.Context, req *request.UserRegisterReq
 
 	err = s.userRepo.Create(ctx, user)
 	if err != nil {
-		s.logger.ErrorContext(ctx, "创建用户失败", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, "创建用户失败")
+		s.logger.ErrorContext(ctx, "Failed to create user", logger.ErrorField(err))
+		return nil, errors.WrapError(err, errors.CodeInternalError, "Failed to create user")
 	}
 
-	s.logger.InfoContext(ctx, "用户注册成功", logger.Uint("user_id", user.ID))
+	s.logger.InfoContext(ctx, "User registration successful", logger.Uint("user_id", user.ID))
 
 	return s.buildUserResponse(user), nil
 }
 
 // Login 用户登录
 func (s *userService) Login(ctx context.Context, req *request.UserLoginRequest) (*response.UserLoginResponse, error) {
-	s.logger.InfoContext(ctx, "开始用户登录", logger.String("username", req.Username))
+	s.logger.InfoContext(ctx, "Starting user login", logger.String("username", req.Username))
 
 	// 1. 根据用户名查找用户
 	user, err := s.userRepo.GetByUsername(ctx, req.Username)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			s.logger.WarnContext(ctx, "用户不存在", logger.String("username", req.Username))
+			s.logger.WarnContext(ctx, "User not found", logger.String("username", req.Username))
 			return nil, errors.ErrInvalidCredentials
 		}
-		s.logger.ErrorContext(ctx, "查找用户失败", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, "查找用户失败")
+		s.logger.ErrorContext(ctx, "Failed to find user", logger.ErrorField(err))
+		return nil, errors.WrapError(err, errors.CodeInternalError, "Failed to find user")
 	}
 
 	// 2. 检查用户状态
 	if user.Status != UserStatusActive {
-		s.logger.WarnContext(ctx, "用户已被禁用", logger.String("username", req.Username))
-		return nil, errors.NewAppError(errors.CodeForbidden, "用户已被禁用")
+		s.logger.WarnContext(ctx, "User has been disabled", logger.String("username", req.Username))
+		return nil, errors.NewAppError(errors.CodeForbidden, "User has been disabled")
 	}
 
 	// 3. 验证密码
 	if user.PasswordHash != utils.SHA256Hash(req.Password) {
-		s.logger.WarnContext(ctx, "密码验证失败", logger.String("username", req.Username))
+		s.logger.WarnContext(ctx, "Password verification failed", logger.String("username", req.Username))
 		return nil, errors.ErrInvalidCredentials
 	}
 
 	// 4. 生成 JWT
 	token, err := auth.GenerateToken(user.ID, user.Username)
 	if err != nil {
-		s.logger.ErrorContext(ctx, "生成token失败", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, "生成token失败")
+		s.logger.ErrorContext(ctx, "Failed to generate token", logger.ErrorField(err))
+		return nil, errors.WrapError(err, errors.CodeInternalError, "Failed to generate token")
 	}
 
 	// 5. 更新最后登录时间
 	now := time.Now()
 	user.LastLoginAt = &now
 	if err := s.userRepo.Update(ctx, user); err != nil {
-		s.logger.WarnContext(ctx, "更新登录时间失败", logger.ErrorField(err))
+		s.logger.WarnContext(ctx, "Failed to update login time", logger.ErrorField(err))
 		// 这里不返回错误，因为登录已经成功
 	}
 
-	s.logger.InfoContext(ctx, "用户登录成功", logger.Uint("user_id", user.ID))
+	s.logger.InfoContext(ctx, "User login successful", logger.Uint("user_id", user.ID))
 
 	return &response.UserLoginResponse{
 		Token:     token,
@@ -132,23 +132,23 @@ func (s *userService) Login(ctx context.Context, req *request.UserLoginRequest) 
 	}, nil
 }
 
-// GetProfile 获取用户资料
+// GetProfile Getting user profile
 func (s *userService) GetProfile(ctx context.Context, userID uint) (*response.UserProfileResponse, error) {
-	s.logger.InfoContext(ctx, "获取用户资料", logger.Uint("user_id", userID))
+	s.logger.InfoContext(ctx, "Getting user profile", logger.Uint("user_id", userID))
 
 	user, err := s.userRepo.GetByIDWithRelations(ctx, userID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, errors.NewAppError(errors.CodeNotFound, "用户不存在")
+			return nil, errors.NewAppError(errors.CodeNotFound, "User not found")
 		}
-		s.logger.ErrorContext(ctx, "获取用户失败", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, "获取用户失败")
+		s.logger.ErrorContext(ctx, "Failed to get user", logger.ErrorField(err))
+		return nil, errors.WrapError(err, errors.CodeInternalError, "Failed to get user")
 	}
 
 	// 获取统计信息
 	stats, err := s.userRepo.GetUserStats(ctx, userID)
 	if err != nil {
-		s.logger.WarnContext(ctx, "获取用户统计失败", logger.ErrorField(err))
+		s.logger.WarnContext(ctx, "Failed to get user statistics", logger.ErrorField(err))
 		// 使用默认值
 		stats = &repository.UserStats{}
 	}
@@ -163,13 +163,13 @@ func (s *userService) GetProfile(ctx context.Context, userID uint) (*response.Us
 	return profile, nil
 }
 
-// UpdateProfile 更新用户资料
+// UpdateProfile Updating user profile
 func (s *userService) UpdateProfile(
 	ctx context.Context,
 	userID uint,
 	req *request.UserUpdateProfileRequest,
 ) (*response.UserResponse, error) {
-	s.logger.InfoContext(ctx, "更新用户资料", logger.Uint("user_id", userID))
+	s.logger.InfoContext(ctx, "Updating user profile", logger.Uint("user_id", userID))
 
 	// 1. 获取当前用户
 	user, err := s.userRepo.GetByID(ctx, userID)
@@ -177,7 +177,7 @@ func (s *userService) UpdateProfile(
 		if err == gorm.ErrRecordNotFound {
 			return nil, errors.ErrUserNotFound
 		}
-		return nil, errors.WrapError(err, errors.CodeInternalError, "获取用户信息失败")
+		return nil, errors.WrapError(err, errors.CodeInternalError, "Failed to get user information")
 	}
 
 	// 2. 检查邮箱唯一性（如果要更新邮箱）
@@ -187,36 +187,36 @@ func (s *userService) UpdateProfile(
 		}
 	}
 
-	// 3. 更新用户字段
+	// 3. Updating user字段
 	s.updateUserFields(user, req)
 
 	// 4. 保存更新
 	if err := s.userRepo.Update(ctx, user); err != nil {
-		s.logger.ErrorContext(ctx, "更新用户失败", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, "更新用户失败")
+		s.logger.ErrorContext(ctx, "Failed to update user", logger.ErrorField(err))
+		return nil, errors.WrapError(err, errors.CodeInternalError, "Failed to update user")
 	}
 
-	s.logger.InfoContext(ctx, "用户资料更新成功", logger.Uint("user_id", userID))
+	s.logger.InfoContext(ctx, "User profile updated successfully", logger.Uint("user_id", userID))
 
 	return s.buildUserResponse(user), nil
 }
 
 // ChangePassword 修改密码
 func (s *userService) ChangePassword(ctx context.Context, userID uint, req *request.UserChangePasswordRequest) error {
-	s.logger.InfoContext(ctx, "修改用户密码", logger.Uint("user_id", userID))
+	s.logger.InfoContext(ctx, "Changing user password", logger.Uint("user_id", userID))
 
 	// 1. 获取用户信息
 	user, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return errors.NewAppError(errors.CodeNotFound, "用户不存在")
+			return errors.NewAppError(errors.CodeNotFound, "User not found")
 		}
-		return errors.WrapError(err, errors.CodeInternalError, "获取用户信息失败")
+		return errors.WrapError(err, errors.CodeInternalError, "Failed to get user information")
 	}
 
 	// 2. 验证旧密码
 	if user.PasswordHash != utils.SHA256Hash(req.OldPassword) {
-		s.logger.WarnContext(ctx, "旧密码验证失败", logger.Uint("user_id", userID))
+		s.logger.WarnContext(ctx, "旧Password verification failed", logger.Uint("user_id", userID))
 		return errors.ErrInvalidCredentials
 	}
 
@@ -226,19 +226,19 @@ func (s *userService) ChangePassword(ctx context.Context, userID uint, req *requ
 	// 4. 更新密码
 	user.PasswordHash = hashedPassword
 	if err := s.userRepo.Update(ctx, user); err != nil {
-		s.logger.ErrorContext(ctx, "更新密码失败", logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeInternalError, "更新密码失败")
+		s.logger.ErrorContext(ctx, "Failed to update password", logger.ErrorField(err))
+		return errors.WrapError(err, errors.CodeInternalError, "Failed to update password")
 	}
 
-	s.logger.InfoContext(ctx, "密码修改成功", logger.Uint("user_id", userID))
+	s.logger.InfoContext(ctx, "Password changed successfully", logger.Uint("user_id", userID))
 
 	return nil
 }
 
-// ListUsers 获取用户列表
+// ListUsers Getting user list
 func (s *userService) ListUsers(ctx context.Context,
 	req *request.UserListRequest) (*response.UserListResponse, int64, error) {
-	s.logger.InfoContext(ctx, "获取用户列表",
+	s.logger.InfoContext(ctx, "Getting user list",
 		logger.Int("page", req.Page),
 		logger.Int("pageSize", req.PageSize))
 
@@ -260,11 +260,11 @@ func (s *userService) ListUsers(ctx context.Context,
 		filters["keyword"] = *req.Keyword
 	}
 
-	// 获取用户列表
+	// Getting user list
 	users, total, err := s.userRepo.ListWithRelations(ctx, req.GetOffset(), req.GetPageSize(), filters)
 	if err != nil {
-		s.logger.ErrorContext(ctx, "获取用户列表失败", logger.ErrorField(err))
-		return nil, 0, errors.WrapError(err, errors.CodeInternalError, "获取用户列表失败")
+		s.logger.ErrorContext(ctx, "Getting user list fail", logger.ErrorField(err))
+		return nil, 0, errors.WrapError(err, errors.CodeInternalError, "Getting user list fail")
 	}
 
 	// 转换为响应格式
@@ -279,59 +279,59 @@ func (s *userService) ListUsers(ctx context.Context,
 	}, total, nil
 }
 
-// GetUser 获取用户详情
+// GetUser Getting user details
 func (s *userService) GetUser(ctx context.Context, userID uint) (*response.UserResponse, error) {
-	s.logger.InfoContext(ctx, "获取用户详情", logger.Uint("user_id", userID))
+	s.logger.InfoContext(ctx, "Getting user details", logger.Uint("user_id", userID))
 
 	user, err := s.userRepo.GetByIDWithRelations(ctx, userID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, errors.NewAppError(errors.CodeNotFound, "用户不存在")
+			return nil, errors.NewAppError(errors.CodeNotFound, "User not found")
 		}
-		s.logger.ErrorContext(ctx, "获取用户失败", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, "获取用户失败")
+		s.logger.ErrorContext(ctx, "Failed to get user", logger.ErrorField(err))
+		return nil, errors.WrapError(err, errors.CodeInternalError, "Failed to get user")
 	}
 
 	return s.buildUserResponse(user), nil
 }
 
-// CreateUser 创建用户
+// CreateUser Creating user
 func (s *userService) CreateUser(ctx context.Context, req *request.UserCreateRequest) (*response.UserResponse, error) {
-	s.logger.InfoContext(ctx, "创建用户", logger.String("username", req.Username))
+	s.logger.InfoContext(ctx, "Creating user", logger.String("username", req.Username))
 
 	// 1. 验证用户创建
 	if err := s.validateUserCreation(ctx, req); err != nil {
 		return nil, err
 	}
 
-	// 2. 创建用户对象
+	// 2. Creating user对象
 	user := s.createUserFromRequest(req)
 
 	// 3. 保存用户
 	err := s.userRepo.Create(ctx, user)
 	if err != nil {
-		s.logger.ErrorContext(ctx, "创建用户失败", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, "创建用户失败")
+		s.logger.ErrorContext(ctx, "Failed to create user", logger.ErrorField(err))
+		return nil, errors.WrapError(err, errors.CodeInternalError, "Failed to create user")
 	}
 
-	s.logger.InfoContext(ctx, "用户创建成功", logger.Uint("user_id", user.ID))
+	s.logger.InfoContext(ctx, "User created successfully", logger.Uint("user_id", user.ID))
 
 	return s.buildUserResponse(user), nil
 }
 
-// UpdateUser 更新用户
+// UpdateUser Updating user
 func (s *userService) UpdateUser(ctx context.Context,
 	userID uint, req *request.UserUpdateRequest) (*response.UserResponse, error) {
-	s.logger.InfoContext(ctx, "更新用户", logger.Uint("user_id", userID))
+	s.logger.InfoContext(ctx, "Updating user", logger.Uint("user_id", userID))
 
 	// 1. 获取当前用户
 	user, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, errors.NewAppError(errors.CodeNotFound, "用户不存在")
+			return nil, errors.NewAppError(errors.CodeNotFound, "User not found")
 		}
-		s.logger.ErrorContext(ctx, "获取用户失败", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, "获取用户失败")
+		s.logger.ErrorContext(ctx, "Failed to get user", logger.ErrorField(err))
+		return nil, errors.WrapError(err, errors.CodeInternalError, "Failed to get user")
 	}
 
 	// 2. 如果要更新邮箱，检查邮箱是否已存在
@@ -341,79 +341,79 @@ func (s *userService) UpdateUser(ctx context.Context,
 		}
 	}
 
-	// 3. 更新用户信息
+	// 3. Updating user信息
 	s.updateUserFromRequest(user, req)
 
 	// 4. 保存更新
 	if err := s.userRepo.Update(ctx, user); err != nil {
-		s.logger.ErrorContext(ctx, "更新用户失败", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, "更新用户失败")
+		s.logger.ErrorContext(ctx, "Failed to update user", logger.ErrorField(err))
+		return nil, errors.WrapError(err, errors.CodeInternalError, "Failed to update user")
 	}
 
-	s.logger.InfoContext(ctx, "用户更新成功", logger.Uint("user_id", userID))
+	s.logger.InfoContext(ctx, "User updated successfully", logger.Uint("user_id", userID))
 
 	return s.buildUserResponse(user), nil
 }
 
-// UpdateUserStatus 更新用户状态
+// UpdateUserStatus Updating user状态
 func (s *userService) UpdateUserStatus(ctx context.Context, userID uint, req *request.UserUpdateStatusRequest) error {
-	s.logger.InfoContext(ctx, "更新用户状态", logger.Uint("user_id", userID), logger.Int("status", req.Status))
+	s.logger.InfoContext(ctx, "Updating user状态", logger.Uint("user_id", userID), logger.Int("status", req.Status))
 
 	user, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return errors.NewAppError(errors.CodeNotFound, "用户不存在")
+			return errors.NewAppError(errors.CodeNotFound, "User not found")
 		}
-		return errors.WrapError(err, errors.CodeInternalError, "获取用户信息失败")
+		return errors.WrapError(err, errors.CodeInternalError, "Failed to get user information")
 	}
 
 	user.Status = req.Status
 	if err := s.userRepo.Update(ctx, user); err != nil {
-		s.logger.ErrorContext(ctx, "更新用户状态失败", logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeInternalError, "更新用户状态失败")
+		s.logger.ErrorContext(ctx, "Updating user状态失败", logger.ErrorField(err))
+		return errors.WrapError(err, errors.CodeInternalError, "Updating user状态失败")
 	}
 
-	s.logger.InfoContext(ctx, "用户状态更新成功", logger.Uint("user_id", userID))
+	s.logger.InfoContext(ctx, "User status updated successfully", logger.Uint("user_id", userID))
 	return nil
 }
 
-// DeleteUser 删除用户
+// DeleteUser Deleting user
 func (s *userService) DeleteUser(ctx context.Context, userID uint) error {
-	s.logger.InfoContext(ctx, "删除用户", logger.Uint("user_id", userID))
+	s.logger.InfoContext(ctx, "Deleting user", logger.Uint("user_id", userID))
 
 	// 1. 检查用户是否存在
 	_, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return errors.NewAppError(errors.CodeNotFound, "用户不存在")
+			return errors.NewAppError(errors.CodeNotFound, "User not found")
 		}
-		s.logger.ErrorContext(ctx, "检查用户失败", logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeInternalError, "检查用户失败")
+		s.logger.ErrorContext(ctx, "Failed to check user", logger.ErrorField(err))
+		return errors.WrapError(err, errors.CodeInternalError, "Failed to check user")
 	}
 
-	// 2. 删除用户
+	// 2. Deleting user
 	if err := s.userRepo.Delete(ctx, userID); err != nil {
-		s.logger.ErrorContext(ctx, "删除用户失败", logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeInternalError, "删除用户失败")
+		s.logger.ErrorContext(ctx, "Deleting user失败", logger.ErrorField(err))
+		return errors.WrapError(err, errors.CodeInternalError, "Deleting user失败")
 	}
 
-	s.logger.InfoContext(ctx, "用户删除成功", logger.Uint("user_id", userID))
+	s.logger.InfoContext(ctx, "User deleted successfully", logger.Uint("user_id", userID))
 	return nil
 }
 
-// UpdateUserPassword 更新用户密码（管理员操作）
+// UpdateUserPassword Updating user密码（管理员操作）
 func (s *userService) UpdateUserPassword(
 	ctx context.Context, userID uint, req *request.UserPasswordUpdateRequest,
 ) error {
-	s.logger.InfoContext(ctx, "更新用户密码", logger.Uint("user_id", userID))
+	s.logger.InfoContext(ctx, "Updating user密码", logger.Uint("user_id", userID))
 
 	// 1. 检查用户是否存在
 	user, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return errors.NewAppError(errors.CodeNotFound, "用户不存在")
+			return errors.NewAppError(errors.CodeNotFound, "User not found")
 		}
-		return errors.WrapError(err, errors.CodeInternalError, "获取用户信息失败")
+		return errors.WrapError(err, errors.CodeInternalError, "Failed to get user information")
 	}
 
 	// 2. 加密新密码
@@ -422,11 +422,11 @@ func (s *userService) UpdateUserPassword(
 	// 3. 更新密码
 	user.PasswordHash = hashedPassword
 	if err := s.userRepo.Update(ctx, user); err != nil {
-		s.logger.ErrorContext(ctx, "更新密码失败", logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeInternalError, "更新密码失败")
+		s.logger.ErrorContext(ctx, "Failed to update password", logger.ErrorField(err))
+		return errors.WrapError(err, errors.CodeInternalError, "Failed to update password")
 	}
 
-	s.logger.InfoContext(ctx, "用户密码更新成功", logger.Uint("user_id", userID))
+	s.logger.InfoContext(ctx, "User password updated successfully", logger.Uint("user_id", userID))
 	return nil
 }
 
@@ -448,7 +448,7 @@ func (s *userService) CheckUserQuota(ctx context.Context, userID uint, resourceT
 func (s *userService) validateEmailUniqueness(ctx context.Context, email string, userID uint) error {
 	exists, err := s.userRepo.ExistsByEmailExcludeID(ctx, email, userID)
 	if err != nil {
-		return errors.WrapError(err, errors.CodeInternalError, "检查邮箱唯一性失败")
+		return errors.WrapError(err, errors.CodeInternalError, "Failed to check email uniqueness")
 	}
 	if exists {
 		return errors.NewAppError(errors.CodeEmailAlreadyExists, "邮箱已存在")
@@ -456,7 +456,7 @@ func (s *userService) validateEmailUniqueness(ctx context.Context, email string,
 	return nil
 }
 
-// updateUserFields 更新用户字段
+// updateUserFields Updating user字段
 func (s *userService) updateUserFields(user *model.User, req *request.UserUpdateProfileRequest) {
 	if req.Email != nil {
 		user.Email = *req.Email
@@ -489,8 +489,8 @@ func (s *userService) validateUserCreation(ctx context.Context, req *request.Use
 	// 检查用户名是否存在
 	exists, err := s.userRepo.ExistsByUsername(ctx, req.Username)
 	if err != nil {
-		s.logger.ErrorContext(ctx, "检查用户名失败", logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeInternalError, "检查用户名失败")
+		s.logger.ErrorContext(ctx, "Failed to check username", logger.ErrorField(err))
+		return errors.WrapError(err, errors.CodeInternalError, "Failed to check username")
 	}
 	if exists {
 		return errors.NewAppError(errors.CodeUserAlreadyExists, "用户名已存在")
@@ -499,8 +499,8 @@ func (s *userService) validateUserCreation(ctx context.Context, req *request.Use
 	// 检查邮箱是否存在
 	exists, err = s.userRepo.ExistsByEmail(ctx, req.Email)
 	if err != nil {
-		s.logger.ErrorContext(ctx, "检查邮箱失败", logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeInternalError, "检查邮箱失败")
+		s.logger.ErrorContext(ctx, "Failed to check email", logger.ErrorField(err))
+		return errors.WrapError(err, errors.CodeInternalError, "Failed to check email")
 	}
 	if exists {
 		return errors.NewAppError(errors.CodeEmailAlreadyExists, "邮箱已存在")
@@ -508,7 +508,7 @@ func (s *userService) validateUserCreation(ctx context.Context, req *request.Use
 	return nil
 }
 
-// createUserFromRequest 从请求创建用户对象
+// createUserFromRequest 从请求Creating user对象
 func (s *userService) createUserFromRequest(req *request.UserCreateRequest) *model.User {
 	user := &model.User{
 		GroupID:      req.GroupID,
@@ -547,7 +547,7 @@ func (s *userService) createUserFromRequest(req *request.UserCreateRequest) *mod
 	return user
 }
 
-// updateUserFromRequest 从请求更新用户对象
+// updateUserFromRequest 从请求Updating user对象
 func (s *userService) updateUserFromRequest(user *model.User, req *request.UserUpdateRequest) {
 	if req.GroupID != nil {
 		user.GroupID = *req.GroupID
