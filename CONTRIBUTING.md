@@ -1,37 +1,37 @@
-# Websoft9 贡献指南
+# Websoft9 Contributing Guide
 
-欢迎参与 Websoft9 项目的开发！本指南将帮助您了解如何为项目做出贡献。
+Welcome to contribute to the Websoft9 project! This guide will help you understand how to contribute to the project.
 
-## 目录
+## Table of Contents
 
-- [项目概述](#项目概述)
-- [开发环境搭建](#开发环境搭建)
-- [开发规范](#开发规范)
-- [贡献流程](#贡献流程)
-- [代码审查](#代码审查)
-- [测试规范](#测试规范)
-- [安全规范](#安全规范)
-- [社区参与](#社区参与)
+- [Project Overview](#project-overview)
+- [Development Environment Setup](#development-environment-setup)
+- [Development Standards](#development-standards)
+- [Contribution Process](#contribution-process)
+- [Code Review](#code-review)
+- [Testing Standards](#testing-standards)
+- [Security Standards](#security-standards)
+- [Community Participation](#community-participation)
 
-## 项目概述
+## Project Overview
 
-Websoft9 是一个现代化的云应用管理解决方案平台，采用分层架构设计，提供应用部署、监控、管理等全生命周期服务。
+Websoft9 is a modern cloud application management solution platform with layered architecture design, providing full lifecycle services for application deployment, monitoring, and management.
 
-### 核心组件
+### Core Components
 
-- **API Service**: 基于 Golang + Gin + GORM 的后端服务
-- **Websoft9 Agent**: 部署在服务器节点的客户端代理
-- **Web UI**: Vue 3 + Element Plus 前端界面（计划中）
+- **API Service**: Backend service based on Golang + Gin + GORM
+- **Websoft9 Agent**: Client agent deployed on server nodes
+- **Web UI**: Vue 3 + Element Plus frontend interface (planned)
 
-### 技术栈
+### Technology Stack
 
-- **后端**: Go 1.24+, Gin, GORM, SQLite/MySQL, Redis, InfluxDB
-- **前端**: Vue 3, TypeScript, Element Plus, Pinia
-- **基础设施**: Docker, GitHub Actions
+- **Backend**: Go 1.24+, Gin, GORM, SQLite/MySQL, Redis, InfluxDB
+- **Frontend**: Vue 3, TypeScript, Element Plus, Pinia
+- **Infrastructure**: Docker, GitHub Actions
 
-## 开发环境搭建
+## Development Environment Setup
 
-### 环境要求
+### Environment Requirements
 
 - Go 1.24+
   - [golangci-lint 1.64.8](https://github.com/golangci/golangci-lint)
@@ -41,38 +41,30 @@ Websoft9 是一个现代化的云应用管理解决方案平台，采用分层�
 - Git 2.30+
 - Linux
 
->
-> **仅针对中国站用户，请使用代理**
->
-> ```shell
-> go env -w GOPROXY=<https://mirrors.aliyun.com/goproxy/,direct>
-> ```
->
+### Quick Start
 
-### 快速开始
-
-1. **Fork 并克隆仓库**
+1. **Fork and Clone Repository**
 
    ```bash
    git clone https://github.com/Websoft9/webox.git
    cd webox
    ```
 
-2. **设置开发环境**
+2. **Setup Development Environment**
 
    ```bash
-   # 安装 Go 依赖
+   # Install Go dependencies
    cd api-service
    go mod tidy
 
-   # 初始化数据库
+   # Initialize database
    make init-db
 
-   # 启动 API 服务
+   # Start API service
    make run
    ```
 
-3. **启动 Agent（可选）**
+3. **Start Agent (Optional)**
 
    ```bash
    cd websoft9-agent
@@ -81,35 +73,35 @@ Websoft9 是一个现代化的云应用管理解决方案平台，采用分层�
    sudo ./websoft9-agent
    ```
 
-### 开发工具推荐
+### Recommended Development Tools
 
 - **IDE**: VS Code, GoLand
-- **API 测试**: Apifox, Postman
-- **数据库**: DBeaver, TablePlus
-- **容器**: Docker Desktop
+- **API Testing**: Apifox, Postman
+- **Database**: DBeaver, TablePlus
+- **Container**: Docker Desktop
 
-## 开发规范
+## Development Standards
 
-### 代码风格
+### Code Style
 
-#### Go 代码规范
+#### Go Code Standards
 
-- 遵循 [Go Code Review Comments](https://github.com/golang/go/wiki/CodeReviewComments)
-- 使用 `gofmt` 和 `goimports` 格式化代码
-- 使用 `golangci-lint` 进行代码检查
-- 使用 `gosec` 进行安全检查
+- Follow [Go Code Review Comments](https://github.com/golang/go/wiki/CodeReviewComments)
+- Use `gofmt` and `goimports` to format code
+- Use `golangci-lint` for code checking
+- Use `gosec` for security checks
 
 ```go
-// 正确的函数注释和命名
+// Correct function comments and naming
 // CreateUser creates a new user with the given information.
 // It returns the created user or an error if the operation fails.
 func (s *UserService) CreateUser(ctx context.Context, req *CreateUserRequest) (*User, error) {
-    // 验证输入参数
+    // Validate input parameters
     if err := s.validateCreateUserRequest(req); err != nil {
         return nil, errors.Wrap(err, "invalid create user request")
     }
 
-    // 创建用户
+    // Create user
     user, err := s.repo.Create(ctx, req)
     if err != nil {
         return nil, errors.Wrap(err, "failed to create user in database")
@@ -119,42 +111,42 @@ func (s *UserService) CreateUser(ctx context.Context, req *CreateUserRequest) (*
 }
 ```
 
-#### 项目结构
+#### Project Structure
 
 ```text
 api-service/
-├── cmd/server/           # 应用程序入口
-├── internal/            # 私有应用程序代码
-│   ├── controller/      # API 控制器
-│   ├── service/         # 业务逻辑层
-│   ├── repository/      # 数据访问层
-│   ├── model/           # 数据模型
-│   ├── middleware/      # 中间件
-│   └── config/          # 配置管理
-├── pkg/                 # 公共库代码
-├── api/                 # API 文档
-├── configs/             # 配置文件
-└── docs/                # 项目文档
+├── cmd/server/           # Application entry point
+├── internal/            # Private application code
+│   ├── controller/      # API controllers
+│   ├── service/         # Business logic layer
+│   ├── repository/      # Data access layer
+│   ├── model/           # Data models
+│   ├── middleware/      # Middleware
+│   └── config/          # Configuration management
+├── pkg/                 # Public library code
+├── api/                 # API documentation
+├── configs/             # Configuration files
+└── docs/                # Project documentation
 ```
 
-### 命名规范
+### Naming Conventions
 
-- **包名**: 小写，简短，有意义的名词
-- **变量名**: 驼峰命名法，首字母小写
-- **常量名**: 全大写，下划线分隔
-- **函数名**: 驼峰命名法，公开函数首字母大写
-- **结构体**: 驼峰命名法，首字母大写
+- **Package names**: Lowercase, short, meaningful nouns
+- **Variable names**: CamelCase, starting with lowercase
+- **Constant names**: All uppercase, underscore separated
+- **Function names**: CamelCase, public functions start with uppercase
+- **Structs**: CamelCase, starting with uppercase
 
-### API 设计规范
+### API Design Standards
 
 #### RESTful API
 
-- 使用标准 HTTP 方法：GET、POST、PUT、DELETE、PATCH
-- URL 设计遵循 RESTful 原则
-- 使用合适的 HTTP 状态码
+- Use standard HTTP methods: GET, POST, PUT, DELETE, PATCH
+- URL design follows RESTful principles
+- Use appropriate HTTP status codes
 
 ```go
-// 路由定义示例
+// Route definition example
 func SetupRoutes(r *gin.Engine) {
     api := r.Group("/api/v1")
     {
@@ -170,7 +162,7 @@ func SetupRoutes(r *gin.Engine) {
 }
 ```
 
-#### 响应格式
+#### Response Format
 
 ```go
 type APIResponse struct {
@@ -191,11 +183,11 @@ type PaginatedResponse struct {
 }
 ```
 
-### 错误处理
+### Error Handling
 
-- 使用标准的 error 接口
-- 错误信息应该清晰、具体
-- 使用 `github.com/pkg/errors` 添加上下文信息
+- Use standard error interface
+- Error messages should be clear and specific
+- Use `github.com/pkg/errors` to add context information
 
 ```go
 import "github.com/pkg/errors"
@@ -209,11 +201,11 @@ func (s *UserService) GetUser(id int64) (*User, error) {
 }
 ```
 
-### 日志规范
+### Logging Standards
 
-- 使用结构化日志（推荐 logrus）
-- 日志级别：DEBUG、INFO、WARN、ERROR、FATAL
-- 包含必要的上下文信息
+- Use structured logging (recommend logrus)
+- Log levels: DEBUG, INFO, WARN, ERROR, FATAL
+- Include necessary context information
 
 ```go
 import "github.com/sirupsen/logrus"
@@ -237,34 +229,34 @@ func (s *UserService) CreateUser(ctx context.Context, req *CreateUserRequest) (*
 }
 ```
 
-## 贡献流程
+## Contribution Process
 
-### Git 工作流
+### Git Workflow
 
-我们采用 **Git Flow** 工作流模型：
+We adopt the **Git Flow** workflow model:
 
 ```text
-main (生产分支)
-├── develop (开发分支)
-├── release/v1.2.0 (发布分支)
-├── feature/user-authentication (功能分支)
-└── hotfix/critical-bug-fix (修复分支)
+main (production branch)
+├── develop (development branch)
+├── release/v1.2.0 (release branch)
+├── feature/user-authentication (feature branch)
+└── hotfix/critical-bug-fix (hotfix branch)
 ```
 
-### 分支命名规范
+### Branch Naming Conventions
 
-| 分支类型 | 命名格式 | 示例 | 用途 |
-|----------|----------|------|------|
-| 主分支 | `main` | `main` | 生产环境代码 |
-| 开发分支 | `develop` | `develop` | 开发环境代码 |
-| 功能分支 | `feature/功能描述` | `feature/user-management` | 新功能开发 |
-| 发布分支 | `release/版本号` | `release/v1.2.0` | 发布准备 |
-| 修复分支 | `hotfix/问题描述` | `hotfix/login-error` | 紧急修复 |
-| 修复分支 | `bugfix/问题描述` | `bugfix/api-validation` | 一般修复 |
+| Branch Type | Naming Format | Example | Purpose |
+|-------------|---------------|---------|---------|
+| Main branch | `main` | `main` | Production environment code |
+| Development branch | `develop` | `develop` | Development environment code |
+| Feature branch | `feature/feature-description` | `feature/user-management` | New feature development |
+| Release branch | `release/version-number` | `release/v1.2.0` | Release preparation |
+| Hotfix branch | `hotfix/issue-description` | `hotfix/login-error` | Emergency fixes |
+| Bugfix branch | `bugfix/issue-description` | `bugfix/api-validation` | General fixes |
 
-### 提交信息规范
+### Commit Message Standards
 
-采用 **Conventional Commits** 规范：
+Adopt **Conventional Commits** specification:
 
 ```text
 <type>[optional scope]: <description>
@@ -274,21 +266,21 @@ main (生产分支)
 [optional footer(s)]
 ```
 
-#### 提交类型
+#### Commit Types
 
-| 类型 | 描述 | 示例 |
-|------|------|------|
-| `feat` | 新功能 | `feat(auth): add JWT token refresh mechanism` |
-| `fix` | 修复 bug | `fix(api): handle null pointer in user service` |
-| `docs` | 文档更新 | `docs(readme): update installation instructions` |
-| `style` | 代码格式调整 | `style(user): format code with gofmt` |
-| `refactor` | 代码重构 | `refactor(db): extract connection logic to separate package` |
-| `test` | 测试相关 | `test(user): add unit tests for user service` |
-| `chore` | 构建过程或辅助工具的变动 | `chore(deps): update golang to 1.24` |
-| `perf` | 性能优化 | `perf(api): optimize database queries` |
-| `ci` | CI/CD 相关 | `ci(github): add automated testing workflow` |
+| Type | Description | Example |
+|------|-------------|---------|
+| `feat` | New feature | `feat(auth): add JWT token refresh mechanism` |
+| `fix` | Bug fix | `fix(api): handle null pointer in user service` |
+| `docs` | Documentation update | `docs(readme): update installation instructions` |
+| `style` | Code formatting | `style(user): format code with gofmt` |
+| `refactor` | Code refactoring | `refactor(db): extract connection logic to separate package` |
+| `test` | Test related | `test(user): add unit tests for user service` |
+| `chore` | Build process or auxiliary tool changes | `chore(deps): update golang to 1.24` |
+| `perf` | Performance optimization | `perf(api): optimize database queries` |
+| `ci` | CI/CD related | `ci(github): add automated testing workflow` |
 
-#### 提交信息示例
+#### Commit Message Examples
 
 ```bash
 feat(auth): add JWT token refresh mechanism
@@ -300,9 +292,9 @@ feat(auth): add JWT token refresh mechanism
 Closes #123
 ```
 
-### 功能开发流程
+### Feature Development Process
 
-1. **创建功能分支**
+1. **Create Feature Branch**
 
    ```bash
    git checkout develop
@@ -310,31 +302,31 @@ Closes #123
    git checkout -b feature/user-management
    ```
 
-2. **开发功能**
+2. **Develop Feature**
 
    ```bash
-   # 编写代码
-   # 添加测试
-   # 更新文档
+   # Write code
+   # Add tests
+   # Update documentation
 
    git add .
    git commit -m "feat(user): add user creation functionality"
    ```
 
-3. **推送分支并创建 PR**
+3. **Push Branch and Create PR**
 
    ```bash
    git push origin feature/user-management
-   # 在 GitHub 上创建 Pull Request
+   # Create Pull Request on GitHub
    ```
 
-4. **代码审查和合并**
+4. **Code Review and Merge**
 
-   - 等待代码审查
-   - 根据反馈修改代码
-   - 审查通过后合并到 develop 分支
+   - Wait for code review
+   - Modify code based on feedback
+   - Merge to develop branch after review approval
 
-5. **清理分支**
+5. **Clean Up Branch**
 
    ```bash
    git checkout develop
@@ -342,120 +334,120 @@ Closes #123
    git branch -d feature/user-management
    ```
 
-### Pull Request 规范
+### Pull Request Standards
 
-#### PR 标题格式
+#### PR Title Format
 
 ```text
 <type>[scope]: <description>
 ```
 
-示例：
+Examples:
 
 - `feat(auth): add OAuth2 integration`
 - `fix(api): resolve memory leak in user service`
 - `docs(readme): update development setup guide`
 
-#### PR 描述模板
+#### PR Description Template
 
 ```markdown
-## 变更类型
-- [ ] 新功能 (feature)
-- [ ] Bug 修复 (fix)
-- [ ] 文档更新 (docs)
-- [ ] 代码重构 (refactor)
-- [ ] 性能优化 (perf)
-- [ ] 测试相关 (test)
-- [ ] 其他 (chore)
+## Change Type
+- [ ] New feature (feature)
+- [ ] Bug fix (fix)
+- [ ] Documentation update (docs)
+- [ ] Code refactoring (refactor)
+- [ ] Performance optimization (perf)
+- [ ] Test related (test)
+- [ ] Other (chore)
 
-## 变更描述
-简要描述本次变更的内容和目的。
+## Change Description
+Brief description of the changes and purpose.
 
-## 相关 Issue
+## Related Issues
 Closes #123
 Fixes #456
 
-## 测试说明
-- [ ] 已添加单元测试
-- [ ] 已添加集成测试
-- [ ] 已进行手动测试
-- [ ] 测试覆盖率 ≥ 80%
+## Testing Instructions
+- [ ] Added unit tests
+- [ ] Added integration tests
+- [ ] Performed manual testing
+- [ ] Test coverage ≥ 80%
 
-## 检查清单
-- [ ] 代码遵循项目编码规范
-- [ ] 已更新相关文档
-- [ ] 已通过所有自动化测试
-- [ ] 已进行代码自查
-- [ ] 无明显性能问题
+## Checklist
+- [ ] Code follows project coding standards
+- [ ] Updated relevant documentation
+- [ ] Passed all automated tests
+- [ ] Performed code self-review
+- [ ] No obvious performance issues
 
-## 截图/演示
-如果涉及 UI 变更，请提供截图或演示视频。
+## Screenshots/Demo
+If UI changes are involved, please provide screenshots or demo videos.
 
-## 其他说明
-其他需要说明的内容。
+## Additional Notes
+Any other information that needs to be explained.
 ```
 
-## 代码审查
+## Code Review
 
-### 审查检查清单
+### Review Checklist
 
-#### 功能性检查
+#### Functionality Check
 
-- [ ] 功能是否按需求正确实现
-- [ ] 边界条件是否正确处理
-- [ ] 错误处理是否完善
-- [ ] 性能是否满足要求
+- [ ] Is the functionality correctly implemented according to requirements
+- [ ] Are boundary conditions properly handled
+- [ ] Is error handling comprehensive
+- [ ] Does performance meet requirements
 
-#### 代码质量检查
+#### Code Quality Check
 
-- [ ] 代码是否符合项目规范
-- [ ] 是否有重复代码
-- [ ] 变量和函数命名是否清晰
-- [ ] 注释是否充分和准确
-- [ ] 是否遵循 SOLID 原则
+- [ ] Does code follow project standards
+- [ ] Is there duplicate code
+- [ ] Are variable and function names clear
+- [ ] Are comments sufficient and accurate
+- [ ] Does it follow SOLID principles
 
-#### 安全性检查
+#### Security Check
 
-- [ ] 是否存在安全漏洞
-- [ ] 敏感信息是否正确处理
-- [ ] 输入验证是否充分
-- [ ] 权限控制是否正确
+- [ ] Are there security vulnerabilities
+- [ ] Is sensitive information properly handled
+- [ ] Is input validation sufficient
+- [ ] Is permission control correct
 
-#### 测试检查
+#### Test Check
 
-- [ ] 是否有足够的测试覆盖
-- [ ] 测试用例是否合理
-- [ ] 是否测试了错误场景
+- [ ] Is there sufficient test coverage
+- [ ] Are test cases reasonable
+- [ ] Are error scenarios tested
 
-### 审查反馈规范
+### Review Feedback Standards
 
-使用以下标签进行反馈：
+Use the following tags for feedback:
 
-- `MUST`: 必须修改的问题
-- `SHOULD`: 建议修改的问题
-- `COULD`: 可选的改进建议
-- `QUESTION`: 需要澄清的问题
-- `PRAISE`: 值得称赞的代码
+- `MUST`: Issues that must be fixed
+- `SHOULD`: Issues that should be fixed
+- `COULD`: Optional improvement suggestions
+- `QUESTION`: Questions that need clarification
+- `PRAISE`: Code worth praising
 
-示例：
+Example:
 
 ```text
-MUST: 这里存在空指针异常的风险，需要添加 nil 检查。
+MUST: There's a risk of null pointer exception here, need to add nil check.
 
-SHOULD: 建议将这个魔法数字提取为常量，提高代码可读性。
+SHOULD: Suggest extracting this magic number as a constant to improve code readability.
 
-COULD: 可以考虑使用更简洁的写法：`return err != nil`
+COULD: Consider using a more concise approach: `return err != nil`
 
-QUESTION: 这个函数的时间复杂度是多少？是否需要优化？
+QUESTION: What's the time complexity of this function? Does it need optimization?
 
-PRAISE: 这个错误处理写得很好，提供了清晰的上下文信息。
+PRAISE: This error handling is well written, providing clear context information.
 ```
 
-## 测试规范
+## Testing Standards
 
-### 测试策略
+### Testing Strategy
 
-采用测试金字塔模型：
+Adopt the test pyramid model:
 
 ```text
     /\
@@ -468,9 +460,9 @@ PRAISE: 这个错误处理写得很好，提供了清晰的上下文信息。
  \______/ Unit Tests (70%)
 ```
 
-### 单元测试
+### Unit Testing
 
-#### Go 单元测试示例
+#### Go Unit Test Example
 
 ```go
 // user_service_test.go
@@ -540,35 +532,35 @@ func TestUserService_CreateUser(t *testing.T) {
 }
 ```
 
-### 测试覆盖率要求
+### Test Coverage Requirements
 
-- 单元测试覆盖率 ≥ 80%
-- 集成测试覆盖率 ≥ 60%
-- 关键业务逻辑覆盖率 ≥ 90%
+- Unit test coverage ≥ 80%
+- Integration test coverage ≥ 60%
+- Critical business logic coverage ≥ 90%
 
-### 运行测试
+### Running Tests
 
 ```bash
-# 运行所有测试
+# Run all tests
 make test
 
-# 运行测试并生成覆盖率报告
+# Run tests and generate coverage report
 make test-coverage
 
-# 运行特定包的测试
+# Run tests for specific package
 go test -v ./internal/service/...
 
-# 运行集成测试
+# Run integration tests
 make test-integration
 ```
 
-## 安全规范
+## Security Standards
 
-### 代码安全
+### Code Security
 
-#### 敏感信息处理
+#### Sensitive Information Handling
 
-**❌ 错误示例 - 硬编码敏感信息**
+**❌ Wrong Example - Hardcoded Sensitive Information**
 
 ```go
 const (
@@ -578,7 +570,7 @@ const (
 )
 ```
 
-**✅ 正确示例 - 使用环境变量**
+**✅ Correct Example - Using Environment Variables**
 
 ```go
 type Config struct {
@@ -596,7 +588,7 @@ func LoadConfig() (*Config, error) {
 }
 ```
 
-#### 输入验证
+#### Input Validation
 
 ```go
 import (
@@ -618,7 +610,7 @@ func (r *CreateUserRequest) Validate() error {
         return errors.Wrap(err, "validation failed")
     }
 
-    // 自定义验证
+    // Custom validation
     if err := ValidatePasswordStrength(r.Password); err != nil {
         return err
     }
@@ -629,29 +621,29 @@ func (r *CreateUserRequest) Validate() error {
 func (r *CreateUserRequest) Sanitize() {
     r.Username = strings.TrimSpace(r.Username)
     r.Email = strings.ToLower(strings.TrimSpace(r.Email))
-    // HTML 转义防止 XSS
+    // HTML escape to prevent XSS
     r.Username = html.EscapeString(r.Username)
 }
 ```
 
-#### SQL 注入防护
+#### SQL Injection Protection
 
 ```go
-// ❌ 错误示例 - 容易受到 SQL 注入攻击
+// ❌ Wrong Example - Vulnerable to SQL injection
 func GetUserByUsername(username string) (*User, error) {
     query := fmt.Sprintf("SELECT * FROM users WHERE username = '%s'", username)
     rows, err := db.Query(query)
     // ...
 }
 
-// ✅ 正确示例 - 使用参数化查询
+// ✅ Correct Example - Using parameterized queries
 func GetUserByUsername(username string) (*User, error) {
     query := "SELECT * FROM users WHERE username = ?"
     rows, err := db.Query(query, username)
     // ...
 }
 
-// ✅ 使用 GORM（推荐）
+// ✅ Using GORM (Recommended)
 func (r *userRepository) GetByUsername(ctx context.Context, username string) (*User, error) {
     var user User
     err := r.db.WithContext(ctx).Where("username = ?", username).First(&user).Error
@@ -662,71 +654,71 @@ func (r *userRepository) GetByUsername(ctx context.Context, username string) (*U
 }
 ```
 
-### 安全检查清单
+### Security Checklist
 
-#### 代码审查安全检查
+#### Code Review Security Check
 
-- [ ] 没有硬编码的密码、密钥或敏感信息
-- [ ] 所有用户输入都经过验证和清理
-- [ ] 使用参数化查询防止 SQL 注入
-- [ ] 实现了适当的认证和授权机制
-- [ ] 敏感数据在传输和存储时都进行了加密
-- [ ] 实现了适当的错误处理，不泄露敏感信息
-- [ ] 使用了安全的随机数生成器
-- [ ] 实现了适当的日志记录和审计
+- [ ] No hardcoded passwords, keys, or sensitive information
+- [ ] All user inputs are validated and sanitized
+- [ ] Use parameterized queries to prevent SQL injection
+- [ ] Implement appropriate authentication and authorization mechanisms
+- [ ] Sensitive data is encrypted during transmission and storage
+- [ ] Implement appropriate error handling without leaking sensitive information
+- [ ] Use secure random number generators
+- [ ] Implement appropriate logging and auditing
 
-## 社区参与
+## Community Participation
 
-### 报告问题
+### Reporting Issues
 
-如果您发现了 bug 或有功能建议，请：
+If you find bugs or have feature suggestions, please:
 
-1. 搜索现有的 Issues，避免重复报告
-2. 使用合适的 Issue 模板
-3. 提供详细的复现步骤和环境信息
-4. 如果是安全问题，请私下联系维护者
+1. Search existing Issues to avoid duplicate reports
+2. Use appropriate Issue templates
+3. Provide detailed reproduction steps and environment information
+4. For security issues, please contact maintainers privately
 
-### 功能请求
+### Feature Requests
 
-1. 在 Issues 中描述您的需求
-2. 解释为什么这个功能有用
-3. 提供具体的使用场景
-4. 考虑向后兼容性
+1. Describe your needs in Issues
+2. Explain why this feature is useful
+3. Provide specific use cases
+4. Consider backward compatibility
 
-### 文档贡献
+### Documentation Contributions
 
-- 修复文档中的错误
-- 改进现有文档的清晰度
-- 添加缺失的文档
-- 翻译文档到其他语言
+- Fix errors in documentation
+- Improve clarity of existing documentation
+- Add missing documentation
+- Translate documentation to other languages
 
-### 社区行为准则
+### Community Code of Conduct
 
-我们致力于为每个人提供友好、安全和欢迎的环境。请：
+We are committed to providing a friendly, safe, and welcoming environment for everyone. Please:
 
-- 使用友好和包容的语言
-- 尊重不同的观点和经验
-- 优雅地接受建设性批评
-- 关注对社区最有利的事情
-- 对其他社区成员表示同理心
+- Use friendly and inclusive language
+- Respect different viewpoints and experiences
+- Gracefully accept constructive criticism
+- Focus on what is best for the community
+- Show empathy towards other community members
 
-## 获取帮助
+## Getting Help
 
-### 联系方式
+### Contact Information
 
-- **GitHub Issues**: 报告 bug 和功能请求
-- **GitHub Discussions**: 一般讨论和问题
+- **GitHub Issues**: Report bugs and feature requests
+- **GitHub Discussions**: General discussions and questions
 
-### 资源链接
+### Resource Links
 
-- [项目文档](./docs/)
-- [API 文档](./api-service/docs/)
-- [开发规范](./docs/开发规范.md)
-- [架构设计](./docs/designs/)
+- [Project Documentation](./docs/)
+- [API Documentation](./api-service/docs/)
+- [Development Standards](./docs/开发规范.md)
+- [Architecture Design](./docs/designs/)
 
-## 致谢
+## Acknowledgments
 
-感谢所有为 Websoft9 项目做出贡献的开发者！您的贡献让这个项目变得更好。
+Thanks to all developers who have contributed to the Websoft9 project! Your contributions make this project better.
 
 ---
 

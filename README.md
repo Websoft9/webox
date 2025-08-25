@@ -1,70 +1,70 @@
-# Websoft9 平台
+# Websoft9 Platform
 
-现代化的云应用管理解决方案平台，提供应用部署、监控、管理等全生命周期服务。
+A modern cloud application management solution platform providing comprehensive application deployment, monitoring, and management services throughout the entire lifecycle.
 
-## 项目概述
+## Project Overview
 
-Websoft9 是一个以项目为核心组织单元的云应用管理平台，采用分层架构设计，支持多云环境下的应用全生命周期管理。平台通过项目维度实现资源隔离、权限控制、成本管控和团队协作。
+Websoft9 is a cloud application management platform with project-centric organization, featuring layered architecture design and supporting full lifecycle application management in multi-cloud environments. The platform achieves resource isolation, permission control, cost management, and team collaboration through project-based organization.
 
-### 核心架构组件
+### Core Architecture Components
 
-- **api-service**: 核心后端服务，基于 Golang + Gin + GORM 构建，提供 RESTful API 接口
-- **websoft9-agent**: 部署在服务器节点的客户端代理，通过 gRPC 与服务端通信，负责任务执行和监控数据采集
+- **api-service**: Core backend service built with Golang + Gin + GORM, providing RESTful API interfaces
+- **websoft9-agent**: Client agent deployed on server nodes, communicating with the server via gRPC, responsible for task execution and monitoring data collection
 
-## 平台功能模块
+## Platform Feature Modules
 
-### 1. 平台主页
+### 1. Platform Homepage
 
-- **总览仪表盘**: 项目总览看板、监控总览看板
-- **应用快捷导航**: 已部署应用的快速访问入口
+- **Overview Dashboard**: Project overview board, monitoring overview board
+- **Application Quick Navigation**: Quick access portal for deployed applications
 
-### 2. 项目管理 (核心模块)
+### 2. Project Management (Core Module)
 
-- **仪表盘**: 监控看板、任务看板、资源看板
-- **文件夹**: 项目文件夹、个人文件夹管理
-- **应用管理**: 查询、卸载、更新、发布、克隆、配置、迁移
-- **工作流**: 画布编排、组件管理、任务调度
-- **项目资源**: 资源组、服务器、密钥、数据库、应用网关、证书、云资源
-- **项目团队**: 成员管理、角色分配、权限控制
-- **项目设置**: 环境变量、项目配置
+- **Dashboard**: Monitoring board, task board, resource board
+- **Folders**: Project folders, personal folder management
+- **Application Management**: Query, uninstall, update, publish, clone, configure, migrate
+- **Workflows**: Canvas orchestration, component management, task scheduling
+- **Project Resources**: Resource groups, servers, secrets, databases, application gateways, certificates, cloud resources
+- **Project Teams**: Member management, role assignment, permission control
+- **Project Settings**: Environment variables, project configuration
 
-### 3. 应用市场
+### 3. Application Marketplace
 
-- **应用市场列表**: 应用分类、搜索、部署
-- **应用心愿单**: 需求提交、投票、悬赏机制
+- **Application Marketplace List**: Application categorization, search, deployment
+- **Application Wishlist**: Requirement submission, voting, bounty mechanism
 
-### 4. 平台管理
+### 4. Platform Management
 
-- **项目管理**: 项目创建、修改、删除
-- **平台设置**: 基本设置、系统更新、系统服务、SMTP、短信、Webhook等
-- **安全管理**: 角色管理、权限管理、认证管理
-- **用户管理**: 用户增删改查
-- **告警通知**: 告警查询、规则配置、推送管理
-- **个人中心**: 个人资料、个人设置
-- **审计日志**: 操作记录、日志查询
+- **Project Management**: Project creation, modification, deletion
+- **Platform Settings**: Basic settings, system updates, system services, SMTP, SMS, Webhook, etc.
+- **Security Management**: Role management, permission management, authentication management
+- **User Management**: User CRUD operations
+- **Alert Notifications**: Alert queries, rule configuration, push management
+- **Personal Center**: Personal profile, personal settings
+- **Audit Logs**: Operation records, log queries
 
-## 技术架构
+## Technical Architecture
 
-### API Service (后端服务)
+### API Service (Backend Service)
 
-基于 Golang + Gin + GORM 构建的核心后端服务。
+Core backend service built with Golang + Gin + GORM.
 
-**技术栈：**
+**Tech Stack:**
 
 - Golang 1.24+
-- Gin Web 框架
-- GORM ORM 框架
-- SQLite 数据库
-- Redis 缓存
-- InfluxDB 时序数据库
-- JWT 认证
-- gRPC 通信
+- Gin Web Framework
+- GORM ORM Framework
+- SQLite Database
+- Redis Cache
+- InfluxDB Time Series Database
+- JWT Authentication
+- gRPC Communication
 
-### Websoft9 Agent (客户端代理)
+### Websoft9 Agent (Client Agent)
 
-部署在服务器节点的客户端代理，负责任务执行和监控数据采集。
+Client agent deployed on server nodes, responsible for task execution and monitoring data collection.
 
-**技术栈：**
+**Tech Stack:**
 
 - Golang
 - gRPC (grpc-go)
@@ -72,9 +72,9 @@ Websoft9 是一个以项目为核心组织单元的云应用管理平台，采�
 - InfluxDB (influxdb-client-go)
 - Docker Engine API
 
-## 快速开始
+## Quick Start
 
-### 环境要求
+### Environment Requirements
 
 - Go 1.24+
 - Docker 20.10+
@@ -82,25 +82,25 @@ Websoft9 是一个以项目为核心组织单元的云应用管理平台，采�
 - Redis 6.0+
 - InfluxDB 2.0+
 
-### 开发环境搭建
+### Development Environment Setup
 
-1. **克隆仓库**
+1. **Clone Repository**
 
    ```bash
    git clone <repository-url>
    cd webox
    ```
 
-2. **启动 API 服务**
+2. **Start API Service**
 
    ```bash
    cd api-service
    go mod tidy
-   make init-db    # 初始化数据库
-   make run        # 启动开发服务
+   make init-db    # Initialize database
+   make run        # Start development service
    ```
 
-3. **启动 Agent 代理**
+3. **Start Agent**
 
    ```bash
    cd websoft9-agent
@@ -109,54 +109,54 @@ Websoft9 是一个以项目为核心组织单元的云应用管理平台，采�
    sudo ./websoft9-agent
    ```
 
-### Docker 部署
+### Docker Deployment
 
 ```bash
-# 构建并运行 API 服务
+# Build and run API service
 cd api-service
 docker build -t websoft9/api-service .
 docker run -p 8080:8080 -p 9090:9090 websoft9/api-service
 
-# 构建并运行 Agent
+# Build and run Agent
 cd websoft9-agent
 docker build -t websoft9/agent .
 docker run --privileged websoft9/agent
 ```
 
-## 开发工具链
+## Development Toolchain
 
-- **API 测试**: [Apifox](https://apifox.com/)
+- **API Testing**: [Apifox](https://apifox.com/)
 - **CI/CD**: GitHub Actions
-- **AI 编程**: [GitHub Copilot](https://github.com/features/copilot), [Claude Code](https://docs.anthropic.com/zh-CN/docs/claude-code/overview)
+- **AI Programming**: [GitHub Copilot](https://github.com/features/copilot), [Claude Code](https://docs.anthropic.com/zh-CN/docs/claude-code/overview)
 
-## 项目结构
+## Project Structure
 
 ```text
 webox/
-├── api-service/              # 后端 API 服务
+├── api-service/              # Backend API service
 │   ├── main.go
 │   ├── internal/
-│   │   ├── config/          # 配置管理
-│   │   ├── controller/      # 控制器层
-│   │   ├── service/         # 业务逻辑层
-│   │   ├── repository/      # 数据访问层
-│   │   ├── middleware/      # 中间件
-│   │   └── model/          # 数据模型
-│   ├── pkg/                # 公共包
-│   └── docs/               # API 文档
-└── websoft9-agent/         # 客户端代理
-    ├── cmd/                # 命令行入口
-    ├── internal/           # 内部包
-    │   ├── agent/         # 代理核心逻辑
-    │   ├── monitor/       # 监控数据采集
-    │   └── executor/      # 任务执行器
-    └── pkg/               # 公共包
+│   │   ├── config/          # Configuration management
+│   │   ├── controller/      # Controller layer
+│   │   ├── service/         # Business logic layer
+│   │   ├── repository/      # Data access layer
+│   │   ├── middleware/      # Middleware
+│   │   └── model/          # Data models
+│   ├── pkg/                # Common packages
+│   └── docs/               # API documentation
+└── websoft9-agent/         # Client agent
+    ├── cmd/                # Command line entry
+    ├── internal/           # Internal packages
+    │   ├── agent/         # Agent core logic
+    │   ├── monitor/       # Monitoring data collection
+    │   └── executor/      # Task executor
+    └── pkg/               # Common packages
 ```
 
-## 开发规范
+## Development Standards
 
-1. 遵循 Go 语言编码规范
-2. 使用依赖注入模式
-3. 保持接口与实现分离
-4. 实现完善的错误处理
-5. 添加适当的日志记录
+1. Follow Go language coding standards
+2. Use dependency injection patterns
+3. Maintain interface-implementation separation
+4. Implement comprehensive error handling
+5. Add appropriate logging
