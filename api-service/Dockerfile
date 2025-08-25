@@ -31,7 +31,7 @@ RUN CGO_ENABLED=1 GOOS=linux go build \
     -ldflags "-X main.Version=${VERSION} -X main.Commit=${COMMIT} -X main.BuildTime=${BUILD_TIME} -w -s" \
     -a -installsuffix cgo \
     -o api-service \
-    main
+    .
 
 # 运行阶段
 FROM alpine:latest
@@ -61,9 +61,5 @@ USER appuser
 # 暴露端口
 EXPOSE 8080 9090
 
-# 健康检查
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8080/health || exit 1
-
 # 启动应用
-CMD ["sh", "-c", "/app/scripts/init_db.sh && ./api-service"]
+CMD ["sh", "-c", "./scripts/init_db.sh && ./api-service"]
