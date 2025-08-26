@@ -10,11 +10,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Controllers 控制器集合
+// Controllers controller collection
 type Controllers struct {
-	UserController *controller.UserController
-	I18nController *controller.I18nController
-	// 可以添加更多控制器
+	UserController       *controller.UserController
+	I18nController       *controller.I18nController
+	RoleController       *controller.RoleController
+	PermissionController *controller.PermissionController
+	APITokenController   *controller.APITokenController
+	TwoFactorController  *controller.TwoFactorController
+	// More controllers can be added
 	// AppController  *controller.ApplicationController
 }
 
@@ -75,6 +79,73 @@ func SetupRouter(controllers *Controllers, cfg *config.Config, log logger.Logger
 	users.PUT("/:id/status", controllers.UserController.UpdateUserStatus)     // 更新用户状态
 	users.PUT("/:id/password", controllers.UserController.UpdateUserPassword) // 管理员修改用户密码
 	users.DELETE("/:id", controllers.UserController.DeleteUser)               // 删除用户
+
+	// 角色管理路由
+	if controllers.RoleController != nil {
+		roles := protected.Group("/roles")
+		roles.GET("", controllers.RoleController.ListRoles)
+		roles.POST("", controllers.RoleController.CreateRole)
+		roles.GET("/:id", controllers.RoleController.GetRole)
+		roles.PUT("/:id", controllers.RoleController.UpdateRole)
+		roles.DELETE("/:id", controllers.RoleController.DeleteRole)
+
+		// 角色权限管理
+		roles.POST("/:id/permissions", controllers.RoleController.AssignPermissions)
+		roles.DELETE("/:id/permissions", controllers.RoleController.RemovePermissions)
+
+		// 角色用户管理
+		roles.GET("/:id/users", controllers.RoleController.GetRoleUsers)
+	}
+
+	// Permission management routes
+	if controllers.PermissionController != nil {
+		permissions := protected.Group("/permissions")
+		permissions.GET("", controllers.PermissionController.ListPermissions)
+		permissions.POST("", controllers.PermissionController.CreatePermission)
+		permissions.GET("/tree", controllers.PermissionController.GetPermissionTree)
+		permissions.GET("/:id", controllers.PermissionController.GetPermission)
+		permissions.PUT("/:id", controllers.PermissionController.UpdatePermission)
+		permissions.DELETE("/:id", controllers.PermissionController.DeletePermission)
+
+		// Permission role management
+		permissions.GET("/:id/roles", controllers.PermissionController.GetPermissionRoles)
+	}
+
+	// API Token management routes
+	if controllers.APITokenController != nil {
+		apiTokens := protected.Group("/api-tokens")
+		apiTokens.GET("", controllers.APITokenController.ListAPITokens)
+		apiTokens.POST("", controllers.APITokenController.CreateAPIToken)
+		apiTokens.GET("/:id", controllers.APITokenController.GetAPIToken)
+		apiTokens.PUT("/:id", controllers.APITokenController.UpdateAPIToken)
+		apiTokens.POST("/:id/revoke", controllers.APITokenController.RevokeAPIToken)
+		apiTokens.POST("/:id/refresh", controllers.APITokenController.RefreshAPIToken)
+
+		// API Token validation (no JWT required)
+		v1.POST("/api-tokens/validate", controllers.APITokenController.ValidateAPIToken)
+	}
+
+	// Two-factor authentication routes
+	if controllers.TwoFactorController != nil {
+		twoFactor := protected.Group("/2fa")
+
+		// TOTP management
+		twoFactor.POST("/totp/enable", controllers.TwoFactorController.EnableTOTP)
+		twoFactor.POST("/totp/confirm", controllers.TwoFactorController.ConfirmTOTP)
+		twoFactor.POST("/totp/disable", controllers.TwoFactorController.DisableTOTP)
+
+		// Email 2FA management
+		twoFactor.POST("/email/enable", controllers.TwoFactorController.EnableEmailTwoFactor)
+		twoFactor.POST("/email/disable", controllers.TwoFactorController.DisableEmailTwoFactor)
+		twoFactor.POST("/email/send-code", controllers.TwoFactorController.SendEmailCode)
+
+		// General 2FA operations
+		twoFactor.GET("/status", controllers.TwoFactorController.GetTwoFactorStatus)
+		twoFactor.POST("/backup-codes", controllers.TwoFactorController.GenerateBackupCodes)
+
+		// 2FA verification (no JWT required for login flow)
+		v1.POST("/2fa/verify", controllers.TwoFactorController.VerifyTwoFactor)
+	}
 
 	// TODO: 应用相关路由将在后续版本中实现
 
