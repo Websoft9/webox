@@ -211,29 +211,27 @@ func (s *UserService) GetUser(id int64) (*User, error) {
 
 ### 日志规范
 
-- 使用结构化日志（推荐 logrus）
+- 使用结构化日志（推荐 zap，项目中已默认实现）
 - 日志级别：DEBUG、INFO、WARN、ERROR、FATAL
 - 包含必要的上下文信息
 
 ```go
-import "github.com/sirupsen/logrus"
+import "api-service/pkg/logger"
 
 func (s *UserService) CreateUser(ctx context.Context, req *CreateUserRequest) (*User, error) {
-    logger := logrus.WithFields(logrus.Fields{
-        "operation": "CreateUser",
-        "username":  req.Username,
-    })
-
+    s.logger.InfoContext(ctx, "Creating user", logger.String("username", req.Username))
+    
     logger.Info("Creating new user")
-
+    
     user, err := s.repo.Create(req)
     if err != nil {
-        logger.WithError(err).Error("Failed to create user")
-        return nil, err
-    }
+        s.logger.ErrorContext(ctx, "Failed to create user", logger.ErrorField(err))
 
-    logger.WithField("user_id", user.ID).Info("User created successfully")
-    return user, nil
+        return nil, errors.WrapError(err, errors.CodeInternalError, "Failed to create user")
+    }
+    
+    s.logger.InfoContext(ctx, "User created successfully", logger.Uint("user_id", user.ID))
+    return s.buildUserResponse(user), nil
 }
 ```
 
