@@ -13,6 +13,14 @@ user:
   email_required: "Email is required"
   invalid_email: "Invalid email format"
   password_too_short: "Password must be at least 8 characters"
+  register_success: "User registration successful"
+  profile_get_success: "Profile retrieved successfully"
+  profile_update_success: "Profile updated successfully"
+  password_change_success: "Password changed successfully"
+  list_get_success: "User list retrieved successfully"
+  status_update_success: "User status updated successfully"
+  password_update_success: "User password updated successfully"
+  email_already_exists: "Email already exists"
 
 # Authentication messages
 auth:

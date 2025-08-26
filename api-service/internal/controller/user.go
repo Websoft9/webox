@@ -2,8 +2,8 @@ package controller
 
 import (
 	"api-service/internal/dto/request"
-	"api-service/internal/dto/response"
 	"api-service/internal/interface/service"
+	"api-service/internal/middleware"
 	"api-service/pkg/errors"
 	"api-service/pkg/logger"
 	pkg_response "api-service/pkg/response"
@@ -13,13 +13,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// UserController 用户控制器
+// UserController user controller
 type UserController struct {
 	userService service.UserService
 	logger      logger.Logger
 }
 
-// NewUserController 创建新的用户控制器
+// NewUserController create new user controller
 func NewUserController(userService service.UserService, logger logger.Logger) *UserController {
 	return &UserController{
 		userService: userService,
@@ -27,23 +27,23 @@ func NewUserController(userService service.UserService, logger logger.Logger) *U
 	}
 }
 
-// bindAndValidateRequest 绑定并验证请求参数的通用方法
+// bindAndValidateRequest bind and validate request parameters
 func (c *UserController) bindAndValidateRequest(ctx *gin.Context, req interface{}, action string) bool {
 	if err := ctx.ShouldBindJSON(req); err != nil {
-		c.logger.WarnContext(ctx, action+"请求参数绑定失败", logger.ErrorField(err))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, "请求参数无效"))
+		c.logger.WarnContext(ctx, action+" request parameter binding failed", logger.ErrorField(err))
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, middleware.T(ctx, "common.validation_failed")))
 		return false
 	}
 	return true
 }
 
-// handleUserAuth 处理用户认证相关请求的通用方法
+// handleUserAuth handle user authentication related requests
 func (c *UserController) handleUserAuth(
 	ctx *gin.Context,
 	req interface{},
 	action string,
 	serviceFunc func(context.Context, interface{}) (interface{}, error),
-	successMessage string,
+	successMessageKey string,
 ) {
 	if !c.bindAndValidateRequest(ctx, req, action) {
 		return
@@ -51,37 +51,67 @@ func (c *UserController) handleUserAuth(
 
 	result, err := serviceFunc(ctx, req)
 	if err != nil {
-		// 根据action类型选择日志级别
-		if action == "登录" {
-			c.logger.WarnContext(ctx, "用户"+action+"失败", logger.ErrorField(err))
+		if action == "login" {
+			c.logger.WarnContext(ctx, "User "+action+" failed", logger.ErrorField(err))
 		} else {
-			c.logger.ErrorContext(ctx, "用户"+action+"失败", logger.ErrorField(err))
+			c.logger.ErrorContext(ctx, "User "+action+" failed", logger.ErrorField(err))
 		}
 		errors.HandleError(ctx, err)
 		return
 	}
 
-	c.logger.InfoContext(ctx, "用户"+action+"成功")
-	pkg_response.Success(ctx, successMessage, result)
+	c.logger.InfoContext(ctx, "User "+action+" successful")
+	pkg_response.Success(ctx, middleware.T(ctx, successMessageKey), result)
 }
 
-// Register 用户注册
+// handleUserIDBasedRequest handle requests that need user ID from URL parameter
+func (c *UserController) handleUserIDBasedRequest(
+	ctx *gin.Context,
+	req interface{},
+	action string,
+	serviceFunc func(context.Context, uint, interface{}) error,
+	successMessageKey string,
+) {
+	userIDStr := ctx.Param("id")
+	userID, err := strconv.ParseUint(userIDStr, 10, 32)
+	if err != nil {
+		c.logger.WarnContext(ctx, "Invalid user ID parameter", logger.String("user_id", userIDStr))
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeInvalidRequest, middleware.T(ctx, "common.invalid_request")))
+		return
+	}
+
+	if !c.bindAndValidateRequest(ctx, req, action) {
+		return
+	}
+
+	err = serviceFunc(ctx, uint(userID), req)
+	if err != nil {
+		c.logger.ErrorContext(ctx, "Failed to "+action, logger.Uint("user_id", uint(userID)), logger.ErrorField(err))
+		errors.HandleError(ctx, err)
+		return
+	}
+
+	c.logger.InfoContext(ctx, "User "+action+" successful", logger.Uint("user_id", uint(userID)))
+	pkg_response.Success(ctx, middleware.T(ctx, successMessageKey), nil)
+}
+
+// Register user registration
 func (c *UserController) Register(ctx *gin.Context) {
 	var req request.UserRegisterRequest
-	c.handleUserAuth(ctx, &req, "注册", func(ctx context.Context, r interface{}) (interface{}, error) {
+	c.handleUserAuth(ctx, &req, "registration", func(ctx context.Context, r interface{}) (interface{}, error) {
 		return c.userService.Register(ctx, r.(*request.UserRegisterRequest))
-	}, "用户注册成功")
+	}, "user.register_success")
 }
 
-// Login 用户登录
+// Login user login
 func (c *UserController) Login(ctx *gin.Context) {
 	var req request.UserLoginRequest
-	c.handleUserAuth(ctx, &req, "登录", func(ctx context.Context, r interface{}) (interface{}, error) {
+	c.handleUserAuth(ctx, &req, "login", func(ctx context.Context, r interface{}) (interface{}, error) {
 		return c.userService.Login(ctx, r.(*request.UserLoginRequest))
-	}, "登录成功")
+	}, "user.login_success")
 }
 
-// GetProfile 获取用户资料
+// GetProfile get user profile
 func (c *UserController) GetProfile(ctx *gin.Context) {
 	userID := c.getCurrentUserID(ctx)
 	if userID == 0 {
@@ -91,15 +121,15 @@ func (c *UserController) GetProfile(ctx *gin.Context) {
 
 	profile, err := c.userService.GetProfile(ctx, userID)
 	if err != nil {
-		c.logger.ErrorContext(ctx, "获取用户资料失败", logger.Uint("user_id", userID), logger.ErrorField(err))
+		c.logger.ErrorContext(ctx, "Failed to get user profile", logger.Uint("user_id", userID), logger.ErrorField(err))
 		errors.HandleError(ctx, err)
 		return
 	}
 
-	pkg_response.Success(ctx, "获取用户资料成功", profile)
+	pkg_response.Success(ctx, middleware.T(ctx, "user.profile_get_success"), profile)
 }
 
-// UpdateProfile 更新用户资料
+// UpdateProfile update user profile
 func (c *UserController) UpdateProfile(ctx *gin.Context) {
 	userID := c.getCurrentUserID(ctx)
 	if userID == 0 {
@@ -108,24 +138,22 @@ func (c *UserController) UpdateProfile(ctx *gin.Context) {
 	}
 
 	var req request.UserUpdateProfileRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		c.logger.WarnContext(ctx, "更新资料请求参数绑定失败", logger.ErrorField(err))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, "请求参数无效"))
+	if !c.bindAndValidateRequest(ctx, &req, "update profile") {
 		return
 	}
 
-	user, err := c.userService.UpdateProfile(ctx, userID, &req)
+	result, err := c.userService.UpdateProfile(ctx, userID, &req)
 	if err != nil {
-		c.logger.ErrorContext(ctx, "更新用户资料失败", logger.Uint("user_id", userID), logger.ErrorField(err))
+		c.logger.ErrorContext(ctx, "Failed to update user profile", logger.Uint("user_id", userID), logger.ErrorField(err))
 		errors.HandleError(ctx, err)
 		return
 	}
 
-	c.logger.InfoContext(ctx, "用户资料更新成功", logger.Uint("user_id", userID))
-	pkg_response.Success(ctx, "用户资料更新成功", user)
+	c.logger.InfoContext(ctx, "User profile updated successfully", logger.Uint("user_id", userID))
+	pkg_response.Success(ctx, middleware.T(ctx, "user.profile_update_success"), result)
 }
 
-// ChangePassword 修改密码
+// ChangePassword change user password
 func (c *UserController) ChangePassword(ctx *gin.Context) {
 	userID := c.getCurrentUserID(ctx)
 	if userID == 0 {
@@ -134,264 +162,179 @@ func (c *UserController) ChangePassword(ctx *gin.Context) {
 	}
 
 	var req request.UserChangePasswordRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		c.logger.WarnContext(ctx, "修改密码请求参数绑定失败", logger.ErrorField(err))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, "请求参数无效"))
+	if !c.bindAndValidateRequest(ctx, &req, "change password") {
 		return
 	}
 
 	err := c.userService.ChangePassword(ctx, userID, &req)
 	if err != nil {
-		c.logger.ErrorContext(ctx, "修改密码失败", logger.Uint("user_id", userID), logger.ErrorField(err))
+		c.logger.ErrorContext(ctx, "Failed to change user password", logger.Uint("user_id", userID), logger.ErrorField(err))
 		errors.HandleError(ctx, err)
 		return
 	}
 
-	c.logger.InfoContext(ctx, "密码修改成功", logger.Uint("user_id", userID))
-	pkg_response.Success(ctx, "密码修改成功", nil)
+	c.logger.InfoContext(ctx, "User password changed successfully", logger.Uint("user_id", userID))
+	pkg_response.Success(ctx, middleware.T(ctx, "user.password_change_success"), nil)
 }
 
-// ListUsers 获取用户列表（管理员功能）
+// ListUsers get user list (admin function)
 func (c *UserController) ListUsers(ctx *gin.Context) {
-	// 检查管理员权限
-	if err := c.checkAdminPermission(ctx); err != nil {
-		errors.HandleError(ctx, err)
+	var req request.UserListRequest
+
+	// Bind query parameters
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		c.logger.WarnContext(ctx, "List users request parameter binding failed", logger.ErrorField(err))
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, middleware.T(ctx, "common.validation_failed")))
 		return
 	}
 
-	var req request.UserListRequest
-	if err := ctx.ShouldBindQuery(&req); err != nil {
-		c.logger.WarnContext(ctx, "用户列表请求参数绑定失败", logger.ErrorField(err))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, "请求参数无效"))
-		return
+	// Set default values
+	if req.Page <= 0 {
+		req.Page = 1
+	}
+	if req.PageSize <= 0 {
+		req.PageSize = 10
 	}
 
 	users, total, err := c.userService.ListUsers(ctx, &req)
 	if err != nil {
-		c.logger.ErrorContext(ctx, "获取用户列表失败", logger.ErrorField(err))
+		c.logger.ErrorContext(ctx, "Failed to get user list", logger.ErrorField(err))
 		errors.HandleError(ctx, err)
 		return
 	}
 
-	// 构建分页响应
-	paginationResp := &struct {
-		*request.UserListRequest
-		Total int64                      `json:"total"`
-		Users *response.UserListResponse `json:"users"`
-	}{
-		UserListRequest: &req,
-		Total:           total,
-		Users:           users,
+	c.logger.InfoContext(ctx, "User list retrieved successfully", logger.Int64("total", total))
+
+	// Return paginated response
+	result := map[string]interface{}{
+		"users":       users.Users,
+		"total":       users.Total,
+		"page":        req.Page,
+		"page_size":   req.PageSize,
+		"total_pages": (int(total) + req.PageSize - 1) / req.PageSize,
 	}
 
-	pkg_response.Success(ctx, "获取用户列表成功", paginationResp)
+	pkg_response.Success(ctx, middleware.T(ctx, "user.list_get_success"), result)
 }
 
-// GetUser 获取单个用户信息（管理员功能）
-func (c *UserController) GetUser(ctx *gin.Context) {
-	// 检查管理员权限
-	if err := c.checkAdminPermission(ctx); err != nil {
-		errors.HandleError(ctx, err)
-		return
-	}
-
-	userID, err := c.getIDFromPath(ctx)
-	if err != nil {
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, "无效的用户ID"))
-		return
-	}
-
-	user, err := c.userService.GetUser(ctx, userID)
-	if err != nil {
-		c.logger.ErrorContext(ctx, "获取用户信息失败", logger.Uint("target_user_id", userID), logger.ErrorField(err))
-		errors.HandleError(ctx, err)
-		return
-	}
-
-	pkg_response.Success(ctx, "获取用户信息成功", user)
-}
-
-// UpdateUserStatus 更新用户状态（管理员功能）
-func (c *UserController) UpdateUserStatus(ctx *gin.Context) {
-	// 检查管理员权限
-	if err := c.checkAdminPermission(ctx); err != nil {
-		errors.HandleError(ctx, err)
-		return
-	}
-
-	userID, err := c.getIDFromPath(ctx)
-	if err != nil {
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, "无效的用户ID"))
-		return
-	}
-
-	var req request.UserUpdateStatusRequest
-	if bindErr := ctx.ShouldBindJSON(&req); bindErr != nil {
-		c.logger.WarnContext(ctx, "更新用户状态请求参数绑定失败", logger.ErrorField(bindErr))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, "请求参数无效"))
-		return
-	}
-
-	updateErr := c.userService.UpdateUserStatus(ctx, userID, &req)
-	if updateErr != nil {
-		c.logger.ErrorContext(ctx, "更新用户状态失败", logger.Uint("target_user_id", userID), logger.ErrorField(updateErr))
-		errors.HandleError(ctx, updateErr)
-		return
-	}
-
-	c.logger.InfoContext(ctx, "用户状态更新成功", logger.Uint("target_user_id", userID), logger.Int("new_status", req.Status))
-	pkg_response.Success(ctx, "用户状态更新成功", nil)
-}
-
-// DeleteUser 删除用户（管理员功能）
-func (c *UserController) DeleteUser(ctx *gin.Context) {
-	// 检查管理员权限
-	if err := c.checkAdminPermission(ctx); err != nil {
-		errors.HandleError(ctx, err)
-		return
-	}
-
-	userID, err := c.getIDFromPath(ctx)
-	if err != nil {
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, "无效的用户ID"))
-		return
-	}
-
-	// 不能删除自己
-	currentUserID := c.getCurrentUserID(ctx)
-	if currentUserID == userID {
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, "不能删除自己的账号"))
-		return
-	}
-
-	err = c.userService.DeleteUser(ctx, userID)
-	if err != nil {
-		c.logger.ErrorContext(ctx, "删除用户失败", logger.Uint("target_user_id", userID), logger.ErrorField(err))
-		errors.HandleError(ctx, err)
-		return
-	}
-
-	c.logger.InfoContext(ctx, "用户删除成功", logger.Uint("target_user_id", userID))
-	pkg_response.Success(ctx, "用户删除成功", nil)
-}
-
-// getCurrentUserID 从上下文中获取当前用户ID
-func (c *UserController) getCurrentUserID(ctx *gin.Context) uint {
-	if userID, exists := ctx.Get("user_id"); exists {
-		if id, ok := userID.(uint); ok {
-			return id
-		}
-	}
-	return 0
-}
-
-// checkAdminPermission 检查管理员权限
-func (c *UserController) checkAdminPermission(ctx *gin.Context) error {
-	userID := c.getCurrentUserID(ctx)
-	if userID == 0 {
-		return errors.ErrUnauthorized
-	}
-
-	// 检查用户访问权限
-	return c.userService.ValidateUserAccess(ctx, userID, "user:manage")
-}
-
-// getIDFromPath 从路径参数中获取ID
-func (c *UserController) getIDFromPath(ctx *gin.Context) (uint, error) {
-	idStr := ctx.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		return 0, err
-	}
-	return uint(id), nil
-}
-
-// CreateUser 创建用户（管理员功能）
+// CreateUser create user (admin function)
 func (c *UserController) CreateUser(ctx *gin.Context) {
-	// 检查管理员权限
-	if err := c.checkAdminPermission(ctx); err != nil {
-		errors.HandleError(ctx, err)
-		return
-	}
-
 	var req request.UserCreateRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		c.logger.WarnContext(ctx, "创建用户请求参数绑定失败", logger.ErrorField(err))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, "请求参数无效"))
+	if !c.bindAndValidateRequest(ctx, &req, "create user") {
 		return
 	}
 
-	user, err := c.userService.CreateUser(ctx, &req)
+	result, err := c.userService.CreateUser(ctx, &req)
 	if err != nil {
-		c.logger.ErrorContext(ctx, "创建用户失败", logger.String("username", req.Username), logger.ErrorField(err))
+		c.logger.ErrorContext(ctx, "Failed to create user", logger.String("username", req.Username), logger.ErrorField(err))
 		errors.HandleError(ctx, err)
 		return
 	}
 
-	c.logger.InfoContext(ctx, "用户创建成功", logger.String("username", req.Username), logger.Uint("user_id", user.ID))
-	pkg_response.Success(ctx, "用户创建成功", user)
+	c.logger.InfoContext(ctx, "User created successfully", logger.String("username", req.Username),
+		logger.Uint("user_id", result.ID))
+	pkg_response.Success(ctx, middleware.T(ctx, "user.created_success"), result)
 }
 
-// UpdateUser 更新用户（管理员功能）
-func (c *UserController) UpdateUser(ctx *gin.Context) {
-	// 检查管理员权限
-	if err := c.checkAdminPermission(ctx); err != nil {
+// GetUser get user details (admin function)
+func (c *UserController) GetUser(ctx *gin.Context) {
+	userIDStr := ctx.Param("id")
+	userID, err := strconv.ParseUint(userIDStr, 10, 32)
+	if err != nil {
+		c.logger.WarnContext(ctx, "Invalid user ID parameter", logger.String("user_id", userIDStr))
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeInvalidRequest, middleware.T(ctx, "common.invalid_request")))
+		return
+	}
+
+	user, err := c.userService.GetUser(ctx, uint(userID))
+	if err != nil {
+		c.logger.ErrorContext(ctx, "Failed to get user details", logger.Uint("user_id", uint(userID)), logger.ErrorField(err))
 		errors.HandleError(ctx, err)
 		return
 	}
 
-	userID, err := c.getIDFromPath(ctx)
+	c.logger.InfoContext(ctx, "User details retrieved successfully", logger.Uint("user_id", uint(userID)))
+	pkg_response.Success(ctx, middleware.T(ctx, "common.success"), user)
+}
+
+// UpdateUser update user (admin function)
+func (c *UserController) UpdateUser(ctx *gin.Context) {
+	userIDStr := ctx.Param("id")
+	userID, err := strconv.ParseUint(userIDStr, 10, 32)
 	if err != nil {
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, "无效的用户ID"))
+		c.logger.WarnContext(ctx, "Invalid user ID parameter", logger.String("user_id", userIDStr))
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeInvalidRequest, middleware.T(ctx, "common.invalid_request")))
 		return
 	}
 
 	var req request.UserUpdateRequest
-	if bindErr := ctx.ShouldBindJSON(&req); bindErr != nil {
-		c.logger.WarnContext(ctx, "更新用户请求参数绑定失败", logger.ErrorField(bindErr))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, "请求参数无效"))
+	if !c.bindAndValidateRequest(ctx, &req, "update user") {
 		return
 	}
 
-	user, err := c.userService.UpdateUser(ctx, userID, &req)
+	result, err := c.userService.UpdateUser(ctx, uint(userID), &req)
 	if err != nil {
-		c.logger.ErrorContext(ctx, "更新用户失败", logger.Uint("user_id", userID), logger.ErrorField(err))
+		c.logger.ErrorContext(ctx, "Failed to update user", logger.Uint("user_id", uint(userID)), logger.ErrorField(err))
 		errors.HandleError(ctx, err)
 		return
 	}
 
-	c.logger.InfoContext(ctx, "用户更新成功", logger.Uint("user_id", userID))
-	pkg_response.Success(ctx, "用户更新成功", user)
+	c.logger.InfoContext(ctx, "User updated successfully", logger.Uint("user_id", uint(userID)))
+	pkg_response.Success(ctx, middleware.T(ctx, "user.updated_success"), result)
 }
 
-// UpdateUserPassword 管理员修改用户密码
+// DeleteUser delete user (admin function)
+func (c *UserController) DeleteUser(ctx *gin.Context) {
+	userIDStr := ctx.Param("id")
+	userID, err := strconv.ParseUint(userIDStr, 10, 32)
+	if err != nil {
+		c.logger.WarnContext(ctx, "Invalid user ID parameter", logger.String("user_id", userIDStr))
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeInvalidRequest, middleware.T(ctx, "common.invalid_request")))
+		return
+	}
+
+	err = c.userService.DeleteUser(ctx, uint(userID))
+	if err != nil {
+		c.logger.ErrorContext(ctx, "Failed to delete user", logger.Uint("user_id", uint(userID)), logger.ErrorField(err))
+		errors.HandleError(ctx, err)
+		return
+	}
+
+	c.logger.InfoContext(ctx, "User deleted successfully", logger.Uint("user_id", uint(userID)))
+	pkg_response.Success(ctx, middleware.T(ctx, "user.deleted_success"), nil)
+}
+
+// UpdateUserStatus update user status (admin function)
+func (c *UserController) UpdateUserStatus(ctx *gin.Context) {
+	var req request.UserUpdateStatusRequest
+	c.handleUserIDBasedRequest(ctx, &req, "update user status",
+		func(ctx context.Context, userID uint, r interface{}) error {
+			return c.userService.UpdateUserStatus(ctx, userID, r.(*request.UserUpdateStatusRequest))
+		}, "user.status_update_success")
+}
+
+// UpdateUserPassword update user password (admin function)
 func (c *UserController) UpdateUserPassword(ctx *gin.Context) {
-	// 检查管理员权限
-	if err := c.checkAdminPermission(ctx); err != nil {
-		errors.HandleError(ctx, err)
-		return
-	}
-
-	userID, err := c.getIDFromPath(ctx)
-	if err != nil {
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, "无效的用户ID"))
-		return
-	}
-
 	var req request.UserPasswordUpdateRequest
-	if bindErr := ctx.ShouldBindJSON(&req); bindErr != nil {
-		c.logger.WarnContext(ctx, "修改密码请求参数绑定失败", logger.ErrorField(bindErr))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, "请求参数无效"))
-		return
+	c.handleUserIDBasedRequest(ctx, &req, "update user password",
+		func(ctx context.Context, userID uint, r interface{}) error {
+			return c.userService.UpdateUserPassword(ctx, userID, r.(*request.UserPasswordUpdateRequest))
+		}, "user.password_update_success")
+}
+
+// getCurrentUserID get current user ID from context
+func (c *UserController) getCurrentUserID(ctx *gin.Context) uint {
+	userID, exists := ctx.Get("user_id")
+	if !exists {
+		c.logger.WarnContext(ctx, "User ID not found in context")
+		return 0
 	}
 
-	err = c.userService.UpdateUserPassword(ctx, userID, &req)
-	if err != nil {
-		c.logger.ErrorContext(ctx, "管理员修改用户密码失败", logger.Uint("user_id", userID), logger.ErrorField(err))
-		errors.HandleError(ctx, err)
-		return
+	id, ok := userID.(uint)
+	if !ok {
+		c.logger.WarnContext(ctx, "Invalid user ID type in context", logger.Any("user_id", userID))
+		return 0
 	}
 
-	c.logger.InfoContext(ctx, "管理员修改用户密码成功", logger.Uint("user_id", userID))
-	pkg_response.Success(ctx, "密码修改成功", nil)
+	return id
 }
