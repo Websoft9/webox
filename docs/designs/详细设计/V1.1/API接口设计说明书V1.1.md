@@ -5569,7 +5569,6 @@ GET /api/v1/users
     "items": [
       {
         "id": 1,
-        "group_id": 1,
         "username": "admin",
         "email": "admin@example.com",
         "nickname": "系统管理员",
@@ -5621,7 +5620,6 @@ POST /api/v1/users
 
 | 参数名    | 数据类型 | 是否可空 | 描述                                 |
 | --------- | -------- | -------- | ------------------------------------ |
-| group_id  | integer  | 否       | 用户组ID                             |
 | username  | string   | 否       | 用户名，3-32字符，字母数字下划线     |
 | email     | string   | 否       | 邮箱地址，必须唯一                   |
 | password  | string   | 否       | 密码，8-32字符，包含大小写字母和数字 |
