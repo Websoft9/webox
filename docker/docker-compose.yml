@@ -4,20 +4,18 @@ services:
     container_name: websoft9-webox
     restart: unless-stopped
     env_file: .env
-    depends_on:
-      - redis
     volumes:
-      - webox_data:/root/data
+      - webox_data:/home/appuser/data
+      - redis_data:/var/lib/redis
     ports:
       - "8080:8080" # Web Service Port
       - "9090:9090" # RPC Port
-  redis:
-    image: redis:8.0
-    container_name: websoft9-redis
-    restart: unless-stopped
-    volumes:
-      - redis_data:/data
-    command: redis-server --bind 0.0.0.0 --loglevel verbose
+    healthcheck:
+      test: ["CMD", "sh", "-c", "/home/appuser/scripts/healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
 
 networks:
   default:
@@ -25,5 +23,5 @@ networks:
     external: true
 
 volumes:
-  redis_data:
   webox_data:
+  redis_data:
