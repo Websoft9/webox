@@ -45,6 +45,8 @@ RUN CGO_ENABLED=1 GOOS=linux go build \
 # 运行阶段
 FROM alpine:latest
 
+LABEL version="0.1.2"
+
 # 声明变量
 ARG INFLUXDB_VERSION
 
