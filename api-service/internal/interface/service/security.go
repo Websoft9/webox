@@ -68,6 +68,7 @@ type APITokenService interface {
 	// Token management
 	RefreshAPIToken(ctx context.Context, id uint, userID uint) (*response.APITokenResponse, error)
 	ValidateAPIToken(ctx context.Context, token string) (*response.APITokenValidationResponse, error)
+	BatchRevokeAPITokens(ctx context.Context, ids []uint, userID uint) error
 
 	// Maintenance operations
 	CleanExpiredTokens(ctx context.Context) error

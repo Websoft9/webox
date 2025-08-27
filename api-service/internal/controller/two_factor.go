@@ -539,3 +539,87 @@ func (c *TwoFactorController) GenerateBackupCodes(ctx *gin.Context) {
 		"data":    codes,
 	})
 }
+
+// DisableTwoFactor disables two-factor authentication
+// @Summary Disable two-factor authentication
+// @Description Disable two-factor authentication for user
+// @Tags Two-Factor Authentication
+// @Accept json
+// @Produce json
+// @Param user_id path int true "User ID"
+// @Success 200 {object} response.APIResponse
+// @Failure 400 {object} response.APIResponse
+// @Failure 500 {object} response.APIResponse
+// @Router /api/v1/users/{user_id}/two-factor/disable [post]
+func (c *TwoFactorController) DisableTwoFactor(ctx *gin.Context) {
+	// Get user ID from path parameter
+	userID, ok := ParseIDParam(ctx, "user_id", "validation.invalid_user_id", c.i18n)
+	if !ok {
+		return
+	}
+
+	// Get current user ID for authorization check
+	currentUserID, exists := ctx.Get("user_id")
+	if !exists {
+		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		return
+	}
+
+	// Check if user can manage this account (self or admin)
+	if userID != currentUserID.(uint) {
+		// TODO: Add admin permission check here
+		ResponseForbidden(ctx, "auth.insufficient_permissions", c.i18n)
+		return
+	}
+
+	// Disable two-factor authentication
+	err := c.twoFactorService.DisableEmailTwoFactor(ctx.Request.Context(), userID)
+	if err != nil {
+		ResponseInternalError(ctx, err, "two_factor.disable_failed", c.logger, c.i18n)
+		return
+	}
+
+	ResponseOK(ctx, nil, "two_factor.disable_success", c.i18n)
+}
+
+// GenerateTOTPSecret generates TOTP secret
+// @Summary Generate TOTP secret
+// @Description Generate TOTP secret for user
+// @Tags Two-Factor Authentication
+// @Accept json
+// @Produce json
+// @Param user_id path int true "User ID"
+// @Success 200 {object} response.APIResponse{data=response.TOTPSecretResponse}
+// @Failure 400 {object} response.APIResponse
+// @Failure 500 {object} response.APIResponse
+// @Router /api/v1/users/{user_id}/two-factor/totp/generate [post]
+func (c *TwoFactorController) GenerateTOTPSecret(ctx *gin.Context) {
+	// Get user ID from path parameter
+	userID, ok := ParseIDParam(ctx, "user_id", "validation.invalid_user_id", c.i18n)
+	if !ok {
+		return
+	}
+
+	// Get current user ID for authorization check
+	currentUserID, exists := ctx.Get("user_id")
+	if !exists {
+		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		return
+	}
+
+	// Check if user can manage this account (self or admin)
+	if userID != currentUserID.(uint) {
+		// TODO: Add admin permission check here
+		ResponseForbidden(ctx, "auth.insufficient_permissions", c.i18n)
+		return
+	}
+
+	// Generate TOTP secret
+	setup, err := c.twoFactorService.EnableTOTP(ctx.Request.Context(), userID)
+	if err != nil {
+		ResponseInternalError(ctx, err, "two_factor.totp_generate_failed", c.logger, c.i18n)
+		return
+	}
+
+	ResponseOK(ctx, setup, "two_factor.totp_generate_success", c.i18n)
+}

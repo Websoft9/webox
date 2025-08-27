@@ -86,6 +86,39 @@ const (
 	HealthCheckInterval = 30 * time.Second
 )
 
+// OAuth2 constants
+const (
+	OAuth2StateLength  = 16
+	OAuth2CookieMaxAge = 600 // 10 minutes
+	HTTPClientTimeout  = 30  // seconds
+	ProviderGoogle     = "google"
+	ProviderGitHub     = "github"
+	ProviderAzureAD    = "azure_ad"
+	UserMappingEmail   = "email"
+)
+
+// Auth config constants
+const (
+	DefaultTokenExpiresIn        = 3600  // 1 hour
+	DefaultRefreshTokenExpiresIn = 86400 // 24 hours
+	PasswordMinLength            = 8
+	PasswordMaxLength            = 128
+	PasswordHistoryCount         = 5
+	PasswordExpiresDays          = 90
+	MaxLoginAttempts             = 5
+	LockoutDuration              = 1800 // 30 minutes
+	TOTPDigits                   = 6
+	TOTPPeriod                   = 30
+	BackupCodesCount             = 10
+	SessionTimeout               = 3600 // 1 hour
+	MaxConcurrentSessions        = 5
+	RememberMeDuration           = 2592000 // 30 days
+	DirPerm                      = 0755
+	RefreshTokenMultiplier       = 24
+	PasswordMinLengthCheck       = 8
+	TimeRangePartsCount          = 2
+)
+
 // Error message constants
 const (
 	ErrInvalidCode        = "invalid code"
