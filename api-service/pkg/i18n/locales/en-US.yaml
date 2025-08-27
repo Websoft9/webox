@@ -22,6 +22,100 @@ user:
   password_update_success: "User password updated successfully"
   email_already_exists: "Email already exists"
 
+# Role module messages
+role:
+  not_found: "Role not found"
+  created_success: "Role created successfully"
+  updated_success: "Role updated successfully"
+  deleted_success: "Role deleted successfully"
+  already_exists: "Role code already exists"
+  cannot_update_system: "Cannot update system role"
+  cannot_delete_system: "Cannot delete system role"
+  cannot_modify_system_permissions: "Cannot modify system role permissions"
+  has_users: "Role has associated users and cannot be deleted"
+  list_get_success: "Role list retrieved successfully"
+  permissions_assigned_success: "Permissions assigned successfully"
+  permissions_removed_success: "Permissions removed successfully"
+  status_update_success: "Role status updated successfully"
+  invalid_permission_ids: "Some permission IDs are invalid"
+  name_required: "Role name is required"
+  code_required: "Role code is required"
+
+# Permission module messages
+permission:
+  not_found: "Permission not found"
+  created_success: "Permission created successfully"
+  updated_success: "Permission updated successfully"
+  deleted_success: "Permission deleted successfully"
+  already_exists: "Permission code already exists"
+  cannot_update_system: "Cannot update system permission"
+  cannot_delete_system: "Cannot delete system permission"
+  has_roles: "Permission has associated roles and cannot be deleted"
+  list_get_success: "Permission list retrieved successfully"
+  tree_get_success: "Permission tree retrieved successfully"
+  name_required: "Permission name is required"
+  code_required: "Permission code is required"
+  module_required: "Module is required"
+  action_required: "Action is required"
+  create_failed: "Failed to create permission"
+  update_failed: "Failed to update permission"
+  delete_failed: "Failed to delete permission"
+  get_failed: "Failed to get permission"
+  list_failed: "Failed to list permissions"
+  tree_failed: "Failed to get permission tree"
+  roles_failed: "Failed to get permission roles"
+
+# API Token module messages
+api_token:
+  not_found: "API token not found"
+  created_success: "API token created successfully"
+  updated_success: "API token updated successfully"
+  deleted_success: "API token deleted successfully"
+  revoked_success: "API token revoked successfully"
+  refreshed_success: "API token refreshed successfully"
+  invalid_token: "Invalid API token"
+  expired_token: "API token has expired"
+  list_get_success: "API token list retrieved successfully"
+  name_required: "Token name is required"
+  scopes_required: "Token scopes are required"
+  invalid_scopes: "Some token scopes are invalid"
+  create_failed: "Failed to create API token"
+  update_failed: "Failed to update API token"
+  revoke_failed: "Failed to revoke API token"
+  refresh_failed: "Failed to refresh API token"
+  get_failed: "Failed to get API token"
+  list_failed: "Failed to list API tokens"
+  validate_success: "API token is valid"
+  validate_failed: "Failed to validate API token"
+
+# Two Factor Authentication messages
+two_factor:
+  enabled_success: "Two-factor authentication enabled successfully"
+  disabled_success: "Two-factor authentication disabled successfully"
+  invalid_code: "Invalid verification code"
+  totp_secret_generated: "TOTP secret generated successfully"
+  backup_codes_generated: "Backup codes generated successfully"
+  method_not_supported: "Two-factor authentication method not supported"
+  already_enabled: "Two-factor authentication is already enabled"
+  not_enabled: "Two-factor authentication is not enabled"
+  enable_totp_success: "TOTP two-factor authentication enabled successfully"
+  enable_totp_failed: "Failed to enable TOTP two-factor authentication"
+  confirm_totp_success: "TOTP setup confirmed successfully"
+  confirm_totp_failed: "Failed to confirm TOTP setup"
+  disable_totp_success: "TOTP two-factor authentication disabled successfully"
+  disable_totp_failed: "Failed to disable TOTP two-factor authentication"
+  enable_email_success: "Email two-factor authentication enabled successfully"
+  enable_email_failed: "Failed to enable email two-factor authentication"
+  disable_email_success: "Email two-factor authentication disabled successfully"
+  disable_email_failed: "Failed to disable email two-factor authentication"
+  send_email_code_success: "Verification code sent to your email"
+  send_email_code_failed: "Failed to send verification code"
+  verify_success: "Two-factor authentication verified successfully"
+  verify_failed: "Failed to verify two-factor authentication"
+  status_failed: "Failed to get two-factor authentication status"
+  backup_codes_success: "Backup codes generated successfully"
+  backup_codes_failed: "Failed to generate backup codes"
+
 # Authentication messages
 auth:
   token_invalid: "Invalid token"
@@ -29,6 +123,7 @@ auth:
   token_missing: "Authorization token is missing"
   permission_denied: "Permission denied"
   unauthorized: "Unauthorized access"
+  user_not_authenticated: "User not authenticated"
 
 # Common messages
 common:
@@ -47,3 +142,12 @@ error:
   network_error: "Network connection error"
   timeout_error: "Request timeout"
   unknown_error: "Unknown error occurred"
+
+# Validation messages
+validation:
+  invalid_request_format: "Invalid request format"
+  request_validation_failed: "Request validation failed"
+  invalid_query_parameters: "Invalid query parameters"
+  query_validation_failed: "Query validation failed"
+  invalid_permission_id: "Invalid permission ID"
+  invalid_token_id: "Invalid token ID"

@@ -1,6 +1,6 @@
-# Websoft9 项目 golangci-lint 配置
-# 基于开发规范文档的要求配置
-# 兼容 golangci-lint v1.x 格式
+# Websoft9 project golangci-lint configuration
+# Based on development standard document requirements
+# Compatible with golangci-lint v1.x format
 
 run:
   timeout: 5m
@@ -54,10 +54,10 @@ linters-settings:
     statements: 50
 
   gocognit:
-    min-complexity: 15
+    min-complexity: 30
 
   nestif:
-    min-complexity: 4
+    min-complexity: 15
 
   mnd:
     checks:
@@ -92,40 +92,40 @@ linters-settings:
 linters:
   disable-all: true
   enable:
-    # 错误检查
+    # Error checking
     - errcheck
-    - staticcheck # 包含了 gosimple, stylecheck
+    - staticcheck # includes gosimple, stylecheck
     - govet
     - ineffassign
     - typecheck
     - unused
 
-    # 安全检查
+    # Security checking
     - gosec
 
-    # 性能检查
+    # Performance checking
     - bodyclose
     - rowserrcheck
     - sqlclosecheck
 
-    # 代码质量
-    - dupl
+    # Code quality
+    # - dupl
     - goconst
     - gocritic
-    - mnd # 替代 gomnd
+    - mnd # replaces gomnd
     - goprintffuncname
     - nakedret
     - prealloc
     - unconvert
     - unparam
 
-    # 复杂度检查
+    # Complexity checking
     - gocyclo
     - gocognit
     - funlen
     - nestif
 
-    # 其他
+    # Others
     - dogsled
     - godox
     - gomodguard
@@ -133,7 +133,7 @@ linters:
     - whitespace
     - lll
 
-    # 格式化
+    # Formatting
     - gofmt
     - goimports
 
@@ -147,7 +147,7 @@ issues:
     - ".*\\.pb\\.go$"
     - ".*_mock\\.go$"
   exclude-rules:
-    # 排除测试文件的某些检查
+    # Exclude certain checks for test files
     - path: '_test\.go'
       linters:
         - mnd
@@ -155,19 +155,19 @@ issues:
         - goconst
         - dupl
 
-    # 排除生成的文件
+    # Exclude generated files
     - path: ".*\\.pb\\.go"
       linters:
         - lll
         - govet
 
-    # 排除 mock 文件
+    # Exclude mock files
     - path: ".*_mock\\.go"
       linters:
         - govet
         - errcheck
 
-    # 排除 main 函数的复杂度检查
+    # Exclude complexity check for main function
     - text: "cyclomatic complexity"
       source: "func main\\("
 

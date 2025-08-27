@@ -2,7 +2,7 @@ package constants
 
 import "time"
 
-// HTTP 状态码常量
+// HTTP status code constants
 const (
 	StatusOK                  = 200
 	StatusCreated             = 201
@@ -14,7 +14,7 @@ const (
 	StatusInternalServerError = 500
 )
 
-// 应用状态常量
+// Application status constants
 const (
 	AppStatusPending   = "pending"
 	AppStatusRunning   = "running"
@@ -26,7 +26,7 @@ const (
 	AppStatusCanceled  = "canceled"
 )
 
-// 部署状态常量
+// Deployment status constants
 const (
 	DeploymentStatusPending  = "PENDING"
 	DeploymentStatusRunning  = "RUNNING"
@@ -35,10 +35,10 @@ const (
 	DeploymentStatusCanceled = "CANCELED"
 )
 
-// 时间相关常量
+// Time-related constants
 const (
-	DefaultJWTExpireTime       = 3600 // 1小时
-	TokenExpireHours           = 24   // 24小时
+	DefaultJWTExpireTime       = 3600 // 1 hour
+	TokenExpireHours           = 24   // 24 hours
 	DefaultShutdownTimeout     = 30 * time.Second
 	DefaultReadTimeout         = 30 * time.Second
 	DefaultWriteTimeout        = 30 * time.Second
@@ -50,13 +50,13 @@ const (
 	DefaultMetricsInterval     = 60 * time.Second
 )
 
-// 文件权限常量
+// File permission constants
 const (
 	DefaultDirPerm  = 0755
 	DefaultFilePerm = 0644
 )
 
-// 默认值常量
+// Default value constants
 const (
 	DefaultBatchSize     = 100
 	DefaultMaxRetries    = 3
@@ -66,22 +66,30 @@ const (
 	DefaultMaxHeaderSize = 1 << 20 // 1MB
 )
 
-// 测试数据常量
+// Test data constants
 const (
 	TestCPUUsage    = 45.5
 	TestMemoryUsage = 78.2
 	TestDiskUsage   = 65.0
 )
 
-// 优先级常量
+// Priority constants
 const (
 	PriorityHigh   = 1
 	PriorityMedium = 2
 	PriorityLow    = 3
 )
 
-// 健康检查相关常量
+// Health check related constants
 const (
 	HealthCheckTimeout  = 5 * time.Second
 	HealthCheckInterval = 30 * time.Second
+)
+
+// Error message constants
+const (
+	ErrInvalidCode        = "invalid code"
+	ErrTokenNotFound      = "token not found"
+	ErrPermissionNotFound = "permission not found"
+	ErrRoleNotFound       = "role not found"
 )

@@ -255,3 +255,25 @@ func GetLanguageInfo(lang string) map[string]interface{} {
 
 	return info
 }
+
+// I18n provides internationalization functionality
+type I18n struct {
+	defaultLang string
+}
+
+// NewI18n creates a new I18n instance
+func NewI18n() *I18n {
+	return &I18n{
+		defaultLang: DefaultLanguage,
+	}
+}
+
+// T translates a message using gin context to detect language
+func (i *I18n) T(ctx interface{}, key string, templateData ...map[string]interface{}) string {
+	// Try to extract language from gin context
+	lang := i.defaultLang
+
+	// For now, use default language - in a real implementation,
+	// you would extract the language from the gin context
+	return T(key, lang, templateData...)
+}

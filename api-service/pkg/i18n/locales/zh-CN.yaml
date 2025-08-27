@@ -22,6 +22,100 @@ user:
   password_update_success: "用户密码更新成功"
   email_already_exists: "邮箱已存在"
 
+# 角色模块消息
+role:
+  not_found: "角色不存在"
+  created_success: "角色创建成功"
+  updated_success: "角色更新成功"
+  deleted_success: "角色删除成功"
+  already_exists: "角色代码已存在"
+  cannot_update_system: "无法更新系统角色"
+  cannot_delete_system: "无法删除系统角色"
+  cannot_modify_system_permissions: "无法修改系统角色权限"
+  has_users: "角色有关联用户，无法删除"
+  list_get_success: "角色列表获取成功"
+  permissions_assigned_success: "权限分配成功"
+  permissions_removed_success: "权限移除成功"
+  status_update_success: "角色状态更新成功"
+  invalid_permission_ids: "部分权限ID无效"
+  name_required: "角色名称为必填项"
+  code_required: "角色代码为必填项"
+
+# 权限模块消息
+permission:
+  not_found: "权限不存在"
+  created_success: "权限创建成功"
+  updated_success: "权限更新成功"
+  deleted_success: "权限删除成功"
+  already_exists: "权限代码已存在"
+  cannot_update_system: "无法更新系统权限"
+  cannot_delete_system: "无法删除系统权限"
+  has_roles: "权限有关联角色，无法删除"
+  list_get_success: "权限列表获取成功"
+  tree_get_success: "权限树获取成功"
+  name_required: "权限名称为必填项"
+  code_required: "权限代码为必填项"
+  module_required: "模块为必填项"
+  action_required: "操作为必填项"
+  create_failed: "权限创建失败"
+  update_failed: "权限更新失败"
+  delete_failed: "权限删除失败"
+  get_failed: "权限获取失败"
+  list_failed: "权限列表获取失败"
+  tree_failed: "权限树获取失败"
+  roles_failed: "权限关联角色获取失败"
+
+# API令牌模块消息
+api_token:
+  not_found: "API令牌不存在"
+  created_success: "API令牌创建成功"
+  updated_success: "API令牌更新成功"
+  deleted_success: "API令牌删除成功"
+  revoked_success: "API令牌撤销成功"
+  refreshed_success: "API令牌刷新成功"
+  invalid_token: "无效的API令牌"
+  expired_token: "API令牌已过期"
+  list_get_success: "API令牌列表获取成功"
+  name_required: "令牌名称为必填项"
+  scopes_required: "令牌权限范围为必填项"
+  invalid_scopes: "部分令牌权限范围无效"
+  create_failed: "API令牌创建失败"
+  update_failed: "API令牌更新失败"
+  revoke_failed: "API令牌撤销失败"
+  refresh_failed: "API令牌刷新失败"
+  get_failed: "API令牌获取失败"
+  list_failed: "API令牌列表获取失败"
+  validate_success: "API令牌验证成功"
+  validate_failed: "API令牌验证失败"
+
+# 双因子认证消息
+two_factor:
+  enabled_success: "双因子认证启用成功"
+  disabled_success: "双因子认证禁用成功"
+  invalid_code: "验证码无效"
+  totp_secret_generated: "TOTP密钥生成成功"
+  backup_codes_generated: "备用码生成成功"
+  method_not_supported: "不支持的双因子认证方式"
+  already_enabled: "双因子认证已启用"
+  not_enabled: "双因子认证未启用"
+  enable_totp_success: "TOTP双因子认证启用成功"
+  enable_totp_failed: "TOTP双因子认证启用失败"
+  confirm_totp_success: "TOTP设置确认成功"
+  confirm_totp_failed: "TOTP设置确认失败"
+  disable_totp_success: "TOTP双因子认证禁用成功"
+  disable_totp_failed: "TOTP双因子认证禁用失败"
+  enable_email_success: "邮箱双因子认证启用成功"
+  enable_email_failed: "邮箱双因子认证启用失败"
+  disable_email_success: "邮箱双因子认证禁用成功"
+  disable_email_failed: "邮箱双因子认证禁用失败"
+  send_email_code_success: "验证码已发送到您的邮箱"
+  send_email_code_failed: "验证码发送失败"
+  verify_success: "双因子认证验证成功"
+  verify_failed: "双因子认证验证失败"
+  status_failed: "双因子认证状态获取失败"
+  backup_codes_success: "备用码生成成功"
+  backup_codes_failed: "备用码生成失败"
+
 # 认证消息
 auth:
   token_invalid: "无效的令牌"
@@ -29,6 +123,7 @@ auth:
   token_missing: "缺少授权令牌"
   permission_denied: "权限不足"
   unauthorized: "未授权访问"
+  user_not_authenticated: "用户未认证"
 
 # 通用消息
 common:
@@ -47,3 +142,12 @@ error:
   network_error: "网络连接错误"
   timeout_error: "请求超时"
   unknown_error: "未知错误"
+
+# 验证消息
+validation:
+  invalid_request_format: "请求格式无效"
+  request_validation_failed: "请求验证失败"
+  invalid_query_parameters: "查询参数无效"
+  query_validation_failed: "查询验证失败"
+  invalid_permission_id: "权限ID无效"
+  invalid_token_id: "令牌ID无效"

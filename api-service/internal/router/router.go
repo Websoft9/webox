@@ -10,82 +10,178 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Controllers 控制器集合
+// Controllers controller collection
 type Controllers struct {
-	UserController *controller.UserController
-	I18nController *controller.I18nController
-	// 可以添加更多控制器
+	UserController       *controller.UserController
+	I18nController       *controller.I18nController
+	RoleController       *controller.RoleController
+	PermissionController *controller.PermissionController
+	APITokenController   *controller.APITokenController
+	TwoFactorController  *controller.TwoFactorController
+	// More controllers can be added
 	// AppController  *controller.ApplicationController
 }
 
-// SetupRouter 设置路由
+// SetupRouter sets up router
 func SetupRouter(controllers *Controllers, cfg *config.Config, log logger.Logger) *gin.Engine {
-	// 设置Gin模式
+	// Set Gin mode
 	gin.SetMode(cfg.Server.Mode)
 
 	r := gin.New()
 
-	// 全局中间件
-	r.Use(middleware.LoggerMiddleware(log))
-	r.Use(middleware.CORS())
-	r.Use(middleware.I18nMiddleware())
-	r.Use(middleware.ErrorHandler(log))
-	r.Use(middleware.RequestValidator(log))
+	// Global middleware
+	setupMiddleware(r, log)
 
-	// 健康检查
-	r.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"status":  "ok",
-			"message": "API服务运行正常",
-		})
-	})
+	// Health check
+	setupHealthCheck(r)
 
-	// API版本1路由组
+	// API routes
 	v1 := r.Group("/api/v1")
+	setupAPIRoutes(v1, controllers)
 
-	// 认证相关路由（无需JWT验证）
-	auth := v1.Group("/auth")
-	auth.POST("/register", controllers.UserController.Register)
-	auth.POST("/login", controllers.UserController.Login)
-
-	// i18n相关路由（无需JWT验证）
-	if controllers.I18nController != nil {
-		i18nGroup := v1.Group("/i18n")
-		i18nGroup.GET("/languages", controllers.I18nController.GetLanguages)
-		i18nGroup.GET("/translations/:lang", controllers.I18nController.GetTranslations)
-		i18nGroup.GET("/test", controllers.I18nController.TestI18n)
-	}
-
-	// 需要JWT认证的路由
-	protected := v1.Group("/")
-	protected.Use(middleware.JWTAuth(cfg))
-
-	// 用户相关路由
-	users := protected.Group("/users")
-	// 当前用户操作
-	users.GET("/profile", controllers.UserController.GetProfile)
-	users.PUT("/profile", controllers.UserController.UpdateProfile)
-	users.PUT("/password", controllers.UserController.ChangePassword)
-
-	// 用户管理操作（需要管理员权限）
-	users.POST("", controllers.UserController.CreateUser)                     // 创建用户
-	users.GET("", controllers.UserController.ListUsers)                       // 获取用户列表
-	users.GET("/:id", controllers.UserController.GetUser)                     // 获取单个用户
-	users.PUT("/:id", controllers.UserController.UpdateUser)                  // 更新用户信息
-	users.PUT("/:id/status", controllers.UserController.UpdateUserStatus)     // 更新用户状态
-	users.PUT("/:id/password", controllers.UserController.UpdateUserPassword) // 管理员修改用户密码
-	users.DELETE("/:id", controllers.UserController.DeleteUser)               // 删除用户
-
-	// TODO: 应用相关路由将在后续版本中实现
-
-	// 404处理
 	r.NoRoute(func(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{
 			"code":    http.StatusNotFound,
-			"message": "接口不存在",
+			"message": "API endpoint not found",
 			"path":    c.Request.URL.Path,
 		})
 	})
 
 	return r
+}
+
+// setupMiddleware sets up global middleware
+func setupMiddleware(r *gin.Engine, log logger.Logger) {
+	r.Use(middleware.LoggerMiddleware(log))
+	r.Use(middleware.CORS())
+	r.Use(middleware.I18nMiddleware())
+	r.Use(middleware.ErrorHandler(log))
+	r.Use(middleware.RequestValidator(log))
+}
+
+// setupHealthCheck sets up health check routes
+func setupHealthCheck(r *gin.Engine) {
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status":  "ok",
+			"message": "API service running normally",
+		})
+	})
+}
+
+// setupAPIRoutes sets up API routes
+func setupAPIRoutes(v1 *gin.RouterGroup, controllers *Controllers) {
+	setupUserRoutes(v1, controllers.UserController)
+	setupI18nRoutes(v1, controllers.I18nController)
+
+	// Routes requiring JWT authentication
+	protected := v1.Group("/")
+	// TODO: JWT middleware will be added here when config is available
+
+	setupProtectedUserRoutes(protected, controllers.UserController)
+	setupProtectedRoleRoutes(protected, controllers.RoleController)
+	setupProtectedPermissionRoutes(protected, controllers.PermissionController)
+	setupProtectedAPITokenRoutes(protected, controllers.APITokenController)
+	setupProtectedTwoFactorRoutes(protected, controllers.TwoFactorController)
+}
+
+// setupUserRoutes sets up user related routes
+func setupUserRoutes(v1 *gin.RouterGroup, userController *controller.UserController) {
+	// Authentication related routes (no JWT verification required)
+	auth := v1.Group("/auth")
+	auth.POST("/register", userController.Register)
+	auth.POST("/login", userController.Login)
+}
+
+// setupI18nRoutes sets up internationalization routes
+func setupI18nRoutes(v1 *gin.RouterGroup, i18nController *controller.I18nController) {
+	if i18nController == nil {
+		return
+	}
+
+	// i18n related routes (no JWT verification required)
+	i18nGroup := v1.Group("/i18n")
+	i18nGroup.GET("/languages", i18nController.GetLanguages)
+	i18nGroup.GET("/translations/:lang", i18nController.GetTranslations)
+	i18nGroup.GET("/test", i18nController.TestI18n)
+}
+
+// setupProtectedUserRoutes sets up user management routes
+func setupProtectedUserRoutes(protected *gin.RouterGroup, userController *controller.UserController) {
+	users := protected.Group("/users")
+	// Current user operations
+	users.GET("/profile", userController.GetProfile)
+	users.PUT("/profile", userController.UpdateProfile)
+	users.PUT("/password", userController.ChangePassword)
+
+	// User management operations (admin permissions required)
+	users.POST("", userController.CreateUser)
+	users.GET("", userController.ListUsers)
+	users.GET("/:id", userController.GetUser)
+	users.PUT("/:id", userController.UpdateUser)
+	users.PUT("/:id/status", userController.UpdateUserStatus)
+	users.PUT("/:id/password", userController.UpdateUserPassword)
+	users.DELETE("/:id", userController.DeleteUser)
+}
+
+// setupProtectedRoleRoutes sets up role management routes
+func setupProtectedRoleRoutes(protected *gin.RouterGroup, roleController *controller.RoleController) {
+	if roleController == nil {
+		return
+	}
+
+	roles := protected.Group("/roles")
+	roles.GET("", roleController.ListRoles)
+	roles.POST("", roleController.CreateRole)
+	roles.GET("/:id", roleController.GetRole)
+	roles.PUT("/:id", roleController.UpdateRole)
+	roles.DELETE("/:id", roleController.DeleteRole)
+
+	// Role permission management
+	roles.POST("/:id/permissions", roleController.AssignPermissions)
+	roles.DELETE("/:id/permissions", roleController.RemovePermissions)
+	roles.GET("/:id/users", roleController.GetRoleUsers)
+}
+
+// setupProtectedPermissionRoutes sets up permission management routes
+func setupProtectedPermissionRoutes(protected *gin.RouterGroup, permissionController *controller.PermissionController) {
+	if permissionController == nil {
+		return
+	}
+
+	permissions := protected.Group("/permissions")
+	permissions.GET("", permissionController.ListPermissions)
+	permissions.POST("", permissionController.CreatePermission)
+	permissions.GET("/:id", permissionController.GetPermission)
+	permissions.PUT("/:id", permissionController.UpdatePermission)
+	permissions.DELETE("/:id", permissionController.DeletePermission)
+	permissions.GET("/:id/roles", permissionController.GetPermissionRoles)
+}
+
+// setupProtectedAPITokenRoutes sets up API token management routes
+func setupProtectedAPITokenRoutes(protected *gin.RouterGroup, apiTokenController *controller.APITokenController) {
+	if apiTokenController == nil {
+		return
+	}
+
+	apiTokens := protected.Group("/api-tokens")
+	apiTokens.GET("", apiTokenController.ListAPITokens)
+	apiTokens.POST("", apiTokenController.CreateAPIToken)
+	apiTokens.GET("/:id", apiTokenController.GetAPIToken)
+	apiTokens.PUT("/:id", apiTokenController.UpdateAPIToken)
+	apiTokens.DELETE("/:id", apiTokenController.RevokeAPIToken)
+	apiTokens.POST("/:id/refresh", apiTokenController.RefreshAPIToken)
+}
+
+// setupProtectedTwoFactorRoutes sets up two-factor authentication routes
+func setupProtectedTwoFactorRoutes(protected *gin.RouterGroup, twoFactorController *controller.TwoFactorController) {
+	if twoFactorController == nil {
+		return
+	}
+
+	twoFactor := protected.Group("/two-factor")
+	twoFactor.POST("/enable", twoFactorController.EnableTOTP)
+	twoFactor.POST("/confirm", twoFactorController.ConfirmTOTP)
+	twoFactor.POST("/disable", twoFactorController.DisableTOTP)
+	twoFactor.POST("/verify", twoFactorController.VerifyTwoFactor)
 }
