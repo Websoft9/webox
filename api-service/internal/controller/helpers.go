@@ -56,7 +56,7 @@ func GetUserID(ctx *gin.Context, i18n *i18n.I18n) (uint, bool) {
 
 // ParseIDParam parses ID parameter from URL
 func ParseIDParam(ctx *gin.Context, paramName, errorKey string, i18n *i18n.I18n) (uint, bool) {
-	idStr := ctx.Param("id")
+	idStr := ctx.Param(paramName)
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
@@ -99,6 +99,16 @@ func ResponseCreated(ctx *gin.Context, data interface{}, messageKey string, i18n
 	})
 }
 
+// ResponseBadRequest sends a bad request response
+func ResponseBadRequest(ctx *gin.Context, err error, messageKey string, i18n *i18n.I18n) {
+	ctx.JSON(http.StatusBadRequest, gin.H{
+		"success": false,
+		"code":    http.StatusBadRequest,
+		"message": i18n.T(ctx, messageKey),
+		"error":   err.Error(),
+	})
+}
+
 // ResponseOK sends a success response
 func ResponseOK(ctx *gin.Context, data interface{}, messageKey string, i18n *i18n.I18n) {
 	ctx.JSON(http.StatusOK, gin.H{
@@ -114,6 +124,24 @@ func ResponseNotFound(ctx *gin.Context, messageKey string, i18n *i18n.I18n) {
 	ctx.JSON(http.StatusNotFound, gin.H{
 		"success": false,
 		"code":    http.StatusNotFound,
+		"message": i18n.T(ctx, messageKey),
+	})
+}
+
+// ResponseUnauthorized sends an unauthorized response
+func ResponseUnauthorized(ctx *gin.Context, messageKey string, i18n *i18n.I18n) {
+	ctx.JSON(http.StatusUnauthorized, gin.H{
+		"success": false,
+		"code":    http.StatusUnauthorized,
+		"message": i18n.T(ctx, messageKey),
+	})
+}
+
+// ResponseForbidden sends a forbidden response
+func ResponseForbidden(ctx *gin.Context, messageKey string, i18n *i18n.I18n) {
+	ctx.JSON(http.StatusForbidden, gin.H{
+		"success": false,
+		"code":    http.StatusForbidden,
 		"message": i18n.T(ctx, messageKey),
 	})
 }

@@ -92,33 +92,43 @@ type APITokenListResponse struct {
 
 // AuthConfigResponse authentication config response
 type AuthConfigResponse struct {
-	APIAuth struct {
-		TokenAuthEnabled bool `json:"token_auth_enabled"`
-		OAuth2Enabled    bool `json:"oauth2_enabled"`
-		JWTConfig        struct {
-			Algorithm        string `json:"algorithm"`
-			ExpiresIn        int    `json:"expires_in"`
-			RefreshExpiresIn int    `json:"refresh_expires_in"`
-			AutoRefresh      bool   `json:"auto_refresh"`
-		} `json:"jwt_config"`
-	} `json:"api_auth"`
+	APIAuth       APIAuthResponse       `json:"api_auth"`
+	UserAuth      UserAuthResponse      `json:"user_auth"`
+	SessionConfig SessionConfigResponse `json:"session_config"`
+}
 
-	UserAuth struct {
-		OAuth2Enabled          bool                     `json:"oauth2_enabled"`
-		OAuth2Providers        []OAuth2ProviderResponse `json:"oauth2_providers"`
-		TwoFactorEnabled       bool                     `json:"two_factor_enabled"`
-		TwoFactorMethods       []string                 `json:"two_factor_methods"`
-		TwoFactorRequiredRoles []string                 `json:"two_factor_required_roles"`
-		PasswordPolicy         PasswordPolicyResponse   `json:"password_policy"`
-		LoginSecurity          LoginSecurityResponse    `json:"login_security"`
-	} `json:"user_auth"`
+// APIAuthResponse API authentication response
+type APIAuthResponse struct {
+	TokenAuthEnabled bool              `json:"token_auth_enabled"`
+	OAuth2Enabled    bool              `json:"oauth2_enabled"`
+	JWTConfig        JWTConfigResponse `json:"jwt_config"`
+}
 
-	SessionConfig struct {
-		Timeout               int  `json:"timeout"`
-		MaxConcurrentSessions int  `json:"max_concurrent_sessions"`
-		RememberMeEnabled     bool `json:"remember_me_enabled"`
-		RememberMeDuration    int  `json:"remember_me_duration"`
-	} `json:"session_config"`
+// JWTConfigResponse JWT configuration response
+type JWTConfigResponse struct {
+	Algorithm        string `json:"algorithm"`
+	ExpiresIn        int    `json:"expires_in"`
+	RefreshExpiresIn int    `json:"refresh_expires_in"`
+	AutoRefresh      bool   `json:"auto_refresh"`
+}
+
+// UserAuthResponse user authentication response
+type UserAuthResponse struct {
+	OAuth2Enabled          bool                      `json:"oauth2_enabled"`
+	OAuth2Providers        []*OAuth2ProviderResponse `json:"oauth2_providers"`
+	TwoFactorEnabled       bool                      `json:"two_factor_enabled"`
+	TwoFactorMethods       []string                  `json:"two_factor_methods"`
+	TwoFactorRequiredRoles []string                  `json:"two_factor_required_roles"`
+	PasswordPolicy         PasswordPolicyResponse    `json:"password_policy"`
+	LoginSecurity          LoginSecurityResponse     `json:"login_security"`
+}
+
+// SessionConfigResponse session configuration response
+type SessionConfigResponse struct {
+	Timeout               int  `json:"timeout"`
+	MaxConcurrentSessions int  `json:"max_concurrent_sessions"`
+	RememberMeEnabled     bool `json:"remember_me_enabled"`
+	RememberMeDuration    int  `json:"remember_me_duration"`
 }
 
 // OAuth2ProviderResponse OAuth2 provider response

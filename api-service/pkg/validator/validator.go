@@ -5,7 +5,14 @@ import (
 	"regexp"
 	"strings"
 	"unicode"
+
+	"github.com/go-playground/validator/v10"
 )
+
+// New creates a new validator instance
+func New() *validator.Validate {
+	return validator.New()
+}
 
 // 密码验证相关常量
 const (

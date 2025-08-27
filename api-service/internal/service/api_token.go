@@ -350,6 +350,38 @@ func (s *apiTokenService) ValidateAPIToken(ctx context.Context, token string) (*
 	}, nil
 }
 
+// BatchRevokeAPITokens revokes multiple API tokens
+func (s *apiTokenService) BatchRevokeAPITokens(ctx context.Context, ids []uint, userID uint) error {
+	s.logger.InfoContext(ctx, "Batch revoking API tokens",
+		logger.String("service", "api-token"),
+		logger.String("operation", "BatchRevokeAPITokens"),
+		logger.Uint("user_id", userID),
+		logger.Int("count", len(ids)))
+
+	if len(ids) == 0 {
+		return nil
+	}
+
+	// Revoke each token individually to ensure ownership check
+	var errors []error
+	for _, id := range ids {
+		if err := s.RevokeAPIToken(ctx, id, userID); err != nil {
+			errors = append(errors, err)
+		}
+	}
+
+	if len(errors) > 0 {
+		s.logger.ErrorContext(ctx, "Some tokens failed to revoke",
+			logger.Int("failed_count", len(errors)))
+		// Return the first error
+		return errors[0]
+	}
+
+	s.logger.InfoContext(ctx, "API tokens batch revoked successfully",
+		logger.Int("count", len(ids)))
+	return nil
+}
+
 // CleanExpiredTokens cleans expired tokens
 func (s *apiTokenService) CleanExpiredTokens(ctx context.Context) error {
 	s.logger.InfoContext(ctx, "Cleaning expired API tokens",

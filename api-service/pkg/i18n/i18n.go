@@ -256,6 +256,17 @@ func GetLanguageInfo(lang string) map[string]interface{} {
 	return info
 }
 
+// globalInstance holds the global I18n instance
+var globalInstance *I18n
+
+// GetInstance returns the global I18n instance
+func GetInstance() *I18n {
+	if globalInstance == nil {
+		globalInstance = NewI18n()
+	}
+	return globalInstance
+}
+
 // I18n provides internationalization functionality
 type I18n struct {
 	defaultLang string

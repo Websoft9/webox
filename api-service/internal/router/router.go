@@ -18,6 +18,7 @@ type Controllers struct {
 	PermissionController *controller.PermissionController
 	APITokenController   *controller.APITokenController
 	TwoFactorController  *controller.TwoFactorController
+	AuthConfigController *controller.AuthConfigController
 	// More controllers can be added
 	// AppController  *controller.ApplicationController
 }
@@ -83,6 +84,7 @@ func setupAPIRoutes(v1 *gin.RouterGroup, controllers *Controllers) {
 	setupProtectedPermissionRoutes(protected, controllers.PermissionController)
 	setupProtectedAPITokenRoutes(protected, controllers.APITokenController)
 	setupProtectedTwoFactorRoutes(protected, controllers.TwoFactorController)
+	setupProtectedAuthConfigRoutes(protected, controllers.AuthConfigController)
 }
 
 // setupUserRoutes sets up user related routes
@@ -151,6 +153,7 @@ func setupProtectedPermissionRoutes(protected *gin.RouterGroup, permissionContro
 
 	permissions := protected.Group("/permissions")
 	permissions.GET("", permissionController.ListPermissions)
+	permissions.GET("/tree", permissionController.GetPermissionTree)
 	permissions.POST("", permissionController.CreatePermission)
 	permissions.GET("/:id", permissionController.GetPermission)
 	permissions.PUT("/:id", permissionController.UpdatePermission)
@@ -171,6 +174,7 @@ func setupProtectedAPITokenRoutes(protected *gin.RouterGroup, apiTokenController
 	apiTokens.PUT("/:id", apiTokenController.UpdateAPIToken)
 	apiTokens.DELETE("/:id", apiTokenController.RevokeAPIToken)
 	apiTokens.POST("/:id/refresh", apiTokenController.RefreshAPIToken)
+	apiTokens.DELETE("", apiTokenController.BatchRevokeAPITokens)
 }
 
 // setupProtectedTwoFactorRoutes sets up two-factor authentication routes
@@ -179,9 +183,26 @@ func setupProtectedTwoFactorRoutes(protected *gin.RouterGroup, twoFactorControll
 		return
 	}
 
-	twoFactor := protected.Group("/two-factor")
+	// Two-factor authentication routes under users
+	users := protected.Group("/users")
+	twoFactor := users.Group("/:user_id/two-factor")
+	twoFactor.GET("", twoFactorController.GetTwoFactorStatus)
 	twoFactor.POST("/enable", twoFactorController.EnableTOTP)
 	twoFactor.POST("/confirm", twoFactorController.ConfirmTOTP)
-	twoFactor.POST("/disable", twoFactorController.DisableTOTP)
+	twoFactor.POST("/disable", twoFactorController.DisableTwoFactor)
 	twoFactor.POST("/verify", twoFactorController.VerifyTwoFactor)
+	twoFactor.POST("/totp/generate", twoFactorController.GenerateTOTPSecret)
+}
+
+// setupProtectedAuthConfigRoutes sets up authentication config routes
+func setupProtectedAuthConfigRoutes(protected *gin.RouterGroup, authConfigController *controller.AuthConfigController) {
+	if authConfigController == nil {
+		return
+	}
+
+	// Authentication config routes
+	authConfig := protected.Group("/auth-config")
+	authConfig.GET("", authConfigController.GetAuthConfig)
+	authConfig.PUT("", authConfigController.UpdateAuthConfig)
+	authConfig.GET("/oauth2-providers", authConfigController.GetOAuth2Providers)
 }

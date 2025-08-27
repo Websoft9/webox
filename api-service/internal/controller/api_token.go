@@ -530,3 +530,72 @@ func (c *APITokenController) ValidateAPIToken(ctx *gin.Context) {
 		"data":    validation,
 	})
 }
+
+// BatchRevokeAPITokens batch revokes API tokens
+// @Summary Batch revoke API tokens
+// @Description Batch revoke multiple API tokens
+// @Tags API Token Management
+// @Accept json
+// @Produce json
+// @Param request body request.BatchRevokeAPITokensRequest true "Batch revoke API tokens request"
+// @Success 200 {object} response.APIResponse
+// @Failure 400 {object} response.APIResponse
+// @Failure 500 {object} response.APIResponse
+// @Router /api/v1/api-tokens [delete]
+func (c *APITokenController) BatchRevokeAPITokens(ctx *gin.Context) {
+	var req request.BatchRevokeAPITokensRequest
+
+	// Bind request parameters
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(err))
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"code":    http.StatusBadRequest,
+			"message": c.i18n.T(ctx, "validation.invalid_request_format"),
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	// Validate request parameters
+	if err := c.validator.Struct(&req); err != nil {
+		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(err))
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"code":    http.StatusBadRequest,
+			"message": c.i18n.T(ctx, "validation.request_validation_failed"),
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	// Get current user ID
+	userID, exists := ctx.Get("user_id")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{
+			"success": false,
+			"code":    http.StatusUnauthorized,
+			"message": c.i18n.T(ctx, "auth.user_not_authenticated"),
+		})
+		return
+	}
+
+	// Batch revoke API tokens
+	err := c.apiTokenService.BatchRevokeAPITokens(ctx.Request.Context(), req.IDs, userID.(uint))
+	if err != nil {
+		c.logger.ErrorContext(ctx.Request.Context(), "Failed to batch revoke API tokens", logger.ErrorField(err))
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"code":    http.StatusInternalServerError,
+			"message": c.i18n.T(ctx, "api_token.batch_revoke_failed"),
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"code":    http.StatusOK,
+		"message": c.i18n.T(ctx, "api_token.batch_revoke_success"),
+	})
+}
