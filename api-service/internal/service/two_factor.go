@@ -18,6 +18,15 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	// Email verification code settings
+	emailCodeExpiry    = 5 * time.Minute
+	backupCodesCount   = 10
+	backupCodeByteSize = 4
+	emailCodeByteSize  = 3
+	emailCodeModulo    = 1000000
+)
+
 type twoFactorService struct {
 	twoFactorRepo repository.UserTwoFactorRepository
 	db            *gorm.DB
@@ -316,7 +325,7 @@ func (s *twoFactorService) SendEmailCode(ctx context.Context, userID uint) error
 	code := s.generateEmailCode()
 
 	// Store code with expiration (5 minutes)
-	expiry := time.Now().Add(5 * time.Minute)
+	expiry := time.Now().Add(emailCodeExpiry)
 	twoFactor.Secret = code
 	twoFactor.VerifiedAt = &expiry // Reuse this field for code expiry
 
@@ -466,9 +475,9 @@ func (s *twoFactorService) verifyBackupCode(ctx context.Context, userID uint, co
 }
 
 func (s *twoFactorService) generateBackupCodes() ([]string, error) {
-	codes := make([]string, 10)
-	for i := 0; i < 10; i++ {
-		bytes := make([]byte, 4)
+	codes := make([]string, backupCodesCount)
+	for i := 0; i < backupCodesCount; i++ {
+		bytes := make([]byte, backupCodeByteSize)
 		if _, err := rand.Read(bytes); err != nil {
 			return nil, err
 		}
@@ -478,10 +487,10 @@ func (s *twoFactorService) generateBackupCodes() ([]string, error) {
 }
 
 func (s *twoFactorService) generateEmailCode() string {
-	bytes := make([]byte, 3)
+	bytes := make([]byte, emailCodeByteSize)
 	if _, err := rand.Read(bytes); err != nil {
 		// Fallback to time-based generation if crypto/rand fails
-		return fmt.Sprintf("%06d", time.Now().UnixNano()%1000000)
+		return fmt.Sprintf("%06d", time.Now().UnixNano()%emailCodeModulo)
 	}
 	return fmt.Sprintf("%06d", int(bytes[0])<<16|int(bytes[1])<<8|int(bytes[2]))[:6]
 }

@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"api-service/internal/constants"
 	"api-service/internal/dto/request"
 	"api-service/internal/interface/service"
 	"api-service/pkg/i18n"
@@ -129,7 +130,7 @@ func (c *TwoFactorController) ConfirmTOTP(ctx *gin.Context) {
 	// Confirm TOTP
 	result, err := c.twoFactorService.ConfirmTOTP(ctx.Request.Context(), userID.(uint), req.Code)
 	if err != nil {
-		if err.Error() == "invalid code" {
+		if err.Error() == constants.ErrInvalidCode {
 			ctx.JSON(http.StatusBadRequest, gin.H{
 				"success": false,
 				"code":    http.StatusBadRequest,
@@ -208,7 +209,7 @@ func (c *TwoFactorController) DisableTOTP(ctx *gin.Context) {
 	// Disable TOTP
 	err := c.twoFactorService.DisableTOTP(ctx.Request.Context(), userID.(uint), req.Code)
 	if err != nil {
-		if err.Error() == "invalid code" {
+		if err.Error() == constants.ErrInvalidCode {
 			ctx.JSON(http.StatusBadRequest, gin.H{
 				"success": false,
 				"code":    http.StatusBadRequest,

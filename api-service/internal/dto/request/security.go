@@ -2,7 +2,7 @@ package request
 
 import "time"
 
-// CreateRoleRequest 创建角色请求
+// CreateRoleRequest creates role request
 type CreateRoleRequest struct {
 	Name          string `json:"name" validate:"required,min=2,max=64"`
 	Code          string `json:"code" validate:"required,min=2,max=32"`
@@ -12,7 +12,7 @@ type CreateRoleRequest struct {
 	Status        int    `json:"status" validate:"oneof=0 1"`
 }
 
-// UpdateRoleRequest 更新角色请求
+// UpdateRoleRequest updates role request
 type UpdateRoleRequest struct {
 	Name          string `json:"name" validate:"omitempty,min=2,max=64"`
 	Description   string `json:"description" validate:"max=500"`
@@ -21,12 +21,12 @@ type UpdateRoleRequest struct {
 	Status        int    `json:"status" validate:"oneof=0 1"`
 }
 
-// RolePermissionRequest 角色权限操作请求
+// RolePermissionRequest role permission operation request
 type RolePermissionRequest struct {
 	PermissionIDs []uint `json:"permission_ids" validate:"required,min=1"`
 }
 
-// ListRolesRequest 角色列表查询请求
+// ListRolesRequest role list query request
 type ListRolesRequest struct {
 	PaginationRequest
 	Search    string `form:"search"`
@@ -50,7 +50,7 @@ type CreatePermissionRequest struct {
 	Status      int    `json:"status" validate:"oneof=0 1"`
 }
 
-// UpdatePermissionRequest 更新权限请求
+// UpdatePermissionRequest updates permission request
 type UpdatePermissionRequest struct {
 	Name        string `json:"name" validate:"omitempty,min=2,max=64"`
 	Description string `json:"description" validate:"max=500"`
@@ -58,7 +58,7 @@ type UpdatePermissionRequest struct {
 	Status      int    `json:"status" validate:"oneof=0 1"`
 }
 
-// ListPermissionsRequest 权限列表查询请求
+// ListPermissionsRequest permission list query request
 type ListPermissionsRequest struct {
 	PaginationRequest
 	Search    string `form:"search"`
@@ -69,13 +69,13 @@ type ListPermissionsRequest struct {
 	EndTime   string `form:"end_time" validate:"omitempty,datetime=2006-01-02 15:04:05"`
 }
 
-// PermissionTreeRequest 权限树查询请求
+// PermissionTreeRequest permission tree query request
 type PermissionTreeRequest struct {
 	Scope  string `form:"scope" validate:"omitempty,oneof=platform project"`
 	Status *int   `form:"status" validate:"omitempty,oneof=0 1"`
 }
 
-// CreateAPITokenRequest 创建API令牌请求
+// CreateAPITokenRequest creates API token request
 type CreateAPITokenRequest struct {
 	Name        string     `json:"name" validate:"required,min=2,max=64"`
 	Description string     `json:"description" validate:"max=500"`
@@ -83,7 +83,7 @@ type CreateAPITokenRequest struct {
 	ExpiresAt   *time.Time `json:"expires_at"`
 }
 
-// UpdateAPITokenRequest 更新API令牌请求
+// UpdateAPITokenRequest updates API token request
 type UpdateAPITokenRequest struct {
 	Name        string     `json:"name" validate:"omitempty,min=2,max=64"`
 	Description string     `json:"description" validate:"max=500"`
@@ -92,7 +92,7 @@ type UpdateAPITokenRequest struct {
 	Status      int        `json:"status" validate:"oneof=0 1"`
 }
 
-// ListAPITokensRequest API令牌列表查询请求
+// ListAPITokensRequest API token list query request
 type ListAPITokensRequest struct {
 	PaginationRequest
 	Search  string `form:"search"`
@@ -101,12 +101,12 @@ type ListAPITokensRequest struct {
 	Expired *bool  `form:"expired"`
 }
 
-// BatchRevokeAPITokensRequest 批量撤销API令牌请求
+// BatchRevokeAPITokensRequest batch revoke API tokens request
 type BatchRevokeAPITokensRequest struct {
 	IDs []uint `json:"ids" validate:"required,min=1"`
 }
 
-// UpdateAuthConfigRequest 更新认证配置请求
+// UpdateAuthConfigRequest updates authentication config request
 type UpdateAuthConfigRequest struct {
 	APIAuth struct {
 		TokenAuthEnabled bool `json:"token_auth_enabled"`
@@ -137,7 +137,7 @@ type UpdateAuthConfigRequest struct {
 	} `json:"session_config"`
 }
 
-// OAuth2ProviderRequest OAuth2提供商请求
+// OAuth2ProviderRequest OAuth2 provider request
 type OAuth2ProviderRequest struct {
 	Name         string            `json:"name"`
 	Provider     string            `json:"provider"`
@@ -150,7 +150,7 @@ type OAuth2ProviderRequest struct {
 	UserMapping  map[string]string `json:"user_mapping"`
 }
 
-// PasswordPolicyRequest 密码策略请求
+// PasswordPolicyRequest password policy request
 type PasswordPolicyRequest struct {
 	MinLength           int  `json:"min_length" validate:"min=1,max=128"`
 	MaxLength           int  `json:"max_length" validate:"min=1,max=128"`
@@ -162,7 +162,7 @@ type PasswordPolicyRequest struct {
 	PasswordExpiresDays int  `json:"password_expires_days" validate:"min=0,max=365"`
 }
 
-// LoginSecurityRequest 登录安全请求
+// LoginSecurityRequest login security request
 type LoginSecurityRequest struct {
 	MaxLoginAttempts     int      `json:"max_login_attempts" validate:"min=1,max=20"`
 	LockoutDuration      int      `json:"lockout_duration" validate:"min=60,max=86400"`
@@ -172,19 +172,19 @@ type LoginSecurityRequest struct {
 	AllowedLoginHours    string   `json:"allowed_login_hours"`
 }
 
-// EnableTwoFactorRequest 启用双因子认证请求
+// EnableTwoFactorRequest enables two-factor authentication request
 type EnableTwoFactorRequest struct {
 	Method string `json:"method" validate:"required,oneof=TOTP EMAIL"`
 	Code   string `json:"code" validate:"required"`
 }
 
-// PaginationRequest 分页请求基础结构
+// PaginationRequest pagination request base structure
 type PaginationRequest struct {
 	Page     int `form:"page" validate:"min=1"`
 	PageSize int `form:"page_size" validate:"min=1,max=100"`
 }
 
-// GetPage 获取页码，默认为1
+// GetPage gets page number, defaults to 1
 func (p *PaginationRequest) GetPage() int {
 	if p.Page <= 0 {
 		return 1
@@ -192,43 +192,48 @@ func (p *PaginationRequest) GetPage() int {
 	return p.Page
 }
 
-// GetPageSize 获取每页大小，默认为20
+const (
+	DefaultPageSize = 20
+	MaxPageSize     = 100
+)
+
+// GetPageSize gets page size, defaults to 20
 func (p *PaginationRequest) GetPageSize() int {
 	if p.PageSize <= 0 {
-		return 20
+		return DefaultPageSize
 	}
-	if p.PageSize > 100 {
-		return 100
+	if p.PageSize > MaxPageSize {
+		return MaxPageSize
 	}
 	return p.PageSize
 }
 
-// GetOffset 获取偏移量
+// GetOffset gets offset
 func (p *PaginationRequest) GetOffset() int {
 	return (p.GetPage() - 1) * p.GetPageSize()
 }
 
-// ValidateAPITokenRequest API令牌验证请求
+// ValidateAPITokenRequest API token validation request
 type ValidateAPITokenRequest struct {
 	Token string `json:"token" validate:"required"`
 }
 
-// ConfirmTOTPRequest TOTP确认请求
+// ConfirmTOTPRequest TOTP confirmation request
 type ConfirmTOTPRequest struct {
 	Code string `json:"code" validate:"required,len=6"`
 }
 
-// DisableTOTPRequest 禁用TOTP请求
+// DisableTOTPRequest disables TOTP request
 type DisableTOTPRequest struct {
 	Code string `json:"code" validate:"required,len=6"`
 }
 
-// EnableEmailTwoFactorRequest 启用邮箱双因子认证请求
+// EnableEmailTwoFactorRequest enables email two-factor authentication request
 type EnableEmailTwoFactorRequest struct {
 	Email string `json:"email" validate:"required,email"`
 }
 
-// VerifyTwoFactorRequest 验证双因子认证请求
+// VerifyTwoFactorRequest verifies two-factor authentication request
 type VerifyTwoFactorRequest struct {
 	UserID uint   `json:"user_id" validate:"required"`
 	Code   string `json:"code" validate:"required"`

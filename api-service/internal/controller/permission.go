@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"api-service/internal/constants"
 	"api-service/internal/dto/request"
 	"api-service/internal/interface/service"
 	"api-service/pkg/i18n"
@@ -49,60 +50,25 @@ func NewPermissionController(
 func (c *PermissionController) CreatePermission(ctx *gin.Context) {
 	var req request.CreatePermissionRequest
 
-	// Bind request parameters
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(err))
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"code":    http.StatusBadRequest,
-			"message": c.i18n.T(ctx, "validation.invalid_request_format"),
-			"error":   err.Error(),
-		})
-		return
-	}
-
-	// Validate request parameters
-	if err := c.validator.Struct(&req); err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(err))
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"code":    http.StatusBadRequest,
-			"message": c.i18n.T(ctx, "validation.request_validation_failed"),
-			"error":   err.Error(),
-		})
+	// Bind and validate request
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger, c.i18n) {
 		return
 	}
 
 	// Get current user ID
-	userID, exists := ctx.Get("user_id")
-	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{
-			"success": false,
-			"code":    http.StatusUnauthorized,
-			"message": c.i18n.T(ctx, "auth.user_not_authenticated"),
-		})
+	userID, ok := GetUserID(ctx, c.i18n)
+	if !ok {
 		return
 	}
 
 	// Create permission
-	permission, err := c.permissionService.CreatePermission(ctx.Request.Context(), &req, userID.(uint))
+	permission, err := c.permissionService.CreatePermission(ctx.Request.Context(), &req, userID)
 	if err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Failed to create permission", logger.ErrorField(err))
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"code":    http.StatusInternalServerError,
-			"message": c.i18n.T(ctx, "permission.create_failed"),
-			"error":   err.Error(),
-		})
+		ResponseInternalError(ctx, err, "permission.create_failed", c.logger, c.i18n)
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, gin.H{
-		"success": true,
-		"code":    http.StatusCreated,
-		"message": c.i18n.T(ctx, "permission.create_success"),
-		"data":    permission,
-	})
+	ResponseCreated(ctx, permission, "permission.create_success", c.i18n)
 }
 
 // GetPermission gets permission details
@@ -118,44 +84,24 @@ func (c *PermissionController) CreatePermission(ctx *gin.Context) {
 // @Router /api/v1/permissions/{id} [get]
 func (c *PermissionController) GetPermission(ctx *gin.Context) {
 	// Get permission ID
-	idStr := ctx.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"code":    http.StatusBadRequest,
-			"message": c.i18n.T(ctx, "validation.invalid_permission_id"),
-		})
+	id, ok := ParseIDParam(ctx, "id", "validation.invalid_permission_id", c.i18n)
+	if !ok {
 		return
 	}
 
 	// Get permission
-	permission, err := c.permissionService.GetPermission(ctx.Request.Context(), uint(id))
+	permission, err := c.permissionService.GetPermission(ctx.Request.Context(), id)
 	if err != nil {
-		if err.Error() == "permission not found" {
-			ctx.JSON(http.StatusNotFound, gin.H{
-				"success": false,
-				"code":    http.StatusNotFound,
-				"message": c.i18n.T(ctx, "permission.not_found"),
-			})
+		if err.Error() == constants.ErrPermissionNotFound {
+			ResponseNotFound(ctx, "permission.not_found", c.i18n)
 			return
 		}
 
-		c.logger.ErrorContext(ctx.Request.Context(), "Failed to get permission", logger.ErrorField(err))
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"code":    http.StatusInternalServerError,
-			"message": c.i18n.T(ctx, "permission.get_failed"),
-		})
+		ResponseInternalError(ctx, err, "permission.get_failed", c.logger, c.i18n)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"code":    http.StatusOK,
-		"message": c.i18n.T(ctx, "common.success"),
-		"data":    permission,
-	})
+	ResponseOK(ctx, permission, "common.success", c.i18n)
 }
 
 // UpdatePermission updates permission
@@ -186,20 +132,20 @@ func (c *PermissionController) UpdatePermission(ctx *gin.Context) {
 	var req request.UpdatePermissionRequest
 
 	// Bind request parameters
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(err))
+	if bindErr := ctx.ShouldBindJSON(&req); bindErr != nil {
+		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(bindErr))
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"code":    http.StatusBadRequest,
 			"message": c.i18n.T(ctx, "validation.invalid_request_format"),
-			"error":   err.Error(),
+			"error":   bindErr.Error(),
 		})
 		return
 	}
 
 	// Validate request parameters
-	if err := c.validator.Struct(&req); err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(err))
+	if validateErr := c.validator.Struct(&req); validateErr != nil {
+		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(validateErr))
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"code":    http.StatusBadRequest,
@@ -223,7 +169,7 @@ func (c *PermissionController) UpdatePermission(ctx *gin.Context) {
 	// Update permission
 	permission, err := c.permissionService.UpdatePermission(ctx.Request.Context(), uint(id), &req, userID.(uint))
 	if err != nil {
-		if err.Error() == "permission not found" {
+		if err.Error() == constants.ErrPermissionNotFound {
 			ctx.JSON(http.StatusNotFound, gin.H{
 				"success": false,
 				"code":    http.StatusNotFound,
@@ -277,7 +223,7 @@ func (c *PermissionController) DeletePermission(ctx *gin.Context) {
 	// Delete permission
 	err = c.permissionService.DeletePermission(ctx.Request.Context(), uint(id))
 	if err != nil {
-		if err.Error() == "permission not found" {
+		if err.Error() == constants.ErrPermissionNotFound {
 			ctx.JSON(http.StatusNotFound, gin.H{
 				"success": false,
 				"code":    http.StatusNotFound,
@@ -456,13 +402,13 @@ func (c *PermissionController) GetPermissionRoles(ctx *gin.Context) {
 	pageSize := 20
 
 	if pageStr := ctx.Query("page"); pageStr != "" {
-		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+		if p, parseErr := strconv.Atoi(pageStr); parseErr == nil && p > 0 {
 			page = p
 		}
 	}
 
 	if pageSizeStr := ctx.Query("page_size"); pageSizeStr != "" {
-		if ps, err := strconv.Atoi(pageSizeStr); err == nil && ps > 0 && ps <= 100 {
+		if ps, parseErr := strconv.Atoi(pageSizeStr); parseErr == nil && ps > 0 && ps <= 100 {
 			pageSize = ps
 		}
 	}

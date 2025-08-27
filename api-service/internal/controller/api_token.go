@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"api-service/internal/constants"
 	"api-service/internal/dto/request"
 	"api-service/internal/interface/service"
 	"api-service/pkg/i18n"
@@ -143,7 +144,7 @@ func (c *APITokenController) GetAPIToken(ctx *gin.Context) {
 	// Get API token
 	token, err := c.apiTokenService.GetAPIToken(ctx.Request.Context(), uint(id), userID.(uint))
 	if err != nil {
-		if err.Error() == "token not found" {
+		if err.Error() == constants.ErrTokenNotFound {
 			ctx.JSON(http.StatusNotFound, gin.H{
 				"success": false,
 				"code":    http.StatusNotFound,
@@ -197,25 +198,25 @@ func (c *APITokenController) UpdateAPIToken(ctx *gin.Context) {
 	var req request.UpdateAPITokenRequest
 
 	// Bind request parameters
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(err))
+	if bindErr := ctx.ShouldBindJSON(&req); bindErr != nil {
+		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(bindErr))
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"code":    http.StatusBadRequest,
 			"message": c.i18n.T(ctx, "validation.invalid_request_format"),
-			"error":   err.Error(),
+			"error":   bindErr.Error(),
 		})
 		return
 	}
 
 	// Validate request parameters
-	if err := c.validator.Struct(&req); err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(err))
+	if validateErr := c.validator.Struct(&req); validateErr != nil {
+		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(validateErr))
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"code":    http.StatusBadRequest,
 			"message": c.i18n.T(ctx, "validation.request_validation_failed"),
-			"error":   err.Error(),
+			"error":   validateErr.Error(),
 		})
 		return
 	}
@@ -234,7 +235,7 @@ func (c *APITokenController) UpdateAPIToken(ctx *gin.Context) {
 	// Update API token
 	token, err := c.apiTokenService.UpdateAPIToken(ctx.Request.Context(), uint(id), &req, userID.(uint))
 	if err != nil {
-		if err.Error() == "token not found" {
+		if err.Error() == constants.ErrTokenNotFound {
 			ctx.JSON(http.StatusNotFound, gin.H{
 				"success": false,
 				"code":    http.StatusNotFound,
@@ -299,7 +300,7 @@ func (c *APITokenController) RevokeAPIToken(ctx *gin.Context) {
 	// Revoke API token
 	err = c.apiTokenService.RevokeAPIToken(ctx.Request.Context(), uint(id), userID.(uint))
 	if err != nil {
-		if err.Error() == "token not found" {
+		if err.Error() == constants.ErrTokenNotFound {
 			ctx.JSON(http.StatusNotFound, gin.H{
 				"success": false,
 				"code":    http.StatusNotFound,
@@ -363,7 +364,7 @@ func (c *APITokenController) RefreshAPIToken(ctx *gin.Context) {
 	// Refresh API token
 	token, err := c.apiTokenService.RefreshAPIToken(ctx.Request.Context(), uint(id), userID.(uint))
 	if err != nil {
-		if err.Error() == "token not found" {
+		if err.Error() == constants.ErrTokenNotFound {
 			ctx.JSON(http.StatusNotFound, gin.H{
 				"success": false,
 				"code":    http.StatusNotFound,

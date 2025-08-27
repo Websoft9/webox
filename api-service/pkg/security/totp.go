@@ -11,7 +11,17 @@ import (
 	"github.com/pquerna/otp/totp"
 )
 
-// TOTPConfig TOTP配置
+const (
+	// TOTP constants
+	DefaultTOTPSecretSize = 32
+	DefaultTOTPPeriod     = 30
+	QRCodeImageSize       = 200
+	BackupCodeBytesSize   = 8
+	BackupCodeMaxLength   = 8
+	BackupCodeModulo      = 100
+)
+
+// TOTPConfig TOTP configuration
 type TOTPConfig struct {
 	Issuer      string
 	AccountName string
@@ -21,16 +31,16 @@ type TOTPConfig struct {
 	Period      uint
 }
 
-// DefaultTOTPConfig 默认TOTP配置
+// DefaultTOTPConfig default TOTP configuration
 var DefaultTOTPConfig = TOTPConfig{
 	Issuer:     "Websoft9",
-	SecretSize: 32,
+	SecretSize: DefaultTOTPSecretSize,
 	Algorithm:  otp.AlgorithmSHA1,
 	Digits:     otp.DigitsSix,
-	Period:     30,
+	Period:     DefaultTOTPPeriod,
 }
 
-// GenerateTOTPSecret 生成TOTP密钥
+// GenerateTOTPSecret generates TOTP secret
 func GenerateTOTPSecret(accountName string, config *TOTPConfig) (*otp.Key, error) {
 	if config == nil {
 		config = &DefaultTOTPConfig
@@ -52,20 +62,20 @@ func GenerateTOTPSecret(accountName string, config *TOTPConfig) (*otp.Key, error
 	return key, nil
 }
 
-// ValidateTOTP 验证TOTP代码
+// ValidateTOTP validates TOTP code
 func ValidateTOTP(code, secret string) bool {
 	return totp.Validate(code, secret)
 }
 
-// GenerateQRCode 生成二维码图片数据
+// GenerateQRCode generates QR code image data
 func GenerateQRCode(key *otp.Key) ([]byte, error) {
-	// 生成二维码图片
-	img, err := key.Image(200, 200)
+	// Generate QR code image
+	img, err := key.Image(QRCodeImageSize, QRCodeImageSize)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate QR code image: %w", err)
 	}
 
-	// 将图片编码为PNG格式
+	// Encode image as PNG format
 	var buf bytes.Buffer
 	err = png.Encode(&buf, img)
 	if err != nil {
@@ -75,7 +85,7 @@ func GenerateQRCode(key *otp.Key) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// GenerateBackupCodes 生成备用码
+// GenerateBackupCodes generates backup codes
 func GenerateBackupCodes(count int) ([]string, error) {
 	codes := make([]string, count)
 
@@ -90,30 +100,30 @@ func GenerateBackupCodes(count int) ([]string, error) {
 	return codes, nil
 }
 
-// generateBackupCode 生成单个备用码
+// generateBackupCode generates single backup code
 func generateBackupCode() (string, error) {
-	// 生成8字节随机数据
-	bytes := make([]byte, 8)
+	// Generate 8 bytes of random data
+	bytes := make([]byte, BackupCodeBytesSize)
 	_, err := rand.Read(bytes)
 	if err != nil {
 		return "", err
 	}
 
-	// 转换为8位数字字符串
+	// Convert to 8-digit numeric string
 	code := ""
 	for _, b := range bytes {
-		code += fmt.Sprintf("%02d", int(b)%100)
+		code += fmt.Sprintf("%02d", int(b)%BackupCodeModulo)
 	}
 
-	// 取前8位
-	if len(code) > 8 {
-		code = code[:8]
+	// Take first 8 digits
+	if len(code) > BackupCodeMaxLength {
+		code = code[:BackupCodeMaxLength]
 	}
 
 	return code, nil
 }
 
-// ValidateBackupCode 验证备用码
+// ValidateBackupCode validates backup code
 func ValidateBackupCode(code string, backupCodes []string) bool {
 	for _, backupCode := range backupCodes {
 		if code == backupCode {
@@ -123,7 +133,7 @@ func ValidateBackupCode(code string, backupCodes []string) bool {
 	return false
 }
 
-// RemoveUsedBackupCode 移除已使用的备用码
+// RemoveUsedBackupCode removes used backup code
 func RemoveUsedBackupCode(usedCode string, backupCodes []string) []string {
 	result := make([]string, 0, len(backupCodes))
 	for _, code := range backupCodes {
@@ -134,12 +144,12 @@ func RemoveUsedBackupCode(usedCode string, backupCodes []string) []string {
 	return result
 }
 
-// EncodeSecret 编码密钥为Base32字符串
+// EncodeSecret encodes secret to Base32 string
 func EncodeSecret(secret []byte) string {
 	return base32.StdEncoding.EncodeToString(secret)
 }
 
-// DecodeSecret 解码Base32字符串为密钥
+// DecodeSecret decodes Base32 string to secret
 func DecodeSecret(encodedSecret string) ([]byte, error) {
 	return base32.StdEncoding.DecodeString(encodedSecret)
 }

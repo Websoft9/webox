@@ -15,6 +15,12 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	UserRoleSortOrder      = 2
+	OperatorRoleSortOrder  = 3
+	DeveloperRoleSortOrder = 4
+)
+
 type roleService struct {
 	roleRepo       repository.RoleRepository
 	permissionRepo repository.PermissionRepository
@@ -47,34 +53,61 @@ func (s *roleService) CreateRole(ctx context.Context, req *request.CreateRoleReq
 		logger.String("role_code", req.Code),
 		logger.Uint("created_by", createdBy))
 
+	// Validate role data
+	if err := s.validateRoleForCreation(ctx, req); err != nil {
+		return nil, err
+	}
+
+	// Create and save role
+	role := s.buildRoleEntity(req, createdBy)
+	if err := s.createRoleWithPermissions(ctx, role, req.PermissionIDs, createdBy); err != nil {
+		return nil, err
+	}
+
+	s.logger.InfoContext(ctx, "Role created successfully", logger.Uint("role_id", role.ID))
+	return s.GetRole(ctx, role.ID)
+}
+
+// validateRoleForCreation validates role data before creation
+func (s *roleService) validateRoleForCreation(ctx context.Context, req *request.CreateRoleRequest) error {
 	// Check if role code already exists
 	existingRole, err := s.roleRepo.GetByCode(ctx, req.Code)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		s.logger.ErrorContext(ctx, "Failed to check existing role", logger.ErrorField(err))
-		return nil, errors.Wrap(err, "failed to check existing role")
+		return errors.Wrap(err, "failed to check existing role")
 	}
 	if existingRole != nil {
 		s.logger.WarnContext(ctx, "Role code already exists", logger.String("role_code", req.Code))
-		return nil, errors.New("role code already exists")
+		return errors.New("role code already exists")
 	}
 
 	// Validate permission IDs if provided
-	if len(req.PermissionIDs) > 0 {
-		permissions, err := s.permissionRepo.GetByIDs(ctx, req.PermissionIDs)
-		if err != nil {
-			s.logger.ErrorContext(ctx, "Failed to validate permissions", logger.ErrorField(err))
-			return nil, errors.Wrap(err, "failed to validate permissions")
-		}
-		if len(permissions) != len(req.PermissionIDs) {
-			s.logger.WarnContext(ctx, "Some permission IDs are invalid",
-				logger.Int("requested", len(req.PermissionIDs)),
-				logger.Int("found", len(permissions)))
-			return nil, errors.New("some permission IDs are invalid")
-		}
+	return s.validatePermissionIDs(ctx, req.PermissionIDs)
+}
+
+// validatePermissionIDs validates that all permission IDs exist
+func (s *roleService) validatePermissionIDs(ctx context.Context, permissionIDs []uint) error {
+	if len(permissionIDs) == 0 {
+		return nil
 	}
 
-	// Create role entity
-	role := &model.Role{
+	permissions, err := s.permissionRepo.GetByIDs(ctx, permissionIDs)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to validate permissions", logger.ErrorField(err))
+		return errors.Wrap(err, "failed to validate permissions")
+	}
+	if len(permissions) != len(permissionIDs) {
+		s.logger.WarnContext(ctx, "Some permission IDs are invalid",
+			logger.Int("requested", len(permissionIDs)),
+			logger.Int("found", len(permissions)))
+		return errors.New("some permission IDs are invalid")
+	}
+	return nil
+}
+
+// buildRoleEntity creates a role entity from request
+func (s *roleService) buildRoleEntity(req *request.CreateRoleRequest, createdBy uint) *model.Role {
+	return &model.Role{
 		Name:        req.Name,
 		Code:        req.Code,
 		Description: req.Description,
@@ -84,43 +117,35 @@ func (s *roleService) CreateRole(ctx context.Context, req *request.CreateRoleReq
 		CreatedBy:   &createdBy,
 		UpdatedBy:   &createdBy,
 	}
+}
 
-	// Use transaction to create role and assign permissions
-	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+// createRoleWithPermissions creates role and assigns permissions in transaction
+func (s *roleService) createRoleWithPermissions(ctx context.Context, role *model.Role, permissionIDs []uint, createdBy uint) error {
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// Create role
 		if err := s.roleRepo.CreateWithTx(ctx, tx, role); err != nil {
 			return err
 		}
 
 		// Assign permissions if provided
-		if len(req.PermissionIDs) > 0 {
-			if err := s.roleRepo.AssignPermissions(ctx, role.ID, req.PermissionIDs, createdBy); err != nil {
+		if len(permissionIDs) > 0 {
+			if err := s.roleRepo.AssignPermissions(ctx, role.ID, permissionIDs, createdBy); err != nil {
 				return err
 			}
 		}
 
 		return nil
 	})
-
-	if err != nil {
-		s.logger.ErrorContext(ctx, "Failed to create role", logger.ErrorField(err))
-		return nil, errors.Wrap(err, "failed to create role")
-	}
-
-	s.logger.InfoContext(ctx, "Role created successfully", logger.Uint("role_id", role.ID))
-
-	// Return complete role information
-	return s.GetRole(ctx, role.ID)
 }
 
-// GetRole 获取角色
+// GetRole gets a role
 func (s *roleService) GetRole(ctx context.Context, id uint) (*response.RoleResponse, error) {
 	role, err := s.roleRepo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	// 获取统计信息
+	// Get statistical information
 	permCount, _ := s.roleRepo.CountPermissions(ctx, id)
 	userCount, _ := s.roleRepo.CountUsers(ctx, id)
 
@@ -137,7 +162,31 @@ func (s *roleService) UpdateRole(ctx context.Context, id uint, req *request.Upda
 		logger.Uint("role_id", id),
 		logger.Uint("updated_by", updatedBy))
 
-	// Get existing role
+	// Get and validate existing role
+	role, err := s.getRoleForUpdate(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Validate permission IDs if provided
+	if err := s.validatePermissionIDs(ctx, req.PermissionIDs); err != nil {
+		return nil, err
+	}
+
+	// Update role information
+	s.updateRoleFields(role, req, updatedBy)
+
+	// Save changes in transaction
+	if err := s.updateRoleWithPermissions(ctx, role, req.PermissionIDs, updatedBy); err != nil {
+		return nil, err
+	}
+
+	s.logger.InfoContext(ctx, "Role updated successfully", logger.Uint("role_id", id))
+	return s.GetRole(ctx, id)
+}
+
+// getRoleForUpdate gets role and validates it can be updated
+func (s *roleService) getRoleForUpdate(ctx context.Context, id uint) (*model.Role, error) {
 	role, err := s.roleRepo.GetByID(ctx, id)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to get role for update", logger.ErrorField(err))
@@ -150,22 +199,11 @@ func (s *roleService) UpdateRole(ctx context.Context, id uint, req *request.Upda
 		return nil, errors.New("cannot update system role")
 	}
 
-	// Validate permission IDs if provided
-	if len(req.PermissionIDs) > 0 {
-		permissions, err := s.permissionRepo.GetByIDs(ctx, req.PermissionIDs)
-		if err != nil {
-			s.logger.ErrorContext(ctx, "Failed to validate permissions", logger.ErrorField(err))
-			return nil, errors.Wrap(err, "failed to validate permissions")
-		}
-		if len(permissions) != len(req.PermissionIDs) {
-			s.logger.WarnContext(ctx, "Some permission IDs are invalid during update",
-				logger.Int("requested", len(req.PermissionIDs)),
-				logger.Int("found", len(permissions)))
-			return nil, errors.New("some permission IDs are invalid")
-		}
-	}
+	return role, nil
+}
 
-	// Update role information
+// updateRoleFields updates role fields from request
+func (s *roleService) updateRoleFields(role *model.Role, req *request.UpdateRoleRequest, updatedBy uint) {
 	if req.Name != "" {
 		role.Name = req.Name
 	}
@@ -175,32 +213,25 @@ func (s *roleService) UpdateRole(ctx context.Context, id uint, req *request.Upda
 	role.SortOrder = req.SortOrder
 	role.Status = req.Status
 	role.UpdatedBy = &updatedBy
+}
 
-	// Use transaction to update role and permissions
-	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+// updateRoleWithPermissions updates role and permissions in transaction
+func (s *roleService) updateRoleWithPermissions(ctx context.Context, role *model.Role, permissionIDs []uint, updatedBy uint) error {
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// Update role
 		if err := s.roleRepo.UpdateWithTx(ctx, tx, role); err != nil {
 			return err
 		}
 
 		// Update permission assignments if provided
-		if len(req.PermissionIDs) > 0 {
-			if err := s.roleRepo.AssignPermissions(ctx, role.ID, req.PermissionIDs, updatedBy); err != nil {
+		if len(permissionIDs) > 0 {
+			if err := s.roleRepo.AssignPermissions(ctx, role.ID, permissionIDs, updatedBy); err != nil {
 				return err
 			}
 		}
 
 		return nil
 	})
-
-	if err != nil {
-		s.logger.ErrorContext(ctx, "Failed to update role", logger.ErrorField(err))
-		return nil, errors.Wrap(err, "failed to update role")
-	}
-
-	s.logger.InfoContext(ctx, "Role updated successfully", logger.Uint("role_id", id))
-
-	return s.GetRole(ctx, id)
 }
 
 // DeleteRole deletes a role
@@ -218,20 +249,20 @@ func (s *roleService) DeleteRole(ctx context.Context, id uint) error {
 	return nil
 }
 
-// ListRoles 获取角色列表
+// ListRoles gets role list
 func (s *roleService) ListRoles(ctx context.Context, req *request.ListRolesRequest) (*response.RoleListResponse, error) {
 	roles, total, err := s.roleRepo.List(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	// 转换响应
+	// Convert response
 	items := make([]response.RoleResponse, len(roles))
 	for i, role := range roles {
 		items[i] = *response.ConvertToRoleResponse(role)
 	}
 
-	// 计算总页数
+	// Calculate total pages
 	totalPages := int(math.Ceil(float64(total) / float64(req.GetPageSize())))
 
 	return &response.RoleListResponse{
@@ -243,7 +274,7 @@ func (s *roleService) ListRoles(ctx context.Context, req *request.ListRolesReque
 	}, nil
 }
 
-// GetRoleWithPermissions 获取角色及其权限
+// GetRoleWithPermissions gets role with its permissions
 func (s *roleService) GetRoleWithPermissions(ctx context.Context, id uint) (*response.RoleResponse, error) {
 	role, err := s.roleRepo.GetWithPermissions(ctx, id)
 	if err != nil {
@@ -253,24 +284,24 @@ func (s *roleService) GetRoleWithPermissions(ctx context.Context, id uint) (*res
 	return response.ConvertToRoleResponse(role), nil
 }
 
-// GetRoleUsers 获取角色用户
+// GetRoleUsers gets role users
 func (s *roleService) GetRoleUsers(ctx context.Context, id uint, page, pageSize int) (*response.RoleListResponse, error) {
 	users, total, err := s.roleRepo.GetUsers(ctx, id, page, pageSize)
 	if err != nil {
 		return nil, err
 	}
 
-	// 转换为用户简单响应
+	// Convert to simple user response
 	items := make([]response.RoleResponse, len(users))
-	for i, user := range users {
+	for i := range users {
 		items[i] = response.RoleResponse{
-			ID:   user.ID,
-			Name: user.Username,
-			Code: user.Email,
+			ID:   users[i].ID,
+			Name: users[i].Username,
+			Code: users[i].Email,
 		}
 	}
 
-	// 计算总页数
+	// Calculate total pages
 	totalPages := int(math.Ceil(float64(total) / float64(pageSize)))
 
 	return &response.RoleListResponse{
@@ -394,7 +425,7 @@ func (s *roleService) InitializeSystemRoles(ctx context.Context) error {
 			Code:        "user",
 			Description: "Regular user with basic application deployment and resource management permissions",
 			IsSystem:    true,
-			SortOrder:   2,
+			SortOrder:   UserRoleSortOrder,
 			Status:      1,
 		},
 		{
@@ -402,7 +433,7 @@ func (s *roleService) InitializeSystemRoles(ctx context.Context) error {
 			Code:        "operator",
 			Description: "Operations personnel with server management and monitoring permissions",
 			IsSystem:    true,
-			SortOrder:   3,
+			SortOrder:   OperatorRoleSortOrder,
 			Status:      1,
 		},
 		{
@@ -410,23 +441,25 @@ func (s *roleService) InitializeSystemRoles(ctx context.Context) error {
 			Code:        "developer",
 			Description: "Developer with application development and deployment permissions",
 			IsSystem:    true,
-			SortOrder:   4,
+			SortOrder:   DeveloperRoleSortOrder,
 			Status:      1,
 		},
 	}
 
-	for _, role := range systemRoles {
+	for i := range systemRoles {
+		roleTemplate := &systemRoles[i]
 		// Check if role already exists
-		existingRole, err := s.roleRepo.GetByCode(ctx, role.Code)
+		existingRole, err := s.roleRepo.GetByCode(ctx, roleTemplate.Code)
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			s.logger.ErrorContext(ctx, "Failed to check existing role",
 				logger.ErrorField(err),
-				logger.String("role_code", role.Code))
+				logger.String("role_code", roleTemplate.Code))
 			continue
 		}
 
 		if existingRole == nil {
-			// Create new role
+			// Create new role (copy to avoid memory aliasing)
+			role := *roleTemplate
 			if err := s.roleRepo.Create(ctx, &role); err != nil {
 				s.logger.ErrorContext(ctx, "Failed to create system role",
 					logger.ErrorField(err),

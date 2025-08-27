@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"api-service/internal/constants"
 	"api-service/internal/dto/request"
 	"api-service/internal/interface/service"
 	"api-service/pkg/i18n"
@@ -49,60 +50,25 @@ func NewRoleController(
 func (c *RoleController) CreateRole(ctx *gin.Context) {
 	var req request.CreateRoleRequest
 
-	// Bind request parameters
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(err))
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"code":    http.StatusBadRequest,
-			"message": c.i18n.T(ctx, "validation.invalid_request_format"),
-			"error":   err.Error(),
-		})
-		return
-	}
-
-	// Validate request parameters
-	if err := c.validator.Struct(&req); err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(err))
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"code":    http.StatusBadRequest,
-			"message": c.i18n.T(ctx, "validation.request_validation_failed"),
-			"error":   err.Error(),
-		})
+	// Bind and validate request
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger, c.i18n) {
 		return
 	}
 
 	// Get current user ID
-	userID, exists := ctx.Get("user_id")
-	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{
-			"success": false,
-			"code":    http.StatusUnauthorized,
-			"message": c.i18n.T(ctx, "auth.user_not_authenticated"),
-		})
+	userID, ok := GetUserID(ctx, c.i18n)
+	if !ok {
 		return
 	}
 
 	// Create role
-	role, err := c.roleService.CreateRole(ctx.Request.Context(), &req, userID.(uint))
+	role, err := c.roleService.CreateRole(ctx.Request.Context(), &req, userID)
 	if err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Failed to create role", logger.ErrorField(err))
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"code":    http.StatusInternalServerError,
-			"message": c.i18n.T(ctx, "role.create_failed"),
-			"error":   err.Error(),
-		})
+		ResponseInternalError(ctx, err, "role.create_failed", c.logger, c.i18n)
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, gin.H{
-		"success": true,
-		"code":    http.StatusCreated,
-		"message": c.i18n.T(ctx, "role.create_success"),
-		"data":    role,
-	})
+	ResponseCreated(ctx, role, "role.create_success", c.i18n)
 }
 
 // GetRole gets role details
@@ -118,44 +84,24 @@ func (c *RoleController) CreateRole(ctx *gin.Context) {
 // @Router /api/v1/roles/{id} [get]
 func (c *RoleController) GetRole(ctx *gin.Context) {
 	// Get role ID
-	idStr := ctx.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"code":    http.StatusBadRequest,
-			"message": c.i18n.T(ctx, "validation.invalid_role_id"),
-		})
+	id, ok := ParseIDParam(ctx, "id", "validation.invalid_role_id", c.i18n)
+	if !ok {
 		return
 	}
 
 	// Get role
-	role, err := c.roleService.GetRole(ctx.Request.Context(), uint(id))
+	role, err := c.roleService.GetRole(ctx.Request.Context(), id)
 	if err != nil {
-		if err.Error() == "role not found" {
-			ctx.JSON(http.StatusNotFound, gin.H{
-				"success": false,
-				"code":    http.StatusNotFound,
-				"message": c.i18n.T(ctx, "role.not_found"),
-			})
+		if err.Error() == constants.ErrRoleNotFound {
+			ResponseNotFound(ctx, "role.not_found", c.i18n)
 			return
 		}
 
-		c.logger.ErrorContext(ctx.Request.Context(), "Failed to get role", logger.ErrorField(err))
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"code":    http.StatusInternalServerError,
-			"message": c.i18n.T(ctx, "role.get_failed"),
-		})
+		ResponseInternalError(ctx, err, "role.get_failed", c.logger, c.i18n)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"code":    http.StatusOK,
-		"message": c.i18n.T(ctx, "common.success"),
-		"data":    role,
-	})
+	ResponseOK(ctx, role, "common.success", c.i18n)
 }
 
 // ListRoles gets role list
@@ -248,25 +194,25 @@ func (c *RoleController) UpdateRole(ctx *gin.Context) {
 	var req request.UpdateRoleRequest
 
 	// Bind request parameters
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(err))
+	if bindErr := ctx.ShouldBindJSON(&req); bindErr != nil {
+		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(bindErr))
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"code":    http.StatusBadRequest,
 			"message": c.i18n.T(ctx, "validation.invalid_request_format"),
-			"error":   err.Error(),
+			"error":   bindErr.Error(),
 		})
 		return
 	}
 
 	// Validate request parameters
-	if err := c.validator.Struct(&req); err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(err))
+	if validateErr := c.validator.Struct(&req); validateErr != nil {
+		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(validateErr))
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"code":    http.StatusBadRequest,
 			"message": c.i18n.T(ctx, "validation.request_validation_failed"),
-			"error":   err.Error(),
+			"error":   validateErr.Error(),
 		})
 		return
 	}
@@ -285,7 +231,7 @@ func (c *RoleController) UpdateRole(ctx *gin.Context) {
 	// Update role
 	role, err := c.roleService.UpdateRole(ctx.Request.Context(), uint(id), &req, userID.(uint))
 	if err != nil {
-		if err.Error() == "role not found" {
+		if err.Error() == constants.ErrRoleNotFound {
 			ctx.JSON(http.StatusNotFound, gin.H{
 				"success": false,
 				"code":    http.StatusNotFound,
@@ -339,7 +285,7 @@ func (c *RoleController) DeleteRole(ctx *gin.Context) {
 	// Delete role
 	err = c.roleService.DeleteRole(ctx.Request.Context(), uint(id))
 	if err != nil {
-		if err.Error() == "role not found" {
+		if err.Error() == constants.ErrRoleNotFound {
 			ctx.JSON(http.StatusNotFound, gin.H{
 				"success": false,
 				"code":    http.StatusNotFound,
@@ -393,20 +339,20 @@ func (c *RoleController) AssignPermissions(ctx *gin.Context) {
 	var req request.RolePermissionRequest
 
 	// Bind request parameters
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(err))
+	if bindErr := ctx.ShouldBindJSON(&req); bindErr != nil {
+		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(bindErr))
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"code":    http.StatusBadRequest,
 			"message": c.i18n.T(ctx, "validation.invalid_request_format"),
-			"error":   err.Error(),
+			"error":   bindErr.Error(),
 		})
 		return
 	}
 
 	// Validate request parameters
-	if err := c.validator.Struct(&req); err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(err))
+	if validateErr := c.validator.Struct(&req); validateErr != nil {
+		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(validateErr))
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"code":    http.StatusBadRequest,
@@ -475,20 +421,20 @@ func (c *RoleController) RemovePermissions(ctx *gin.Context) {
 	var req request.RolePermissionRequest
 
 	// Bind request parameters
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(err))
+	if bindErr := ctx.ShouldBindJSON(&req); bindErr != nil {
+		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(bindErr))
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"code":    http.StatusBadRequest,
 			"message": c.i18n.T(ctx, "validation.invalid_request_format"),
-			"error":   err.Error(),
+			"error":   bindErr.Error(),
 		})
 		return
 	}
 
 	// Validate request parameters
-	if err := c.validator.Struct(&req); err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(err))
+	if validateErr := c.validator.Struct(&req); validateErr != nil {
+		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(validateErr))
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"code":    http.StatusBadRequest,
@@ -533,49 +479,20 @@ func (c *RoleController) RemovePermissions(ctx *gin.Context) {
 // @Router /api/v1/roles/{id}/users [get]
 func (c *RoleController) GetRoleUsers(ctx *gin.Context) {
 	// Get role ID
-	idStr := ctx.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"code":    http.StatusBadRequest,
-			"message": c.i18n.T(ctx, "validation.invalid_role_id"),
-		})
+	id, ok := ParseIDParam(ctx, "id", "validation.invalid_role_id", c.i18n)
+	if !ok {
 		return
 	}
 
 	// Get pagination parameters
-	page := 1
-	pageSize := 20
-
-	if pageStr := ctx.Query("page"); pageStr != "" {
-		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
-			page = p
-		}
-	}
-
-	if pageSizeStr := ctx.Query("page_size"); pageSizeStr != "" {
-		if ps, err := strconv.Atoi(pageSizeStr); err == nil && ps > 0 && ps <= 100 {
-			pageSize = ps
-		}
-	}
+	page, pageSize := GetPaginationParams(ctx)
 
 	// Get role users
-	users, err := c.roleService.GetRoleUsers(ctx.Request.Context(), uint(id), page, pageSize)
+	users, err := c.roleService.GetRoleUsers(ctx.Request.Context(), id, page, pageSize)
 	if err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Failed to get role users", logger.ErrorField(err))
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"code":    http.StatusInternalServerError,
-			"message": c.i18n.T(ctx, "role.users_failed"),
-		})
+		ResponseInternalError(ctx, err, "role.users_failed", c.logger, c.i18n)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"code":    http.StatusOK,
-		"message": c.i18n.T(ctx, "common.success"),
-		"data":    users,
-	})
+	ResponseOK(ctx, users, "common.success", c.i18n)
 }

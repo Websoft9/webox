@@ -14,7 +14,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// MockAPITokenRepository API Token存储接口Mock
+// MockAPITokenRepository API token repository mock
 type MockAPITokenRepository struct {
 	mock.Mock
 }

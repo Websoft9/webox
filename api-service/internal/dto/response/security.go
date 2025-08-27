@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// RoleResponse 角色响应
+// RoleResponse role response
 type RoleResponse struct {
 	ID              uint                 `json:"id"`
 	Name            string               `json:"name"`
@@ -23,7 +23,7 @@ type RoleResponse struct {
 	Users           []UserSimpleResponse `json:"users,omitempty"`
 }
 
-// RoleListResponse 角色列表响应
+// RoleListResponse role list response
 type RoleListResponse struct {
 	Items      []RoleResponse `json:"items"`
 	Total      int64          `json:"total"`
@@ -32,7 +32,7 @@ type RoleListResponse struct {
 	TotalPages int            `json:"total_pages"`
 }
 
-// PermissionResponse 权限响应
+// PermissionResponse permission response
 type PermissionResponse struct {
 	ID          uint                 `json:"id"`
 	ParentID    *uint                `json:"parent_id,omitempty"`
@@ -54,7 +54,7 @@ type PermissionResponse struct {
 	Roles       []RoleSimpleResponse `json:"roles,omitempty"`
 }
 
-// PermissionListResponse 权限列表响应
+// PermissionListResponse permission list response
 type PermissionListResponse struct {
 	Items      []PermissionResponse `json:"items"`
 	Total      int64                `json:"total"`
@@ -66,11 +66,11 @@ type PermissionListResponse struct {
 // PermissionTreeResponse represents permission tree structure
 type PermissionTreeResponse = PermissionResponse
 
-// APITokenResponse API令牌响应
+// APITokenResponse API token response
 type APITokenResponse struct {
 	ID          uint       `json:"id"`
 	Name        string     `json:"name"`
-	Token       string     `json:"token,omitempty"` // 只在创建时返回完整token
+	Token       string     `json:"token,omitempty"` // only return complete token when creates
 	UserID      uint       `json:"user_id"`
 	Username    string     `json:"username"`
 	Scopes      []string   `json:"scopes"`
@@ -81,7 +81,7 @@ type APITokenResponse struct {
 	CreatedAt   time.Time  `json:"created_at"`
 }
 
-// APITokenListResponse API令牌列表响应
+// APITokenListResponse API token list response
 type APITokenListResponse struct {
 	Items      []APITokenResponse `json:"items"`
 	Total      int64              `json:"total"`
@@ -90,7 +90,7 @@ type APITokenListResponse struct {
 	TotalPages int                `json:"total_pages"`
 }
 
-// AuthConfigResponse 认证配置响应
+// AuthConfigResponse authentication config response
 type AuthConfigResponse struct {
 	APIAuth struct {
 		TokenAuthEnabled bool `json:"token_auth_enabled"`
@@ -121,13 +121,13 @@ type AuthConfigResponse struct {
 	} `json:"session_config"`
 }
 
-// OAuth2ProviderResponse OAuth2提供商响应
+// OAuth2ProviderResponse OAuth2 provider response
 type OAuth2ProviderResponse struct {
 	ID           uint              `json:"id"`
 	Name         string            `json:"name"`
 	Provider     string            `json:"provider"`
 	ClientID     string            `json:"client_id"`
-	ClientSecret string            `json:"client_secret,omitempty"` // 敏感信息用***替代
+	ClientSecret string            `json:"client_secret,omitempty"` // sensitive information replaced with ***
 	RedirectURI  string            `json:"redirect_uri"`
 	Scopes       []string          `json:"scopes"`
 	Enabled      bool              `json:"enabled"`
@@ -137,7 +137,7 @@ type OAuth2ProviderResponse struct {
 	UpdatedAt    time.Time         `json:"updated_at"`
 }
 
-// PasswordPolicyResponse 密码策略响应
+// PasswordPolicyResponse password policy response
 type PasswordPolicyResponse struct {
 	MinLength           int  `json:"min_length"`
 	MaxLength           int  `json:"max_length"`
@@ -149,7 +149,7 @@ type PasswordPolicyResponse struct {
 	PasswordExpiresDays int  `json:"password_expires_days"`
 }
 
-// LoginSecurityResponse 登录安全响应
+// LoginSecurityResponse login security response
 type LoginSecurityResponse struct {
 	MaxLoginAttempts     int      `json:"max_login_attempts"`
 	LockoutDuration      int      `json:"lockout_duration"`
@@ -173,7 +173,7 @@ type TOTPSecretResponse struct {
 	BackupCodes []string `json:"backup_codes"`
 }
 
-// TwoFactorMethodResponse 双因子认证方法响应
+// TwoFactorMethodResponse two-factor authentication method response
 type TwoFactorMethodResponse struct {
 	Type       string `json:"type"`
 	Enabled    bool   `json:"enabled"`
@@ -181,21 +181,21 @@ type TwoFactorMethodResponse struct {
 	Email      string `json:"email,omitempty"`
 }
 
-// UserSimpleResponse 用户简单响应
+// UserSimpleResponse user simple response
 type UserSimpleResponse struct {
 	ID       uint   `json:"id"`
 	Username string `json:"username"`
 	Email    string `json:"email"`
 }
 
-// RoleSimpleResponse 角色简单响应
+// RoleSimpleResponse role simple response
 type RoleSimpleResponse struct {
 	ID   uint   `json:"id"`
 	Name string `json:"name"`
 	Code string `json:"code"`
 }
 
-// ConvertToRoleResponse 转换为角色响应
+// ConvertToRoleResponse converts to role response
 func ConvertToRoleResponse(role *model.Role) *RoleResponse {
 	resp := &RoleResponse{
 		ID:              role.ID,
@@ -211,22 +211,22 @@ func ConvertToRoleResponse(role *model.Role) *RoleResponse {
 		UpdatedAt:       role.UpdatedAt,
 	}
 
-	// 转换权限列表
+	// converts permission list
 	if len(role.Permissions) > 0 {
 		resp.Permissions = make([]PermissionResponse, len(role.Permissions))
-		for i, perm := range role.Permissions {
-			resp.Permissions[i] = *ConvertToPermissionResponse(&perm)
+		for i := range role.Permissions {
+			resp.Permissions[i] = *ConvertToPermissionResponse(&role.Permissions[i])
 		}
 	}
 
-	// 转换用户列表
+	// converts user list
 	if len(role.Users) > 0 {
 		resp.Users = make([]UserSimpleResponse, len(role.Users))
-		for i, user := range role.Users {
+		for i := range role.Users {
 			resp.Users[i] = UserSimpleResponse{
-				ID:       user.ID,
-				Username: user.Username,
-				Email:    user.Email,
+				ID:       role.Users[i].ID,
+				Username: role.Users[i].Username,
+				Email:    role.Users[i].Email,
 			}
 		}
 	}
@@ -234,7 +234,7 @@ func ConvertToRoleResponse(role *model.Role) *RoleResponse {
 	return resp
 }
 
-// ConvertToPermissionResponse 转换为权限响应
+// ConvertToPermissionResponse converts to permission response
 func ConvertToPermissionResponse(perm *model.Permission) *PermissionResponse {
 	resp := &PermissionResponse{
 		ID:          perm.ID,
@@ -255,22 +255,22 @@ func ConvertToPermissionResponse(perm *model.Permission) *PermissionResponse {
 		UpdatedAt:   perm.UpdatedAt,
 	}
 
-	// 转换子权限
+	// converts child permissions
 	if len(perm.Children) > 0 {
 		resp.Children = make([]PermissionResponse, len(perm.Children))
-		for i, child := range perm.Children {
-			resp.Children[i] = *ConvertToPermissionResponse(&child)
+		for i := range perm.Children {
+			resp.Children[i] = *ConvertToPermissionResponse(&perm.Children[i])
 		}
 	}
 
-	// 转换角色列表
+	// converts role list
 	if len(perm.Roles) > 0 {
 		resp.Roles = make([]RoleSimpleResponse, len(perm.Roles))
-		for i, role := range perm.Roles {
+		for i := range perm.Roles {
 			resp.Roles[i] = RoleSimpleResponse{
-				ID:   role.ID,
-				Name: role.Name,
-				Code: role.Code,
+				ID:   perm.Roles[i].ID,
+				Name: perm.Roles[i].Name,
+				Code: perm.Roles[i].Code,
 			}
 		}
 	}
@@ -293,20 +293,35 @@ func ConvertToAPITokenResponse(token *model.APIToken) *APITokenResponse {
 	}
 
 	// Convert scopes from JSON to string slice
-	if token.Scopes != nil {
-		if scopesData, exists := token.Scopes["scopes"]; exists {
-			if scopesSlice, ok := scopesData.([]interface{}); ok {
-				resp.Scopes = make([]string, len(scopesSlice))
-				for i, scope := range scopesSlice {
-					if s, ok := scope.(string); ok {
-						resp.Scopes[i] = s
-					}
-				}
-			}
+	resp.Scopes = extractScopes(token.Scopes)
+
+	return resp
+}
+
+// extractScopes safely extracts scopes from JSON data
+func extractScopes(scopesJSON map[string]interface{}) []string {
+	if scopesJSON == nil {
+		return []string{}
+	}
+
+	scopesData, exists := scopesJSON["scopes"]
+	if !exists {
+		return []string{}
+	}
+
+	scopesSlice, ok := scopesData.([]interface{})
+	if !ok {
+		return []string{}
+	}
+
+	scopes := make([]string, 0, len(scopesSlice))
+	for _, scope := range scopesSlice {
+		if s, ok := scope.(string); ok {
+			scopes = append(scopes, s)
 		}
 	}
 
-	return resp
+	return scopes
 }
 
 // ConvertToPermissionTreeResponse converts permissions to tree structure
@@ -314,7 +329,25 @@ func ConvertToPermissionTreeResponse(permissions []*model.Permission) []*Permiss
 	tree := make([]*PermissionTreeResponse, len(permissions))
 	for i, perm := range permissions {
 		resp := ConvertToPermissionResponse(perm)
-		tree[i] = (*PermissionTreeResponse)(resp)
+		tree[i] = &PermissionTreeResponse{
+			ID:          resp.ID,
+			Name:        resp.Name,
+			Code:        resp.Code,
+			Scope:       resp.Scope,
+			Module:      resp.Module,
+			Action:      resp.Action,
+			Resource:    resp.Resource,
+			Description: resp.Description,
+			ParentID:    resp.ParentID,
+			IsSystem:    resp.IsSystem,
+			IsMenu:      resp.IsMenu,
+			SortOrder:   resp.SortOrder,
+			Status:      resp.Status,
+			Children:    resp.Children,
+			Roles:       resp.Roles,
+			CreatedAt:   resp.CreatedAt,
+			UpdatedAt:   resp.UpdatedAt,
+		}
 	}
 	return tree
 }
@@ -347,7 +380,7 @@ func ConvertToTwoFactorStatusResponse(methods []*model.UserTwoFactor) *TwoFactor
 	return resp
 }
 
-// APITokenValidationResponse API令牌验证响应
+// APITokenValidationResponse API token validation response
 type APITokenValidationResponse struct {
 	Valid     bool      `json:"valid"`
 	UserID    uint      `json:"user_id,omitempty"`
@@ -356,27 +389,27 @@ type APITokenValidationResponse struct {
 	ExpiresAt time.Time `json:"expires_at,omitempty"`
 }
 
-// TOTPSetupResponse TOTP设置响应
+// TOTPSetupResponse TOTP setup response
 type TOTPSetupResponse struct {
 	Secret      string   `json:"secret"`
 	QRCodeURL   string   `json:"qr_code_url"`
 	BackupCodes []string `json:"backup_codes"`
 }
 
-// TOTPConfirmResponse TOTP确认响应
+// TOTPConfirmResponse TOTP confirm response
 type TOTPConfirmResponse struct {
 	Enabled     bool     `json:"enabled"`
 	BackupCodes []string `json:"backup_codes"`
 }
 
-// TwoFactorVerificationResponse 双因子认证验证响应
+// TwoFactorVerificationResponse two-factor authentication verify response
 type TwoFactorVerificationResponse struct {
 	Valid  bool   `json:"valid"`
 	UserID uint   `json:"user_id,omitempty"`
 	Method string `json:"method,omitempty"`
 }
 
-// BackupCodesResponse 备用码响应
+// BackupCodesResponse backup codes response
 type BackupCodesResponse struct {
 	Codes []string `json:"codes"`
 }

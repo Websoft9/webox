@@ -10,7 +10,16 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// HashPassword 使用 bcrypt 加密密码
+const (
+	// Password policy constants
+	DefaultMinPasswordLength = 8
+	DefaultMaxPasswordLength = 128
+
+	// Token generation constants
+	APITokenRandomBytesSize = 32
+)
+
+// HashPassword encrypts password using bcrypt
 func HashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -19,13 +28,13 @@ func HashPassword(password string) (string, error) {
 	return string(bytes), nil
 }
 
-// CheckPasswordHash 验证密码
+// CheckPasswordHash verifies password
 func CheckPasswordHash(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
 }
 
-// PasswordPolicy 密码策略
+// PasswordPolicy password policy
 type PasswordPolicy struct {
 	MinLength        int  `json:"min_length"`
 	MaxLength        int  `json:"max_length"`
@@ -35,23 +44,23 @@ type PasswordPolicy struct {
 	RequireSymbols   bool `json:"require_symbols"`
 }
 
-// DefaultPasswordPolicy 默认密码策略
+// DefaultPasswordPolicy default password policy
 var DefaultPasswordPolicy = PasswordPolicy{
-	MinLength:        8,
-	MaxLength:        128,
+	MinLength:        DefaultMinPasswordLength,
+	MaxLength:        DefaultMaxPasswordLength,
 	RequireUppercase: true,
 	RequireLowercase: true,
 	RequireNumbers:   true,
 	RequireSymbols:   false,
 }
 
-// ValidatePassword 验证密码是否符合策略
+// ValidatePassword validates if password meets policy requirements
 func ValidatePassword(password string, policy *PasswordPolicy) error {
 	if policy == nil {
 		policy = &DefaultPasswordPolicy
 	}
 
-	// 检查长度
+	// Check length
 	if len(password) < policy.MinLength {
 		return fmt.Errorf("password must be at least %d characters long", policy.MinLength)
 	}
@@ -59,7 +68,7 @@ func ValidatePassword(password string, policy *PasswordPolicy) error {
 		return fmt.Errorf("password must be no more than %d characters long", policy.MaxLength)
 	}
 
-	// 检查大写字母
+	// Check uppercase letters
 	if policy.RequireUppercase {
 		matched, _ := regexp.MatchString(`[A-Z]`, password)
 		if !matched {
@@ -67,7 +76,7 @@ func ValidatePassword(password string, policy *PasswordPolicy) error {
 		}
 	}
 
-	// 检查小写字母
+	// Check lowercase letters
 	if policy.RequireLowercase {
 		matched, _ := regexp.MatchString(`[a-z]`, password)
 		if !matched {
@@ -75,7 +84,7 @@ func ValidatePassword(password string, policy *PasswordPolicy) error {
 		}
 	}
 
-	// 检查数字
+	// Check numbers
 	if policy.RequireNumbers {
 		matched, _ := regexp.MatchString(`[0-9]`, password)
 		if !matched {
@@ -83,7 +92,7 @@ func ValidatePassword(password string, policy *PasswordPolicy) error {
 		}
 	}
 
-	// 检查特殊字符
+	// Check special characters
 	if policy.RequireSymbols {
 		matched, _ := regexp.MatchString(`[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]`, password)
 		if !matched {
@@ -94,7 +103,7 @@ func ValidatePassword(password string, policy *PasswordPolicy) error {
 	return nil
 }
 
-// GenerateRandomPassword 生成随机密码
+// GenerateRandomPassword generates random password
 func GenerateRandomPassword(length int, includeSymbols bool) (string, error) {
 	const (
 		lowercase = "abcdefghijklmnopqrstuvwxyz"
@@ -120,7 +129,7 @@ func GenerateRandomPassword(length int, includeSymbols bool) (string, error) {
 	return string(password), nil
 }
 
-// randomInt 生成随机整数
+// randomInt generates random integer
 func randomInt(maxVal int) (int, error) {
 	bytes := make([]byte, 1)
 	_, err := rand.Read(bytes)
@@ -130,28 +139,28 @@ func randomInt(maxVal int) (int, error) {
 	return int(bytes[0]) % maxVal, nil
 }
 
-// GenerateAPIToken 生成API令牌
+// GenerateAPIToken generates API token
 func GenerateAPIToken(prefix string) (token, hashedToken string, err error) {
-	// 生成32字节随机数据
-	randomBytes := make([]byte, 32)
+	// Generate 32 bytes of random data
+	randomBytes := make([]byte, APITokenRandomBytesSize)
 	if _, err = rand.Read(randomBytes); err != nil {
 		return "", "", fmt.Errorf("failed to generate random bytes: %w", err)
 	}
 
-	// 转换为十六进制字符串
+	// Convert to hexadecimal string
 	tokenSuffix := hex.EncodeToString(randomBytes)
 
-	// 组合完整令牌
+	// Combine complete token
 	token = fmt.Sprintf("%s_%s", prefix, tokenSuffix)
 
-	// 生成令牌哈希用于存储
+	// Generate token hash for storage
 	hash := sha256.Sum256([]byte(token))
 	hashedToken = hex.EncodeToString(hash[:])
 
 	return token, hashedToken, nil
 }
 
-// HashAPIToken 对API令牌进行哈希
+// HashAPIToken hashes API token
 func HashAPIToken(token string) string {
 	hash := sha256.Sum256([]byte(token))
 	return hex.EncodeToString(hash[:])

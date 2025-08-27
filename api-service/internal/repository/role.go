@@ -15,12 +15,12 @@ type roleRepository struct {
 	db *gorm.DB
 }
 
-// NewRoleRepository 创建角色存储实例
+// NewRoleRepository creates a role repository instance
 func NewRoleRepository(db *gorm.DB) repository.RoleRepository {
 	return &roleRepository{db: db}
 }
 
-// Create 创建角色
+// Create creates a role
 func (r *roleRepository) Create(ctx context.Context, role *model.Role) error {
 	if err := r.db.WithContext(ctx).Create(role).Error; err != nil {
 		return errors.Wrap(err, "failed to create role")
@@ -28,7 +28,7 @@ func (r *roleRepository) Create(ctx context.Context, role *model.Role) error {
 	return nil
 }
 
-// GetByID 根据ID获取角色
+// GetByID retrieves a role by ID
 func (r *roleRepository) GetByID(ctx context.Context, id uint) (*model.Role, error) {
 	var role model.Role
 	err := r.db.WithContext(ctx).First(&role, id).Error
@@ -41,7 +41,7 @@ func (r *roleRepository) GetByID(ctx context.Context, id uint) (*model.Role, err
 	return &role, nil
 }
 
-// GetByCode 根据代码获取角色
+// GetByCode retrieves a role by code
 func (r *roleRepository) GetByCode(ctx context.Context, code string) (*model.Role, error) {
 	var role model.Role
 	err := r.db.WithContext(ctx).Where("code = ?", code).First(&role).Error
@@ -54,7 +54,7 @@ func (r *roleRepository) GetByCode(ctx context.Context, code string) (*model.Rol
 	return &role, nil
 }
 
-// Update 更新角色
+// Update updates a role
 func (r *roleRepository) Update(ctx context.Context, role *model.Role) error {
 	result := r.db.WithContext(ctx).Model(role).
 		Omit("created_at", "code").
@@ -71,9 +71,9 @@ func (r *roleRepository) Update(ctx context.Context, role *model.Role) error {
 	return nil
 }
 
-// Delete 删除角色
+// Delete deletes a role
 func (r *roleRepository) Delete(ctx context.Context, id uint) error {
-	// 检查是否有关联用户
+	// Check if there are associated users
 	var userCount int64
 	if err := r.db.WithContext(ctx).Model(&model.UserRole{}).
 		Where("role_id = ?", id).Count(&userCount).Error; err != nil {
@@ -84,7 +84,7 @@ func (r *roleRepository) Delete(ctx context.Context, id uint) error {
 		return errors.New("cannot delete role with associated users")
 	}
 
-	// 检查是否为系统角色
+	// Check if it's a system role
 	var role model.Role
 	if err := r.db.WithContext(ctx).First(&role, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -97,14 +97,14 @@ func (r *roleRepository) Delete(ctx context.Context, id uint) error {
 		return errors.New("cannot delete system role")
 	}
 
-	// 开始事务删除
+	// Start transactional deletion
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		// 删除角色权限关联
+		// Delete role permission associations
 		if err := tx.Where("role_id = ?", id).Delete(&model.RolePermission{}).Error; err != nil {
 			return errors.Wrap(err, "failed to delete role permissions")
 		}
 
-		// 删除角色
+		// Delete role
 		if err := tx.Delete(&model.Role{}, id).Error; err != nil {
 			return errors.Wrap(err, "failed to delete role")
 		}
@@ -113,14 +113,14 @@ func (r *roleRepository) Delete(ctx context.Context, id uint) error {
 	})
 }
 
-// List 获取角色列表
+// List retrieves a list of roles
 func (r *roleRepository) List(ctx context.Context, req *request.ListRolesRequest) ([]*model.Role, int64, error) {
 	var roles []*model.Role
 	var total int64
 
 	query := r.db.WithContext(ctx).Model(&model.Role{})
 
-	// 构建查询条件
+	// Build query conditions
 	if req.Search != "" {
 		query = query.Where("name LIKE ? OR code LIKE ? OR description LIKE ?",
 			"%"+req.Search+"%", "%"+req.Search+"%", "%"+req.Search+"%")
@@ -136,12 +136,12 @@ func (r *roleRepository) List(ctx context.Context, req *request.ListRolesRequest
 		query = query.Where("updated_at BETWEEN ? AND ?", startTime, endTime)
 	}
 
-	// 获取总数
+	// Get total count
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, errors.Wrap(err, "failed to count roles")
 	}
 
-	// 分页查询
+	// Paginated query
 	offset := req.GetOffset()
 	limit := req.GetPageSize()
 
@@ -153,15 +153,15 @@ func (r *roleRepository) List(ctx context.Context, req *request.ListRolesRequest
 		return nil, 0, errors.Wrap(err, "failed to list roles")
 	}
 
-	// 获取统计信息
+	// Get statistical information
 	for _, role := range roles {
-		// 获取权限数量
+		// Get permission count
 		var permCount int64
 		r.db.WithContext(ctx).Model(&model.RolePermission{}).
 			Where("role_id = ? AND status = 1", role.ID).Count(&permCount)
 		role.PermissionCount = permCount
 
-		// 获取用户数量
+		// Get user count
 		var userCount int64
 		r.db.WithContext(ctx).Model(&model.UserRole{}).
 			Where("role_id = ? AND status = 1", role.ID).Count(&userCount)
@@ -171,7 +171,7 @@ func (r *roleRepository) List(ctx context.Context, req *request.ListRolesRequest
 	return roles, total, nil
 }
 
-// GetWithPermissions 获取角色及其权限
+// GetWithPermissions retrieves a role with its permissions
 func (r *roleRepository) GetWithPermissions(ctx context.Context, id uint) (*model.Role, error) {
 	var role model.Role
 	err := r.db.WithContext(ctx).
@@ -188,7 +188,7 @@ func (r *roleRepository) GetWithPermissions(ctx context.Context, id uint) (*mode
 	return &role, nil
 }
 
-// GetWithUsers 获取角色及其用户
+// GetWithUsers retrieves a role with its users
 func (r *roleRepository) GetWithUsers(ctx context.Context, id uint) (*model.Role, error) {
 	var role model.Role
 	err := r.db.WithContext(ctx).
@@ -205,19 +205,19 @@ func (r *roleRepository) GetWithUsers(ctx context.Context, id uint) (*model.Role
 	return &role, nil
 }
 
-// AssignPermissions 分配权限给角色
+// AssignPermissions assigns permissions to a role
 func (r *roleRepository) AssignPermissions(ctx context.Context, roleID uint, permissionIDs []uint, grantedBy uint) error {
 	if len(permissionIDs) == 0 {
 		return nil
 	}
 
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		// 删除现有权限关联
+		// Delete existing permission associations
 		if err := tx.Where("role_id = ?", roleID).Delete(&model.RolePermission{}).Error; err != nil {
 			return errors.Wrap(err, "failed to remove existing permissions")
 		}
 
-		// 创建新的权限关联
+		// Create new permission associations
 		rolePermissions := make([]model.RolePermission, len(permissionIDs))
 		for i, permID := range permissionIDs {
 			rolePermissions[i] = model.RolePermission{
@@ -237,7 +237,7 @@ func (r *roleRepository) AssignPermissions(ctx context.Context, roleID uint, per
 	})
 }
 
-// RemovePermissions 移除角色权限
+// RemovePermissions removes role permissions
 func (r *roleRepository) RemovePermissions(ctx context.Context, roleID uint, permissionIDs []uint) error {
 	if len(permissionIDs) == 0 {
 		return nil
@@ -254,7 +254,7 @@ func (r *roleRepository) RemovePermissions(ctx context.Context, roleID uint, per
 	return nil
 }
 
-// GetPermissions 获取角色权限
+// GetPermissions retrieves role permissions
 func (r *roleRepository) GetPermissions(ctx context.Context, roleID uint) ([]model.Permission, error) {
 	var permissions []model.Permission
 
@@ -270,36 +270,12 @@ func (r *roleRepository) GetPermissions(ctx context.Context, roleID uint) ([]mod
 	return permissions, nil
 }
 
-// GetUsers 获取角色用户
+// GetUsers retrieves role users
 func (r *roleRepository) GetUsers(ctx context.Context, roleID uint, page, pageSize int) ([]model.User, int64, error) {
-	var users []model.User
-	var total int64
-
-	// 获取总数
-	countQuery := r.db.WithContext(ctx).Model(&model.User{}).
-		Joins("JOIN user_roles ON users.id = user_roles.user_id").
-		Where("user_roles.role_id = ? AND user_roles.status = 1 AND users.status = 1", roleID)
-
-	if err := countQuery.Count(&total).Error; err != nil {
-		return nil, 0, errors.Wrap(err, "failed to count role users")
-	}
-
-	// 分页查询
-	offset := (page - 1) * pageSize
-	err := r.db.WithContext(ctx).
-		Joins("JOIN user_roles ON users.id = user_roles.user_id").
-		Where("user_roles.role_id = ? AND user_roles.status = 1 AND users.status = 1", roleID).
-		Offset(offset).Limit(pageSize).
-		Find(&users).Error
-
-	if err != nil {
-		return nil, 0, errors.Wrap(err, "failed to get role users")
-	}
-
-	return users, total, nil
+	return GetUsersByRoleID(ctx, r.db, roleID, page, pageSize)
 }
 
-// CountPermissions 统计角色权限数量
+// CountPermissions counts the number of permissions for a role
 func (r *roleRepository) CountPermissions(ctx context.Context, roleID uint) (int64, error) {
 	var count int64
 	err := r.db.WithContext(ctx).Model(&model.RolePermission{}).
@@ -312,7 +288,7 @@ func (r *roleRepository) CountPermissions(ctx context.Context, roleID uint) (int
 	return count, nil
 }
 
-// CountUsers 统计角色用户数量
+// CountUsers counts the number of users for a role
 func (r *roleRepository) CountUsers(ctx context.Context, roleID uint) (int64, error) {
 	var count int64
 	err := r.db.WithContext(ctx).Model(&model.UserRole{}).
@@ -325,7 +301,7 @@ func (r *roleRepository) CountUsers(ctx context.Context, roleID uint) (int64, er
 	return count, nil
 }
 
-// BatchUpdateStatus 批量更新状态
+// BatchUpdateStatus updates status in batch
 func (r *roleRepository) BatchUpdateStatus(ctx context.Context, ids []uint, status int) error {
 	if len(ids) == 0 {
 		return nil
@@ -342,7 +318,7 @@ func (r *roleRepository) BatchUpdateStatus(ctx context.Context, ids []uint, stat
 	return nil
 }
 
-// CreateWithTx 在事务中创建角色
+// CreateWithTx creates a role within a transaction
 func (r *roleRepository) CreateWithTx(ctx context.Context, tx *gorm.DB, role *model.Role) error {
 	if err := tx.WithContext(ctx).Create(role).Error; err != nil {
 		return errors.Wrap(err, "failed to create role in transaction")
@@ -350,7 +326,7 @@ func (r *roleRepository) CreateWithTx(ctx context.Context, tx *gorm.DB, role *mo
 	return nil
 }
 
-// UpdateWithTx 在事务中更新角色
+// UpdateWithTx updates a role within a transaction
 func (r *roleRepository) UpdateWithTx(ctx context.Context, tx *gorm.DB, role *model.Role) error {
 	result := tx.WithContext(ctx).Model(role).
 		Omit("created_at", "code").

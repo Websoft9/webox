@@ -15,6 +15,11 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	RoleManagementSortOrder       = 2
+	PermissionManagementSortOrder = 3
+)
+
 type permissionService struct {
 	permissionRepo repository.PermissionRepository
 	db             *gorm.DB
@@ -250,8 +255,8 @@ func (s *permissionService) GetPermissionRoles(ctx context.Context, id uint, pag
 
 	// Convert to response format
 	items := make([]response.RoleResponse, len(roles))
-	for i, role := range roles {
-		items[i] = *response.ConvertToRoleResponse(&role)
+	for i := range roles {
+		items[i] = *response.ConvertToRoleResponse(&roles[i])
 	}
 
 	// Calculate total pages
@@ -356,7 +361,7 @@ func (s *permissionService) InitializeSystemPermissions(ctx context.Context) err
 			Description: "Manage roles",
 			IsSystem:    true,
 			IsMenu:      true,
-			SortOrder:   2,
+			SortOrder:   RoleManagementSortOrder,
 			Status:      1,
 		},
 		{
@@ -369,7 +374,7 @@ func (s *permissionService) InitializeSystemPermissions(ctx context.Context) err
 			Description: "Manage permissions",
 			IsSystem:    true,
 			IsMenu:      true,
-			SortOrder:   3,
+			SortOrder:   PermissionManagementSortOrder,
 			Status:      1,
 		},
 	}

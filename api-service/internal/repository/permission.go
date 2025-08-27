@@ -15,12 +15,12 @@ type permissionRepository struct {
 	db *gorm.DB
 }
 
-// NewPermissionRepository 创建权限存储实例
+// NewPermissionRepository creates a permission repository instance
 func NewPermissionRepository(db *gorm.DB) repository.PermissionRepository {
 	return &permissionRepository{db: db}
 }
 
-// Create 创建权限
+// Create creates a permission
 func (r *permissionRepository) Create(ctx context.Context, permission *model.Permission) error {
 	if err := r.db.WithContext(ctx).Create(permission).Error; err != nil {
 		return errors.Wrap(err, "failed to create permission")
@@ -28,7 +28,7 @@ func (r *permissionRepository) Create(ctx context.Context, permission *model.Per
 	return nil
 }
 
-// GetByID 根据ID获取权限
+// GetByID retrieves a permission by ID
 func (r *permissionRepository) GetByID(ctx context.Context, id uint) (*model.Permission, error) {
 	var permission model.Permission
 	err := r.db.WithContext(ctx).First(&permission, id).Error
@@ -41,7 +41,7 @@ func (r *permissionRepository) GetByID(ctx context.Context, id uint) (*model.Per
 	return &permission, nil
 }
 
-// GetByCode 根据代码获取权限
+// GetByCode retrieves a permission by code
 func (r *permissionRepository) GetByCode(ctx context.Context, code string) (*model.Permission, error) {
 	var permission model.Permission
 	err := r.db.WithContext(ctx).Where("code = ?", code).First(&permission).Error
@@ -54,7 +54,7 @@ func (r *permissionRepository) GetByCode(ctx context.Context, code string) (*mod
 	return &permission, nil
 }
 
-// Update 更新权限
+// Update updates a permission
 func (r *permissionRepository) Update(ctx context.Context, permission *model.Permission) error {
 	result := r.db.WithContext(ctx).Model(permission).
 		Omit("created_at", "code", "scope", "module", "action", "resource").
@@ -71,9 +71,9 @@ func (r *permissionRepository) Update(ctx context.Context, permission *model.Per
 	return nil
 }
 
-// Delete 删除权限
+// Delete deletes a permission
 func (r *permissionRepository) Delete(ctx context.Context, id uint) error {
-	// 检查是否有关联角色
+	// Check if there are associated roles
 	var roleCount int64
 	if err := r.db.WithContext(ctx).Model(&model.RolePermission{}).
 		Where("permission_id = ?", id).Count(&roleCount).Error; err != nil {
@@ -84,7 +84,7 @@ func (r *permissionRepository) Delete(ctx context.Context, id uint) error {
 		return errors.New("cannot delete permission with associated roles")
 	}
 
-	// 检查是否为系统权限
+	// Check if it's a system permission
 	var permission model.Permission
 	if err := r.db.WithContext(ctx).First(&permission, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -97,7 +97,7 @@ func (r *permissionRepository) Delete(ctx context.Context, id uint) error {
 		return errors.New("cannot delete system permission")
 	}
 
-	// 检查是否有子权限
+	// Check if there are child permissions
 	var childCount int64
 	if err := r.db.WithContext(ctx).Model(&model.Permission{}).
 		Where("parent_id = ?", id).Count(&childCount).Error; err != nil {
@@ -108,14 +108,14 @@ func (r *permissionRepository) Delete(ctx context.Context, id uint) error {
 		return errors.New("cannot delete permission with child permissions")
 	}
 
-	// 开始事务删除
+	// Start transactional deletion
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		// 删除权限角色关联
+		// Delete permission role associations
 		if err := tx.Where("permission_id = ?", id).Delete(&model.RolePermission{}).Error; err != nil {
 			return errors.Wrap(err, "failed to delete permission roles")
 		}
 
-		// 删除权限
+		// Delete permission
 		if err := tx.Delete(&model.Permission{}, id).Error; err != nil {
 			return errors.Wrap(err, "failed to delete permission")
 		}
@@ -124,14 +124,14 @@ func (r *permissionRepository) Delete(ctx context.Context, id uint) error {
 	})
 }
 
-// List 获取权限列表
+// List retrieves a list of permissions
 func (r *permissionRepository) List(ctx context.Context, req *request.ListPermissionsRequest) ([]*model.Permission, int64, error) {
 	var permissions []*model.Permission
 	var total int64
 
 	query := r.db.WithContext(ctx).Model(&model.Permission{})
 
-	// 构建查询条件
+	// Build query conditions
 	if req.Search != "" {
 		query = query.Where("name LIKE ? OR code LIKE ? OR description LIKE ?",
 			"%"+req.Search+"%", "%"+req.Search+"%", "%"+req.Search+"%")
@@ -155,12 +155,12 @@ func (r *permissionRepository) List(ctx context.Context, req *request.ListPermis
 		query = query.Where("updated_at BETWEEN ? AND ?", startTime, endTime)
 	}
 
-	// 获取总数
+	// Get total count
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, errors.Wrap(err, "failed to count permissions")
 	}
 
-	// 分页查询
+	// Paginated query
 	offset := req.GetOffset()
 	limit := req.GetPageSize()
 
@@ -172,9 +172,9 @@ func (r *permissionRepository) List(ctx context.Context, req *request.ListPermis
 		return nil, 0, errors.Wrap(err, "failed to list permissions")
 	}
 
-	// 获取统计信息
+	// Get statistical information
 	for _, permission := range permissions {
-		// 获取角色数量
+		// Get role count
 		var roleCount int64
 		r.db.WithContext(ctx).Model(&model.RolePermission{}).
 			Where("permission_id = ? AND status = 1", permission.ID).Count(&roleCount)
@@ -184,13 +184,13 @@ func (r *permissionRepository) List(ctx context.Context, req *request.ListPermis
 	return permissions, total, nil
 }
 
-// GetTree 获取权限树
+// GetTree retrieves the permission tree
 func (r *permissionRepository) GetTree(ctx context.Context, req *request.PermissionTreeRequest) ([]*model.Permission, error) {
 	var permissions []*model.Permission
 
 	query := r.db.WithContext(ctx).Model(&model.Permission{})
 
-	// 构建查询条件
+	// Build query conditions
 	if req.Scope != "" {
 		query = query.Where("scope = ?", req.Scope)
 	}
@@ -198,10 +198,10 @@ func (r *permissionRepository) GetTree(ctx context.Context, req *request.Permiss
 	if req.Status != nil {
 		query = query.Where("status = ?", *req.Status)
 	} else {
-		query = query.Where("status = 1") // 默认只显示启用的权限
+		query = query.Where("status = 1") // Show only enabled permissions by default
 	}
 
-	// 获取所有权限
+	// Get all permissions
 	err := query.Order("module ASC, sort_order ASC, created_at ASC").
 		Find(&permissions).Error
 
@@ -209,26 +209,26 @@ func (r *permissionRepository) GetTree(ctx context.Context, req *request.Permiss
 		return nil, errors.Wrap(err, "failed to get permission tree")
 	}
 
-	// 构建树形结构
+	// Build tree structure
 	return r.buildPermissionTree(permissions), nil
 }
 
-// buildPermissionTree 构建权限树
+// buildPermissionTree builds the permission tree
 func (r *permissionRepository) buildPermissionTree(permissions []*model.Permission) []*model.Permission {
-	// 创建ID到权限的映射
+	// Create ID to permission mapping
 	permissionMap := make(map[uint]*model.Permission)
 	for _, perm := range permissions {
 		permissionMap[perm.ID] = perm
 	}
 
-	// 构建树形结构
+	// Build tree structure
 	var roots []*model.Permission
 	for _, perm := range permissions {
 		if perm.ParentID == nil {
-			// 根节点
+			// Root node
 			roots = append(roots, perm)
 		} else {
-			// 子节点
+			// Child node
 			if parent, exists := permissionMap[*perm.ParentID]; exists {
 				parent.Children = append(parent.Children, *perm)
 			}
@@ -238,7 +238,7 @@ func (r *permissionRepository) buildPermissionTree(permissions []*model.Permissi
 	return roots
 }
 
-// GetWithRoles 获取权限及其角色
+// GetWithRoles retrieves a permission with its roles
 func (r *permissionRepository) GetWithRoles(ctx context.Context, id uint) (*model.Permission, error) {
 	var permission model.Permission
 	err := r.db.WithContext(ctx).
@@ -255,7 +255,7 @@ func (r *permissionRepository) GetWithRoles(ctx context.Context, id uint) (*mode
 	return &permission, nil
 }
 
-// GetChildren 获取子权限
+// GetChildren retrieves child permissions
 func (r *permissionRepository) GetChildren(ctx context.Context, parentID uint) ([]*model.Permission, error) {
 	var permissions []*model.Permission
 
@@ -271,36 +271,12 @@ func (r *permissionRepository) GetChildren(ctx context.Context, parentID uint) (
 	return permissions, nil
 }
 
-// GetRoles 获取权限关联的角色
+// GetRoles retrieves roles associated with a permission
 func (r *permissionRepository) GetRoles(ctx context.Context, permissionID uint, page, pageSize int) ([]model.Role, int64, error) {
-	var roles []model.Role
-	var total int64
-
-	// 获取总数
-	countQuery := r.db.WithContext(ctx).Model(&model.Role{}).
-		Joins("JOIN role_permissions ON roles.id = role_permissions.role_id").
-		Where("role_permissions.permission_id = ? AND role_permissions.status = 1 AND roles.status = 1", permissionID)
-
-	if err := countQuery.Count(&total).Error; err != nil {
-		return nil, 0, errors.Wrap(err, "failed to count permission roles")
-	}
-
-	// 分页查询
-	offset := (page - 1) * pageSize
-	err := r.db.WithContext(ctx).
-		Joins("JOIN role_permissions ON roles.id = role_permissions.role_id").
-		Where("role_permissions.permission_id = ? AND role_permissions.status = 1 AND roles.status = 1", permissionID).
-		Offset(offset).Limit(pageSize).
-		Find(&roles).Error
-
-	if err != nil {
-		return nil, 0, errors.Wrap(err, "failed to get permission roles")
-	}
-
-	return roles, total, nil
+	return GetRolesByPermissionID(ctx, r.db, permissionID, page, pageSize)
 }
 
-// CountRoles 统计权限角色数量
+// CountRoles counts the number of roles for a permission
 func (r *permissionRepository) CountRoles(ctx context.Context, permissionID uint) (int64, error) {
 	var count int64
 	err := r.db.WithContext(ctx).Model(&model.RolePermission{}).
@@ -313,7 +289,7 @@ func (r *permissionRepository) CountRoles(ctx context.Context, permissionID uint
 	return count, nil
 }
 
-// BatchUpdateStatus 批量更新状态
+// BatchUpdateStatus updates status in batch
 func (r *permissionRepository) BatchUpdateStatus(ctx context.Context, ids []uint, status int) error {
 	if len(ids) == 0 {
 		return nil
@@ -330,7 +306,7 @@ func (r *permissionRepository) BatchUpdateStatus(ctx context.Context, ids []uint
 	return nil
 }
 
-// GetByIDs 根据ID列表获取权限
+// GetByIDs retrieves permissions by ID list
 func (r *permissionRepository) GetByIDs(ctx context.Context, ids []uint) ([]*model.Permission, error) {
 	if len(ids) == 0 {
 		return []*model.Permission{}, nil
@@ -346,7 +322,7 @@ func (r *permissionRepository) GetByIDs(ctx context.Context, ids []uint) ([]*mod
 	return permissions, nil
 }
 
-// GetUserPermissions 获取用户权限
+// GetUserPermissions retrieves permissions for a user
 func (r *permissionRepository) GetUserPermissions(ctx context.Context, userID uint) ([]*model.Permission, error) {
 	var permissions []*model.Permission
 
@@ -364,7 +340,7 @@ func (r *permissionRepository) GetUserPermissions(ctx context.Context, userID ui
 	return permissions, nil
 }
 
-// CheckUserPermission 检查用户权限
+// CheckUserPermission checks if a user has a specific permission
 func (r *permissionRepository) CheckUserPermission(ctx context.Context, userID uint, resource, action string) (bool, error) {
 	var count int64
 
@@ -382,7 +358,7 @@ func (r *permissionRepository) CheckUserPermission(ctx context.Context, userID u
 	return count > 0, nil
 }
 
-// CreateWithTx 在事务中创建权限
+// CreateWithTx creates a permission within a transaction
 func (r *permissionRepository) CreateWithTx(ctx context.Context, tx *gorm.DB, permission *model.Permission) error {
 	if err := tx.WithContext(ctx).Create(permission).Error; err != nil {
 		return errors.Wrap(err, "failed to create permission in transaction")
@@ -390,7 +366,7 @@ func (r *permissionRepository) CreateWithTx(ctx context.Context, tx *gorm.DB, pe
 	return nil
 }
 
-// UpdateWithTx 在事务中更新权限
+// UpdateWithTx updates a permission within a transaction
 func (r *permissionRepository) UpdateWithTx(ctx context.Context, tx *gorm.DB, permission *model.Permission) error {
 	result := tx.WithContext(ctx).Model(permission).
 		Omit("created_at", "code", "scope", "module", "action", "resource").

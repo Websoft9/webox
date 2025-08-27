@@ -20,6 +20,12 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	// Token settings
+	tokenExpiryWarningHours = 24
+	tokenRandomBytesSize    = 32
+)
+
 type apiTokenService struct {
 	tokenRepo repository.APITokenRepository
 	db        *gorm.DB
@@ -90,7 +96,7 @@ func (s *apiTokenService) CreateAPIToken(ctx context.Context, req *request.Creat
 }
 
 // GetAPIToken gets API token details
-func (s *apiTokenService) GetAPIToken(ctx context.Context, id uint, userID uint) (*response.APITokenResponse, error) {
+func (s *apiTokenService) GetAPIToken(ctx context.Context, id, userID uint) (*response.APITokenResponse, error) {
 	s.logger.InfoContext(ctx, "Getting API token",
 		logger.String("service", "api-token"),
 		logger.String("operation", "GetAPIToken"),
@@ -170,7 +176,7 @@ func (s *apiTokenService) UpdateAPIToken(ctx context.Context, id uint, req *requ
 }
 
 // RevokeAPIToken revokes API token
-func (s *apiTokenService) RevokeAPIToken(ctx context.Context, id uint, userID uint) error {
+func (s *apiTokenService) RevokeAPIToken(ctx context.Context, id, userID uint) error {
 	s.logger.InfoContext(ctx, "Revoking API token",
 		logger.String("service", "api-token"),
 		logger.String("operation", "RevokeAPIToken"),
@@ -208,7 +214,7 @@ func (s *apiTokenService) RevokeAPIToken(ctx context.Context, id uint, userID ui
 }
 
 // RefreshAPIToken refreshes API token
-func (s *apiTokenService) RefreshAPIToken(ctx context.Context, id uint, userID uint) (*response.APITokenResponse, error) {
+func (s *apiTokenService) RefreshAPIToken(ctx context.Context, id, userID uint) (*response.APITokenResponse, error) {
 	s.logger.InfoContext(ctx, "Refreshing API token",
 		logger.String("service", "api-token"),
 		logger.String("operation", "RefreshAPIToken"),
@@ -244,7 +250,7 @@ func (s *apiTokenService) RefreshAPIToken(ctx context.Context, id uint, userID u
 	token.LastUsedIP = ""
 
 	// Extend expiration if needed
-	if token.ExpiresAt != nil && token.ExpiresAt.Before(time.Now().Add(24*time.Hour)) {
+	if token.ExpiresAt != nil && token.ExpiresAt.Before(time.Now().Add(tokenExpiryWarningHours*time.Hour)) {
 		newExpiry := time.Now().Add(30 * 24 * time.Hour) // 30 days
 		token.ExpiresAt = &newExpiry
 	}
@@ -326,19 +332,7 @@ func (s *apiTokenService) ValidateAPIToken(ctx context.Context, token string) (*
 	}
 
 	// Extract scopes
-	var scopes []string
-	if apiToken.Scopes != nil {
-		if scopesData, exists := apiToken.Scopes["scopes"]; exists {
-			if scopesSlice, ok := scopesData.([]interface{}); ok {
-				scopes = make([]string, len(scopesSlice))
-				for i, scope := range scopesSlice {
-					if s, ok := scope.(string); ok {
-						scopes[i] = s
-					}
-				}
-			}
-		}
-	}
+	scopes := s.extractScopesFromToken(apiToken)
 
 	// Update last used
 	go func() {
@@ -372,18 +366,44 @@ func (s *apiTokenService) CleanExpiredTokens(ctx context.Context) error {
 }
 
 // generateToken generates a new API token and its hash
-func (s *apiTokenService) generateToken() (string, string, error) {
+func (s *apiTokenService) generateToken() (token, tokenHash string, err error) {
 	// Generate random bytes
-	bytes := make([]byte, 32)
-	if _, err := rand.Read(bytes); err != nil {
+	bytes := make([]byte, tokenRandomBytesSize)
+	if _, err = rand.Read(bytes); err != nil {
 		return "", "", err
 	}
 
 	// Create token with prefix
-	token := fmt.Sprintf("ws9_%s", hex.EncodeToString(bytes))
+	token = fmt.Sprintf("ws9_%s", hex.EncodeToString(bytes))
 
 	// Hash the token for storage
-	tokenHash := security.HashToken(token)
+	tokenHash = security.HashToken(token)
 
 	return token, tokenHash, nil
+}
+
+// extractScopesFromToken extracts scopes from API token safely
+func (s *apiTokenService) extractScopesFromToken(apiToken *model.APIToken) []string {
+	if apiToken.Scopes == nil {
+		return []string{}
+	}
+
+	scopesData, exists := apiToken.Scopes["scopes"]
+	if !exists {
+		return []string{}
+	}
+
+	scopesSlice, ok := scopesData.([]interface{})
+	if !ok {
+		return []string{}
+	}
+
+	scopes := make([]string, 0, len(scopesSlice))
+	for _, scope := range scopesSlice {
+		if s, ok := scope.(string); ok {
+			scopes = append(scopes, s)
+		}
+	}
+
+	return scopes
 }

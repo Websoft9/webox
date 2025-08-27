@@ -13,7 +13,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// PermissionServiceTestSuite 权限服务测试套件
+// PermissionServiceTestSuite
 type PermissionServiceTestSuite struct {
 	suite.Suite
 	service            *permissionService
