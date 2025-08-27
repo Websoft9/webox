@@ -8,6 +8,60 @@ env:
   GO_VERSION: '1.24.5'
 
 jobs:
+  # 检查是否有代码修改
+  check-code-changes:
+    name: 🔍 Check Code Changes
+    runs-on: ubuntu-latest
+    outputs:
+      has-code-changes: ${{ steps.changes.outputs.has-code-changes }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check for code changes
+        id: changes
+        run: |
+          echo "检查是否包含代码修改..."
+          
+          # 获取修改的文件列表
+          changed_files=$(git diff --name-only HEAD^ HEAD)
+          echo "修改的文件:"
+          echo "$changed_files"
+          
+          # 定义代码文件扩展名
+          code_extensions="\.(go|js|ts|vue|jsx|tsx|py|java|c|cpp|h|hpp|rs|php|rb|swift|kt|scala|cs|sh|sql|yaml|yml|json|toml|dockerfile|Dockerfile)$"
+          
+          # 检查是否有代码文件修改
+          has_code_changes=false
+          while IFS= read -r file; do
+            if [[ -n "$file" && "$file" =~ $code_extensions ]]; then
+              echo "发现代码文件修改: $file"
+              has_code_changes=true
+              break
+            fi
+          done <<< "$changed_files"
+          
+          # 检查特殊文件
+          special_files="Makefile|makefile|go.mod|go.sum|package.json|package-lock.json|yarn.lock|pom.xml|build.gradle|Cargo.toml|Cargo.lock|requirements.txt|composer.json|composer.lock"
+          while IFS= read -r file; do
+            if [[ -n "$file" && "$file" =~ $special_files ]]; then
+              echo "发现构建配置文件修改: $file"
+              has_code_changes=true
+              break
+            fi
+          done <<< "$changed_files"
+          
+          if [ "$has_code_changes" = true ]; then
+            echo "✅ 检测到代码修改，继续执行后续检查"
+            echo "has-code-changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "ℹ️  未检测到代码修改，跳过后续检查"
+            echo "修改的文件类型: 文档、配置、其他非代码文件"
+            echo "has-code-changes=false" >> $GITHUB_OUTPUT
+          fi
+
   # 提交消息格式检查
   commit-message-check:
     name: 📝 Commit Message Check
@@ -54,6 +108,8 @@ jobs:
   code-format-check:
     name: 🎨 Code Format Check
     runs-on: ubuntu-latest
+    needs: check-code-changes
+    if: needs.check-code-changes.outputs.has-code-changes == 'true'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -117,6 +173,8 @@ jobs:
   build-check:
     name: 🔨 Build Check
     runs-on: ubuntu-latest
+    needs: check-code-changes
+    if: needs.check-code-changes.outputs.has-code-changes == 'true'
     strategy:
       matrix:
         service: ['api-service', 'websoft9-agent']
@@ -171,6 +229,8 @@ jobs:
   quick-test:
     name: ⚡ Quick Test
     runs-on: ubuntu-latest
+    needs: check-code-changes
+    if: needs.check-code-changes.outputs.has-code-changes == 'true'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -202,7 +262,7 @@ jobs:
   push-check-summary:
     name: 📊 Push Check Summary
     runs-on: ubuntu-latest
-    needs: [commit-message-check, code-format-check, build-check, quick-test]
+    needs: [check-code-changes, commit-message-check, code-format-check, build-check, quick-test]
     if: always()
     steps:
       - name: Check all jobs status
@@ -210,11 +270,13 @@ jobs:
           echo "=== 推送检查结果汇总 ==="
 
           # 检查各个作业的状态
+          has_code_changes="${{ needs.check-code-changes.outputs.has-code-changes }}"
           commit_check="${{ needs.commit-message-check.result }}"
           code_format="${{ needs.code-format-check.result }}"
           build_check="${{ needs.build-check.result }}"
           quick_test="${{ needs.quick-test.result }}"
 
+          echo "代码修改检查: $has_code_changes"
           echo "提交消息检查: $commit_check"
           echo "代码格式检查: $code_format"
           echo "构建检查: $build_check"
@@ -224,9 +286,14 @@ jobs:
           failed_jobs=()
 
           [ "$commit_check" = "failure" ] && failed_jobs+=("提交消息检查")
-          [ "$code_format" = "failure" ] && failed_jobs+=("代码格式检查")
-          [ "$build_check" = "failure" ] && failed_jobs+=("构建检查")
-          [ "$quick_test" = "failure" ] && failed_jobs+=("快速测试")
+
+          # 检查是否有代码修改
+          if [ "$has_code_changes" == "true" ]; then
+            [ "$code_format" = "failure" ] && failed_jobs+=("代码格式检查")
+            [ "$build_check" = "failure" ] && failed_jobs+=("构建检查")
+            [ "$quick_test" = "failure" ] && failed_jobs+=("快速测试")
+          fi
+
 
           if [ ${#failed_jobs[@]} -gt 0 ]; then
             echo ""
