@@ -19,6 +19,8 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"gorm.io/gorm"
+
+	_ "api-service/docs" // This line is necessary for go-swagger to find your docs!
 )
 
 func main() {

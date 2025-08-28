@@ -17,7 +17,14 @@ func NewI18nController() *I18nController {
 	return &I18nController{}
 }
 
-// GetLanguages 获取支持的语言列表
+// GetLanguages get supported languages
+// @Summary Get supported languages
+// @Description Get list of supported languages
+// @Tags Internationalization
+// @Accept json
+// @Produce json
+// @Success 200 {object} response.APIResponse{data=object}
+// @Router /api/v1/i18n/languages [get]
 func (c *I18nController) GetLanguages(ctx *gin.Context) {
 	languages := make([]map[string]interface{}, 0)
 
@@ -32,7 +39,15 @@ func (c *I18nController) GetLanguages(ctx *gin.Context) {
 	})
 }
 
-// GetTranslations 获取指定语言的翻译
+// GetTranslations get translations for specified language
+// @Summary Get translations
+// @Description Get translations for specified language
+// @Tags Internationalization
+// @Accept json
+// @Produce json
+// @Param lang path string true "Language code"
+// @Success 200 {object} response.APIResponse{data=object}
+// @Router /api/v1/i18n/translations/{lang} [get]
 func (c *I18nController) GetTranslations(ctx *gin.Context) {
 	lang := ctx.Param("lang")
 	if lang == "" {
@@ -56,7 +71,14 @@ func (c *I18nController) GetTranslations(ctx *gin.Context) {
 	})
 }
 
-// TestI18n 测试i18n功能
+// TestI18n test internationalization functionality
+// @Summary Test i18n functionality
+// @Description Test internationalization functionality with current language
+// @Tags Internationalization
+// @Accept json
+// @Produce json
+// @Success 200 {object} response.APIResponse{data=object}
+// @Router /api/v1/i18n/test [get]
 func (c *I18nController) TestI18n(ctx *gin.Context) {
 	lang := middleware.GetLanguage(ctx)
 

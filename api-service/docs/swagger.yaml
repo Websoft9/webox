@@ -1,0 +1,3231 @@
+definitions:
+  controller.OAuth2AuthorizeResponse:
+    properties:
+      authorize_url:
+        type: string
+      provider:
+        type: string
+      state:
+        type: string
+    type: object
+  controller.OAuth2CallbackResponse:
+    properties:
+      access_token:
+        type: string
+      expires_at:
+        type: string
+      refresh_token:
+        type: string
+      token_type:
+        type: string
+      user:
+        $ref: '#/definitions/response.UserSimpleResponse'
+    type: object
+  controller.RefreshTokenRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  request.APIAuthRequest:
+    properties:
+      jwt_config:
+        $ref: '#/definitions/request.JWTConfigRequest'
+      oauth2_enabled:
+        type: boolean
+      token_auth_enabled:
+        type: boolean
+    type: object
+  request.BatchRevokeAPITokensRequest:
+    properties:
+      ids:
+        items:
+          type: integer
+        minItems: 1
+        type: array
+    required:
+    - ids
+    type: object
+  request.ConfirmTOTPRequest:
+    properties:
+      code:
+        type: string
+    required:
+    - code
+    type: object
+  request.CreateAPITokenRequest:
+    properties:
+      description:
+        maxLength: 500
+        type: string
+      expires_at:
+        type: string
+      name:
+        maxLength: 64
+        minLength: 2
+        type: string
+      scopes:
+        items:
+          type: string
+        minItems: 1
+        type: array
+    required:
+    - name
+    - scopes
+    type: object
+  request.CreatePermissionRequest:
+    properties:
+      action:
+        maxLength: 32
+        minLength: 2
+        type: string
+      code:
+        maxLength: 64
+        minLength: 2
+        type: string
+      description:
+        maxLength: 500
+        type: string
+      is_menu:
+        type: boolean
+      module:
+        maxLength: 32
+        minLength: 2
+        type: string
+      name:
+        maxLength: 64
+        minLength: 2
+        type: string
+      parent_id:
+        type: integer
+      resource:
+        maxLength: 64
+        type: string
+      scope:
+        enum:
+        - platform
+        - project
+        type: string
+      sort_order:
+        type: integer
+      status:
+        enum:
+        - 0
+        - 1
+        type: integer
+    required:
+    - action
+    - code
+    - module
+    - name
+    - scope
+    type: object
+  request.CreateRoleRequest:
+    properties:
+      code:
+        maxLength: 32
+        minLength: 2
+        type: string
+      description:
+        maxLength: 500
+        type: string
+      name:
+        maxLength: 64
+        minLength: 2
+        type: string
+      permission_ids:
+        items:
+          type: integer
+        type: array
+      sort_order:
+        type: integer
+      status:
+        enum:
+        - 0
+        - 1
+        type: integer
+    required:
+    - code
+    - name
+    type: object
+  request.DisableTOTPRequest:
+    properties:
+      code:
+        type: string
+    required:
+    - code
+    type: object
+  request.EnableEmailTwoFactorRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  request.JWTConfigRequest:
+    properties:
+      algorithm:
+        type: string
+      auto_refresh:
+        type: boolean
+      expires_in:
+        type: integer
+      refresh_expires_in:
+        type: integer
+    type: object
+  request.LoginSecurityRequest:
+    properties:
+      allowed_login_hours:
+        type: string
+      ip_whitelist:
+        items:
+          type: string
+        type: array
+      ip_whitelist_enabled:
+        type: boolean
+      lockout_duration:
+        maximum: 86400
+        minimum: 60
+        type: integer
+      login_time_restriction:
+        type: boolean
+      max_login_attempts:
+        maximum: 20
+        minimum: 1
+        type: integer
+    type: object
+  request.OAuth2ProviderRequest:
+    properties:
+      auto_register:
+        type: boolean
+      client_id:
+        type: string
+      client_secret:
+        type: string
+      enabled:
+        type: boolean
+      name:
+        type: string
+      provider:
+        type: string
+      redirect_uri:
+        type: string
+      scopes:
+        items:
+          type: string
+        type: array
+      user_mapping:
+        additionalProperties:
+          type: string
+        type: object
+    type: object
+  request.PasswordPolicyRequest:
+    properties:
+      max_length:
+        maximum: 128
+        minimum: 1
+        type: integer
+      min_length:
+        maximum: 128
+        minimum: 1
+        type: integer
+      password_expires_days:
+        maximum: 365
+        minimum: 0
+        type: integer
+      password_history:
+        maximum: 20
+        minimum: 0
+        type: integer
+      require_lowercase:
+        type: boolean
+      require_numbers:
+        type: boolean
+      require_symbols:
+        type: boolean
+      require_uppercase:
+        type: boolean
+    type: object
+  request.RolePermissionRequest:
+    properties:
+      permission_ids:
+        items:
+          type: integer
+        minItems: 1
+        type: array
+    required:
+    - permission_ids
+    type: object
+  request.SessionConfigRequest:
+    properties:
+      max_concurrent_sessions:
+        type: integer
+      remember_me_duration:
+        type: integer
+      remember_me_enabled:
+        type: boolean
+      timeout:
+        type: integer
+    type: object
+  request.UpdateAPITokenRequest:
+    properties:
+      description:
+        maxLength: 500
+        type: string
+      expires_at:
+        type: string
+      name:
+        maxLength: 64
+        minLength: 2
+        type: string
+      scopes:
+        items:
+          type: string
+        type: array
+      status:
+        enum:
+        - 0
+        - 1
+        type: integer
+    type: object
+  request.UpdateAuthConfigRequest:
+    properties:
+      api_auth:
+        $ref: '#/definitions/request.APIAuthRequest'
+      session_config:
+        $ref: '#/definitions/request.SessionConfigRequest'
+      user_auth:
+        $ref: '#/definitions/request.UserAuthRequest'
+    type: object
+  request.UpdatePermissionRequest:
+    properties:
+      description:
+        maxLength: 500
+        type: string
+      name:
+        maxLength: 64
+        minLength: 2
+        type: string
+      sort_order:
+        type: integer
+      status:
+        enum:
+        - 0
+        - 1
+        type: integer
+    type: object
+  request.UpdateRoleRequest:
+    properties:
+      description:
+        maxLength: 500
+        type: string
+      name:
+        maxLength: 64
+        minLength: 2
+        type: string
+      permission_ids:
+        items:
+          type: integer
+        type: array
+      sort_order:
+        type: integer
+      status:
+        enum:
+        - 0
+        - 1
+        type: integer
+    type: object
+  request.UserAuthRequest:
+    properties:
+      login_security:
+        $ref: '#/definitions/request.LoginSecurityRequest'
+      oauth2_enabled:
+        type: boolean
+      oauth2_providers:
+        items:
+          $ref: '#/definitions/request.OAuth2ProviderRequest'
+        type: array
+      password_policy:
+        $ref: '#/definitions/request.PasswordPolicyRequest'
+      two_factor_enabled:
+        type: boolean
+      two_factor_methods:
+        items:
+          type: string
+        type: array
+      two_factor_required_roles:
+        items:
+          type: string
+        type: array
+    type: object
+  request.UserChangePasswordRequest:
+    properties:
+      new_password:
+        example: newpass123
+        minLength: 6
+        type: string
+      old_password:
+        example: oldpass123
+        type: string
+    required:
+    - new_password
+    - old_password
+    type: object
+  request.UserCreateRequest:
+    properties:
+      avatar:
+        example: https://example.com/avatar.jpg
+        type: string
+      email:
+        example: john@example.com
+        type: string
+      gender:
+        example: 1
+        maximum: 2
+        minimum: 0
+        type: integer
+      group_id:
+        example: 1
+        minimum: 1
+        type: integer
+      language:
+        example: zh-CN
+        maxLength: 10
+        type: string
+      nickname:
+        example: John Doe
+        maxLength: 64
+        type: string
+      password:
+        example: password123
+        minLength: 6
+        type: string
+      phone:
+        example: "+1234567890"
+        maxLength: 20
+        type: string
+      signature:
+        example: This is my signature
+        maxLength: 255
+        type: string
+      status:
+        example: 1
+        maximum: 1
+        minimum: 0
+        type: integer
+      timezone:
+        example: Asia/Shanghai
+        maxLength: 64
+        type: string
+      username:
+        example: johndoe
+        maxLength: 64
+        minLength: 3
+        type: string
+    required:
+    - email
+    - group_id
+    - password
+    - username
+    type: object
+  request.UserLoginRequest:
+    properties:
+      password:
+        example: "123456"
+        type: string
+      username:
+        example: john_doe
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  request.UserPasswordUpdateRequest:
+    properties:
+      new_password:
+        example: newpassword123
+        minLength: 6
+        type: string
+    required:
+    - new_password
+    type: object
+  request.UserRegisterRequest:
+    properties:
+      email:
+        example: john@example.com
+        type: string
+      password:
+        example: "123456"
+        minLength: 6
+        type: string
+      username:
+        example: john_doe
+        maxLength: 20
+        minLength: 3
+        type: string
+    required:
+    - email
+    - password
+    - username
+    type: object
+  request.UserUpdateProfileRequest:
+    properties:
+      avatar:
+        example: https://example.com/avatar.jpg
+        type: string
+      email:
+        example: newemail@example.com
+        type: string
+      gender:
+        example: 1
+        maximum: 2
+        minimum: 0
+        type: integer
+      language:
+        example: zh-CN
+        maxLength: 10
+        type: string
+      nickname:
+        example: John Doe
+        maxLength: 64
+        type: string
+      phone:
+        example: "+1234567890"
+        maxLength: 20
+        type: string
+      signature:
+        example: This is my signature
+        maxLength: 255
+        type: string
+      timezone:
+        example: Asia/Shanghai
+        maxLength: 64
+        type: string
+    type: object
+  request.UserUpdateRequest:
+    properties:
+      avatar:
+        example: https://example.com/avatar.jpg
+        type: string
+      email:
+        example: newemail@example.com
+        type: string
+      gender:
+        example: 1
+        maximum: 2
+        minimum: 0
+        type: integer
+      group_id:
+        example: 1
+        minimum: 1
+        type: integer
+      language:
+        example: zh-CN
+        maxLength: 10
+        type: string
+      nickname:
+        example: John Doe
+        maxLength: 64
+        type: string
+      phone:
+        example: "+1234567890"
+        maxLength: 20
+        type: string
+      signature:
+        example: This is my signature
+        maxLength: 255
+        type: string
+      timezone:
+        example: Asia/Shanghai
+        maxLength: 64
+        type: string
+      username:
+        example: johndoe
+        maxLength: 64
+        minLength: 3
+        type: string
+    type: object
+  request.UserUpdateStatusRequest:
+    properties:
+      status:
+        example: 1
+        maximum: 1
+        minimum: 0
+        type: integer
+    required:
+    - status
+    type: object
+  request.ValidateAPITokenRequest:
+    properties:
+      token:
+        type: string
+    required:
+    - token
+    type: object
+  request.VerifyTwoFactorRequest:
+    properties:
+      code:
+        type: string
+      method:
+        enum:
+        - totp
+        - email
+        - backup
+        type: string
+      user_id:
+        type: integer
+    required:
+    - code
+    - method
+    - user_id
+    type: object
+  response.APIAuthResponse:
+    properties:
+      jwt_config:
+        $ref: '#/definitions/response.JWTConfigResponse'
+      oauth2_enabled:
+        type: boolean
+      token_auth_enabled:
+        type: boolean
+    type: object
+  response.APIResponse:
+    properties:
+      code:
+        example: 200
+        type: integer
+      data: {}
+      error:
+        example: Error message
+        type: string
+      message:
+        example: Success
+        type: string
+    type: object
+  response.APITokenListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/response.APITokenResponse'
+        type: array
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  response.APITokenResponse:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      expires_at:
+        type: string
+      id:
+        type: integer
+      last_used_at:
+        type: string
+      name:
+        type: string
+      scopes:
+        items:
+          type: string
+        type: array
+      status:
+        type: integer
+      token:
+        description: only return complete token when creates
+        type: string
+      user_id:
+        type: integer
+      username:
+        type: string
+    type: object
+  response.APITokenValidationResponse:
+    properties:
+      expires_at:
+        type: string
+      scopes:
+        items:
+          type: string
+        type: array
+      user_id:
+        type: integer
+      username:
+        type: string
+      valid:
+        type: boolean
+    type: object
+  response.AuthConfigResponse:
+    properties:
+      api_auth:
+        $ref: '#/definitions/response.APIAuthResponse'
+      session_config:
+        $ref: '#/definitions/response.SessionConfigResponse'
+      user_auth:
+        $ref: '#/definitions/response.UserAuthResponse'
+    type: object
+  response.BackupCodesResponse:
+    properties:
+      codes:
+        items:
+          type: string
+        type: array
+    type: object
+  response.JWTConfigResponse:
+    properties:
+      algorithm:
+        type: string
+      auto_refresh:
+        type: boolean
+      expires_in:
+        type: integer
+      refresh_expires_in:
+        type: integer
+    type: object
+  response.LoginSecurityResponse:
+    properties:
+      allowed_login_hours:
+        type: string
+      ip_whitelist:
+        items:
+          type: string
+        type: array
+      ip_whitelist_enabled:
+        type: boolean
+      lockout_duration:
+        type: integer
+      login_time_restriction:
+        type: boolean
+      max_login_attempts:
+        type: integer
+    type: object
+  response.OAuth2ProviderResponse:
+    properties:
+      auto_register:
+        type: boolean
+      client_id:
+        type: string
+      client_secret:
+        description: sensitive information replaced with ***
+        type: string
+      created_at:
+        type: string
+      enabled:
+        type: boolean
+      id:
+        type: integer
+      name:
+        type: string
+      provider:
+        type: string
+      redirect_uri:
+        type: string
+      scopes:
+        items:
+          type: string
+        type: array
+      updated_at:
+        type: string
+      user_mapping:
+        additionalProperties:
+          type: string
+        type: object
+    type: object
+  response.PasswordPolicyResponse:
+    properties:
+      max_length:
+        type: integer
+      min_length:
+        type: integer
+      password_expires_days:
+        type: integer
+      password_history:
+        type: integer
+      require_lowercase:
+        type: boolean
+      require_numbers:
+        type: boolean
+      require_symbols:
+        type: boolean
+      require_uppercase:
+        type: boolean
+    type: object
+  response.PermissionListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/response.PermissionResponse'
+        type: array
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  response.PermissionResponse:
+    properties:
+      action:
+        type: string
+      children:
+        items:
+          $ref: '#/definitions/response.PermissionResponse'
+        type: array
+      code:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      is_menu:
+        type: boolean
+      is_system:
+        type: boolean
+      module:
+        type: string
+      name:
+        type: string
+      parent_id:
+        type: integer
+      resource:
+        type: string
+      role_count:
+        type: integer
+      roles:
+        items:
+          $ref: '#/definitions/response.RoleSimpleResponse'
+        type: array
+      scope:
+        type: string
+      sort_order:
+        type: integer
+      status:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  response.PermissionTreeResponse:
+    properties:
+      action:
+        type: string
+      children:
+        items:
+          $ref: '#/definitions/response.PermissionResponse'
+        type: array
+      code:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      is_menu:
+        type: boolean
+      is_system:
+        type: boolean
+      module:
+        type: string
+      name:
+        type: string
+      parent_id:
+        type: integer
+      resource:
+        type: string
+      role_count:
+        type: integer
+      roles:
+        items:
+          $ref: '#/definitions/response.RoleSimpleResponse'
+        type: array
+      scope:
+        type: string
+      sort_order:
+        type: integer
+      status:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  response.RoleListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/response.RoleResponse'
+        type: array
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  response.RoleResponse:
+    properties:
+      code:
+        type: string
+      created_at:
+        type: string
+      created_by:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      is_system:
+        type: boolean
+      name:
+        type: string
+      permission_count:
+        type: integer
+      permissions:
+        items:
+          $ref: '#/definitions/response.PermissionResponse'
+        type: array
+      sort_order:
+        type: integer
+      status:
+        type: integer
+      updated_at:
+        type: string
+      user_count:
+        type: integer
+      users:
+        items:
+          $ref: '#/definitions/response.UserSimpleResponse'
+        type: array
+    type: object
+  response.RoleSimpleResponse:
+    properties:
+      code:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  response.SessionConfigResponse:
+    properties:
+      max_concurrent_sessions:
+        type: integer
+      remember_me_duration:
+        type: integer
+      remember_me_enabled:
+        type: boolean
+      timeout:
+        type: integer
+    type: object
+  response.TOTPConfirmResponse:
+    properties:
+      backup_codes:
+        items:
+          type: string
+        type: array
+      enabled:
+        type: boolean
+    type: object
+  response.TOTPSecretResponse:
+    properties:
+      backup_codes:
+        items:
+          type: string
+        type: array
+      qr_code:
+        type: string
+      secret:
+        type: string
+    type: object
+  response.TOTPSetupResponse:
+    properties:
+      backup_codes:
+        items:
+          type: string
+        type: array
+      qr_code_url:
+        type: string
+      secret:
+        type: string
+    type: object
+  response.TwoFactorMethodResponse:
+    properties:
+      configured:
+        type: boolean
+      email:
+        type: string
+      enabled:
+        type: boolean
+      type:
+        type: string
+    type: object
+  response.TwoFactorStatusResponse:
+    properties:
+      backup_codes:
+        type: integer
+      enabled:
+        type: boolean
+      methods:
+        items:
+          $ref: '#/definitions/response.TwoFactorMethodResponse'
+        type: array
+    type: object
+  response.TwoFactorVerificationResponse:
+    properties:
+      method:
+        type: string
+      user_id:
+        type: integer
+      valid:
+        type: boolean
+    type: object
+  response.UserAuthResponse:
+    properties:
+      login_security:
+        $ref: '#/definitions/response.LoginSecurityResponse'
+      oauth2_enabled:
+        type: boolean
+      oauth2_providers:
+        items:
+          $ref: '#/definitions/response.OAuth2ProviderResponse'
+        type: array
+      password_policy:
+        $ref: '#/definitions/response.PasswordPolicyResponse'
+      two_factor_enabled:
+        type: boolean
+      two_factor_methods:
+        items:
+          type: string
+        type: array
+      two_factor_required_roles:
+        items:
+          type: string
+        type: array
+    type: object
+  response.UserGroupResponse:
+    properties:
+      code:
+        example: admin
+        type: string
+      created_at:
+        example: "2023-01-01T00:00:00Z"
+        type: string
+      description:
+        example: 系统管理员用户组
+        type: string
+      id:
+        example: 1
+        type: integer
+      name:
+        example: 管理员组
+        type: string
+      sort_order:
+        example: 0
+        type: integer
+      status:
+        example: 1
+        type: integer
+      updated_at:
+        example: "2023-01-01T00:00:00Z"
+        type: string
+    type: object
+  response.UserListResponse:
+    properties:
+      total:
+        example: 100
+        type: integer
+      users:
+        items:
+          $ref: '#/definitions/response.UserResponse'
+        type: array
+    type: object
+  response.UserLoginResponse:
+    properties:
+      expires_at:
+        example: "2023-01-02T00:00:00Z"
+        type: string
+      token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      user:
+        $ref: '#/definitions/response.UserResponse'
+    type: object
+  response.UserProfileResponse:
+    properties:
+      application_count:
+        example: 5
+        type: integer
+      avatar:
+        example: https://example.com/avatar.jpg
+        type: string
+      created_at:
+        example: "2023-01-01T00:00:00Z"
+        type: string
+      email:
+        example: john@example.com
+        type: string
+      gender:
+        example: 1
+        type: integer
+      group:
+        allOf:
+        - $ref: '#/definitions/response.UserGroupResponse'
+        description: 关联数据
+      group_id:
+        example: 1
+        type: integer
+      id:
+        example: 1
+        type: integer
+      language:
+        example: zh-CN
+        type: string
+      last_login_at:
+        example: "2023-01-01T12:00:00Z"
+        type: string
+      last_login_ip:
+        example: 192.168.1.1
+        type: string
+      login_count:
+        example: 10
+        type: integer
+      nickname:
+        example: John Doe
+        type: string
+      phone:
+        example: "+1234567890"
+        type: string
+      roles:
+        items:
+          $ref: '#/definitions/response.RoleResponse'
+        type: array
+      signature:
+        example: This is my signature
+        type: string
+      status:
+        example: 1
+        type: integer
+      timezone:
+        example: Asia/Shanghai
+        type: string
+      updated_at:
+        example: "2023-01-01T00:00:00Z"
+        type: string
+      username:
+        example: john_doe
+        type: string
+      workflow_count:
+        example: 3
+        type: integer
+    type: object
+  response.UserResponse:
+    properties:
+      avatar:
+        example: https://example.com/avatar.jpg
+        type: string
+      created_at:
+        example: "2023-01-01T00:00:00Z"
+        type: string
+      email:
+        example: john@example.com
+        type: string
+      gender:
+        example: 1
+        type: integer
+      group:
+        allOf:
+        - $ref: '#/definitions/response.UserGroupResponse'
+        description: 关联数据
+      group_id:
+        example: 1
+        type: integer
+      id:
+        example: 1
+        type: integer
+      language:
+        example: zh-CN
+        type: string
+      last_login_at:
+        example: "2023-01-01T12:00:00Z"
+        type: string
+      last_login_ip:
+        example: 192.168.1.1
+        type: string
+      nickname:
+        example: John Doe
+        type: string
+      phone:
+        example: "+1234567890"
+        type: string
+      roles:
+        items:
+          $ref: '#/definitions/response.RoleResponse'
+        type: array
+      signature:
+        example: This is my signature
+        type: string
+      status:
+        example: 1
+        type: integer
+      timezone:
+        example: Asia/Shanghai
+        type: string
+      updated_at:
+        example: "2023-01-01T00:00:00Z"
+        type: string
+      username:
+        example: john_doe
+        type: string
+    type: object
+  response.UserSimpleResponse:
+    properties:
+      email:
+        type: string
+      id:
+        type: integer
+      username:
+        type: string
+    type: object
+  service.OAuth2TokenResponse:
+    properties:
+      access_token:
+        type: string
+      expires_in:
+        type: integer
+      refresh_token:
+        type: string
+      scope:
+        type: string
+      token_type:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /api/v1/api-tokens:
+    delete:
+      consumes:
+      - application/json
+      description: Batch revoke multiple API tokens
+      parameters:
+      - description: Batch revoke API tokens request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.BatchRevokeAPITokensRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Batch revoke API tokens
+      tags:
+      - API Token Management
+    get:
+      consumes:
+      - application/json
+      description: Get paginated API token list
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      - description: Token status
+        enum:
+        - active
+        - revoked
+        - expired
+        in: query
+        name: status
+        type: string
+      - description: Start time
+        format: datetime
+        in: query
+        name: start_time
+        type: string
+      - description: End time
+        format: datetime
+        in: query
+        name: end_time
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.APITokenListResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Get API token list
+      tags:
+      - API Token Management
+    post:
+      consumes:
+      - application/json
+      description: Create a new API token
+      parameters:
+      - description: Create API token request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CreateAPITokenRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.APITokenResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Create API token
+      tags:
+      - API Token Management
+  /api/v1/api-tokens/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get API token details by ID
+      parameters:
+      - description: API Token ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.APITokenResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Get API token details
+      tags:
+      - API Token Management
+    put:
+      consumes:
+      - application/json
+      description: Update API token information
+      parameters:
+      - description: API Token ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update API token request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.UpdateAPITokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.APITokenResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Update API token
+      tags:
+      - API Token Management
+  /api/v1/api-tokens/{id}/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Refresh API token to extend expiration
+      parameters:
+      - description: API Token ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.APITokenResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Refresh API token
+      tags:
+      - API Token Management
+  /api/v1/api-tokens/{id}/revoke:
+    post:
+      consumes:
+      - application/json
+      description: Revoke specified API token
+      parameters:
+      - description: API Token ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Revoke API token
+      tags:
+      - API Token Management
+  /api/v1/api-tokens/validate:
+    post:
+      consumes:
+      - application/json
+      description: Validate API token and return token information
+      parameters:
+      - description: Validate API token request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.ValidateAPITokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.APITokenValidationResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Validate API token
+      tags:
+      - API Token Management
+  /api/v1/auth-config:
+    get:
+      consumes:
+      - application/json
+      description: Get current authentication configuration
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.AuthConfigResponse'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Get authentication config
+      tags:
+      - Authentication Config
+    put:
+      consumes:
+      - application/json
+      description: Update authentication configuration
+      parameters:
+      - description: Update auth config request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.UpdateAuthConfigRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Update authentication config
+      tags:
+      - Authentication Config
+  /api/v1/auth-config/oauth2-providers:
+    get:
+      consumes:
+      - application/json
+      description: Get OAuth2 provider configurations
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/response.OAuth2ProviderResponse'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Get OAuth2 providers
+      tags:
+      - Authentication Config
+  /api/v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user and return JWT token
+      parameters:
+      - description: User login request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.UserLoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.UserLoginResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: User login
+      tags:
+      - Users
+  /api/v1/auth/oauth2/{provider}/authorize:
+    get:
+      consumes:
+      - application/json
+      description: Start OAuth2 authorization flow with specified provider
+      parameters:
+      - description: OAuth2 provider name
+        in: path
+        name: provider
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/controller.OAuth2AuthorizeResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Initiate OAuth2 authorization
+      tags:
+      - OAuth2
+  /api/v1/auth/oauth2/{provider}/callback:
+    get:
+      consumes:
+      - application/json
+      description: Process OAuth2 callback and complete authentication
+      parameters:
+      - description: OAuth2 provider name
+        in: path
+        name: provider
+        required: true
+        type: string
+      - description: Authorization code from provider
+        in: query
+        name: code
+        required: true
+        type: string
+      - description: State parameter for CSRF protection
+        in: query
+        name: state
+        required: true
+        type: string
+      - description: Error from provider
+        in: query
+        name: error
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/controller.OAuth2CallbackResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Handle OAuth2 callback
+      tags:
+      - OAuth2
+  /api/v1/auth/oauth2/{provider}/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Refresh OAuth2 access token using refresh token
+      parameters:
+      - description: OAuth2 provider name
+        in: path
+        name: provider
+        required: true
+        type: string
+      - description: Refresh token request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controller.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/service.OAuth2TokenResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Refresh OAuth2 token
+      tags:
+      - OAuth2
+  /api/v1/auth/oauth2/providers:
+    get:
+      consumes:
+      - application/json
+      description: Get list of enabled OAuth2 providers
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/response.OAuth2ProviderResponse'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Get OAuth2 providers
+      tags:
+      - OAuth2
+  /api/v1/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user account
+      parameters:
+      - description: User registration request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.UserRegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.UserResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: User registration
+      tags:
+      - Users
+  /api/v1/i18n/languages:
+    get:
+      consumes:
+      - application/json
+      description: Get list of supported languages
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      summary: Get supported languages
+      tags:
+      - Internationalization
+  /api/v1/i18n/test:
+    get:
+      consumes:
+      - application/json
+      description: Test internationalization functionality with current language
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      summary: Test i18n functionality
+      tags:
+      - Internationalization
+  /api/v1/i18n/translations/{lang}:
+    get:
+      consumes:
+      - application/json
+      description: Get translations for specified language
+      parameters:
+      - description: Language code
+        in: path
+        name: lang
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+      summary: Get translations
+      tags:
+      - Internationalization
+  /api/v1/permissions:
+    get:
+      consumes:
+      - application/json
+      description: Get paginated permission list
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      - description: Permission module
+        in: query
+        name: module
+        type: string
+      - description: Permission scope
+        enum:
+        - platform
+        - project
+        in: query
+        name: scope
+        type: string
+      - description: Permission status
+        enum:
+        - 0
+        - 1
+        in: query
+        name: status
+        type: integer
+      - description: Start time
+        format: datetime
+        in: query
+        name: start_time
+        type: string
+      - description: End time
+        format: datetime
+        in: query
+        name: end_time
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.PermissionListResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Get permission list
+      tags:
+      - Permission Management
+    post:
+      consumes:
+      - application/json
+      description: Create a new permission
+      parameters:
+      - description: Create permission request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CreatePermissionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.PermissionResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Create permission
+      tags:
+      - Permission Management
+  /api/v1/permissions/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete specified permission
+      parameters:
+      - description: Permission ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Delete permission
+      tags:
+      - Permission Management
+    get:
+      consumes:
+      - application/json
+      description: Get permission details by ID
+      parameters:
+      - description: Permission ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.PermissionResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Get permission details
+      tags:
+      - Permission Management
+    put:
+      consumes:
+      - application/json
+      description: Update permission information
+      parameters:
+      - description: Permission ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update permission request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.UpdatePermissionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.PermissionResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Update permission
+      tags:
+      - Permission Management
+  /api/v1/permissions/{id}/roles:
+    get:
+      consumes:
+      - application/json
+      description: Get list of roles associated with specified permission
+      parameters:
+      - description: Permission ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.RoleListResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Get roles associated with permission
+      tags:
+      - Permission Management
+  /api/v1/permissions/tree:
+    get:
+      consumes:
+      - application/json
+      description: Get permission tree structure
+      parameters:
+      - description: Permission scope
+        enum:
+        - platform
+        - project
+        in: query
+        name: scope
+        type: string
+      - description: Permission status
+        enum:
+        - 0
+        - 1
+        in: query
+        name: status
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.PermissionTreeResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Get permission tree
+      tags:
+      - Permission Management
+  /api/v1/roles:
+    get:
+      consumes:
+      - application/json
+      description: Get paginated role list
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      - description: Role status
+        enum:
+        - 0
+        - 1
+        in: query
+        name: status
+        type: integer
+      - description: Start time
+        format: datetime
+        in: query
+        name: start_time
+        type: string
+      - description: End time
+        format: datetime
+        in: query
+        name: end_time
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.RoleListResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Get role list
+      tags:
+      - Role Management
+    post:
+      consumes:
+      - application/json
+      description: Create a new role
+      parameters:
+      - description: Create role request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CreateRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.RoleResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Create role
+      tags:
+      - Role Management
+  /api/v1/roles/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete specified role
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Delete role
+      tags:
+      - Role Management
+    get:
+      consumes:
+      - application/json
+      description: Get role details by ID
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.RoleResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Get role details
+      tags:
+      - Role Management
+    put:
+      consumes:
+      - application/json
+      description: Update role information
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update role request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.UpdateRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.RoleResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Update role
+      tags:
+      - Role Management
+  /api/v1/roles/{id}/permissions:
+    delete:
+      consumes:
+      - application/json
+      description: Remove permissions from specified role
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Role permission request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.RolePermissionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Remove permissions from role
+      tags:
+      - Role Management
+    post:
+      consumes:
+      - application/json
+      description: Assign permissions to specified role
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Role permission request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.RolePermissionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Assign permissions to role
+      tags:
+      - Role Management
+  /api/v1/roles/{id}/users:
+    get:
+      consumes:
+      - application/json
+      description: Get list of users associated with specified role
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.RoleListResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Get users associated with role
+      tags:
+      - Role Management
+  /api/v1/two-factor:
+    get:
+      consumes:
+      - application/json
+      description: Get user's two-factor authentication status
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.TwoFactorStatusResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Get 2FA status
+      tags:
+      - Two-Factor Authentication
+  /api/v1/two-factor/backup-codes:
+    post:
+      consumes:
+      - application/json
+      description: Generate backup codes for two-factor authentication recovery
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.BackupCodesResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Generate backup codes
+      tags:
+      - Two-Factor Authentication
+  /api/v1/two-factor/confirm:
+    post:
+      consumes:
+      - application/json
+      description: Confirm TOTP setup with verification code
+      parameters:
+      - description: Confirm TOTP request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.ConfirmTOTPRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.TOTPConfirmResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Confirm TOTP setup
+      tags:
+      - Two-Factor Authentication
+  /api/v1/two-factor/disable:
+    post:
+      consumes:
+      - application/json
+      description: Disable two-factor authentication for user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Disable two-factor authentication
+      tags:
+      - Two-Factor Authentication
+  /api/v1/two-factor/email/disable:
+    post:
+      consumes:
+      - application/json
+      description: Disable email two-factor authentication for user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Disable Email 2FA
+      tags:
+      - Two-Factor Authentication
+  /api/v1/two-factor/email/enable:
+    post:
+      consumes:
+      - application/json
+      description: Enable email two-factor authentication for user
+      parameters:
+      - description: Enable email 2FA request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.EnableEmailTwoFactorRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Enable Email 2FA
+      tags:
+      - Two-Factor Authentication
+  /api/v1/two-factor/email/send-code:
+    post:
+      consumes:
+      - application/json
+      description: Send verification code to user's email for 2FA
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Send email verification code
+      tags:
+      - Two-Factor Authentication
+  /api/v1/two-factor/enable:
+    post:
+      consumes:
+      - application/json
+      description: Enable TOTP two-factor authentication for user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.TOTPSetupResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Enable TOTP 2FA
+      tags:
+      - Two-Factor Authentication
+  /api/v1/two-factor/totp/disable:
+    post:
+      consumes:
+      - application/json
+      description: Disable TOTP two-factor authentication for user
+      parameters:
+      - description: Disable TOTP request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.DisableTOTPRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Disable TOTP 2FA
+      tags:
+      - Two-Factor Authentication
+  /api/v1/two-factor/totp/generate:
+    post:
+      consumes:
+      - application/json
+      description: Generate TOTP secret for user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.TOTPSecretResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Generate TOTP secret
+      tags:
+      - Two-Factor Authentication
+  /api/v1/two-factor/verify:
+    post:
+      consumes:
+      - application/json
+      description: Verify two-factor authentication code
+      parameters:
+      - description: Verify 2FA request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.VerifyTwoFactorRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.TwoFactorVerificationResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Verify 2FA code
+      tags:
+      - Two-Factor Authentication
+  /api/v1/users:
+    get:
+      consumes:
+      - application/json
+      description: Get paginated list of users (admin only)
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: User status filter
+        enum:
+        - 0
+        - 1
+        in: query
+        name: status
+        type: integer
+      - description: Search keyword
+        in: query
+        name: keyword
+        type: string
+      - description: Gender filter
+        enum:
+        - 0
+        - 1
+        - 2
+        in: query
+        name: gender
+        type: integer
+      - description: Language filter
+        in: query
+        name: language
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.UserListResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List users
+      tags:
+      - Users
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account (admin only)
+      parameters:
+      - description: User creation request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.UserCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.UserResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create user
+      tags:
+      - Users
+  /api/v1/users/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a user account (admin only)
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete user
+      tags:
+      - Users
+    get:
+      consumes:
+      - application/json
+      description: Get detailed information of a specific user (admin only)
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.UserResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user details
+      tags:
+      - Users
+    put:
+      consumes:
+      - application/json
+      description: Update a user's information (admin only)
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: User update request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.UserUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.UserResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update user
+      tags:
+      - Users
+  /api/v1/users/{id}/password:
+    put:
+      consumes:
+      - application/json
+      description: Update user password (admin only)
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: User password update request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.UserPasswordUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update user password
+      tags:
+      - Users
+  /api/v1/users/{id}/status:
+    put:
+      consumes:
+      - application/json
+      description: Update user account status (admin only)
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: User status update request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.UserUpdateStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update user status
+      tags:
+      - Users
+  /api/v1/users/password:
+    put:
+      consumes:
+      - application/json
+      description: Change current user's password
+      parameters:
+      - description: Password change request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.UserChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Change user password
+      tags:
+      - Users
+  /api/v1/users/profile:
+    get:
+      consumes:
+      - application/json
+      description: Get current user's profile information
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.UserProfileResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user profile
+      tags:
+      - Users
+    put:
+      consumes:
+      - application/json
+      description: Update current user's profile information
+      parameters:
+      - description: User profile update request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.UserUpdateProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.UserResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update user profile
+      tags:
+      - Users
+swagger: "2.0"

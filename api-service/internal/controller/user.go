@@ -96,6 +96,16 @@ func (c *UserController) handleUserIDBasedRequest(
 }
 
 // Register user registration
+// @Summary User registration
+// @Description Register a new user account
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param request body request.UserRegisterRequest true "User registration request"
+// @Success 200 {object} response.APIResponse{data=response.UserResponse}
+// @Failure 400 {object} response.APIResponse
+// @Failure 500 {object} response.APIResponse
+// @Router /api/v1/auth/register [post]
 func (c *UserController) Register(ctx *gin.Context) {
 	var req request.UserRegisterRequest
 	c.handleUserAuth(ctx, &req, "registration", func(ctx context.Context, r interface{}) (interface{}, error) {
@@ -104,6 +114,17 @@ func (c *UserController) Register(ctx *gin.Context) {
 }
 
 // Login user login
+// @Summary User login
+// @Description Authenticate user and return JWT token
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param request body request.UserLoginRequest true "User login request"
+// @Success 200 {object} response.APIResponse{data=response.UserLoginResponse}
+// @Failure 400 {object} response.APIResponse
+// @Failure 401 {object} response.APIResponse
+// @Failure 500 {object} response.APIResponse
+// @Router /api/v1/auth/login [post]
 func (c *UserController) Login(ctx *gin.Context) {
 	var req request.UserLoginRequest
 	c.handleUserAuth(ctx, &req, "login", func(ctx context.Context, r interface{}) (interface{}, error) {
@@ -112,6 +133,16 @@ func (c *UserController) Login(ctx *gin.Context) {
 }
 
 // GetProfile get user profile
+// @Summary Get user profile
+// @Description Get current user's profile information
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} response.APIResponse{data=response.UserProfileResponse}
+// @Failure 401 {object} response.APIResponse
+// @Failure 500 {object} response.APIResponse
+// @Router /api/v1/users/profile [get]
 func (c *UserController) GetProfile(ctx *gin.Context) {
 	userID := c.getCurrentUserID(ctx)
 	if userID == 0 {
@@ -130,6 +161,18 @@ func (c *UserController) GetProfile(ctx *gin.Context) {
 }
 
 // UpdateProfile update user profile
+// @Summary Update user profile
+// @Description Update current user's profile information
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body request.UserUpdateProfileRequest true "User profile update request"
+// @Success 200 {object} response.APIResponse{data=response.UserResponse}
+// @Failure 400 {object} response.APIResponse
+// @Failure 401 {object} response.APIResponse
+// @Failure 500 {object} response.APIResponse
+// @Router /api/v1/users/profile [put]
 func (c *UserController) UpdateProfile(ctx *gin.Context) {
 	userID := c.getCurrentUserID(ctx)
 	if userID == 0 {
@@ -154,6 +197,18 @@ func (c *UserController) UpdateProfile(ctx *gin.Context) {
 }
 
 // ChangePassword change user password
+// @Summary Change user password
+// @Description Change current user's password
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body request.UserChangePasswordRequest true "Password change request"
+// @Success 200 {object} response.APIResponse
+// @Failure 400 {object} response.APIResponse
+// @Failure 401 {object} response.APIResponse
+// @Failure 500 {object} response.APIResponse
+// @Router /api/v1/users/password [put]
 func (c *UserController) ChangePassword(ctx *gin.Context) {
 	userID := c.getCurrentUserID(ctx)
 	if userID == 0 {
@@ -178,6 +233,24 @@ func (c *UserController) ChangePassword(ctx *gin.Context) {
 }
 
 // ListUsers get user list (admin function)
+// @Summary List users
+// @Description Get paginated list of users (admin only)
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param page query int false "Page number" default(1)
+// @Param page_size query int false "Page size" default(10)
+// @Param status query int false "User status filter" Enums(0,1)
+// @Param keyword query string false "Search keyword"
+// @Param gender query int false "Gender filter" Enums(0,1,2)
+// @Param language query string false "Language filter"
+// @Success 200 {object} response.APIResponse{data=response.UserListResponse}
+// @Failure 400 {object} response.APIResponse
+// @Failure 401 {object} response.APIResponse
+// @Failure 403 {object} response.APIResponse
+// @Failure 500 {object} response.APIResponse
+// @Router /api/v1/users [get]
 func (c *UserController) ListUsers(ctx *gin.Context) {
 	var req request.UserListRequest
 
@@ -218,6 +291,19 @@ func (c *UserController) ListUsers(ctx *gin.Context) {
 }
 
 // CreateUser create user (admin function)
+// @Summary Create user
+// @Description Create a new user account (admin only)
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body request.UserCreateRequest true "User creation request"
+// @Success 200 {object} response.APIResponse{data=response.UserResponse}
+// @Failure 400 {object} response.APIResponse
+// @Failure 401 {object} response.APIResponse
+// @Failure 403 {object} response.APIResponse
+// @Failure 500 {object} response.APIResponse
+// @Router /api/v1/users [post]
 func (c *UserController) CreateUser(ctx *gin.Context) {
 	var req request.UserCreateRequest
 	if !c.bindAndValidateRequest(ctx, &req, "create user") {
@@ -237,6 +323,20 @@ func (c *UserController) CreateUser(ctx *gin.Context) {
 }
 
 // GetUser get user details (admin function)
+// @Summary Get user details
+// @Description Get detailed information of a specific user (admin only)
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "User ID"
+// @Success 200 {object} response.APIResponse{data=response.UserResponse}
+// @Failure 400 {object} response.APIResponse
+// @Failure 401 {object} response.APIResponse
+// @Failure 403 {object} response.APIResponse
+// @Failure 404 {object} response.APIResponse
+// @Failure 500 {object} response.APIResponse
+// @Router /api/v1/users/{id} [get]
 func (c *UserController) GetUser(ctx *gin.Context) {
 	userIDStr := ctx.Param("id")
 	userID, err := strconv.ParseUint(userIDStr, 10, 32)
@@ -258,6 +358,21 @@ func (c *UserController) GetUser(ctx *gin.Context) {
 }
 
 // UpdateUser update user (admin function)
+// @Summary Update user
+// @Description Update a user's information (admin only)
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "User ID"
+// @Param request body request.UserUpdateRequest true "User update request"
+// @Success 200 {object} response.APIResponse{data=response.UserResponse}
+// @Failure 400 {object} response.APIResponse
+// @Failure 401 {object} response.APIResponse
+// @Failure 403 {object} response.APIResponse
+// @Failure 404 {object} response.APIResponse
+// @Failure 500 {object} response.APIResponse
+// @Router /api/v1/users/{id} [put]
 func (c *UserController) UpdateUser(ctx *gin.Context) {
 	userIDStr := ctx.Param("id")
 	userID, err := strconv.ParseUint(userIDStr, 10, 32)
@@ -284,6 +399,20 @@ func (c *UserController) UpdateUser(ctx *gin.Context) {
 }
 
 // DeleteUser delete user (admin function)
+// @Summary Delete user
+// @Description Delete a user account (admin only)
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "User ID"
+// @Success 200 {object} response.APIResponse
+// @Failure 400 {object} response.APIResponse
+// @Failure 401 {object} response.APIResponse
+// @Failure 403 {object} response.APIResponse
+// @Failure 404 {object} response.APIResponse
+// @Failure 500 {object} response.APIResponse
+// @Router /api/v1/users/{id} [delete]
 func (c *UserController) DeleteUser(ctx *gin.Context) {
 	userIDStr := ctx.Param("id")
 	userID, err := strconv.ParseUint(userIDStr, 10, 32)
@@ -305,6 +434,21 @@ func (c *UserController) DeleteUser(ctx *gin.Context) {
 }
 
 // UpdateUserStatus update user status (admin function)
+// @Summary Update user status
+// @Description Update user account status (admin only)
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "User ID"
+// @Param request body request.UserUpdateStatusRequest true "User status update request"
+// @Success 200 {object} response.APIResponse
+// @Failure 400 {object} response.APIResponse
+// @Failure 401 {object} response.APIResponse
+// @Failure 403 {object} response.APIResponse
+// @Failure 404 {object} response.APIResponse
+// @Failure 500 {object} response.APIResponse
+// @Router /api/v1/users/{id}/status [put]
 func (c *UserController) UpdateUserStatus(ctx *gin.Context) {
 	var req request.UserUpdateStatusRequest
 	c.handleUserIDBasedRequest(ctx, &req, "update user status",
@@ -314,6 +458,21 @@ func (c *UserController) UpdateUserStatus(ctx *gin.Context) {
 }
 
 // UpdateUserPassword update user password (admin function)
+// @Summary Update user password
+// @Description Update user password (admin only)
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "User ID"
+// @Param request body request.UserPasswordUpdateRequest true "User password update request"
+// @Success 200 {object} response.APIResponse
+// @Failure 400 {object} response.APIResponse
+// @Failure 401 {object} response.APIResponse
+// @Failure 403 {object} response.APIResponse
+// @Failure 404 {object} response.APIResponse
+// @Failure 500 {object} response.APIResponse
+// @Router /api/v1/users/{id}/password [put]
 func (c *UserController) UpdateUserPassword(ctx *gin.Context) {
 	var req request.UserPasswordUpdateRequest
 	c.handleUserIDBasedRequest(ctx, &req, "update user password",

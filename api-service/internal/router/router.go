@@ -9,6 +9,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	ginSwagger "github.com/swaggo/gin-swagger"
+	"github.com/swaggo/gin-swagger/swaggerFiles"
 )
 
 // Controllers controller collection
@@ -31,11 +33,14 @@ func SetupRouter(controllers *Controllers, cfg *config.Config, log logger.Logger
 
 	r := gin.New()
 
-	// Global middleware
-	setupMiddleware(r, cfg, log, permissionService)
-
 	// Health check
 	setupHealthCheck(r)
+
+	// Swagger documentation (without middleware)
+	setupSwaggerRoute(r, cfg)
+
+	// Global middleware
+	setupMiddleware(r, cfg, log, permissionService)
 
 	// API routes
 	v1 := r.Group("/api/v1")
@@ -71,6 +76,15 @@ func setupHealthCheck(r *gin.Engine) {
 			"message": "API service running normally",
 		})
 	})
+}
+
+// setupSwaggerRoute sets up swagger documentation route
+func setupSwaggerRoute(r *gin.Engine, cfg *config.Config) {
+	// Only expose swagger in development mode
+	if cfg.Server.Mode == "debug" || cfg.Server.Mode == "test" {
+		// Add swagger route without middleware
+		r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	}
 }
 
 // setupAPIRoutes sets up API routes
@@ -187,8 +201,7 @@ func setupProtectedTwoFactorRoutes(protected *gin.RouterGroup, twoFactorControll
 	}
 
 	// Two-factor authentication routes under users
-	users := protected.Group("/users")
-	twoFactor := users.Group("/:user_id/two-factor")
+	twoFactor := protected.Group("/two-factor")
 	twoFactor.GET("", twoFactorController.GetTwoFactorStatus)
 	twoFactor.POST("/enable", twoFactorController.EnableTOTP)
 	twoFactor.POST("/confirm", twoFactorController.ConfirmTOTP)
