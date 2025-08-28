@@ -6,11 +6,20 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Response standard API response structure
 type Response struct {
-	Code    int         `json:"code"`
-	Message string      `json:"message"`
+	Code    int         `json:"code" example:"200"`
+	Message string      `json:"message" example:"Success"`
 	Data    interface{} `json:"data,omitempty"`
-	Error   string      `json:"error,omitempty"`
+	Error   string      `json:"error,omitempty" example:"Error message"`
+}
+
+// APIResponse swagger response wrapper for documentation
+type APIResponse struct {
+	Code    int         `json:"code" example:"200"`
+	Message string      `json:"message" example:"Success"`
+	Data    interface{} `json:"data,omitempty"`
+	Error   string      `json:"error,omitempty" example:"Error message"`
 }
 
 func Success(c *gin.Context, message string, data interface{}) {

@@ -44,7 +44,7 @@ func NewTwoFactorController(
 // @Success 200 {object} response.APIResponse{data=response.TOTPSetupResponse}
 // @Failure 400 {object} response.APIResponse
 // @Failure 500 {object} response.APIResponse
-// @Router /api/v1/2fa/totp/enable [post]
+// @Router /api/v1/two-factor/enable [post]
 func (c *TwoFactorController) EnableTOTP(ctx *gin.Context) {
 	// Get current user ID
 	userID, exists := ctx.Get("user_id")
@@ -88,7 +88,7 @@ func (c *TwoFactorController) EnableTOTP(ctx *gin.Context) {
 // @Success 200 {object} response.APIResponse{data=response.TOTPConfirmResponse}
 // @Failure 400 {object} response.APIResponse
 // @Failure 500 {object} response.APIResponse
-// @Router /api/v1/2fa/totp/confirm [post]
+// @Router /api/v1/two-factor/confirm [post]
 func (c *TwoFactorController) ConfirmTOTP(ctx *gin.Context) {
 	var req request.ConfirmTOTPRequest
 
@@ -167,7 +167,7 @@ func (c *TwoFactorController) ConfirmTOTP(ctx *gin.Context) {
 // @Success 200 {object} response.APIResponse
 // @Failure 400 {object} response.APIResponse
 // @Failure 500 {object} response.APIResponse
-// @Router /api/v1/2fa/totp/disable [post]
+// @Router /api/v1/two-factor/totp/disable [post]
 func (c *TwoFactorController) DisableTOTP(ctx *gin.Context) {
 	var req request.DisableTOTPRequest
 
@@ -245,7 +245,7 @@ func (c *TwoFactorController) DisableTOTP(ctx *gin.Context) {
 // @Success 200 {object} response.APIResponse
 // @Failure 400 {object} response.APIResponse
 // @Failure 500 {object} response.APIResponse
-// @Router /api/v1/2fa/email/enable [post]
+// @Router /api/v1/two-factor/email/enable [post]
 func (c *TwoFactorController) EnableEmailTwoFactor(ctx *gin.Context) {
 	var req request.EnableEmailTwoFactorRequest
 
@@ -313,7 +313,7 @@ func (c *TwoFactorController) EnableEmailTwoFactor(ctx *gin.Context) {
 // @Success 200 {object} response.APIResponse
 // @Failure 400 {object} response.APIResponse
 // @Failure 500 {object} response.APIResponse
-// @Router /api/v1/2fa/email/disable [post]
+// @Router /api/v1/two-factor/email/disable [post]
 func (c *TwoFactorController) DisableEmailTwoFactor(ctx *gin.Context) {
 	// Get current user ID
 	userID, exists := ctx.Get("user_id")
@@ -355,7 +355,7 @@ func (c *TwoFactorController) DisableEmailTwoFactor(ctx *gin.Context) {
 // @Success 200 {object} response.APIResponse
 // @Failure 400 {object} response.APIResponse
 // @Failure 500 {object} response.APIResponse
-// @Router /api/v1/2fa/email/send-code [post]
+// @Router /api/v1/two-factor/email/send-code [post]
 func (c *TwoFactorController) SendEmailCode(ctx *gin.Context) {
 	// Get current user ID
 	userID, exists := ctx.Get("user_id")
@@ -398,7 +398,7 @@ func (c *TwoFactorController) SendEmailCode(ctx *gin.Context) {
 // @Success 200 {object} response.APIResponse{data=response.TwoFactorVerificationResponse}
 // @Failure 400 {object} response.APIResponse
 // @Failure 401 {object} response.APIResponse
-// @Router /api/v1/2fa/verify [post]
+// @Router /api/v1/two-factor/verify [post]
 func (c *TwoFactorController) VerifyTwoFactor(ctx *gin.Context) {
 	var req request.VerifyTwoFactorRequest
 
@@ -464,7 +464,7 @@ func (c *TwoFactorController) VerifyTwoFactor(ctx *gin.Context) {
 // @Produce json
 // @Success 200 {object} response.APIResponse{data=response.TwoFactorStatusResponse}
 // @Failure 400 {object} response.APIResponse
-// @Router /api/v1/2fa/status [get]
+// @Router /api/v1/two-factor [get]
 func (c *TwoFactorController) GetTwoFactorStatus(ctx *gin.Context) {
 	// Get current user ID
 	userID, exists := ctx.Get("user_id")
@@ -506,7 +506,7 @@ func (c *TwoFactorController) GetTwoFactorStatus(ctx *gin.Context) {
 // @Success 200 {object} response.APIResponse{data=response.BackupCodesResponse}
 // @Failure 400 {object} response.APIResponse
 // @Failure 500 {object} response.APIResponse
-// @Router /api/v1/2fa/backup-codes [post]
+// @Router /api/v1/two-factor/backup-codes [post]
 func (c *TwoFactorController) GenerateBackupCodes(ctx *gin.Context) {
 	// Get current user ID
 	userID, exists := ctx.Get("user_id")
@@ -546,11 +546,10 @@ func (c *TwoFactorController) GenerateBackupCodes(ctx *gin.Context) {
 // @Tags Two-Factor Authentication
 // @Accept json
 // @Produce json
-// @Param user_id path int true "User ID"
 // @Success 200 {object} response.APIResponse
 // @Failure 400 {object} response.APIResponse
 // @Failure 500 {object} response.APIResponse
-// @Router /api/v1/users/{user_id}/two-factor/disable [post]
+// @Router /api/v1/two-factor/disable [post]
 func (c *TwoFactorController) DisableTwoFactor(ctx *gin.Context) {
 	// Get user ID from path parameter
 	userID, ok := ParseIDParam(ctx, "user_id", "validation.invalid_user_id", c.i18n)
@@ -588,11 +587,10 @@ func (c *TwoFactorController) DisableTwoFactor(ctx *gin.Context) {
 // @Tags Two-Factor Authentication
 // @Accept json
 // @Produce json
-// @Param user_id path int true "User ID"
 // @Success 200 {object} response.APIResponse{data=response.TOTPSecretResponse}
 // @Failure 400 {object} response.APIResponse
 // @Failure 500 {object} response.APIResponse
-// @Router /api/v1/users/{user_id}/two-factor/totp/generate [post]
+// @Router /api/v1/two-factor/totp/generate [post]
 func (c *TwoFactorController) GenerateTOTPSecret(ctx *gin.Context) {
 	// Get user ID from path parameter
 	userID, ok := ParseIDParam(ctx, "user_id", "validation.invalid_user_id", c.i18n)
