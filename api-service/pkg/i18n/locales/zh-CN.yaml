@@ -116,6 +116,22 @@ two_factor:
   backup_codes_success: "备用码生成成功"
   backup_codes_failed: "备用码生成失败"
 
+# 认证配置消息
+auth_config:
+  not_found: "认证配置不存在"
+  get_failed: "获取认证配置失败"
+  update_failed: "更新认证配置失败"
+  update_success: "认证配置更新成功"
+  oauth2_providers_failed: "获取OAuth2提供商失败"
+  password_policy_min_length: "密码长度至少%d位"
+  password_policy_max_length: "密码长度不能超过%d位"
+  password_policy_require_uppercase: "密码必须包含至少一个大写字母"
+  password_policy_require_lowercase: "密码必须包含至少一个小写字母"
+  password_policy_require_numbers: "密码必须包含至少一个数字"
+  password_policy_require_symbols: "密码必须包含至少一个特殊字符"
+  login_security_ip_not_allowed: "不允许从此IP地址登录"
+  login_security_time_not_allowed: "当前时间不允许登录"
+
 # 认证消息
 auth:
   token_invalid: "无效的令牌"

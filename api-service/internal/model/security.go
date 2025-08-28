@@ -2,16 +2,13 @@ package model
 
 import (
 	"time"
-
-	"gorm.io/gorm"
 )
 
 // BaseModel 基础模型
 type BaseModel struct {
-	ID        uint           `json:"id" gorm:"primarykey"`
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
-	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
+	ID        uint      `json:"id" gorm:"primarykey"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // Role 角色模型
@@ -54,7 +51,7 @@ type Permission struct {
 	Code        string `json:"code" gorm:"uniqueIndex;size:64;not null" validate:"required,min=2,max=64"`
 	Module      string `json:"module" gorm:"size:32;not null" validate:"required,min=2,max=32"`
 	Action      string `json:"action" gorm:"size:32;not null" validate:"required,min=2,max=32"`
-	Resource    string `json:"resource" gorm:"size:64" validate:"max=64"`
+	Resource    string `json:"resource" gorm:"size:256" validate:"max=64"`
 	Description string `json:"description" gorm:"type:text" validate:"max=500"`
 	IsSystem    bool   `json:"is_system" gorm:"default:false"`
 	IsMenu      bool   `json:"is_menu" gorm:"default:false"`
