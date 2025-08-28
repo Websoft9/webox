@@ -1,0 +1,223 @@
+# Websoft9 Authentication Configuration File
+# Unified management of OAuth2 provider configurations and authentication method settings
+
+# Authentication configuration version
+version: "1.1"
+
+# API authentication configuration
+api_auth:
+  # Token authentication configuration
+  token_auth:
+    enabled: true
+    algorithm: "HS256"
+    expires_in: 3600 # Token validity period (seconds)
+    refresh_expires_in: 86400 # Refresh token validity period (seconds)
+    auto_refresh: true # Whether to automatically refresh tokens
+
+  # OAuth2 API authentication configuration
+  oauth2:
+    enabled: true
+    default_scopes: ["read", "write"]
+    token_endpoint: "/api/v1/oauth2/token"
+    authorize_endpoint: "/api/v1/oauth2/authorize"
+
+# User authentication configuration
+user_auth:
+  # Basic authentication configuration
+  basic_auth:
+    enabled: true
+    login_methods: ["username", "email"] # Supported login methods
+
+  # Password policy configuration
+  password_policy:
+    min_length: 8
+    max_length: 128
+    require_uppercase: true
+    require_lowercase: true
+    require_numbers: true
+    require_symbols: false
+    password_history: 5 # Number of password history records
+    password_expires_days: 90 # Password expiration days
+
+  # Login security configuration
+  login_security:
+    max_login_attempts: 5 # Maximum login attempts
+    lockout_duration: 1800 # Lockout duration (seconds)
+    ip_whitelist_enabled: false
+    ip_whitelist: []
+    login_time_restriction: false
+    allowed_login_hours: "09:00-18:00"
+
+  # OAuth2 login configuration
+  oauth2:
+    enabled: true
+    auto_register: false # Whether to automatically register new users
+    default_role: "user" # Default role for new users
+
+    # OAuth2 provider configurations
+    providers:
+      # Google OAuth2 configuration
+      google:
+        name: "Google"
+        enabled: true
+        client_id: "${GOOGLE_CLIENT_ID}"
+        client_secret: "${GOOGLE_CLIENT_SECRET}"
+        redirect_uri: "${BASE_URL}/auth/callback/google"
+        scopes: ["openid", "profile", "email"]
+        authorize_url: "https://accounts.google.com/o/oauth2/v2/auth"
+        token_url: "https://oauth2.googleapis.com/token"
+        user_info_url: "https://www.googleapis.com/oauth2/v2/userinfo"
+        auto_register: false
+        user_mapping:
+          username: "email"
+          email: "email"
+          name: "name"
+          avatar: "picture"
+        sort_order: 1
+
+      # WeCom OAuth2 configuration
+      wechat_work:
+        name: "企业微信"
+        enabled: false
+        client_id: "${WECHAT_WORK_CORP_ID}"
+        client_secret: "${WECHAT_WORK_CORP_SECRET}"
+        redirect_uri: "${BASE_URL}/auth/callback/wechat-work"
+        scopes: ["snsapi_base"]
+        authorize_url: "https://open.weixin.qq.com/connect/oauth2/authorize"
+        token_url: "https://qyapi.weixin.qq.com/cgi-bin/gettoken"
+        user_info_url: "https://qyapi.weixin.qq.com/cgi-bin/user/getuserinfo"
+        auto_register: true
+        user_mapping:
+          username: "userid"
+          email: "email"
+          name: "name"
+          phone: "mobile"
+        sort_order: 2
+
+      # DingTalk OAuth2 configuration
+      dingtalk:
+        name: "钉钉"
+        enabled: false
+        client_id: "${DINGTALK_APP_KEY}"
+        client_secret: "${DINGTALK_APP_SECRET}"
+        redirect_uri: "${BASE_URL}/auth/callback/dingtalk"
+        scopes: ["openid"]
+        authorize_url: "https://oapi.dingtalk.com/connect/oauth2/sns_authorize"
+        token_url: "https://oapi.dingtalk.com/sns/gettoken"
+        user_info_url: "https://oapi.dingtalk.com/sns/getuserinfo"
+        auto_register: true
+        user_mapping:
+          username: "unionid"
+          email: "email"
+          name: "nick"
+          avatar: "avatarUrl"
+        sort_order: 3
+
+      # GitHub OAuth2 configuration
+      github:
+        name: "GitHub"
+        enabled: false
+        client_id: "${GITHUB_CLIENT_ID}"
+        client_secret: "${GITHUB_CLIENT_SECRET}"
+        redirect_uri: "${BASE_URL}/auth/callback/github"
+        scopes: ["user:email"]
+        authorize_url: "https://github.com/login/oauth/authorize"
+        token_url: "https://github.com/login/oauth/access_token"
+        user_info_url: "https://api.github.com/user"
+        auto_register: false
+        user_mapping:
+          username: "login"
+          email: "email"
+          name: "name"
+          avatar: "avatar_url"
+        sort_order: 4
+
+      # GitLab OAuth2 configuration
+      gitlab:
+        name: "GitLab"
+        enabled: false
+        client_id: "${GITLAB_CLIENT_ID}"
+        client_secret: "${GITLAB_CLIENT_SECRET}"
+        redirect_uri: "${BASE_URL}/auth/callback/gitlab"
+        scopes: ["read_user"]
+        authorize_url: "https://gitlab.com/oauth/authorize"
+        token_url: "https://gitlab.com/oauth/token"
+        user_info_url: "https://gitlab.com/api/v4/user"
+        auto_register: false
+        user_mapping:
+          username: "username"
+          email: "email"
+          name: "name"
+          avatar: "avatar_url"
+        sort_order: 5
+
+      # Azure AD OAuth2 configuration
+      azure_ad:
+        name: "Azure AD"
+        enabled: false
+        client_id: "${AZURE_CLIENT_ID}"
+        client_secret: "${AZURE_CLIENT_SECRET}"
+        redirect_uri: "${BASE_URL}/auth/callback/azure-ad"
+        scopes: ["openid", "profile", "email"]
+        authorize_url: "https://login.microsoftonline.com/${AZURE_TENANT_ID}/oauth2/v2.0/authorize"
+        token_url: "https://login.microsoftonline.com/${AZURE_TENANT_ID}/oauth2/v2.0/token"
+        user_info_url: "https://graph.microsoft.com/v1.0/me"
+        auto_register: false
+        user_mapping:
+          username: "userPrincipalName"
+          email: "mail"
+          name: "displayName"
+        sort_order: 6
+
+  # Two-factor authentication configuration
+  two_factor:
+    enabled: true
+    required_roles: ["admin"] # Roles that require two-factor authentication
+    methods:
+      # TOTP authentication configuration
+      totp:
+        enabled: true
+        issuer: "Websoft9"
+        algorithm: "SHA1"
+        digits: 6
+        period: 30
+        backup_codes_count: 10
+
+      # Email verification code configuration
+      email:
+        enabled: true
+        code_length: 6
+        expires_in: 300 # Verification code validity period (seconds)
+        rate_limit: 5 # Maximum sends per hour
+        template: "two_factor_email"
+
+# Session configuration
+session_config:
+  timeout: 3600 # Session timeout (seconds)
+  max_concurrent_sessions: 5 # Maximum concurrent sessions
+  remember_me_enabled: true # Whether to enable "Remember Me"
+  remember_me_duration: 2592000 # Remember me duration (seconds)
+
+# Environment variables description
+# The following environment variables need to be set during deployment:
+#
+# OAuth2 provider configuration:
+# - GOOGLE_CLIENT_ID: Google OAuth2 client ID
+# - GOOGLE_CLIENT_SECRET: Google OAuth2 client secret
+# - WECHAT_WORK_CORP_ID: WeCom enterprise ID
+# - WECHAT_WORK_CORP_SECRET: WeCom application secret
+# - DINGTALK_APP_KEY: DingTalk application key
+# - DINGTALK_APP_SECRET: DingTalk application secret
+# - GITHUB_CLIENT_ID: GitHub OAuth2 client ID
+# - GITHUB_CLIENT_SECRET: GitHub OAuth2 client secret
+# - GITLAB_CLIENT_ID: GitLab OAuth2 client ID
+# - GITLAB_CLIENT_SECRET: GitLab OAuth2 client secret
+# - AZURE_CLIENT_ID: Azure AD client ID
+# - AZURE_CLIENT_SECRET: Azure AD client secret
+# - AZURE_TENANT_ID: Azure AD tenant ID
+#
+# Basic configuration:
+# - BASE_URL: Platform base URL, e.g.: https://websoft9.example.com
+#
+# LDAP configuration (optional):
+# - LDAP_BIND_PASSWORD: LDAP bind password

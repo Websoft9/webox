@@ -3,6 +3,7 @@ package router
 import (
 	"api-service/internal/config"
 	"api-service/internal/controller"
+	serviceInterface "api-service/internal/interface/service"
 	"api-service/internal/middleware"
 	"api-service/pkg/logger"
 	"net/http"
@@ -19,19 +20,20 @@ type Controllers struct {
 	APITokenController   *controller.APITokenController
 	TwoFactorController  *controller.TwoFactorController
 	ProfileController    *controller.ProfileController
+	AuthConfigController *controller.AuthConfigController
 	// More controllers can be added
 	// AppController  *controller.ApplicationController
 }
 
 // SetupRouter sets up router
-func SetupRouter(controllers *Controllers, cfg *config.Config, log logger.Logger) *gin.Engine {
+func SetupRouter(controllers *Controllers, cfg *config.Config, log logger.Logger, permissionService serviceInterface.PermissionService) *gin.Engine {
 	// Set Gin mode
 	gin.SetMode(cfg.Server.Mode)
 
 	r := gin.New()
 
 	// Global middleware
-	setupMiddleware(r, log)
+	setupMiddleware(r, cfg, log, permissionService)
 
 	// Health check
 	setupHealthCheck(r)
@@ -52,10 +54,12 @@ func SetupRouter(controllers *Controllers, cfg *config.Config, log logger.Logger
 }
 
 // setupMiddleware sets up global middleware
-func setupMiddleware(r *gin.Engine, log logger.Logger) {
+func setupMiddleware(r *gin.Engine, cfg *config.Config, log logger.Logger, permissionService serviceInterface.PermissionService) {
 	r.Use(middleware.LoggerMiddleware(log))
 	r.Use(middleware.CORS())
 	r.Use(middleware.I18nMiddleware())
+	r.Use(middleware.OptionalJWTAuth(cfg))
+	r.Use(middleware.PermissionMiddleware(permissionService, log))
 	r.Use(middleware.ErrorHandler(log))
 	r.Use(middleware.RequestValidator(log))
 }
@@ -85,6 +89,7 @@ func setupAPIRoutes(v1 *gin.RouterGroup, controllers *Controllers) {
 	setupProtectedAPITokenRoutes(protected, controllers.APITokenController)
 	setupProtectedTwoFactorRoutes(protected, controllers.TwoFactorController)
 	setupProtectedProfileRoutes(protected, controllers.ProfileController)
+	setupProtectedAuthConfigRoutes(protected, controllers.AuthConfigController)
 }
 
 // setupUserRoutes sets up user related routes
@@ -151,6 +156,7 @@ func setupProtectedPermissionRoutes(protected *gin.RouterGroup, permissionContro
 
 	permissions := protected.Group("/permissions")
 	permissions.GET("", permissionController.ListPermissions)
+	permissions.GET("/tree", permissionController.GetPermissionTree)
 	permissions.POST("", permissionController.CreatePermission)
 	permissions.GET("/:id", permissionController.GetPermission)
 	permissions.PUT("/:id", permissionController.UpdatePermission)
@@ -171,6 +177,7 @@ func setupProtectedAPITokenRoutes(protected *gin.RouterGroup, apiTokenController
 	apiTokens.PUT("/:id", apiTokenController.UpdateAPIToken)
 	apiTokens.DELETE("/:id", apiTokenController.RevokeAPIToken)
 	apiTokens.POST("/:id/refresh", apiTokenController.RefreshAPIToken)
+	apiTokens.DELETE("", apiTokenController.BatchRevokeAPITokens)
 }
 
 // setupProtectedTwoFactorRoutes sets up two-factor authentication routes
@@ -179,11 +186,28 @@ func setupProtectedTwoFactorRoutes(protected *gin.RouterGroup, twoFactorControll
 		return
 	}
 
-	twoFactor := protected.Group("/two-factor")
+	// Two-factor authentication routes under users
+	users := protected.Group("/users")
+	twoFactor := users.Group("/:user_id/two-factor")
+	twoFactor.GET("", twoFactorController.GetTwoFactorStatus)
 	twoFactor.POST("/enable", twoFactorController.EnableTOTP)
 	twoFactor.POST("/confirm", twoFactorController.ConfirmTOTP)
-	twoFactor.POST("/disable", twoFactorController.DisableTOTP)
+	twoFactor.POST("/disable", twoFactorController.DisableTwoFactor)
 	twoFactor.POST("/verify", twoFactorController.VerifyTwoFactor)
+	twoFactor.POST("/totp/generate", twoFactorController.GenerateTOTPSecret)
+}
+
+// setupProtectedAuthConfigRoutes sets up authentication config routes
+func setupProtectedAuthConfigRoutes(protected *gin.RouterGroup, authConfigController *controller.AuthConfigController) {
+	if authConfigController == nil {
+		return
+	}
+
+	// Authentication config routes
+	authConfig := protected.Group("/auth-config")
+	authConfig.GET("", authConfigController.GetAuthConfig)
+	authConfig.PUT("", authConfigController.UpdateAuthConfig)
+	authConfig.GET("/oauth2-providers", authConfigController.GetOAuth2Providers)
 }
 
 // setupProtectedProfileRoutes sets up profile management routes

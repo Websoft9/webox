@@ -108,33 +108,43 @@ type BatchRevokeAPITokensRequest struct {
 
 // UpdateAuthConfigRequest updates authentication config request
 type UpdateAuthConfigRequest struct {
-	APIAuth struct {
-		TokenAuthEnabled bool `json:"token_auth_enabled"`
-		OAuth2Enabled    bool `json:"oauth2_enabled"`
-		JWTConfig        struct {
-			Algorithm        string `json:"algorithm"`
-			ExpiresIn        int    `json:"expires_in"`
-			RefreshExpiresIn int    `json:"refresh_expires_in"`
-			AutoRefresh      bool   `json:"auto_refresh"`
-		} `json:"jwt_config"`
-	} `json:"api_auth"`
+	APIAuth       *APIAuthRequest       `json:"api_auth,omitempty"`
+	UserAuth      *UserAuthRequest      `json:"user_auth,omitempty"`
+	SessionConfig *SessionConfigRequest `json:"session_config,omitempty"`
+}
 
-	UserAuth struct {
-		OAuth2Enabled          bool                    `json:"oauth2_enabled"`
-		OAuth2Providers        []OAuth2ProviderRequest `json:"oauth2_providers"`
-		TwoFactorEnabled       bool                    `json:"two_factor_enabled"`
-		TwoFactorMethods       []string                `json:"two_factor_methods"`
-		TwoFactorRequiredRoles []string                `json:"two_factor_required_roles"`
-		PasswordPolicy         PasswordPolicyRequest   `json:"password_policy"`
-		LoginSecurity          LoginSecurityRequest    `json:"login_security"`
-	} `json:"user_auth"`
+// APIAuthRequest API authentication request
+type APIAuthRequest struct {
+	TokenAuthEnabled *bool             `json:"token_auth_enabled,omitempty"`
+	OAuth2Enabled    *bool             `json:"oauth2_enabled,omitempty"`
+	JWTConfig        *JWTConfigRequest `json:"jwt_config,omitempty"`
+}
 
-	SessionConfig struct {
-		Timeout               int  `json:"timeout"`
-		MaxConcurrentSessions int  `json:"max_concurrent_sessions"`
-		RememberMeEnabled     bool `json:"remember_me_enabled"`
-		RememberMeDuration    int  `json:"remember_me_duration"`
-	} `json:"session_config"`
+// JWTConfigRequest JWT configuration request
+type JWTConfigRequest struct {
+	Algorithm        *string `json:"algorithm,omitempty"`
+	ExpiresIn        *int    `json:"expires_in,omitempty"`
+	RefreshExpiresIn *int    `json:"refresh_expires_in,omitempty"`
+	AutoRefresh      *bool   `json:"auto_refresh,omitempty"`
+}
+
+// UserAuthRequest user authentication request
+type UserAuthRequest struct {
+	OAuth2Enabled          *bool                    `json:"oauth2_enabled,omitempty"`
+	OAuth2Providers        *[]OAuth2ProviderRequest `json:"oauth2_providers,omitempty"`
+	TwoFactorEnabled       *bool                    `json:"two_factor_enabled,omitempty"`
+	TwoFactorMethods       *[]string                `json:"two_factor_methods,omitempty"`
+	TwoFactorRequiredRoles *[]string                `json:"two_factor_required_roles,omitempty"`
+	PasswordPolicy         *PasswordPolicyRequest   `json:"password_policy,omitempty"`
+	LoginSecurity          *LoginSecurityRequest    `json:"login_security,omitempty"`
+}
+
+// SessionConfigRequest session configuration request
+type SessionConfigRequest struct {
+	Timeout               *int  `json:"timeout,omitempty"`
+	MaxConcurrentSessions *int  `json:"max_concurrent_sessions,omitempty"`
+	RememberMeEnabled     *bool `json:"remember_me_enabled,omitempty"`
+	RememberMeDuration    *int  `json:"remember_me_duration,omitempty"`
 }
 
 // OAuth2ProviderRequest OAuth2 provider request
@@ -152,24 +162,24 @@ type OAuth2ProviderRequest struct {
 
 // PasswordPolicyRequest password policy request
 type PasswordPolicyRequest struct {
-	MinLength           int  `json:"min_length" validate:"min=1,max=128"`
-	MaxLength           int  `json:"max_length" validate:"min=1,max=128"`
-	RequireUppercase    bool `json:"require_uppercase"`
-	RequireLowercase    bool `json:"require_lowercase"`
-	RequireNumbers      bool `json:"require_numbers"`
-	RequireSymbols      bool `json:"require_symbols"`
-	PasswordHistory     int  `json:"password_history" validate:"min=0,max=20"`
-	PasswordExpiresDays int  `json:"password_expires_days" validate:"min=0,max=365"`
+	MinLength           *int  `json:"min_length,omitempty" validate:"omitempty,min=1,max=128"`
+	MaxLength           *int  `json:"max_length,omitempty" validate:"omitempty,min=1,max=128"`
+	RequireUppercase    *bool `json:"require_uppercase,omitempty"`
+	RequireLowercase    *bool `json:"require_lowercase,omitempty"`
+	RequireNumbers      *bool `json:"require_numbers,omitempty"`
+	RequireSymbols      *bool `json:"require_symbols,omitempty"`
+	PasswordHistory     *int  `json:"password_history,omitempty" validate:"omitempty,min=0,max=20"`
+	PasswordExpiresDays *int  `json:"password_expires_days,omitempty" validate:"omitempty,min=0,max=365"`
 }
 
 // LoginSecurityRequest login security request
 type LoginSecurityRequest struct {
-	MaxLoginAttempts     int      `json:"max_login_attempts" validate:"min=1,max=20"`
-	LockoutDuration      int      `json:"lockout_duration" validate:"min=60,max=86400"`
-	IPWhitelistEnabled   bool     `json:"ip_whitelist_enabled"`
-	IPWhitelist          []string `json:"ip_whitelist"`
-	LoginTimeRestriction bool     `json:"login_time_restriction"`
-	AllowedLoginHours    string   `json:"allowed_login_hours"`
+	MaxLoginAttempts     *int      `json:"max_login_attempts,omitempty" validate:"omitempty,min=1,max=20"`
+	LockoutDuration      *int      `json:"lockout_duration,omitempty" validate:"omitempty,min=60,max=86400"`
+	IPWhitelistEnabled   *bool     `json:"ip_whitelist_enabled,omitempty"`
+	IPWhitelist          *[]string `json:"ip_whitelist,omitempty"`
+	LoginTimeRestriction *bool     `json:"login_time_restriction,omitempty"`
+	AllowedLoginHours    *string   `json:"allowed_login_hours,omitempty"`
 }
 
 // EnableTwoFactorRequest enables two-factor authentication request

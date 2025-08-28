@@ -116,6 +116,22 @@ two_factor:
   backup_codes_success: "Backup codes generated successfully"
   backup_codes_failed: "Failed to generate backup codes"
 
+# Authentication Config messages
+auth_config:
+  not_found: "Authentication configuration not found"
+  get_failed: "Failed to get authentication configuration"
+  update_failed: "Failed to update authentication configuration"
+  update_success: "Authentication configuration updated successfully"
+  oauth2_providers_failed: "Failed to get OAuth2 providers"
+  password_policy_min_length: "Password must be at least %d characters long"
+  password_policy_max_length: "Password must not exceed %d characters"
+  password_policy_require_uppercase: "Password must contain at least one uppercase letter"
+  password_policy_require_lowercase: "Password must contain at least one lowercase letter"
+  password_policy_require_numbers: "Password must contain at least one number"
+  password_policy_require_symbols: "Password must contain at least one special character"
+  login_security_ip_not_allowed: "Login from this IP address is not allowed"
+  login_security_time_not_allowed: "Login is not allowed at this time"
+
 # Authentication messages
 auth:
   token_invalid: "Invalid token"
