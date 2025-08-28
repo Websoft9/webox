@@ -921,38 +921,6 @@ CREATE TABLE audit_logs (
 );
 
 -- ========================================
--- 索引创建
--- ========================================
-
--- 应用商店相关索引
-CREATE INDEX idx_app_store_templates_category ON app_store_templates(category_id);
-CREATE INDEX idx_app_store_templates_status ON app_store_templates(status);
-CREATE INDEX idx_app_store_reviews_template ON app_store_reviews(template_id);
-CREATE INDEX idx_app_store_reviews_user ON app_store_reviews(user_id);
-
--- 工作流相关索引
-CREATE INDEX idx_workflows_project ON workflows(project_id);
-CREATE INDEX idx_workflows_owner ON workflows(owner_id);
-CREATE INDEX idx_workflow_tasks_workflow ON workflow_tasks(workflow_id);
-CREATE INDEX idx_workflow_executions_task ON workflow_executions(task_id);
-
--- 资源管理相关索引
-CREATE INDEX idx_servers_owner ON servers(owner_id);
-CREATE INDEX idx_servers_status ON servers(status);
-CREATE INDEX idx_app_instances_server ON app_instances(server_id);
-CREATE INDEX idx_app_instances_template ON app_instances(template_id);
-
--- 用户权限相关索引
-CREATE INDEX idx_users_status ON users(status);
-CREATE INDEX idx_role_permissions_role ON role_permissions(role_id);
-CREATE INDEX idx_role_permissions_permission ON role_permissions(permission_id);
-
--- 审计日志索引
-CREATE INDEX idx_audit_logs_user ON audit_logs(user_id);
-CREATE INDEX idx_audit_logs_action ON audit_logs(action);
-CREATE INDEX idx_audit_logs_created ON audit_logs(created_at);
-
--- ========================================
 -- 初始数据插入
 -- ========================================
 
@@ -1242,15 +1210,10 @@ CREATE INDEX idx_project_files_project ON project_files(project_id);
 CREATE INDEX idx_project_files_parent ON project_files(parent_id);
 CREATE INDEX idx_project_activities_project ON project_activities(project_id);
 
--- 应用商店相关索引
-CREATE INDEX idx_app_store_templates_category ON app_store_templates(category_id);
-CREATE INDEX idx_app_store_templates_status ON app_store_templates(status);
-
-
 -- 用户权限相关索引
-CREATE INDEX idx_users_status ON users(status);
 CREATE INDEX idx_user_roles_user ON user_roles(user_id);
 CREATE INDEX idx_user_roles_role ON user_roles(role_id);
+CREATE INDEX idx_users_status ON users(status);
 CREATE INDEX idx_role_permissions_role ON role_permissions(role_id);
 CREATE INDEX idx_role_permissions_permission ON role_permissions(permission_id);
 
@@ -1261,15 +1224,33 @@ CREATE INDEX idx_alert_records_status ON alert_records(status);
 CREATE INDEX idx_notifications_target_status ON notifications(target_type, status);
 CREATE INDEX idx_user_notifications_user_read ON user_notifications(user_id, is_read);
 
--- 审计日志索引
-CREATE INDEX idx_audit_logs_user ON audit_logs(user_id);
-CREATE INDEX idx_audit_logs_action ON audit_logs(action);
-CREATE INDEX idx_audit_logs_created ON audit_logs(created_at);
-
 -- 时间相关索引
 CREATE INDEX idx_project_activities_created ON project_activities(created_at);
 CREATE INDEX idx_workflow_executions_created ON workflow_executions(created_at);
 CREATE INDEX idx_user_login_history_login_time ON user_login_history(login_time);
+
+-- 应用商店相关索引
+CREATE INDEX idx_app_store_templates_category ON app_store_templates(category_id);
+CREATE INDEX idx_app_store_templates_status ON app_store_templates(status);
+CREATE INDEX idx_app_store_reviews_template ON app_store_reviews(template_id);
+CREATE INDEX idx_app_store_reviews_user ON app_store_reviews(user_id);
+
+-- 工作流相关索引
+CREATE INDEX idx_workflows_project ON workflows(project_id);
+CREATE INDEX idx_workflows_owner ON workflows(owner_id);
+CREATE INDEX idx_workflow_tasks_workflow ON workflow_tasks(workflow_id);
+CREATE INDEX idx_workflow_executions_task ON workflow_executions(task_id);
+
+-- 资源管理相关索引
+CREATE INDEX idx_servers_owner ON servers(owner_id);
+CREATE INDEX idx_servers_status ON servers(status);
+CREATE INDEX idx_app_instances_server ON app_instances(server_id);
+CREATE INDEX idx_app_instances_template ON app_instances(template_id);
+
+-- 审计日志索引
+CREATE INDEX idx_audit_logs_user ON audit_logs(user_id);
+CREATE INDEX idx_audit_logs_action ON audit_logs(action);
+CREATE INDEX idx_audit_logs_created ON audit_logs(created_at);
 
 -- ========================================
 -- 创建触发器用于自动更新 updated_at 字段
