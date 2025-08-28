@@ -135,7 +135,7 @@ func startServer(cfg *config.Config, authConfigManager *config.AuthConfigManager
 	controllers := initControllers(services, validatorInstance, zapLogger, i18nInstance)
 
 	// Initialize router
-	r := router.SetupRouter(controllers, cfg, zapLogger)
+	r := router.SetupRouter(controllers, cfg, zapLogger, services.permissionService)
 
 	// Start server
 	zapLogger.Info("Server starting", logger.String("port", cfg.Server.Port))
