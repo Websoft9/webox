@@ -111,48 +111,6 @@ func (c *UserController) Login(ctx *gin.Context) {
 	}, "user.login_success")
 }
 
-// GetProfile get user profile
-func (c *UserController) GetProfile(ctx *gin.Context) {
-	userID := c.getCurrentUserID(ctx)
-	if userID == 0 {
-		errors.HandleError(ctx, errors.ErrUnauthorized)
-		return
-	}
-
-	profile, err := c.userService.GetProfile(ctx, userID)
-	if err != nil {
-		c.logger.ErrorContext(ctx, "Failed to get user profile", logger.Uint("user_id", userID), logger.ErrorField(err))
-		errors.HandleError(ctx, err)
-		return
-	}
-
-	pkg_response.Success(ctx, middleware.T(ctx, "user.profile_get_success"), profile)
-}
-
-// UpdateProfile update user profile
-func (c *UserController) UpdateProfile(ctx *gin.Context) {
-	userID := c.getCurrentUserID(ctx)
-	if userID == 0 {
-		errors.HandleError(ctx, errors.ErrUnauthorized)
-		return
-	}
-
-	var req request.UserUpdateProfileRequest
-	if !c.bindAndValidateRequest(ctx, &req, "update profile") {
-		return
-	}
-
-	result, err := c.userService.UpdateProfile(ctx, userID, &req)
-	if err != nil {
-		c.logger.ErrorContext(ctx, "Failed to update user profile", logger.Uint("user_id", userID), logger.ErrorField(err))
-		errors.HandleError(ctx, err)
-		return
-	}
-
-	c.logger.InfoContext(ctx, "User profile updated successfully", logger.Uint("user_id", userID))
-	pkg_response.Success(ctx, middleware.T(ctx, "user.profile_update_success"), result)
-}
-
 // ChangePassword change user password
 func (c *UserController) ChangePassword(ctx *gin.Context) {
 	userID := c.getCurrentUserID(ctx)

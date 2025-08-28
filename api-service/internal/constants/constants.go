@@ -93,3 +93,9 @@ const (
 	ErrPermissionNotFound = "permission not found"
 	ErrRoleNotFound       = "role not found"
 )
+
+// Boolean string constants
+const (
+	BoolTrue  = "true"
+	BoolFalse = "false"
+)

@@ -18,6 +18,7 @@ type Controllers struct {
 	PermissionController *controller.PermissionController
 	APITokenController   *controller.APITokenController
 	TwoFactorController  *controller.TwoFactorController
+	ProfileController    *controller.ProfileController
 	// More controllers can be added
 	// AppController  *controller.ApplicationController
 }
@@ -83,6 +84,7 @@ func setupAPIRoutes(v1 *gin.RouterGroup, controllers *Controllers) {
 	setupProtectedPermissionRoutes(protected, controllers.PermissionController)
 	setupProtectedAPITokenRoutes(protected, controllers.APITokenController)
 	setupProtectedTwoFactorRoutes(protected, controllers.TwoFactorController)
+	setupProtectedProfileRoutes(protected, controllers.ProfileController)
 }
 
 // setupUserRoutes sets up user related routes
@@ -110,8 +112,6 @@ func setupI18nRoutes(v1 *gin.RouterGroup, i18nController *controller.I18nControl
 func setupProtectedUserRoutes(protected *gin.RouterGroup, userController *controller.UserController) {
 	users := protected.Group("/users")
 	// Current user operations
-	users.GET("/profile", userController.GetProfile)
-	users.PUT("/profile", userController.UpdateProfile)
 	users.PUT("/password", userController.ChangePassword)
 
 	// User management operations (admin permissions required)
@@ -184,4 +184,33 @@ func setupProtectedTwoFactorRoutes(protected *gin.RouterGroup, twoFactorControll
 	twoFactor.POST("/confirm", twoFactorController.ConfirmTOTP)
 	twoFactor.POST("/disable", twoFactorController.DisableTOTP)
 	twoFactor.POST("/verify", twoFactorController.VerifyTwoFactor)
+}
+
+// setupProtectedProfileRoutes sets up profile management routes
+func setupProtectedProfileRoutes(protected *gin.RouterGroup, profileController *controller.ProfileController) {
+	if profileController == nil {
+		return
+	}
+
+	profile := protected.Group("/profile")
+
+	// Basic profile operations
+	profile.GET("", profileController.GetProfile)
+	profile.PUT("", profileController.UpdateProfile)
+	profile.PUT("/password", profileController.ChangePassword)
+
+	// Two-factor authentication
+	profile.GET("/two-factor", profileController.GetTwoFactorStatus)
+	profile.POST("/two-factor", profileController.EnableTwoFactor)
+	profile.POST("/two-factor/verify", profileController.VerifyTwoFactor)
+	profile.DELETE("/two-factor", profileController.DisableTwoFactor)
+
+	// Login history
+	profile.GET("/login-history", profileController.GetLoginHistory)
+
+	// Settings
+	profile.GET("/settings/notification", profileController.GetNotificationSettings)
+	profile.PUT("/settings/notification", profileController.UpdateNotificationSettings)
+	profile.GET("/settings/security", profileController.GetSecuritySettings)
+	profile.PUT("/settings/security", profileController.UpdateSecuritySettings)
 }

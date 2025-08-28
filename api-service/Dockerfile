@@ -1,37 +1,37 @@
 # Websoft9 API Service Dockerfile
-# 多阶段构建，优化镜像大小和安全性
+# Multi-stage build for optimized image size and security
 
-# 定义InfluxDB版本变量
+# Define InfluxDB version variable
 ARG INFLUXDB_VERSION=2.7.12
 
-# 构建阶段
+# Build stage
 FROM golang:1.24-alpine AS builder
 
-# 声明变量
+# Declare variables
 ARG INFLUXDB_VERSION
 
-# 安装必要的工具
+# Install necessary tools
 RUN apk add --no-cache git bash gcc musl-dev ca-certificates curl
 
-# 创建非特权用户
+# Create non-privileged user
 RUN adduser -D -s /bin/sh appuser
 
-# 设置工作目录
+# Set working directory
 WORKDIR /app
 
-# 下载并解压 InfluxDB 二进制
+# Download and extract InfluxDB binary
 RUN curl -L https://dl.influxdata.com/influxdb/releases/v${INFLUXDB_VERSION}/influxdb${INFLUXDB_VERSION%%.*}-${INFLUXDB_VERSION}_linux_amd64.tar.gz | tar -xz
 
-# 复制 go mod 文件
+# Copy go mod files
 COPY go.mod go.sum ./
 
-# 下载依赖
+# Download dependencies
 RUN go mod download
 
-# 复制源代码
+# Copy source code
 COPY . .
 
-# 构建应用
+# Build application
 ARG VERSION=dev
 ARG COMMIT=1.0.0
 ARG BUILD_TIME=2025-08-01T00:00:00Z
@@ -42,45 +42,45 @@ RUN CGO_ENABLED=1 GOOS=linux go build \
     -o api-service \
     .
 
-# 运行阶段
+# Runtime stage
 FROM alpine:latest
 
-LABEL version="0.1.2"
+LABEL version="0.1.3"
 
-# 声明变量
+# Declare variables
 ARG INFLUXDB_VERSION
 
-# 安装 CA 证书和时区数据
+# Install CA certificates and timezone data
 RUN apk --no-cache add ca-certificates bash sqlite curl supervisor redis
 
-# 创建非特权用户
+# Create non-privileged user
 RUN adduser -D -s /bin/sh appuser
 
-# 设置工作目录
+# Set working directory
 WORKDIR /home/appuser/
 
-# 从构建阶段复制二进制文件
+# Copy binary files from build stage
 COPY --from=builder /app/api-service .
 
-# 复制配置文件（如果存在）
+# Copy configuration files (if exists)
 COPY --from=builder /app/configs ./configs
 COPY --from=builder /app/scripts ./scripts
 RUN chmod +x ./scripts/init_db.sh ./scripts/init_influxdb.sh ./scripts/healthcheck.sh
 
-# 从构建阶段复制 influxd
+# Copy influxd from build stage
 COPY --from=builder /app/influxdb${INFLUXDB_VERSION%%.*}-${INFLUXDB_VERSION}/usr/bin/influxd /usr/local/bin/
 
-# 创建数据目录
+# Create data directories
 RUN mkdir -p /home/appuser/data /home/appuser/logs /home/appuser/data/influxdb && chown -R appuser:appuser /home/appuser/
 
-# 复制supervisord 配置文件和健康检查脚本
+# Copy supervisord configuration file and health check script
 COPY supervisord.conf /etc/supervisord.conf.d/supervisord.conf
 
-# 切换到非特权用户
+# Switch to non-privileged user
 USER appuser
 
-# 暴露端口
+# Expose ports
 EXPOSE 8080 9090 6379 8086
 
-# 启动应用
+# Start application
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf.d/supervisord.conf"]
