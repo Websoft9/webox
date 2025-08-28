@@ -1,4 +1,4 @@
-# Websoft9 server API Service Dockerfile
+# Websoft9 API Service Dockerfile
 # Multi-stage build for optimized image size and security
 
 # Define InfluxDB version variable
