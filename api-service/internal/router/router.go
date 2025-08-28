@@ -3,6 +3,7 @@ package router
 import (
 	"api-service/internal/config"
 	"api-service/internal/controller"
+	serviceInterface "api-service/internal/interface/service"
 	"api-service/internal/middleware"
 	"api-service/pkg/logger"
 	"net/http"
@@ -24,14 +25,14 @@ type Controllers struct {
 }
 
 // SetupRouter sets up router
-func SetupRouter(controllers *Controllers, cfg *config.Config, log logger.Logger) *gin.Engine {
+func SetupRouter(controllers *Controllers, cfg *config.Config, log logger.Logger, permissionService serviceInterface.PermissionService) *gin.Engine {
 	// Set Gin mode
 	gin.SetMode(cfg.Server.Mode)
 
 	r := gin.New()
 
 	// Global middleware
-	setupMiddleware(r, log)
+	setupMiddleware(r, cfg, log, permissionService)
 
 	// Health check
 	setupHealthCheck(r)
@@ -52,10 +53,12 @@ func SetupRouter(controllers *Controllers, cfg *config.Config, log logger.Logger
 }
 
 // setupMiddleware sets up global middleware
-func setupMiddleware(r *gin.Engine, log logger.Logger) {
+func setupMiddleware(r *gin.Engine, cfg *config.Config, log logger.Logger, permissionService serviceInterface.PermissionService) {
 	r.Use(middleware.LoggerMiddleware(log))
 	r.Use(middleware.CORS())
 	r.Use(middleware.I18nMiddleware())
+	r.Use(middleware.OptionalJWTAuth(cfg))
+	r.Use(middleware.PermissionMiddleware(permissionService, log))
 	r.Use(middleware.ErrorHandler(log))
 	r.Use(middleware.RequestValidator(log))
 }
