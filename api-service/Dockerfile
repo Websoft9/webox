@@ -40,7 +40,7 @@ RUN CGO_ENABLED=1 GOOS=linux go build \
     -ldflags "-X main.Version=${VERSION} -X main.Commit=${COMMIT} -X main.BuildTime=${BUILD_TIME} -w -s" \
     -a -installsuffix cgo \
     -o api-service \
-    .
+    ./cmd/server
 
 # 运行阶段
 FROM alpine:latest

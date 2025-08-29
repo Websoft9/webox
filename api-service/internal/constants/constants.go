@@ -37,17 +37,8 @@ const (
 
 // Time-related constants
 const (
-	DefaultJWTExpireTime       = 3600 // 1 hour
-	TokenExpireHours           = 24   // 24 hours
-	DefaultShutdownTimeout     = 30 * time.Second
-	DefaultReadTimeout         = 30 * time.Second
-	DefaultWriteTimeout        = 30 * time.Second
-	DefaultReadHeaderTimeout   = 10 * time.Second
-	DefaultIdleTimeout         = 120 * time.Second
-	DefaultHealthCheckInterval = 30 * time.Second
-	DefaultRetryInterval       = 10 * time.Second
-	DefaultBatchProcessDelay   = 2 * time.Second
-	DefaultMetricsInterval     = 60 * time.Second
+	DefaultJWTExpireTime = 3600 // 1 hour
+	TokenExpireHours     = 24   // 24 hours
 )
 
 // File permission constants
@@ -58,32 +49,36 @@ const (
 
 // Default value constants
 const (
-	DefaultBatchSize     = 100
-	DefaultMaxRetries    = 3
-	DefaultPort          = "8080"
-	DefaultGinMode       = "release"
-	DefaultLogLevel      = "info"
-	DefaultMaxHeaderSize = 1 << 20 // 1MB
+	DefaultPort              = "8080"
+	DefaultGinMode           = "release"
+	DefaultLogLevel          = "info"
+	DefaultShutdownTimeout   = 30 * time.Second
+	DefaultReadTimeout       = 30 * time.Second
+	DefaultWriteTimeout      = 30 * time.Second
+	DefaultReadHeaderTimeout = 10 * time.Second
+	DefaultIdleTimeout       = 120 * time.Second
+	DefaultMaxHeaderBytes    = 1 << 20 // 1MB
 )
 
-// Test data constants
+// Log configuration constants
 const (
-	TestCPUUsage    = 45.5
-	TestMemoryUsage = 78.2
-	TestDiskUsage   = 65.0
+	DefaultLogMaxSize    = 10 // 10 MB
+	DefaultLogMaxBackups = 5  // 5 backup files
+	DefaultLogMaxAge     = 30 // 30 days
 )
 
-// Priority constants
+// Database configuration constants
 const (
-	PriorityHigh   = 1
-	PriorityMedium = 2
-	PriorityLow    = 3
+	DefaultMySQLPort       = 3306
+	DefaultMaxIdleConns    = 10
+	DefaultMaxOpenConns    = 100
+	DefaultConnMaxLifetime = 3600 // seconds
+	DefaultConnectTimeout  = 30   // seconds
 )
 
-// Health check related constants
+// Logger directory permissions
 const (
-	HealthCheckTimeout  = 5 * time.Second
-	HealthCheckInterval = 30 * time.Second
+	DefaultLogDirPerm = 0755
 )
 
 // OAuth2 constants

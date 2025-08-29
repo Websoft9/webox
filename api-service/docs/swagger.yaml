@@ -1,3 +1,4 @@
+basePath: /
 definitions:
   controller.OAuth2AuthorizeResponse:
     properties:
@@ -856,6 +857,19 @@ definitions:
       updated_at:
         type: string
     type: object
+  response.Response:
+    properties:
+      code:
+        example: 200
+        type: integer
+      data: {}
+      error:
+        example: Error message
+        type: string
+      message:
+        example: Success
+        type: string
+    type: object
   response.RoleListResponse:
     properties:
       items:
@@ -1208,8 +1222,19 @@ definitions:
       token_type:
         type: string
     type: object
+host: localhost:8080
 info:
-  contact: {}
+  contact:
+    email: support@websoft9.com
+    name: Websoft9 Support
+    url: https://www.websoft9.com
+  description: Enterprise cloud application management platform API service
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Websoft9 API Service
+  version: "1.0"
 paths:
   /api/v1/api-tokens:
     delete:
@@ -3228,4 +3253,142 @@ paths:
       summary: Update user profile
       tags:
       - Users
+  /health/database:
+    get:
+      consumes:
+      - application/json
+      description: Checks the database connection status and returns connection information
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Database is healthy
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "500":
+          description: Failed to get database info
+          schema:
+            $ref: '#/definitions/response.Response'
+        "503":
+          description: Database connection failed
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Check database health
+      tags:
+      - health
+  /health/database/stats:
+    get:
+      consumes:
+      - application/json
+      description: Returns detailed statistics about database connections, performance
+        metrics, and configuration
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Database statistics retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "500":
+          description: Failed to get database statistics
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Get database statistics
+      tags:
+      - health
+  /health/system:
+    get:
+      consumes:
+      - application/json
+      description: Performs health checks on all system components including database,
+        Redis, and InfluxDB
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: All systems healthy
+          schema:
+            additionalProperties: true
+            type: object
+        "503":
+          description: Some systems are unhealthy
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Comprehensive system health check
+      tags:
+      - health
+  /liveness:
+    get:
+      consumes:
+      - application/json
+      description: Liveness probe endpoint for Kubernetes deployments. Indicates if
+        the application is alive and running
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Application is alive
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Kubernetes liveness probe
+      tags:
+      - health
+  /ping:
+    get:
+      consumes:
+      - application/json
+      description: Simple ping endpoint that returns pong with timestamp
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Ping successful
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Ping endpoint
+      tags:
+      - health
+  /readiness:
+    get:
+      consumes:
+      - application/json
+      description: Readiness probe endpoint for Kubernetes deployments. Checks if
+        the application is ready to serve traffic
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Application is ready
+          schema:
+            additionalProperties: true
+            type: object
+        "503":
+          description: Database not ready
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Kubernetes readiness probe
+      tags:
+      - health
+securityDefinitions:
+  Bearer:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"
