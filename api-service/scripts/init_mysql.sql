@@ -472,9 +472,7 @@ CREATE TABLE `app_gateway_access_rules` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='应用网关访问控制规则表';
 
 ALTER TABLE `app_gateways_publishes` ADD CONSTRAINT `fk_gateway_publishes_alert_rule` FOREIGN KEY (`alert_rule_id`) REFERENCES `alert_rules` (`id`) ON DELETE SET NULL;
-ALTER TABLE `resource_groups` ADD CONSTRAINT `fk_resource_groups_owner` FOREIGN KEY (`owner_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT;
 ALTER TABLE `database_connections` ADD CONSTRAINT `fk_database_connections_owner` FOREIGN KEY (`owner_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT;
-ALTER TABLE `secret_keys` ADD CONSTRAINT `fk_secret_keys_owner` FOREIGN KEY (`owner_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT;
 ALTER TABLE `ssl_certificates` ADD CONSTRAINT `fk_ssl_certificates_owner` FOREIGN KEY (`owner_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT;
 ALTER TABLE `app_gateways` ADD CONSTRAINT `fk_app_gateways_owner` FOREIGN KEY (`owner_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT;
 ALTER TABLE `app_gateways_publishes` ADD CONSTRAINT `fk_gateway_publishes_owner` FOREIGN KEY (`owner_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT;
