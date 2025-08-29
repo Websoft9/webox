@@ -7,6 +7,7 @@ import (
 	"api-service/internal/middleware"
 	"api-service/pkg/logger"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -22,6 +23,7 @@ type Controllers struct {
 	APITokenController   *controller.APITokenController
 	TwoFactorController  *controller.TwoFactorController
 	AuthConfigController *controller.AuthConfigController
+	HealthController     *controller.HealthController
 	// More controllers can be added
 	// AppController  *controller.ApplicationController
 }
@@ -34,7 +36,7 @@ func SetupRouter(controllers *Controllers, cfg *config.Config, log logger.Logger
 	r := gin.New()
 
 	// Health check
-	setupHealthCheck(r)
+	setupHealthCheck(r, controllers.HealthController)
 
 	// Swagger documentation (without middleware)
 	setupSwaggerRoute(r, cfg)
@@ -69,13 +71,37 @@ func setupMiddleware(r *gin.Engine, cfg *config.Config, log logger.Logger, permi
 }
 
 // setupHealthCheck sets up health check routes
-func setupHealthCheck(r *gin.Engine) {
+func setupHealthCheck(r *gin.Engine, healthController *controller.HealthController) {
+	if healthController == nil {
+		// Fallback basic health check if controller is not available
+		r.GET("/health", func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{
+				"status":  "ok",
+				"message": "API service running normally",
+			})
+		})
+		return
+	}
+
+	// Basic health endpoints
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
-			"status":  "ok",
-			"message": "API service running normally",
+			"status":    "healthy",
+			"message":   "API service running normally",
+			"timestamp": time.Now().Unix(),
 		})
 	})
+
+	// Health controller endpoints
+	r.GET("/ping", healthController.Ping)
+	r.GET("/readiness", healthController.Readiness)
+	r.GET("/liveness", healthController.Liveness)
+
+	// Health check API group
+	healthGroup := r.Group("/health")
+	healthGroup.GET("/system", healthController.SystemHealth)
+	healthGroup.GET("/database", healthController.DatabaseHealth)
+	healthGroup.GET("/database/stats", healthController.DatabaseStats)
 }
 
 // setupSwaggerRoute sets up swagger documentation route

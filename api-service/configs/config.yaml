@@ -1,9 +1,53 @@
 server:
   port: "8080"
   mode: "debug"
+  log:
+    log_leve: "debug"
+    log_path: "../logs/websoft9.log"
+    log_max_size: 10
+    log_max_backups: 5
+    log_max_age: 30
+    log_compress: true
+  config:
+    read_timeout: 60
+    write_timeout: 60
+    idle_timeout: 60
+    read_header_timeout: 60
+    max_header_bytes: 1048576
 
+# Database configuration
+# Supported types: sqlite, mysql, postgres
 database:
+  # Database type
+  type: "sqlite"
+  
+  # SQLite specific configuration
   path: "./data/websoft9.db"
+  
+  # MySQL/PostgreSQL configuration
+  host: "localhost"
+  port: 3306  # 3306 for MySQL, 5432 for PostgreSQL
+  database: "websoft9"
+  username: "websoft9"
+  password: ""
+  
+  # Connection pool settings
+  max_idle_conns: 10
+  max_open_conns: 100
+  conn_max_lifetime: 3600  # seconds
+  
+  # SSL/TLS settings (for MySQL/PostgreSQL)
+  ssl_mode: "disable"  # disable, require, verify-ca, verify-full
+  ssl_cert: ""
+  ssl_key: ""
+  ssl_rootca: ""
+  
+  # Connection timeout in seconds
+  connect_timeout: 30
+  
+  # MySQL specific settings
+  charset: "utf8mb4"
+  timezone: "Local"  # Local, UTC, or specific timezone
 
 redis:
   host: "localhost"
