@@ -77,7 +77,6 @@ type APITokenResponse struct {
 	Description string     `json:"description,omitempty"`
 	LastUsedAt  *time.Time `json:"last_used_at,omitempty"`
 	ExpiresAt   *time.Time `json:"expires_at,omitempty"`
-	Status      int        `json:"status"`
 	CreatedAt   time.Time  `json:"created_at"`
 }
 
@@ -298,7 +297,6 @@ func ConvertToAPITokenResponse(token *model.APIToken) *APITokenResponse {
 		Description: token.Description,
 		LastUsedAt:  token.LastUsedAt,
 		ExpiresAt:   token.ExpiresAt,
-		Status:      token.Status,
 		CreatedAt:   token.CreatedAt,
 	}
 

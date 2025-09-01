@@ -31,7 +31,7 @@ func (r *roleRepository) Create(ctx context.Context, role *model.Role) error {
 // GetByID retrieves a role by ID
 func (r *roleRepository) GetByID(ctx context.Context, id uint) (*model.Role, error) {
 	var role model.Role
-	err := r.db.WithContext(ctx).First(&role, id).Error
+	err := r.db.WithContext(ctx).Where("status != -1").First(&role, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("role not found")
@@ -44,7 +44,7 @@ func (r *roleRepository) GetByID(ctx context.Context, id uint) (*model.Role, err
 // GetByCode retrieves a role by code
 func (r *roleRepository) GetByCode(ctx context.Context, code string) (*model.Role, error) {
 	var role model.Role
-	err := r.db.WithContext(ctx).Where("code = ?", code).First(&role).Error
+	err := r.db.WithContext(ctx).Where("code = ? AND status != -1", code).First(&role).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -56,6 +56,20 @@ func (r *roleRepository) GetByCode(ctx context.Context, code string) (*model.Rol
 
 // Update updates a role
 func (r *roleRepository) Update(ctx context.Context, role *model.Role) error {
+	// Check if role exists and is not deleted or disabled
+	var existingRole model.Role
+	if err := r.db.WithContext(ctx).Where("status != -1").First(&existingRole, role.ID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("role not found")
+		}
+		return errors.Wrap(err, "failed to get role for update")
+	}
+
+	// Check if role is disabled
+	if existingRole.Status == 0 {
+		return errors.New("cannot update disabled role")
+	}
+
 	result := r.db.WithContext(ctx).Model(role).
 		Omit("created_at", "code").
 		Updates(role)
@@ -71,8 +85,22 @@ func (r *roleRepository) Update(ctx context.Context, role *model.Role) error {
 	return nil
 }
 
-// Delete deletes a role
+// Delete deletes a role (soft delete)
 func (r *roleRepository) Delete(ctx context.Context, id uint) error {
+	// Check if role exists and is not already deleted
+	var role model.Role
+	if err := r.db.WithContext(ctx).First(&role, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("role not found")
+		}
+		return errors.Wrap(err, "failed to get role")
+	}
+
+	// Check if already deleted
+	if role.Status == -1 {
+		return errors.New("role already deleted")
+	}
+
 	// Check if there are associated users
 	var userCount int64
 	if err := r.db.WithContext(ctx).Model(&model.UserRole{}).
@@ -84,33 +112,24 @@ func (r *roleRepository) Delete(ctx context.Context, id uint) error {
 		return errors.New("cannot delete role with associated users")
 	}
 
-	// Check if it's a system role
-	var role model.Role
-	if err := r.db.WithContext(ctx).First(&role, id).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("role not found")
-		}
-		return errors.Wrap(err, "failed to get role")
-	}
-
 	if role.IsSystem {
 		return errors.New("cannot delete system role")
 	}
 
-	// Start transactional deletion
-	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		// Delete role permission associations
-		if err := tx.Where("role_id = ?", id).Delete(&model.RolePermission{}).Error; err != nil {
-			return errors.Wrap(err, "failed to delete role permissions")
-		}
+	// Perform soft delete by setting status to -1
+	result := r.db.WithContext(ctx).Model(&model.Role{}).
+		Where("id = ?", id).
+		Update("status", -1)
 
-		// Delete role
-		if err := tx.Delete(&model.Role{}, id).Error; err != nil {
-			return errors.Wrap(err, "failed to delete role")
-		}
+	if result.Error != nil {
+		return errors.Wrap(result.Error, "failed to delete role")
+	}
 
-		return nil
-	})
+	if result.RowsAffected == 0 {
+		return errors.New("no rows affected")
+	}
+
+	return nil
 }
 
 // List retrieves a list of roles
@@ -118,7 +137,7 @@ func (r *roleRepository) List(ctx context.Context, req *request.ListRolesRequest
 	var roles []*model.Role
 	var total int64
 
-	query := r.db.WithContext(ctx).Model(&model.Role{})
+	query := r.db.WithContext(ctx).Model(&model.Role{}).Where("status != -1")
 
 	// Build query conditions
 	if req.Search != "" {
@@ -175,7 +194,7 @@ func (r *roleRepository) List(ctx context.Context, req *request.ListRolesRequest
 func (r *roleRepository) GetWithPermissions(ctx context.Context, id uint) (*model.Role, error) {
 	var role model.Role
 	err := r.db.WithContext(ctx).
-		Preload("Permissions", "status = 1").
+		Preload("Permissions", "status != -1").
 		First(&role, id).Error
 
 	if err != nil {
@@ -192,7 +211,7 @@ func (r *roleRepository) GetWithPermissions(ctx context.Context, id uint) (*mode
 func (r *roleRepository) GetWithUsers(ctx context.Context, id uint) (*model.Role, error) {
 	var role model.Role
 	err := r.db.WithContext(ctx).
-		Preload("Users", "status = 1").
+		Preload("Users", "status != -1").
 		First(&role, id).Error
 
 	if err != nil {
@@ -260,7 +279,7 @@ func (r *roleRepository) GetPermissions(ctx context.Context, roleID uint) ([]mod
 
 	err := r.db.WithContext(ctx).
 		Joins("JOIN role_permissions ON permissions.id = role_permissions.permission_id").
-		Where("role_permissions.role_id = ? AND role_permissions.status = 1 AND permissions.status = 1", roleID).
+		Where("role_permissions.role_id = ? AND role_permissions.status != -1 AND permissions.status != -1", roleID).
 		Find(&permissions).Error
 
 	if err != nil {
@@ -328,6 +347,20 @@ func (r *roleRepository) CreateWithTx(ctx context.Context, tx *gorm.DB, role *mo
 
 // UpdateWithTx updates a role within a transaction
 func (r *roleRepository) UpdateWithTx(ctx context.Context, tx *gorm.DB, role *model.Role) error {
+	// Check if role exists and is not deleted or disabled
+	var existingRole model.Role
+	if err := tx.WithContext(ctx).Where("status != -1").First(&existingRole, role.ID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("role not found")
+		}
+		return errors.Wrap(err, "failed to get role for update in transaction")
+	}
+
+	// Check if role is disabled
+	if existingRole.Status == 0 {
+		return errors.New("cannot update disabled role")
+	}
+
 	result := tx.WithContext(ctx).Model(role).
 		Omit("created_at", "code").
 		Updates(role)

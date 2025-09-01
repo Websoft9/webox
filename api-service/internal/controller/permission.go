@@ -150,7 +150,7 @@ func (c *PermissionController) UpdatePermission(ctx *gin.Context) {
 			"success": false,
 			"code":    http.StatusBadRequest,
 			"message": c.i18n.T(ctx, "validation.request_validation_failed"),
-			"error":   err.Error(),
+			"error":   validateErr.Error(),
 		})
 		return
 	}
@@ -260,7 +260,7 @@ func (c *PermissionController) DeletePermission(ctx *gin.Context) {
 // @Param search query string false "Search keyword"
 // @Param module query string false "Permission module"
 // @Param scope query string false "Permission scope" Enums(platform, project)
-// @Param status query int false "Permission status" Enums(0, 1)
+// @Param status query int false "Permission status" Enums(-1, 0, 1)
 // @Param start_time query string false "Start time" format(datetime)
 // @Param end_time query string false "End time" format(datetime)
 // @Success 200 {object} response.APIResponse{data=response.PermissionListResponse}
@@ -320,7 +320,7 @@ func (c *PermissionController) ListPermissions(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param scope query string false "Permission scope" Enums(platform, project)
-// @Param status query int false "Permission status" Enums(0, 1)
+// @Param status query int false "Permission status" Enums(-1, 0, 1)
 // @Success 200 {object} response.APIResponse{data=response.PermissionTreeResponse}
 // @Failure 400 {object} response.APIResponse
 // @Router /api/v1/permissions/tree [get]

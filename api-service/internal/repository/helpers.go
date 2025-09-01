@@ -22,7 +22,7 @@ func GetRolesByPermissionID(
 	// Count query
 	countQuery := db.WithContext(ctx).Model(&model.Role{}).
 		Joins("JOIN role_permissions ON roles.id = role_permissions.role_id").
-		Where("role_permissions.permission_id = ? AND role_permissions.status = 1 AND roles.status = 1", permissionID)
+		Where("role_permissions.permission_id = ? AND role_permissions.status != -1 AND roles.status != -1", permissionID)
 
 	if err := countQuery.Count(&total).Error; err != nil {
 		return nil, 0, errors.Wrap(err, "failed to count permission roles")
@@ -32,7 +32,7 @@ func GetRolesByPermissionID(
 	offset := (page - 1) * pageSize
 	err := db.WithContext(ctx).
 		Joins("JOIN role_permissions ON roles.id = role_permissions.role_id").
-		Where("role_permissions.permission_id = ? AND role_permissions.status = 1 AND roles.status = 1", permissionID).
+		Where("role_permissions.permission_id = ? AND role_permissions.status != 1 AND roles.status != -1", permissionID).
 		Offset(offset).Limit(pageSize).
 		Find(&roles).Error
 
@@ -56,7 +56,7 @@ func GetUsersByRoleID(
 	// Count query
 	countQuery := db.WithContext(ctx).Model(&model.User{}).
 		Joins("JOIN user_roles ON users.id = user_roles.user_id").
-		Where("user_roles.role_id = ? AND user_roles.status = 1 AND users.status = 1", roleID)
+		Where("user_roles.role_id = ? AND user_roles.status != -1 AND users.status != -1", roleID)
 
 	if err := countQuery.Count(&total).Error; err != nil {
 		return nil, 0, errors.Wrap(err, "failed to count role users")
@@ -66,7 +66,7 @@ func GetUsersByRoleID(
 	offset := (page - 1) * pageSize
 	err := db.WithContext(ctx).
 		Joins("JOIN user_roles ON users.id = user_roles.user_id").
-		Where("user_roles.role_id = ? AND user_roles.status = 1 AND users.status = 1", roleID).
+		Where("user_roles.role_id = ? AND user_roles.status != -1 AND users.status != -1", roleID).
 		Offset(offset).Limit(pageSize).
 		Find(&users).Error
 

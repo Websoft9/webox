@@ -400,7 +400,6 @@ func (c *APITokenController) RefreshAPIToken(ctx *gin.Context) {
 // @Param page query int false "Page number" default(1)
 // @Param page_size query int false "Page size" default(20)
 // @Param search query string false "Search keyword"
-// @Param status query string false "Token status" Enums(active, revoked, expired)
 // @Param start_time query string false "Start time" format(datetime)
 // @Param end_time query string false "End time" format(datetime)
 // @Success 200 {object} response.APIResponse{data=response.APITokenListResponse}

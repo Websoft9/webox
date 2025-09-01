@@ -126,14 +126,6 @@ func (r *apiTokenRepository) BatchDelete(ctx context.Context, ids []uint) error 
 	return r.db.WithContext(ctx).Where("id IN ?", ids).Delete(&model.APIToken{}).Error
 }
 
-// BatchUpdateStatus 批量更新API令牌状态
-func (r *apiTokenRepository) BatchUpdateStatus(ctx context.Context, ids []uint, status int) error {
-	return r.db.WithContext(ctx).
-		Model(&model.APIToken{}).
-		Where("id IN ?", ids).
-		Update("status", status).Error
-}
-
 // UpdateLastUsed 更新令牌最后使用时间
 func (r *apiTokenRepository) UpdateLastUsed(ctx context.Context, id uint, ip string) error {
 	now := time.Now()
@@ -168,11 +160,6 @@ func (r *apiTokenRepository) applyFilters(query *gorm.DB, req *request.ListAPITo
 	// 用户ID过滤
 	if req.UserID != nil {
 		query = query.Where("user_id = ?", *req.UserID)
-	}
-
-	// 状态过滤
-	if req.Status != nil {
-		query = query.Where("status = ?", *req.Status)
 	}
 
 	// 名称搜索

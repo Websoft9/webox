@@ -19,7 +19,7 @@ type Role struct {
 	Description string `json:"description" gorm:"type:text" validate:"max=500"`
 	IsSystem    bool   `json:"is_system" gorm:"default:false"`
 	SortOrder   int    `json:"sort_order" gorm:"default:0"`
-	Status      int    `json:"status" gorm:"default:1"` // 0:禁用, 1:启用
+	Status      int    `json:"status" gorm:"default:1"` // -1:删除, 0:禁用, 1:启用
 	CreatedBy   *uint  `json:"created_by" gorm:"index"`
 	UpdatedBy   *uint  `json:"updated_by" gorm:"index"`
 
@@ -56,7 +56,7 @@ type Permission struct {
 	IsSystem    bool   `json:"is_system" gorm:"default:false"`
 	IsMenu      bool   `json:"is_menu" gorm:"default:false"`
 	SortOrder   int    `json:"sort_order" gorm:"default:0"`
-	Status      int    `json:"status" gorm:"default:1"` // 0:禁用, 1:启用
+	Status      int    `json:"status" gorm:"default:1"` // -1:删除, 0:禁用, 1:启用
 	CreatedBy   *uint  `json:"created_by" gorm:"index"`
 	UpdatedBy   *uint  `json:"updated_by" gorm:"index"`
 
@@ -87,7 +87,7 @@ type UserRole struct {
 	GrantedBy *uint      `json:"granted_by" gorm:"index"`
 	GrantedAt time.Time  `json:"granted_at" gorm:"not null;default:CURRENT_TIMESTAMP"`
 	ExpiresAt *time.Time `json:"expires_at"`
-	Status    int        `json:"status" gorm:"default:1"` // 0:禁用, 1:启用
+	Status    int        `json:"status" gorm:"default:1"` //  -1:删除, 0:禁用, 1:启用
 	CreatedAt time.Time  `json:"created_at"`
 	UpdatedAt time.Time  `json:"updated_at"`
 
@@ -108,7 +108,7 @@ type RolePermission struct {
 	PermissionID uint      `json:"permission_id" gorm:"not null;index"`
 	GrantedBy    *uint     `json:"granted_by" gorm:"index"`
 	GrantedAt    time.Time `json:"granted_at" gorm:"not null;default:CURRENT_TIMESTAMP"`
-	Status       int       `json:"status" gorm:"default:1"` // 0:禁用, 1:启用
+	Status       int       `json:"status" gorm:"default:1"` //  -1:删除, 0:禁用, 1:启用
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
 
@@ -134,7 +134,6 @@ type APIToken struct {
 	LastUsedAt  *time.Time `json:"last_used_at"`
 	LastUsedIP  string     `json:"last_used_ip" gorm:"size:45"`
 	ExpiresAt   *time.Time `json:"expires_at"`
-	Status      int        `json:"status" gorm:"default:1"` // 0:禁用, 1:启用
 
 	// 关联关系
 	User User `json:"user,omitempty" gorm:"foreignKey:UserID"`
@@ -154,11 +153,6 @@ func (t *APIToken) IsExpired() bool {
 		return false
 	}
 	return time.Now().After(*t.ExpiresAt)
-}
-
-// IsActive 检查令牌是否有效
-func (t *APIToken) IsActive() bool {
-	return t.Status == 1 && !t.IsExpired()
 }
 
 // UserTwoFactor 用户双因子认证表

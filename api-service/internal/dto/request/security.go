@@ -9,7 +9,7 @@ type CreateRoleRequest struct {
 	Description   string `json:"description" validate:"max=500"`
 	PermissionIDs []uint `json:"permission_ids"`
 	SortOrder     int    `json:"sort_order"`
-	Status        int    `json:"status" validate:"oneof=0 1"`
+	Status        int    `json:"status" validate:"oneof=-1 0 1"`
 }
 
 // UpdateRoleRequest updates role request
@@ -18,7 +18,7 @@ type UpdateRoleRequest struct {
 	Description   string `json:"description" validate:"max=500"`
 	PermissionIDs []uint `json:"permission_ids"`
 	SortOrder     int    `json:"sort_order"`
-	Status        int    `json:"status" validate:"oneof=0 1"`
+	Status        int    `json:"status" validate:"oneof=-1 0 1"`
 }
 
 // RolePermissionRequest role permission operation request
@@ -30,7 +30,7 @@ type RolePermissionRequest struct {
 type ListRolesRequest struct {
 	PaginationRequest
 	Search    string `form:"search"`
-	Status    *int   `form:"status" validate:"omitempty,oneof=0 1"`
+	Status    *int   `form:"status" validate:"omitempty,oneof=-1 0 1"`
 	StartTime string `form:"start_time" validate:"omitempty,datetime=2006-01-02 15:04:05"`
 	EndTime   string `form:"end_time" validate:"omitempty,datetime=2006-01-02 15:04:05"`
 }
@@ -47,7 +47,7 @@ type CreatePermissionRequest struct {
 	Description string `json:"description" validate:"max=500"`
 	IsMenu      bool   `json:"is_menu"`
 	SortOrder   int    `json:"sort_order"`
-	Status      int    `json:"status" validate:"oneof=0 1"`
+	Status      int    `json:"status" validate:"oneof=-1 0 1"`
 }
 
 // UpdatePermissionRequest updates permission request
@@ -55,7 +55,7 @@ type UpdatePermissionRequest struct {
 	Name        string `json:"name" validate:"omitempty,min=2,max=64"`
 	Description string `json:"description" validate:"max=500"`
 	SortOrder   int    `json:"sort_order"`
-	Status      int    `json:"status" validate:"oneof=0 1"`
+	Status      int    `json:"status" validate:"oneof=-1 0 1"`
 }
 
 // ListPermissionsRequest permission list query request
@@ -64,7 +64,7 @@ type ListPermissionsRequest struct {
 	Search    string `form:"search"`
 	Module    string `form:"module"`
 	Scope     string `form:"scope" validate:"omitempty,oneof=platform project"`
-	Status    *int   `form:"status" validate:"omitempty,oneof=0 1"`
+	Status    *int   `form:"status" validate:"omitempty,oneof=-1 0 1"`
 	StartTime string `form:"start_time" validate:"omitempty,datetime=2006-01-02 15:04:05"`
 	EndTime   string `form:"end_time" validate:"omitempty,datetime=2006-01-02 15:04:05"`
 }
@@ -72,7 +72,7 @@ type ListPermissionsRequest struct {
 // PermissionTreeRequest permission tree query request
 type PermissionTreeRequest struct {
 	Scope  string `form:"scope" validate:"omitempty,oneof=platform project"`
-	Status *int   `form:"status" validate:"omitempty,oneof=0 1"`
+	Status *int   `form:"status" validate:"omitempty,oneof=-1 0 1"`
 }
 
 // CreateAPITokenRequest creates API token request
@@ -89,7 +89,6 @@ type UpdateAPITokenRequest struct {
 	Description string     `json:"description" validate:"max=500"`
 	Scopes      []string   `json:"scopes"`
 	ExpiresAt   *time.Time `json:"expires_at"`
-	Status      int        `json:"status" validate:"oneof=0 1"`
 }
 
 // ListAPITokensRequest API token list query request
@@ -97,7 +96,6 @@ type ListAPITokensRequest struct {
 	PaginationRequest
 	Search  string `form:"search"`
 	UserID  *uint  `form:"user_id"`
-	Status  *int   `form:"status" validate:"omitempty,oneof=0 1"`
 	Expired *bool  `form:"expired"`
 }
 
