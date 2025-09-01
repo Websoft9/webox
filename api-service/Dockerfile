@@ -14,7 +14,7 @@ RUN CGO_ENABLED=1 GOOS=linux go build \
 # Runtime
 FROM alpine:latest
 
-LABEL version="0.1.2"
+LABEL version="0.1.3"
 
 # Declare variables
 ARG INFLUXDB_VERSION
