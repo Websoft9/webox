@@ -1,6 +1,37 @@
+# Websoft9 API Service Dockerfile
+# Multi-stage build for optimized image size and security
+
+# Define InfluxDB version variable
+ARG INFLUXDB_VERSION=2.7.12
+
+# Build stage
+FROM golang:1.24-alpine AS builder
+
+# Declare variables
+ARG INFLUXDB_VERSION
+
+# Install necessary tools
+RUN apk add --no-cache git bash gcc musl-dev ca-certificates curl
+
+# Create non-privileged user
+RUN adduser -D -s /bin/sh appuser
+
+# Set working directory
+WORKDIR /app
+
+# Download and extract InfluxDB binary
+RUN curl -L https://dl.influxdata.com/influxdb/releases/v${INFLUXDB_VERSION}/influxdb${INFLUXDB_VERSION%%.*}-${INFLUXDB_VERSION}_linux_amd64.tar.gz | tar -xz
+
+# Copy go mod files
+COPY go.mod go.sum ./
+
+# Download dependencies
+RUN go mod download
+
+# Copy source code
 COPY . .
 
-# Building Applications
+# Building Application
 ARG VERSION=dev
 ARG COMMIT=1.0.0
 ARG BUILD_TIME=2025-08-01T00:00:00Z
@@ -14,12 +45,12 @@ RUN CGO_ENABLED=1 GOOS=linux go build \
 # Runtime
 FROM alpine:latest
 
-LABEL version="0.1.2"
+LABEL version="0.1.3"
 
 # Declare variables
 ARG INFLUXDB_VERSION
 
-# Install CA Certificates and Time Zone Data
+# Install CA Certificates and Time zone Data
 RUN apk --no-cache add ca-certificates bash sqlite curl supervisor redis
 
 # Create non-privileged user
