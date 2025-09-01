@@ -1,3 +1,34 @@
+# Websoft9 API Service Dockerfile
+# Multi-stage build for optimized image size and security
+
+# Define InfluxDB version variable
+ARG INFLUXDB_VERSION=2.7.12
+
+# Build stage
+FROM golang:1.24-alpine AS builder
+
+# Declare variables
+ARG INFLUXDB_VERSION
+
+# Install necessary tools
+RUN apk add --no-cache git bash gcc musl-dev ca-certificates curl
+
+# Create non-privileged user
+RUN adduser -D -s /bin/sh appuser
+
+# Set working directory
+WORKDIR /app
+
+# Download and extract InfluxDB binary
+RUN curl -L https://dl.influxdata.com/influxdb/releases/v${INFLUXDB_VERSION}/influxdb${INFLUXDB_VERSION%%.*}-${INFLUXDB_VERSION}_linux_amd64.tar.gz | tar -xz
+
+# Copy go mod files
+COPY go.mod go.sum ./
+
+# Download dependencies
+RUN go mod download
+
+# Copy source code
 COPY . .
 
 # Building Applications
