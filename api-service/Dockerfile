@@ -31,7 +31,7 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Building Applications
+# Building Application
 ARG VERSION=dev
 ARG COMMIT=1.0.0
 ARG BUILD_TIME=2025-08-01T00:00:00Z

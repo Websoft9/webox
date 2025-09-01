@@ -30,9 +30,7 @@ jobs:
         with:
           image: websoft9dev/webox-server
           # push both the extracted version tag and "latest"
-          tags: |
-            ${{ env.VERSION }}
-            latest
+          tags: ${{ env.VERSION }},latest
           registry: docker.io
           directory: ./api-service
           dockerfile: ./api-service/Dockerfile
