@@ -1,5 +1,5 @@
 # 检查 Redis
-if ! redis-cli -a "$REDIS_PASSWORD" -h 127.0.0.1 ping | grep -q "PONG"; then
+if ! redis-cli -a "$WEBSOFT9_REDIS_PASSWORD" -h 127.0.0.1 ping | grep -q "PONG"; then
   echo "Redis not healthy"
   exit 1
 fi
