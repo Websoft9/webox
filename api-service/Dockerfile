@@ -50,7 +50,7 @@ LABEL version="0.1.3"
 # Declare variables
 ARG INFLUXDB_VERSION
 
-# Install CA Certificates and Time Zone Data
+# Install CA Certificates and Time zone Data
 RUN apk --no-cache add ca-certificates bash sqlite curl supervisor redis
 
 # Create non-privileged user
