@@ -113,7 +113,7 @@ func (c *RoleController) GetRole(ctx *gin.Context) {
 // @Param page query int false "Page number" default(1)
 // @Param page_size query int false "Page size" default(20)
 // @Param search query string false "Search keyword"
-// @Param status query int false "Role status" Enums(0, 1)
+// @Param status query int false "Role status" Enums(-1, 0, 1)
 // @Param start_time query string false "Start time" format(datetime)
 // @Param end_time query string false "End time" format(datetime)
 // @Success 200 {object} response.APIResponse{data=response.RoleListResponse}
@@ -357,7 +357,7 @@ func (c *RoleController) AssignPermissions(ctx *gin.Context) {
 			"success": false,
 			"code":    http.StatusBadRequest,
 			"message": c.i18n.T(ctx, "validation.request_validation_failed"),
-			"error":   err.Error(),
+			"error":   validateErr.Error(),
 		})
 		return
 	}
@@ -439,7 +439,7 @@ func (c *RoleController) RemovePermissions(ctx *gin.Context) {
 			"success": false,
 			"code":    http.StatusBadRequest,
 			"message": c.i18n.T(ctx, "validation.request_validation_failed"),
-			"error":   err.Error(),
+			"error":   validateErr.Error(),
 		})
 		return
 	}

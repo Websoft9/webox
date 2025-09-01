@@ -76,7 +76,6 @@ func (s *apiTokenService) CreateAPIToken(ctx context.Context, req *request.Creat
 		Scopes:      scopesJSON,
 		Description: req.Description,
 		ExpiresAt:   req.ExpiresAt,
-		Status:      1, // Active
 	}
 
 	// Save to database
@@ -159,9 +158,6 @@ func (s *apiTokenService) UpdateAPIToken(ctx context.Context, id uint, req *requ
 	if req.ExpiresAt != nil {
 		token.ExpiresAt = req.ExpiresAt
 	}
-	if req.Status >= 0 {
-		token.Status = req.Status
-	}
 
 	// Save changes
 	if err := s.tokenRepo.Update(ctx, token); err != nil {
@@ -198,11 +194,8 @@ func (s *apiTokenService) RevokeAPIToken(ctx context.Context, id, userID uint) e
 		return errors.New("token not found")
 	}
 
-	// Set status to revoked (0)
-	token.Status = 0
-
-	// Save changes
-	if err := s.tokenRepo.Update(ctx, token); err != nil {
+	// Delete the token (revoke)
+	if err := s.tokenRepo.Delete(ctx, token.ID); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to revoke API token", logger.ErrorField(err))
 		return errors.Wrap(err, "failed to revoke API token")
 	}
@@ -326,8 +319,8 @@ func (s *apiTokenService) ValidateAPIToken(ctx context.Context, token string) (*
 		return nil, errors.Wrap(err, "failed to validate API token")
 	}
 
-	// Check if token is active and not expired
-	if !apiToken.IsActive() {
+	// Check if token is not expired
+	if apiToken.IsExpired() {
 		return &response.APITokenValidationResponse{Valid: false}, nil
 	}
 

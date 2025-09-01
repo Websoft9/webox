@@ -91,7 +91,6 @@ type APITokenRepository interface {
 
 	// 批量操作
 	BatchDelete(ctx context.Context, ids []uint) error
-	BatchUpdateStatus(ctx context.Context, ids []uint, status int) error
 
 	// 令牌管理
 	UpdateLastUsed(ctx context.Context, id uint, ip string) error

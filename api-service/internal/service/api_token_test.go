@@ -65,11 +65,6 @@ func (m *MockAPITokenRepository) BatchDelete(ctx context.Context, ids []uint) er
 	return args.Error(0)
 }
 
-func (m *MockAPITokenRepository) BatchUpdateStatus(ctx context.Context, ids []uint, status int) error {
-	args := m.Called(ctx, ids, status)
-	return args.Error(0)
-}
-
 func (m *MockAPITokenRepository) UpdateLastUsed(ctx context.Context, id uint, ip string) error {
 	args := m.Called(ctx, id, ip)
 	return args.Error(0)
@@ -177,7 +172,6 @@ func (suite *APITokenServiceTestSuite) TestGetAPIToken_Success() {
 		Name:        "Test Token",
 		UserID:      userID,
 		Description: "Test description",
-		Status:      1,
 	}
 	suite.mockTokenRepo.On("GetByID", ctx, tokenID).Return(expectedToken, nil)
 
@@ -203,7 +197,6 @@ func (suite *APITokenServiceTestSuite) TestGetAPIToken_NotOwner() {
 		BaseModel: model.BaseModel{ID: tokenID},
 		Name:      "Test Token",
 		UserID:    otherUserID, // Different user
-		Status:    1,
 	}
 	suite.mockTokenRepo.On("GetByID", ctx, tokenID).Return(expectedToken, nil)
 
@@ -234,13 +227,11 @@ func (suite *APITokenServiceTestSuite) TestListAPITokens_Success() {
 			BaseModel: model.BaseModel{ID: 1},
 			Name:      "Token 1",
 			UserID:    userID,
-			Status:    1,
 		},
 		{
 			BaseModel: model.BaseModel{ID: 2},
 			Name:      "Token 2",
 			UserID:    userID,
-			Status:    1,
 		},
 	}
 	total := int64(2)
@@ -270,7 +261,6 @@ func (suite *APITokenServiceTestSuite) TestUpdateAPIToken_Success() {
 	req := &request.UpdateAPITokenRequest{
 		Name:        "Updated Token",
 		Description: "Updated description",
-		Status:      1,
 	}
 
 	// Mock existing token
@@ -279,7 +269,6 @@ func (suite *APITokenServiceTestSuite) TestUpdateAPIToken_Success() {
 		Name:        "Original Token",
 		UserID:      userID,
 		Description: "Original description",
-		Status:      1,
 	}
 	suite.mockTokenRepo.On("GetByID", ctx, tokenID).Return(existingToken, nil)
 	suite.mockTokenRepo.On("Update", ctx, mock.AnythingOfType("*model.APIToken")).Return(nil)
@@ -290,7 +279,6 @@ func (suite *APITokenServiceTestSuite) TestUpdateAPIToken_Success() {
 		Name:        req.Name,
 		UserID:      userID,
 		Description: req.Description,
-		Status:      req.Status,
 	}
 	suite.mockTokenRepo.On("GetByID", ctx, tokenID).Return(updatedToken, nil)
 
@@ -315,7 +303,6 @@ func (suite *APITokenServiceTestSuite) TestValidateAPIToken_Success() {
 		BaseModel: model.BaseModel{ID: 1},
 		Name:      "Valid Token",
 		UserID:    1,
-		Status:    1,
 		ExpiresAt: func() *time.Time { t := time.Now().Add(time.Hour); return &t }(),
 	}
 	suite.mockTokenRepo.On("GetByToken", ctx, tokenHash).Return(validToken, nil)
@@ -345,7 +332,6 @@ func (suite *APITokenServiceTestSuite) TestValidateAPIToken_Expired() {
 		BaseModel: model.BaseModel{ID: 1},
 		Name:      "Expired Token",
 		UserID:    1,
-		Status:    1,
 		ExpiresAt: func() *time.Time { t := time.Now().Add(-time.Hour); return &t }(), // Expired
 	}
 	suite.mockTokenRepo.On("GetByToken", ctx, tokenHash).Return(expiredToken, nil)
@@ -370,7 +356,6 @@ func (suite *APITokenServiceTestSuite) TestRefreshAPIToken_Success() {
 		BaseModel: model.BaseModel{ID: tokenID},
 		Name:      "Test Token",
 		UserID:    userID,
-		Status:    1,
 	}
 	suite.mockTokenRepo.On("GetByID", ctx, tokenID).Return(existingToken, nil)
 	suite.mockTokenRepo.On("Update", ctx, mock.AnythingOfType("*model.APIToken")).Return(nil)
@@ -380,7 +365,6 @@ func (suite *APITokenServiceTestSuite) TestRefreshAPIToken_Success() {
 		BaseModel: model.BaseModel{ID: tokenID},
 		Name:      existingToken.Name,
 		UserID:    userID,
-		Status:    1,
 	}
 	suite.mockTokenRepo.On("GetByID", ctx, tokenID).Return(refreshedToken, nil)
 
@@ -404,10 +388,9 @@ func (suite *APITokenServiceTestSuite) TestRevokeAPIToken_Success() {
 		BaseModel: model.BaseModel{ID: tokenID},
 		Name:      "Test Token",
 		UserID:    userID,
-		Status:    1,
 	}
 	suite.mockTokenRepo.On("GetByID", ctx, tokenID).Return(existingToken, nil)
-	suite.mockTokenRepo.On("Update", ctx, mock.AnythingOfType("*model.APIToken")).Return(nil)
+	suite.mockTokenRepo.On("Delete", ctx, tokenID).Return(nil)
 
 	// Execute
 	err := suite.service.RevokeAPIToken(ctx, tokenID, userID)
@@ -457,7 +440,6 @@ func BenchmarkAPITokenService_ValidateToken(b *testing.B) {
 		BaseModel: model.BaseModel{ID: 1},
 		Name:      "Valid Token",
 		UserID:    1,
-		Status:    1,
 		ExpiresAt: func() *time.Time { t := time.Now().Add(time.Hour); return &t }(),
 	}
 
