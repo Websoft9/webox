@@ -65,7 +65,7 @@ CREATE INDEX idx_projects_archived_by ON projects(archived_by);
 
 COMMENT ON TABLE projects IS 'Projects table';
 
--- Continue with the rest of the tables from the MySQL script, 
+-- Continue with the rest of the tables from the MySQL script,
 -- converting MySQL-specific syntax to PostgreSQL syntax
 
 -- Users table (simplified for demo)
@@ -101,7 +101,7 @@ CREATE TABLE roles (
     description TEXT,
     is_system BOOLEAN NOT NULL DEFAULT FALSE,
     sort_order INTEGER NOT NULL DEFAULT 0,
-    status SMALLINT NOT NULL DEFAULT 1 CHECK (status IN (0, 1)),
+    status SMALLINT NOT NULL DEFAULT 1 CHECK (status IN (-1, 0, 1)),
     created_by BIGINT,
     updated_by BIGINT,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -128,7 +128,7 @@ CREATE TABLE permissions (
     is_system BOOLEAN NOT NULL DEFAULT FALSE,
     is_menu BOOLEAN NOT NULL DEFAULT FALSE,
     sort_order INTEGER NOT NULL DEFAULT 0,
-    status SMALLINT NOT NULL DEFAULT 1 CHECK (status IN (0, 1)),
+    status SMALLINT NOT NULL DEFAULT 1 CHECK (status IN (-1, 0, 1)),
     created_by BIGINT,
     updated_by BIGINT,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -153,7 +153,7 @@ CREATE TABLE user_roles (
     granted_by BIGINT,
     granted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     expires_at TIMESTAMP,
-    status SMALLINT NOT NULL DEFAULT 1 CHECK (status IN (0, 1)),
+    status SMALLINT NOT NULL DEFAULT 1 CHECK (status IN (-1, 0, 1)),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(user_id, role_id)
@@ -172,7 +172,7 @@ CREATE TABLE role_permissions (
     permission_id BIGINT NOT NULL,
     granted_by BIGINT,
     granted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    status SMALLINT NOT NULL DEFAULT 1 CHECK (status IN (0, 1)),
+    status SMALLINT NOT NULL DEFAULT 1 CHECK (status IN (-1, 0, 1)),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(role_id, permission_id)

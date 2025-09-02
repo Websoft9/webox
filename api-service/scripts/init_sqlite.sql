@@ -644,7 +644,6 @@ CREATE TABLE api_tokens (
     last_used_at DATETIME,
     last_used_ip VARCHAR(45),
     expires_at DATETIME,
-    status INTEGER DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
