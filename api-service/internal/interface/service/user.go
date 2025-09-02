@@ -13,8 +13,6 @@ type UserService interface {
 	Login(ctx context.Context, req *request.UserLoginRequest) (*response.UserLoginResponse, error)
 
 	// 用户资料管理
-	GetProfile(ctx context.Context, userID uint) (*response.UserProfileResponse, error)
-	UpdateProfile(ctx context.Context, userID uint, req *request.UserUpdateProfileRequest) (*response.UserResponse, error)
 	ChangePassword(ctx context.Context, userID uint, req *request.UserChangePasswordRequest) error
 
 	// 用户管理（管理员功能）

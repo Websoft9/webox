@@ -4,6 +4,7 @@ import (
 	"api-service/internal/interface/repository"
 	"api-service/internal/model"
 	"context"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -73,7 +74,12 @@ func (r *userRepository) Update(ctx context.Context, user *model.User) error {
 
 // Delete 删除用户（软删除）
 func (r *userRepository) Delete(ctx context.Context, id uint) error {
-	return r.db.WithContext(ctx).Delete(&model.User{}, id).Error
+	// soft delete: set status = -1 and update updated_at
+	updates := map[string]interface{}{
+		"status":     -1,
+		"updated_at": time.Now(),
+	}
+	return r.db.WithContext(ctx).Model(&model.User{}).Where("id = ?", id).Updates(updates).Error
 }
 
 // List 获取用户列表
@@ -85,7 +91,7 @@ func (r *userRepository) List(
 	var users []*model.User
 	var total int64
 
-	query := r.db.WithContext(ctx).Model(&model.User{})
+	query := r.db.WithContext(ctx).Model(&model.User{}).Where("status != ?", -1)
 
 	// 应用过滤器
 	query = r.applyFilters(query, filters)

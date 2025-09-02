@@ -5,7 +5,7 @@ name: Build and Push webox server image to docker-hub
 on:
   push:
     branches:
-      - dockerfile
+      - develop
     paths:
       - "api-service/Dockerfile"
 
