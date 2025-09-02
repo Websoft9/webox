@@ -132,75 +132,6 @@ func (s *userService) Login(ctx context.Context, req *request.UserLoginRequest) 
 	}, nil
 }
 
-// GetProfile Getting user profile
-func (s *userService) GetProfile(ctx context.Context, userID uint) (*response.UserProfileResponse, error) {
-	s.logger.InfoContext(ctx, "Getting user profile", logger.Uint("user_id", userID))
-
-	user, err := s.userRepo.GetByIDWithRelations(ctx, userID)
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, errors.NewAppError(errors.CodeNotFound, "User not found")
-		}
-		s.logger.ErrorContext(ctx, "Failed to get user", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, "Failed to get user")
-	}
-
-	// 获取统计信息
-	stats, err := s.userRepo.GetUserStats(ctx, userID)
-	if err != nil {
-		s.logger.WarnContext(ctx, "Failed to get user statistics", logger.ErrorField(err))
-		// 使用默认值
-		stats = &repository.UserStats{}
-	}
-
-	profile := &response.UserProfileResponse{
-		UserResponse:     *s.buildUserResponse(user),
-		LoginCount:       stats.LoginCount,
-		ApplicationCount: stats.ApplicationCount,
-		WorkflowCount:    stats.WorkflowCount,
-	}
-
-	return profile, nil
-}
-
-// UpdateProfile Updating user profile
-func (s *userService) UpdateProfile(
-	ctx context.Context,
-	userID uint,
-	req *request.UserUpdateProfileRequest,
-) (*response.UserResponse, error) {
-	s.logger.InfoContext(ctx, "Updating user profile", logger.Uint("user_id", userID))
-
-	// 1. 获取当前用户
-	user, err := s.userRepo.GetByID(ctx, userID)
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, errors.ErrUserNotFound
-		}
-		return nil, errors.WrapError(err, errors.CodeInternalError, "Failed to get user information")
-	}
-
-	// 2. 检查邮箱唯一性（如果要更新邮箱）
-	if req.Email != nil && *req.Email != user.Email {
-		if err := s.validateEmailUniqueness(ctx, *req.Email, userID); err != nil {
-			return nil, err
-		}
-	}
-
-	// 3. Updating user字段
-	s.updateUserFields(user, req)
-
-	// 4. 保存更新
-	if err := s.userRepo.Update(ctx, user); err != nil {
-		s.logger.ErrorContext(ctx, "Failed to update user", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, "Failed to update user")
-	}
-
-	s.logger.InfoContext(ctx, "User profile updated successfully", logger.Uint("user_id", userID))
-
-	return s.buildUserResponse(user), nil
-}
-
 // ChangePassword 修改密码
 func (s *userService) ChangePassword(ctx context.Context, userID uint, req *request.UserChangePasswordRequest) error {
 	s.logger.InfoContext(ctx, "Changing user password", logger.Uint("user_id", userID))
@@ -246,9 +177,6 @@ func (s *userService) ListUsers(ctx context.Context,
 	filters := make(map[string]interface{})
 	if req.Status != nil {
 		filters["status"] = *req.Status
-	}
-	if req.GroupID != nil {
-		filters["group_id"] = *req.GroupID
 	}
 	if req.Gender != nil {
 		filters["gender"] = *req.Gender
@@ -456,34 +384,6 @@ func (s *userService) validateEmailUniqueness(ctx context.Context, email string,
 	return nil
 }
 
-// updateUserFields Updating user字段
-func (s *userService) updateUserFields(user *model.User, req *request.UserUpdateProfileRequest) {
-	if req.Email != nil {
-		user.Email = *req.Email
-	}
-	if req.Nickname != nil {
-		user.Nickname = *req.Nickname
-	}
-	if req.Phone != nil {
-		user.Phone = *req.Phone
-	}
-	if req.Avatar != nil {
-		user.Avatar = *req.Avatar
-	}
-	if req.Gender != nil {
-		user.Gender = *req.Gender
-	}
-	if req.Signature != nil {
-		user.Signature = *req.Signature
-	}
-	if req.Timezone != nil {
-		user.Timezone = *req.Timezone
-	}
-	if req.Language != nil {
-		user.Language = *req.Language
-	}
-}
-
 // validateUserCreation 验证用户创建
 func (s *userService) validateUserCreation(ctx context.Context, req *request.UserCreateRequest) error {
 	// 检查用户名是否存在
@@ -511,7 +411,6 @@ func (s *userService) validateUserCreation(ctx context.Context, req *request.Use
 // createUserFromRequest 从请求Creating user对象
 func (s *userService) createUserFromRequest(req *request.UserCreateRequest) *model.User {
 	user := &model.User{
-		GroupID:      req.GroupID,
 		Username:     req.Username,
 		Email:        req.Email,
 		PasswordHash: utils.SHA256Hash(req.Password),
@@ -547,11 +446,8 @@ func (s *userService) createUserFromRequest(req *request.UserCreateRequest) *mod
 	return user
 }
 
-// updateUserFromRequest 从请求Updating user对象
 func (s *userService) updateUserFromRequest(user *model.User, req *request.UserUpdateRequest) {
-	if req.GroupID != nil {
-		user.GroupID = *req.GroupID
-	}
+	// Updating user信息
 	if req.Username != nil {
 		user.Username = *req.Username
 	}
@@ -585,7 +481,6 @@ func (s *userService) updateUserFromRequest(user *model.User, req *request.UserU
 func (s *userService) buildUserResponse(user *model.User) *response.UserResponse {
 	resp := &response.UserResponse{
 		ID:          user.ID,
-		GroupID:     user.GroupID,
 		Username:    user.Username,
 		Email:       user.Email,
 		Nickname:    user.Nickname,
@@ -600,15 +495,6 @@ func (s *userService) buildUserResponse(user *model.User) *response.UserResponse
 		Language:    user.Language,
 		CreatedAt:   user.CreatedAt,
 		UpdatedAt:   user.UpdatedAt,
-	}
-
-	if user.Group != nil {
-		resp.Group = &response.UserGroupResponse{
-			ID:          user.Group.ID,
-			Name:        user.Group.Name,
-			Code:        user.Group.Code,
-			Description: user.Group.Description,
-		}
 	}
 
 	if len(user.Roles) > 0 {

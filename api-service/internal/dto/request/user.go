@@ -15,18 +15,6 @@ type UserLoginRequest struct {
 	Password string `json:"password" binding:"required" example:"123456"`
 }
 
-// UserUpdateProfileRequest 用户更新资料请求
-type UserUpdateProfileRequest struct {
-	Email     *string `json:"email,omitempty" binding:"omitempty,email" example:"newemail@example.com"`
-	Nickname  *string `json:"nickname,omitempty" binding:"omitempty,max=64" example:"John Doe"`
-	Phone     *string `json:"phone,omitempty" binding:"omitempty,max=20" example:"+1234567890"`
-	Avatar    *string `json:"avatar,omitempty" binding:"omitempty,url" example:"https://example.com/avatar.jpg"`
-	Gender    *int    `json:"gender,omitempty" binding:"omitempty,min=0,max=2" example:"1"`
-	Signature *string `json:"signature,omitempty" binding:"omitempty,max=255" example:"This is my signature"`
-	Timezone  *string `json:"timezone,omitempty" binding:"omitempty,max=64" example:"Asia/Shanghai"`
-	Language  *string `json:"language,omitempty" binding:"omitempty,max=10" example:"zh-CN"`
-}
-
 // UserChangePasswordRequest 用户修改密码请求
 type UserChangePasswordRequest struct {
 	OldPassword string `json:"old_password" binding:"required" example:"oldpass123"`
@@ -37,7 +25,6 @@ type UserChangePasswordRequest struct {
 type UserListRequest struct {
 	dto.BaseListRequest
 	Status   *int    `form:"status" json:"status" binding:"omitempty,min=0,max=1" example:"1"`
-	GroupID  *uint   `form:"group_id" json:"group_id" binding:"omitempty,min=1" example:"1"`
 	Keyword  *string `form:"keyword" json:"keyword" binding:"omitempty" example:"john"`
 	Gender   *int    `form:"gender" json:"gender" binding:"omitempty,min=0,max=2" example:"1"`
 	Language *string `form:"language" json:"language" binding:"omitempty" example:"zh-CN"`
@@ -45,7 +32,6 @@ type UserListRequest struct {
 
 // UserCreateRequest 创建用户请求
 type UserCreateRequest struct {
-	GroupID   uint    `json:"group_id" binding:"required,min=1" example:"1"`
 	Username  string  `json:"username" binding:"required,min=3,max=64" example:"johndoe"`
 	Email     string  `json:"email" binding:"required,email" example:"john@example.com"`
 	Password  string  `json:"password" binding:"required,min=6" example:"password123"`
@@ -61,7 +47,6 @@ type UserCreateRequest struct {
 
 // UserUpdateRequest 更新用户请求
 type UserUpdateRequest struct {
-	GroupID   *uint   `json:"group_id,omitempty" binding:"omitempty,min=1" example:"1"`
 	Username  *string `json:"username,omitempty" binding:"omitempty,min=3,max=64" example:"johndoe"`
 	Email     *string `json:"email,omitempty" binding:"omitempty,email" example:"newemail@example.com"`
 	Nickname  *string `json:"nickname,omitempty" binding:"omitempty,max=64" example:"John Doe"`
