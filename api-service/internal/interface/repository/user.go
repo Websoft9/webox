@@ -28,8 +28,6 @@ type UserRepository interface {
 	ExistsByUsernameExcludeID(ctx context.Context, username string, excludeID uint) (bool, error)
 	ExistsByEmailExcludeID(ctx context.Context, email string, excludeID uint) (bool, error)
 	GetActiveUsers(ctx context.Context, offset, limit int) ([]*model.User, int64, error)
-	GetUsersByGroupID(ctx context.Context, groupID uint, offset, limit int) ([]*model.User, int64, error)
-
 	// 统计信息
 	CountByStatus(ctx context.Context, status int) (int64, error)
 	GetUserStats(ctx context.Context, userID uint) (*UserStats, error)

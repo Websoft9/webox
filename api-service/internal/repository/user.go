@@ -38,7 +38,6 @@ func (r *userRepository) GetByID(ctx context.Context, id uint) (*model.User, err
 func (r *userRepository) GetByIDWithRelations(ctx context.Context, id uint) (*model.User, error) {
 	var user model.User
 	err := r.db.WithContext(ctx).
-		Preload("Group").
 		Preload("Roles").
 		First(&user, id).Error
 	if err != nil {
@@ -127,7 +126,6 @@ func (r *userRepository) ListWithRelations(
 
 	// 获取数据（包含关联）
 	err := query.
-		Preload("Group").
 		Preload("Roles").
 		Offset(offset).
 		Limit(limit).
@@ -207,25 +205,6 @@ func (r *userRepository) GetActiveUsers(ctx context.Context, offset, limit int) 
 	return users, total, err
 }
 
-// GetUsersByGroupID 根据用户组ID获取用户列表
-func (r *userRepository) GetUsersByGroupID(
-	ctx context.Context, groupID uint, offset, limit int,
-) ([]*model.User, int64, error) {
-	var users []*model.User
-	var total int64
-
-	query := r.db.WithContext(ctx).Model(&model.User{}).Where("group_id = ?", groupID)
-
-	// 获取总数
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-
-	// 获取数据
-	err := query.Offset(offset).Limit(limit).Order("created_at desc").Find(&users).Error
-	return users, total, err
-}
-
 // CountByStatus 根据状态统计用户数
 func (r *userRepository) CountByStatus(ctx context.Context, status int) (int64, error) {
 	var count int64
@@ -256,8 +235,6 @@ func (r *userRepository) applyFilters(query *gorm.DB, filters map[string]interfa
 			switch key {
 			case "status":
 				query = query.Where("status = ?", value)
-			case "group_id":
-				query = query.Where("group_id = ?", value)
 			case "gender":
 				query = query.Where("gender = ?", value)
 			case "language":
