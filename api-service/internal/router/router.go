@@ -23,13 +23,20 @@ type Controllers struct {
 	APITokenController   *controller.APITokenController
 	TwoFactorController  *controller.TwoFactorController
 	AuthConfigController *controller.AuthConfigController
+	AuditLogController   *controller.AuditLogController
 	HealthController     *controller.HealthController
 	// More controllers can be added
 	// AppController  *controller.ApplicationController
 }
 
 // SetupRouter sets up router
-func SetupRouter(controllers *Controllers, cfg *config.Config, log logger.Logger, permissionService serviceInterface.PermissionService) *gin.Engine {
+func SetupRouter(
+	controllers *Controllers,
+	cfg *config.Config,
+	log logger.Logger,
+	permissionService serviceInterface.PermissionService,
+	auditLogService serviceInterface.AuditLogService,
+) *gin.Engine {
 	// Set Gin mode
 	gin.SetMode(cfg.Server.Mode)
 
@@ -42,7 +49,7 @@ func SetupRouter(controllers *Controllers, cfg *config.Config, log logger.Logger
 	setupSwaggerRoute(r, cfg)
 
 	// Global middleware
-	setupMiddleware(r, cfg, log, permissionService)
+	setupMiddleware(r, cfg, log, permissionService, auditLogService)
 
 	// API routes
 	v1 := r.Group("/api/v1")
@@ -60,12 +67,19 @@ func SetupRouter(controllers *Controllers, cfg *config.Config, log logger.Logger
 }
 
 // setupMiddleware sets up global middleware
-func setupMiddleware(r *gin.Engine, cfg *config.Config, log logger.Logger, permissionService serviceInterface.PermissionService) {
+func setupMiddleware(
+	r *gin.Engine,
+	cfg *config.Config,
+	log logger.Logger,
+	permissionService serviceInterface.PermissionService,
+	auditLogService serviceInterface.AuditLogService,
+) {
 	r.Use(middleware.LoggerMiddleware(log))
 	r.Use(middleware.CORS())
 	r.Use(middleware.I18nMiddleware())
 	r.Use(middleware.OptionalJWTAuth(cfg))
 	r.Use(middleware.PermissionMiddleware(permissionService, log))
+	r.Use(middleware.AuditLogMiddleware(auditLogService, log))
 	r.Use(middleware.ErrorHandler(log))
 	r.Use(middleware.RequestValidator(log))
 }
@@ -128,6 +142,7 @@ func setupAPIRoutes(v1 *gin.RouterGroup, controllers *Controllers) {
 	setupProtectedAPITokenRoutes(protected, controllers.APITokenController)
 	setupProtectedTwoFactorRoutes(protected, controllers.TwoFactorController)
 	setupProtectedAuthConfigRoutes(protected, controllers.AuthConfigController)
+	setupProtectedAuditLogRoutes(protected, controllers.AuditLogController)
 }
 
 // setupUserRoutes sets up user related routes
@@ -225,7 +240,8 @@ func setupProtectedTwoFactorRoutes(protected *gin.RouterGroup, twoFactorControll
 	}
 
 	// Two-factor authentication routes under users
-	twoFactor := protected.Group("/two-factor")
+	users := protected.Group("/users")
+	twoFactor := users.Group("/:id/two-factor")
 	twoFactor.GET("", twoFactorController.GetTwoFactorStatus)
 	twoFactor.POST("/enable", twoFactorController.EnableTOTP)
 	twoFactor.POST("/confirm", twoFactorController.ConfirmTOTP)
@@ -245,4 +261,18 @@ func setupProtectedAuthConfigRoutes(protected *gin.RouterGroup, authConfigContro
 	authConfig.GET("", authConfigController.GetAuthConfig)
 	authConfig.PUT("", authConfigController.UpdateAuthConfig)
 	authConfig.GET("/oauth2-providers", authConfigController.GetOAuth2Providers)
+}
+
+// setupProtectedAuditLogRoutes sets up audit log routes
+func setupProtectedAuditLogRoutes(protected *gin.RouterGroup, auditLogController *controller.AuditLogController) {
+	if auditLogController == nil {
+		return
+	}
+
+	// Audit log routes
+	auditLogs := protected.Group("/audit-logs")
+	auditLogs.GET("", auditLogController.ListAuditLogs)
+	auditLogs.GET("/:id", auditLogController.GetAuditLog)
+	auditLogs.GET("/statistics", auditLogController.GetAuditLogStatistics)
+	auditLogs.GET("/export", auditLogController.ExportAuditLogs)
 }
