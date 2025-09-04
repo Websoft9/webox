@@ -3,8 +3,8 @@ package controller
 import (
 	"api-service/internal/dto/request"
 	"api-service/internal/interface/service"
-	"api-service/internal/middleware"
 	"api-service/pkg/errors"
+	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
 	pkg_response "api-service/pkg/response"
 	"context"
@@ -17,13 +17,15 @@ import (
 type UserController struct {
 	userService service.UserService
 	logger      logger.Logger
+	i18n        *i18n.I18n // 添加i18n支持
 }
 
 // NewUserController create new user controller
-func NewUserController(userService service.UserService, logger logger.Logger) *UserController {
+func NewUserController(userService service.UserService, logger logger.Logger, i18n *i18n.I18n) *UserController {
 	return &UserController{
 		userService: userService,
 		logger:      logger,
+		i18n:        i18n,
 	}
 }
 
@@ -31,7 +33,7 @@ func NewUserController(userService service.UserService, logger logger.Logger) *U
 func (c *UserController) bindAndValidateRequest(ctx *gin.Context, req interface{}, action string) bool {
 	if err := ctx.ShouldBindJSON(req); err != nil {
 		c.logger.WarnContext(ctx, action+" request parameter binding failed", logger.ErrorField(err))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, middleware.T(ctx, "common.validation_failed")))
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, c.i18n.T(ctx, "common.validation_failed")))
 		return false
 	}
 	return true
@@ -61,7 +63,7 @@ func (c *UserController) handleUserAuth(
 	}
 
 	c.logger.InfoContext(ctx, "User "+action+" successful")
-	pkg_response.Success(ctx, middleware.T(ctx, successMessageKey), result)
+	pkg_response.Success(ctx, c.i18n.T(ctx, successMessageKey), result)
 }
 
 // handleUserIDBasedRequest handle requests that need user ID from URL parameter
@@ -76,7 +78,7 @@ func (c *UserController) handleUserIDBasedRequest(
 	userID, err := strconv.ParseUint(userIDStr, 10, 32)
 	if err != nil {
 		c.logger.WarnContext(ctx, "Invalid user ID parameter", logger.String("user_id", userIDStr))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeInvalidRequest, middleware.T(ctx, "common.invalid_request")))
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeInvalidRequest, c.i18n.T(ctx, "common.invalid_request")))
 		return
 	}
 
@@ -92,7 +94,7 @@ func (c *UserController) handleUserIDBasedRequest(
 	}
 
 	c.logger.InfoContext(ctx, "User "+action+" successful", logger.Uint("user_id", uint(userID)))
-	pkg_response.Success(ctx, middleware.T(ctx, successMessageKey), nil)
+	pkg_response.Success(ctx, c.i18n.T(ctx, successMessageKey), nil)
 }
 
 // Register user registration
@@ -148,7 +150,7 @@ func (c *UserController) Login(ctx *gin.Context) {
 func (c *UserController) ChangePassword(ctx *gin.Context) {
 	userID := c.getCurrentUserID(ctx)
 	if userID == 0 {
-		errors.HandleError(ctx, errors.ErrUnauthorized)
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeUnauthorized, c.i18n.T(ctx, "auth.unauthorized")))
 		return
 	}
 
@@ -165,7 +167,7 @@ func (c *UserController) ChangePassword(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "User password changed successfully", logger.Uint("user_id", userID))
-	pkg_response.Success(ctx, middleware.T(ctx, "user.password_change_success"), nil)
+	pkg_response.Success(ctx, c.i18n.T(ctx, "user.password_change_success"), nil)
 }
 
 // ListUsers get user list (admin function)
@@ -193,7 +195,7 @@ func (c *UserController) ListUsers(ctx *gin.Context) {
 	// Bind query parameters
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		c.logger.WarnContext(ctx, "List users request parameter binding failed", logger.ErrorField(err))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, middleware.T(ctx, "common.validation_failed")))
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, c.i18n.T(ctx, "common.validation_failed")))
 		return
 	}
 
@@ -223,7 +225,7 @@ func (c *UserController) ListUsers(ctx *gin.Context) {
 		"total_pages": (int(total) + req.PageSize - 1) / req.PageSize,
 	}
 
-	pkg_response.Success(ctx, middleware.T(ctx, "user.list_get_success"), result)
+	pkg_response.Success(ctx, c.i18n.T(ctx, "user.list_get_success"), result)
 }
 
 // CreateUser create user (admin function)
@@ -255,7 +257,7 @@ func (c *UserController) CreateUser(ctx *gin.Context) {
 
 	c.logger.InfoContext(ctx, "User created successfully", logger.String("username", req.Username),
 		logger.Uint("user_id", result.ID))
-	pkg_response.Success(ctx, middleware.T(ctx, "user.created_success"), result)
+	pkg_response.Success(ctx, c.i18n.T(ctx, "user.created_success"), result)
 }
 
 // GetUser get user details (admin function)
@@ -278,7 +280,7 @@ func (c *UserController) GetUser(ctx *gin.Context) {
 	userID, err := strconv.ParseUint(userIDStr, 10, 32)
 	if err != nil {
 		c.logger.WarnContext(ctx, "Invalid user ID parameter", logger.String("user_id", userIDStr))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeInvalidRequest, middleware.T(ctx, "common.invalid_request")))
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeInvalidRequest, c.i18n.T(ctx, "common.invalid_request")))
 		return
 	}
 
@@ -290,7 +292,7 @@ func (c *UserController) GetUser(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "User details retrieved successfully", logger.Uint("user_id", uint(userID)))
-	pkg_response.Success(ctx, middleware.T(ctx, "common.success"), user)
+	pkg_response.Success(ctx, c.i18n.T(ctx, "common.success"), user)
 }
 
 // UpdateUser update user (admin function)
@@ -314,7 +316,7 @@ func (c *UserController) UpdateUser(ctx *gin.Context) {
 	userID, err := strconv.ParseUint(userIDStr, 10, 32)
 	if err != nil {
 		c.logger.WarnContext(ctx, "Invalid user ID parameter", logger.String("user_id", userIDStr))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeInvalidRequest, middleware.T(ctx, "common.invalid_request")))
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeInvalidRequest, c.i18n.T(ctx, "common.invalid_request")))
 		return
 	}
 
@@ -331,7 +333,7 @@ func (c *UserController) UpdateUser(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "User updated successfully", logger.Uint("user_id", uint(userID)))
-	pkg_response.Success(ctx, middleware.T(ctx, "user.updated_success"), result)
+	pkg_response.Success(ctx, c.i18n.T(ctx, "user.updated_success"), result)
 }
 
 // DeleteUser delete user (admin function)
@@ -354,7 +356,7 @@ func (c *UserController) DeleteUser(ctx *gin.Context) {
 	userID, err := strconv.ParseUint(userIDStr, 10, 32)
 	if err != nil {
 		c.logger.WarnContext(ctx, "Invalid user ID parameter", logger.String("user_id", userIDStr))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeInvalidRequest, middleware.T(ctx, "common.invalid_request")))
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeInvalidRequest, c.i18n.T(ctx, "common.invalid_request")))
 		return
 	}
 
@@ -366,7 +368,7 @@ func (c *UserController) DeleteUser(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "User deleted successfully", logger.Uint("user_id", uint(userID)))
-	pkg_response.Success(ctx, middleware.T(ctx, "user.deleted_success"), nil)
+	pkg_response.Success(ctx, c.i18n.T(ctx, "user.deleted_success"), nil)
 }
 
 // UpdateUserStatus update user status (admin function)
