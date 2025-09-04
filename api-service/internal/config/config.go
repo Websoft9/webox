@@ -8,13 +8,15 @@ import (
 )
 
 type Config struct {
-	Server   ServerConfig   `mapstructure:"server"`
-	Database DatabaseConfig `mapstructure:"database"`
-	Redis    RedisConfig    `mapstructure:"redis"`
-	InfluxDB InfluxDBConfig `mapstructure:"influxdb"`
-	JWT      JWTConfig      `mapstructure:"jwt"`
-	GRPC     GRPCConfig     `mapstructure:"grpc"`
-	I18n     I18nConfig     `mapstructure:"i18n"`
+	Server   ServerConfig    `mapstructure:"server"`
+	Database DatabaseConfig  `mapstructure:"database"`
+	Redis    RedisConfig     `mapstructure:"redis"`
+	InfluxDB InfluxDBConfig  `mapstructure:"influxdb"`
+	JWT      JWTConfig       `mapstructure:"jwt"`
+	GRPC     GRPCConfig      `mapstructure:"grpc"`
+	I18n     I18nConfig      `mapstructure:"i18n"`
+	Email    EmailConfigMain `mapstructure:"email"`
+	App      AppConfig       `mapstructure:"app"`
 }
 
 type ServerConfig struct {
@@ -104,6 +106,24 @@ type GRPCConfig struct {
 type I18nConfig struct {
 	DefaultLanguage    string   `mapstructure:"default_language"`
 	SupportedLanguages []string `mapstructure:"supported_languages"`
+}
+
+type EmailConfigMain struct {
+	SMTP SMTPConfigMain `mapstructure:"smtp"`
+}
+
+type SMTPConfigMain struct {
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+	From     string `mapstructure:"from"`
+	UseTLS   bool   `mapstructure:"use_tls"`
+}
+
+type AppConfig struct {
+	BaseURL string `mapstructure:"base_url"`
+	Name    string `mapstructure:"name"`
 }
 
 func Load() (*Config, error) {
@@ -205,4 +225,16 @@ func setDefaults() {
 	// i18n defaults
 	viper.SetDefault("i18n.default_language", "en-US")
 	viper.SetDefault("i18n.supported_languages", []string{"en-US", "zh-CN"})
+
+	// Email defaults
+	viper.SetDefault("email.smtp.host", "smtp.gmail.com")
+	viper.SetDefault("email.smtp.port", constants.SMTPDefaultPort)
+	viper.SetDefault("email.smtp.username", "")
+	viper.SetDefault("email.smtp.password", "")
+	viper.SetDefault("email.smtp.from", "noreply@websoft9.com")
+	viper.SetDefault("email.smtp.use_tls", true)
+
+	// App defaults
+	viper.SetDefault("app.base_url", "http://localhost:3000")
+	viper.SetDefault("app.name", "Websoft9")
 }

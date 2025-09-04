@@ -129,17 +129,13 @@ func (j *JWTAuth) ValidateToken(tokenString string) (*Claims, error) {
 			return nil, errors.New("invalid signing method")
 		}
 		return []byte(j.secretKey), nil
-	})
+	}, jwt.WithLeeway(constants.JWTLeewaySeconds*time.Second))
 
 	if err != nil {
 		return nil, err
 	}
 
 	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
-		// Additional validation: check if token is not expired
-		if claims.ExpiresAt != nil && claims.ExpiresAt.Before(time.Now()) {
-			return nil, errors.New("token has expired")
-		}
 		return claims, nil
 	}
 

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"api-service/internal/constants"
 	"api-service/internal/dto/request"
 	"api-service/internal/dto/response"
 	"api-service/internal/interface/repository"
@@ -8,6 +9,7 @@ import (
 	"api-service/internal/model"
 	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
+	"api-service/pkg/redis"
 	"api-service/pkg/security"
 	"context"
 	"crypto/rand"
@@ -388,6 +390,32 @@ func (s *apiTokenService) CleanExpiredTokens(ctx context.Context) error {
 
 	s.logger.InfoContext(ctx, "Expired API tokens cleaned successfully")
 	return nil
+}
+
+func (s *apiTokenService) CheckTokenIsExists(ctx context.Context, token string) bool {
+	s.logger.InfoContext(ctx, "Check API token is exists",
+		logger.String("service", "api-token"),
+		logger.String("operation", "CheckTokenIsExists"))
+
+	// Hash the token for lookup
+	tokenHash := security.HashToken(token)
+
+	// Generate Redis key
+	redisKey := constants.TokenRedisKeyPrefix + tokenHash
+
+	result, _ := redis.Exists(ctx, redisKey)
+	var exists = true
+
+	if result == 0 {
+		_, err := s.tokenRepo.GetByToken(ctx, tokenHash)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				s.logger.ErrorContext(ctx, "Failed to get API token in database & redis", logger.ErrorField(err))
+				exists = false
+			}
+		}
+	}
+	return exists
 }
 
 // generateToken generates a new API token and its hash

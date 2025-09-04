@@ -8,10 +8,6 @@ import (
 
 // UserService 用户业务逻辑接口
 type UserService interface {
-	// 认证相关
-	Register(ctx context.Context, req *request.UserRegisterRequest) (*response.UserResponse, error)
-	Login(ctx context.Context, req *request.UserLoginRequest) (*response.UserLoginResponse, error)
-
 	// 用户资料管理
 	ChangePassword(ctx context.Context, userID uint, req *request.UserChangePasswordRequest) error
 

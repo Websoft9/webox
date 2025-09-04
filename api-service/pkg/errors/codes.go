@@ -1,62 +1,76 @@
 package errors
 
-// 错误码常量定义
+// Error code constants definition
+// Error codes are organized by category with specific ranges for easy identification
 const (
-	// 通用错误码 (10000-19999)
-	CodeSuccess         = 0
-	CodeInternalError   = 10001
-	CodeInvalidRequest  = 10002
-	CodeUnauthorized    = 10003
-	CodeForbidden       = 10004
-	CodeNotFound        = 10005
-	CodeValidationError = 10006
+	// General error codes (10000-19999)
+	// These codes represent system-level and common application errors
+	CodeSuccess         = 0     // Operation completed successfully
+	CodeInternalError   = 10001 // Internal server error
+	CodeInvalidRequest  = 10002 // Invalid request parameters
+	CodeUnauthorized    = 10003 // Authentication required
+	CodeForbidden       = 10004 // Access denied
+	CodeNotFound        = 10005 // Resource not found
+	CodeValidationError = 10006 // Data validation failed
 
-	// 用户相关错误码 (20000-29999)
-	CodeUserNotFound       = 20001
-	CodeUserAlreadyExists  = 20002
-	CodeInvalidCredentials = 20003
-	CodeUserInactive       = 20004
-	CodeInvalidPassword    = 20005
-	CodePasswordTooWeak    = 20006
-	CodeEmailAlreadyExists = 20007
-	CodeInvalidEmail       = 20008
-	CodeUsernameReserved   = 20009
-	CodeUserQuotaExceeded  = 20010
+	// User-related error codes (20000-29999)
+	// These codes represent user management and authentication errors
+	CodeUserNotFound       = 20001 // User does not exist
+	CodeUserAlreadyExists  = 20002 // Username already taken
+	CodeInvalidCredentials = 20003 // Invalid username or password
+	CodeUserInactive       = 20004 // User account is inactive
+	CodeInvalidPassword    = 20005 // Password is incorrect
+	CodePasswordTooWeak    = 20006 // Password does not meet requirements
+	CodeEmailAlreadyExists = 20007 // Email address already registered
+	CodeInvalidEmail       = 20008 // Email format is invalid
+	CodeUsernameReserved   = 20009 // Username is reserved by system
+	CodeUserQuotaExceeded  = 20010 // User quota limit exceeded
+	CodeEmailNotVerified   = 20011 // Email address not verified
+	CodeInvalidToken       = 20012 // Invalid verification token
+	CodeTokenExpired       = 20013 // Verification token expired
+	CodeTokenAlreadyUsed   = 20014 // Verification token already used
 
-	// 应用相关错误码 (30000-39999)
-	CodeAppNotFound              = 30001
-	CodeAppAlreadyExists         = 30002
-	CodeAppDeployFailed          = 30003
-	CodeAppPortConflict          = 30004
-	CodeAppResourcesInsufficient = 30005
+	// Application-related error codes (30000-39999)
+	// These codes represent application deployment and management errors
+	CodeAppNotFound              = 30001 // Application not found
+	CodeAppAlreadyExists         = 30002 // Application already exists
+	CodeAppDeployFailed          = 30003 // Application deployment failed
+	CodeAppPortConflict          = 30004 // Port conflict during deployment
+	CodeAppResourcesInsufficient = 30005 // Insufficient resources for deployment
 )
 
-// 错误码对应的默认消息
+// CodeMessages maps error codes to their default English messages
+// These messages serve as fallbacks when internationalization is not available
 var CodeMessages = map[int]string{
-	CodeSuccess:         "成功",
-	CodeInternalError:   "内部服务器错误",
-	CodeInvalidRequest:  "请求参数无效",
-	CodeUnauthorized:    "未授权访问",
-	CodeForbidden:       "禁止访问",
-	CodeNotFound:        "资源不存在",
-	CodeValidationError: "数据验证失败",
+	// General error messages
+	CodeSuccess:         "Success",
+	CodeInternalError:   "Internal server error",
+	CodeInvalidRequest:  "Invalid request parameters",
+	CodeUnauthorized:    "Unauthorized access",
+	CodeForbidden:       "Access forbidden",
+	CodeNotFound:        "Resource not found",
+	CodeValidationError: "Data validation failed",
 
-	// 用户相关
-	CodeUserNotFound:       "用户不存在",
-	CodeUserAlreadyExists:  "用户名已存在",
-	CodeInvalidCredentials: "用户名或密码错误",
-	CodeUserInactive:       "用户账号未激活",
-	CodeInvalidPassword:    "密码错误",
-	CodePasswordTooWeak:    "密码强度不足",
-	CodeEmailAlreadyExists: "邮箱已存在",
-	CodeInvalidEmail:       "邮箱格式无效",
-	CodeUsernameReserved:   "用户名为系统保留字",
-	CodeUserQuotaExceeded:  "用户配额已超限",
+	// User-related error messages
+	CodeUserNotFound:       "User not found",
+	CodeUserAlreadyExists:  "Username already exists",
+	CodeInvalidCredentials: "Invalid username or password",
+	CodeUserInactive:       "User account is inactive",
+	CodeInvalidPassword:    "Invalid password",
+	CodePasswordTooWeak:    "Password is too weak",
+	CodeEmailAlreadyExists: "Email address already exists",
+	CodeInvalidEmail:       "Invalid email format",
+	CodeUsernameReserved:   "Username is reserved by system",
+	CodeUserQuotaExceeded:  "User quota exceeded",
+	CodeEmailNotVerified:   "Email address not verified",
+	CodeInvalidToken:       "Invalid verification token",
+	CodeTokenExpired:       "Verification token expired",
+	CodeTokenAlreadyUsed:   "Verification token already used",
 
-	// 应用相关
-	CodeAppNotFound:              "应用不存在",
-	CodeAppAlreadyExists:         "应用已存在",
-	CodeAppDeployFailed:          "应用部署失败",
-	CodeAppPortConflict:          "端口冲突",
-	CodeAppResourcesInsufficient: "资源不足",
+	// Application-related error messages
+	CodeAppNotFound:              "Application not found",
+	CodeAppAlreadyExists:         "Application already exists",
+	CodeAppDeployFailed:          "Application deployment failed",
+	CodeAppPortConflict:          "Port conflict",
+	CodeAppResourcesInsufficient: "Insufficient resources",
 }

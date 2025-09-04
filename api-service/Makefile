@@ -1,4 +1,4 @@
-.PHONY: build run clean test deps docker-build docker-run init-postgres test-db health-check lint security-scan
+.PHONY: build run clean test deps docker-build docker-run init-postgres test-db health-check lint security-scan init-swag
 
 # 构建应用
 build:
@@ -38,11 +38,15 @@ vet:
 
 # 代码静态分析（需要安装 golangci-lint）
 lint:
-	golangci-lint run
+	golangci-lint run --config ../.golangci.yml ./...
 
 # 安全扫描（需要安装 gosec）
 security-scan:
 	gosec ./...
+
+# 初始化swagger docs
+init-swag:
+	swag init -g cmd/server/main.go
 
 # 构建Docker镜像
 docker-build:
@@ -72,7 +76,7 @@ init-db:
 init-mysql:
 	./scripts/init_db.sh -t mysql -u root -p $(or $(DB_PASSWORD),password)
 
-# PostgreSQL数据库初始化  
+# PostgreSQL数据库初始化
 init-postgres:
 	./scripts/init_db.sh -t postgres -u postgres -p $(or $(DB_PASSWORD),password)
 
@@ -128,6 +132,7 @@ help:
 	@echo "  vet           - Check code"
 	@echo "  lint          - Run static code analysis"
 	@echo "  security-scan - Run security scan"
+	@echo "  init-swag     - Initialize swagger docs"
 	@echo "  init-db       - Initialize SQLite database"
 	@echo "  init-mysql    - Initialize MySQL database"
 	@echo "  init-postgres - Initialize PostgreSQL database"

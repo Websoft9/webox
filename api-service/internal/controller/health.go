@@ -2,6 +2,7 @@ package controller
 
 import (
 	"api-service/internal/config"
+	"api-service/pkg/redis"
 	"api-service/pkg/response"
 	"api-service/pkg/utils"
 	"net/http"
@@ -115,11 +116,11 @@ func (hc *HealthController) checkRedis(c *gin.Context, checks map[string]interfa
 		return true // Redis not configured, consider healthy
 	}
 
-	redisStart := time.Now()
-	redisClient, err := utils.InitRedis(hc.config)
-	redisDuration := time.Since(redisStart).Milliseconds()
+	begin := time.Now()
 
-	if err != nil {
+	ctx := c.Request.Context()
+	if _, err := redis.Ping(ctx); err != nil {
+		redisDuration := time.Since(begin).Milliseconds()
 		checks["redis"] = map[string]interface{}{
 			"status":        "unhealthy",
 			"error":         err.Error(),
@@ -127,18 +128,7 @@ func (hc *HealthController) checkRedis(c *gin.Context, checks map[string]interfa
 		}
 		return false
 	}
-
-	ctx := c.Request.Context()
-	_, pingErr := redisClient.Ping(ctx).Result()
-	if pingErr != nil {
-		checks["redis"] = map[string]interface{}{
-			"status":        "unhealthy",
-			"error":         pingErr.Error(),
-			"response_time": redisDuration,
-		}
-		return false
-	}
-
+	redisDuration := time.Since(begin).Milliseconds()
 	checks["redis"] = map[string]interface{}{
 		"status":        "healthy",
 		"response_time": redisDuration,
