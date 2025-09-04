@@ -7,14 +7,14 @@ import (
 	"time"
 )
 
-// BaseModel 基础模型
+// BaseModel base model
 type BaseModel struct {
 	ID        uint      `json:"id" gorm:"primarykey"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// Role 角色模型
+// Role role model
 type Role struct {
 	BaseModel
 	Name        string `json:"name" gorm:"uniqueIndex;size:64;not null" validate:"required,min=2,max=64"`
@@ -22,30 +22,30 @@ type Role struct {
 	Description string `json:"description" gorm:"type:text" validate:"max=500"`
 	IsSystem    bool   `json:"is_system" gorm:"default:false"`
 	SortOrder   int    `json:"sort_order" gorm:"default:0"`
-	Status      int    `json:"status" gorm:"default:1"` // -1:删除, 0:禁用, 1:启用
+	Status      int    `json:"status" gorm:"default:1"` // -1:deleted, 0:disabled, 1:enabled
 	CreatedBy   *uint  `json:"created_by" gorm:"index"`
 	UpdatedBy   *uint  `json:"updated_by" gorm:"index"`
 
-	// 关联关系
+	// Associations
 	Permissions []Permission `json:"permissions,omitempty" gorm:"many2many:role_permissions"`
 	Users       []User       `json:"users,omitempty" gorm:"many2many:user_roles"`
 
-	// 统计字段 (不映射到数据库)
+	// Statistical fields (not mapped to database)
 	PermissionCount int64 `json:"permission_count,omitempty" gorm:"-"`
 	UserCount       int64 `json:"user_count,omitempty" gorm:"-"`
 }
 
-// TableName 指定表名
+// TableName specify table name
 func (Role) TableName() string {
 	return "roles"
 }
 
-// IsActive 检查角色是否启用
+// IsActive check if role is enabled
 func (r *Role) IsActive() bool {
 	return r.Status == 1
 }
 
-// Permission 权限模型
+// Permission permission model
 type Permission struct {
 	BaseModel
 	ParentID    *uint  `json:"parent_id" gorm:"index"`
@@ -59,30 +59,30 @@ type Permission struct {
 	IsSystem    bool   `json:"is_system" gorm:"default:false"`
 	IsMenu      bool   `json:"is_menu" gorm:"default:false"`
 	SortOrder   int    `json:"sort_order" gorm:"default:0"`
-	Status      int    `json:"status" gorm:"default:1"` // -1:删除, 0:禁用, 1:启用
+	Status      int    `json:"status" gorm:"default:1"` // -1:deleted, 0:disabled, 1:enabled
 	CreatedBy   *uint  `json:"created_by" gorm:"index"`
 	UpdatedBy   *uint  `json:"updated_by" gorm:"index"`
 
-	// 关联关系
+	// Associations
 	Parent   *Permission  `json:"parent,omitempty" gorm:"foreignKey:ParentID"`
 	Children []Permission `json:"children,omitempty" gorm:"foreignKey:ParentID"`
 	Roles    []Role       `json:"roles,omitempty" gorm:"many2many:role_permissions"`
 
-	// 统计字段 (不映射到数据库)
+	// Statistical fields (not mapped to database)
 	RoleCount int64 `json:"role_count,omitempty" gorm:"-"`
 }
 
-// TableName 指定表名
+// TableName specify table name
 func (Permission) TableName() string {
 	return "permissions"
 }
 
-// IsActive 检查权限是否启用
+// IsActive check if permission is enabled
 func (p *Permission) IsActive() bool {
 	return p.Status == 1
 }
 
-// UserRole 用户角色关联表
+// UserRole user role association table
 type UserRole struct {
 	ID        uint       `json:"id" gorm:"primarykey"`
 	UserID    uint       `json:"user_id" gorm:"not null;index"`
@@ -90,42 +90,42 @@ type UserRole struct {
 	GrantedBy *uint      `json:"granted_by" gorm:"index"`
 	GrantedAt time.Time  `json:"granted_at" gorm:"not null;default:CURRENT_TIMESTAMP"`
 	ExpiresAt *time.Time `json:"expires_at"`
-	Status    int        `json:"status" gorm:"default:1"` //  -1:删除, 0:禁用, 1:启用
+	Status    int        `json:"status" gorm:"default:1"` //  -1:deleted, 0:disabled, 1:enabled
 	CreatedAt time.Time  `json:"created_at"`
 	UpdatedAt time.Time  `json:"updated_at"`
 
-	// 关联关系
+	// Associations
 	User Role `json:"user,omitempty" gorm:"foreignKey:UserID"`
 	Role Role `json:"role,omitempty" gorm:"foreignKey:RoleID"`
 }
 
-// TableName 指定表名
+// TableName specify table name
 func (UserRole) TableName() string {
 	return "user_roles"
 }
 
-// RolePermission 角色权限关联表
+// RolePermission role permission association table
 type RolePermission struct {
 	ID           uint      `json:"id" gorm:"primarykey"`
 	RoleID       uint      `json:"role_id" gorm:"not null;index"`
 	PermissionID uint      `json:"permission_id" gorm:"not null;index"`
 	GrantedBy    *uint     `json:"granted_by" gorm:"index"`
 	GrantedAt    time.Time `json:"granted_at" gorm:"not null;default:CURRENT_TIMESTAMP"`
-	Status       int       `json:"status" gorm:"default:1"` //  -1:删除, 0:禁用, 1:启用
+	Status       int       `json:"status" gorm:"default:1"` //  -1:deleted, 0:disabled, 1:enabled
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
 
-	// 关联关系
+	// Associations
 	Role       Role       `json:"role,omitempty" gorm:"foreignKey:RoleID"`
 	Permission Permission `json:"permission,omitempty" gorm:"foreignKey:PermissionID"`
 }
 
-// TableName 指定表名
+// TableName specify table name
 func (RolePermission) TableName() string {
 	return "role_permissions"
 }
 
-// APIToken API访问令牌表
+// APIToken API access token table
 type APIToken struct {
 	BaseModel
 	Name        string     `json:"name" gorm:"size:64;not null" validate:"required,min=2,max=64"`
@@ -138,19 +138,19 @@ type APIToken struct {
 	LastUsedIP  string     `json:"last_used_ip" gorm:"size:45"`
 	ExpiresAt   *time.Time `json:"expires_at"`
 
-	// 关联关系
+	// Associations
 	User User `json:"user,omitempty" gorm:"foreignKey:UserID"`
 
-	// 显示字段 (不映射到数据库)
+	// Display fields (not mapped to database)
 	Username string `json:"username,omitempty" gorm:"-"`
 }
 
-// TableName 指定表名
+// TableName specify table name
 func (APIToken) TableName() string {
 	return "api_tokens"
 }
 
-// IsExpired 检查令牌是否过期
+// IsExpired check if token is expired
 func (t *APIToken) IsExpired() bool {
 	if t.ExpiresAt == nil {
 		return false
@@ -158,27 +158,27 @@ func (t *APIToken) IsExpired() bool {
 	return time.Now().After(*t.ExpiresAt)
 }
 
-// UserTwoFactor 用户双因子认证表
+// UserTwoFactor user two-factor authentication table
 type UserTwoFactor struct {
 	BaseModel
 	UserID      uint       `json:"user_id" gorm:"not null;index"`
 	Method      string     `json:"method" gorm:"size:32;not null"` // TOTP, EMAIL
-	Secret      string     `json:"-" gorm:"size:255"`              // 加密存储
-	BackupCodes JSON       `json:"-" gorm:"type:json"`             // 备用码
+	Secret      string     `json:"-" gorm:"size:255"`              // Encrypted storage
+	BackupCodes JSON       `json:"-" gorm:"type:json"`             // Backup codes
 	Email       string     `json:"email" gorm:"size:255"`
 	Enabled     bool       `json:"enabled" gorm:"default:false"`
 	VerifiedAt  *time.Time `json:"verified_at"`
 
-	// 关联关系
+	// Associations
 	User User `json:"user,omitempty" gorm:"foreignKey:UserID"`
 }
 
-// TableName 指定表名
+// TableName specify table name
 func (UserTwoFactor) TableName() string {
 	return "user_two_factor"
 }
 
-// JSON 自定义JSON类型
+// JSON custom JSON type
 type JSON map[string]interface{}
 
 // Scan implements sql.Scanner interface for GORM
@@ -214,7 +214,7 @@ func (j JSON) Value() (driver.Value, error) {
 	return json.Marshal(j)
 }
 
-// AuthConfig 认证配置
+// AuthConfig authentication configuration
 type AuthConfig struct {
 	APIAuth struct {
 		TokenAuthEnabled bool `json:"token_auth_enabled"`
@@ -245,7 +245,7 @@ type AuthConfig struct {
 	} `json:"session_config"`
 }
 
-// OAuth2Provider OAuth2提供商配置
+// OAuth2Provider OAuth2 provider configuration
 type OAuth2Provider struct {
 	ID           uint              `json:"id"`
 	Name         string            `json:"name"`
@@ -261,7 +261,7 @@ type OAuth2Provider struct {
 	UpdatedAt    time.Time         `json:"updated_at"`
 }
 
-// PasswordPolicy 密码策略
+// PasswordPolicy password policy
 type PasswordPolicy struct {
 	MinLength           int  `json:"min_length"`
 	MaxLength           int  `json:"max_length"`
@@ -273,7 +273,7 @@ type PasswordPolicy struct {
 	PasswordExpiresDays int  `json:"password_expires_days"`
 }
 
-// LoginSecurity 登录安全配置
+// LoginSecurity login security configuration
 type LoginSecurity struct {
 	MaxLoginAttempts     int      `json:"max_login_attempts"`
 	LockoutDuration      int      `json:"lockout_duration"`

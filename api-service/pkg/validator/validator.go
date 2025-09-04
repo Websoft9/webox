@@ -14,16 +14,16 @@ func New() *validator.Validate {
 	return validator.New()
 }
 
-// 密码验证相关常量
+// Password validation related constants
 const (
-	MinPasswordRequirements = 2   // 最少满足的密码要求数量
-	EmailPartsCount         = 2   // 邮箱地址@分割后的部分数量
-	MaxApplications         = 10  // 应用最大数量
-	MaxWorkflows            = 5   // 工作流最大数量
-	MaxFiles                = 100 // 文件最大数量
+	MinPasswordRequirements = 2   // Minimum number of password requirements to meet
+	EmailPartsCount         = 2   // Number of parts in email address after @ split
+	MaxApplications         = 10  // Maximum number of applications
+	MaxWorkflows            = 5   // Maximum number of workflows
+	MaxFiles                = 100 // Maximum number of files
 )
 
-// 系统保留用户名
+// System reserved usernames
 var reservedUsernames = map[string]bool{
 	"admin":     true,
 	"root":      true,
@@ -38,36 +38,36 @@ var reservedUsernames = map[string]bool{
 	"anonymous": true,
 }
 
-// 允许的邮箱域名白名单（如果为空则允许所有域名）
+// Allowed email domain whitelist (if empty, all domains are allowed)
 var allowedEmailDomains = []string{
 	// "company.com",
 	// "websoft9.com",
 }
 
-// ValidateUsername 验证用户名
+// ValidateUsername validate username
 func ValidateUsername(username string) error {
-	// 检查是否为空
+	// Check if empty
 	if username == "" {
-		return errors.NewAppError(errors.CodeValidationError, "用户名不能为空")
+		return errors.NewAppError(errors.CodeValidationError, "Username cannot be empty")
 	}
 
-	// 检查长度
+	// Check length
 	if len(username) < 3 || len(username) > 20 {
-		return errors.NewAppError(errors.CodeValidationError, "用户名长度必须在3-20字符之间")
+		return errors.NewAppError(errors.CodeValidationError, "Username length must be between 3-20 characters")
 	}
 
-	// 检查字符规则：只允许字母、数字、下划线
+	// Check character rules: only allow letters, numbers, underscores
 	matched, _ := regexp.MatchString("^[a-zA-Z0-9_]+$", username)
 	if !matched {
-		return errors.NewAppError(errors.CodeValidationError, "用户名只能包含字母、数字和下划线")
+		return errors.NewAppError(errors.CodeValidationError, "Username can only contain letters, numbers, and underscores")
 	}
 
-	// 检查是否以字母开头
+	// Check if starts with a letter
 	if !unicode.IsLetter(rune(username[0])) {
-		return errors.NewAppError(errors.CodeValidationError, "用户名必须以字母开头")
+		return errors.NewAppError(errors.CodeValidationError, "Username must start with a letter")
 	}
 
-	// 检查是否为保留用户名
+	// Check if it's a reserved username
 	if reservedUsernames[strings.ToLower(username)] {
 		return errors.ErrUsernameReserved
 	}
@@ -75,19 +75,19 @@ func ValidateUsername(username string) error {
 	return nil
 }
 
-// ValidatePassword 验证密码强度
+// ValidatePassword validate password strength
 func ValidatePassword(password string) error {
-	// 检查是否为空
+	// Check if empty
 	if password == "" {
-		return errors.NewAppError(errors.CodeValidationError, "密码不能为空")
+		return errors.NewAppError(errors.CodeValidationError, "Password cannot be empty")
 	}
 
-	// 检查长度
+	// Check length
 	if len(password) < 6 || len(password) > 50 {
-		return errors.NewAppError(errors.CodeValidationError, "密码长度必须在6-50字符之间")
+		return errors.NewAppError(errors.CodeValidationError, "Password length must be between 6-50 characters")
 	}
 
-	// 检查密码复杂度
+	// Check password complexity
 	var (
 		hasUpper   = false
 		hasLower   = false
@@ -108,7 +108,7 @@ func ValidatePassword(password string) error {
 		}
 	}
 
-	// 至少包含大写字母、小写字母、数字中的两种
+	// At least contains two of: uppercase letters, lowercase letters, numbers
 	requirements := 0
 	if hasUpper {
 		requirements++
@@ -130,20 +130,20 @@ func ValidatePassword(password string) error {
 	return nil
 }
 
-// ValidateEmail 验证邮箱格式和域名
+// ValidateEmail validate email format and domain
 func ValidateEmail(email string) error {
-	// 检查是否为空
+	// Check if empty
 	if email == "" {
-		return errors.NewAppError(errors.CodeValidationError, "邮箱不能为空")
+		return errors.NewAppError(errors.CodeValidationError, "Email cannot be empty")
 	}
 
-	// 基本格式验证
+	// Basic format validation
 	emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
 	if !emailRegex.MatchString(email) {
 		return errors.ErrInvalidEmail
 	}
 
-	// 域名白名单验证（如果配置了白名单）
+	// Domain whitelist validation (if whitelist is configured)
 	if len(allowedEmailDomains) > 0 {
 		parts := strings.Split(email, "@")
 		if len(parts) != EmailPartsCount {
@@ -160,16 +160,16 @@ func ValidateEmail(email string) error {
 		}
 
 		if !allowed {
-			return errors.NewAppError(errors.CodeValidationError, "不允许使用该邮箱域名")
+			return errors.NewAppError(errors.CodeValidationError, "This email domain is not allowed")
 		}
 	}
 
 	return nil
 }
 
-// ValidateUserStatus 验证用户状态转换
+// ValidateUserStatus validate user status transition
 func ValidateUserStatus(currentStatus, newStatus string) error {
-	// 定义允许的状态转换
+	// Define allowed status transitions
 	allowedTransitions := map[string][]string{
 		"inactive": {"active", "banned"},
 		"active":   {"inactive", "banned"},
@@ -178,7 +178,7 @@ func ValidateUserStatus(currentStatus, newStatus string) error {
 
 	validStatuses := []string{"active", "inactive", "banned"}
 
-	// 检查新状态是否有效
+	// Check if the new status is valid
 	isValidStatus := false
 	for _, status := range validStatuses {
 		if newStatus == status {
@@ -188,25 +188,25 @@ func ValidateUserStatus(currentStatus, newStatus string) error {
 	}
 
 	if !isValidStatus {
-		return errors.NewAppError(errors.CodeValidationError, "无效的用户状态")
+		return errors.NewAppError(errors.CodeValidationError, "Invalid user status")
 	}
 
-	// 检查状态转换是否被允许
+	// Check if the status transition is allowed
 	if allowedNextStatuses, exists := allowedTransitions[currentStatus]; exists {
 		for _, allowedStatus := range allowedNextStatuses {
 			if newStatus == allowedStatus {
 				return nil
 			}
 		}
-		return errors.NewAppError(errors.CodeValidationError, "不允许的状态转换")
+		return errors.NewAppError(errors.CodeValidationError, "Status transition not allowed")
 	}
 
-	return errors.NewAppError(errors.CodeValidationError, "当前状态不支持转换")
+	return errors.NewAppError(errors.CodeValidationError, "Current status does not support transition")
 }
 
-// ValidateUserPermission 验证用户权限
+// ValidateUserPermission validate user permission
 func ValidateUserPermission(userRole, requiredPermission string) error {
-	// 定义角色权限映射
+	// Define role permission mapping
 	rolePermissions := map[string][]string{
 		"admin": {
 			"user:create", "user:read", "user:update", "user:delete",
@@ -218,7 +218,7 @@ func ValidateUserPermission(userRole, requiredPermission string) error {
 
 	permissions, exists := rolePermissions[userRole]
 	if !exists {
-		return errors.NewAppError(errors.CodeValidationError, "无效的用户角色")
+		return errors.NewAppError(errors.CodeValidationError, "Invalid user role")
 	}
 
 	for _, permission := range permissions {
@@ -230,9 +230,9 @@ func ValidateUserPermission(userRole, requiredPermission string) error {
 	return errors.ErrForbidden
 }
 
-// ValidateResourceQuota 验证资源配额
+// ValidateResourceQuota validate resource quota
 func ValidateResourceQuota(userID uint, resourceType string, currentCount int) error {
-	// 定义资源配额限制
+	// Define resource quota limits
 	quotaLimits := map[string]int{
 		"applications": MaxApplications,
 		"workflows":    MaxWorkflows,
@@ -241,7 +241,7 @@ func ValidateResourceQuota(userID uint, resourceType string, currentCount int) e
 
 	limit, exists := quotaLimits[resourceType]
 	if !exists {
-		return errors.NewAppError(errors.CodeValidationError, "未知的资源类型")
+		return errors.NewAppError(errors.CodeValidationError, "Unknown resource type")
 	}
 
 	if currentCount >= limit {

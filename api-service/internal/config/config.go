@@ -26,18 +26,18 @@ type ServerConfig struct {
 	Config ServerConfigParams `mapstructure:"config"`
 }
 
-// ServerConfigParams HTTP服务器配置参数
+// ServerConfigParams HTTP server configuration parameters
 type ServerConfigParams struct {
-	ReadTimeout       int `mapstructure:"read_timeout"`        // 读取超时时间(秒)
-	WriteTimeout      int `mapstructure:"write_timeout"`       // 写入超时时间(秒)
-	IdleTimeout       int `mapstructure:"idle_timeout"`        // 空闲超时时间(秒)
-	ReadHeaderTimeout int `mapstructure:"read_header_timeout"` // 读取头部超时时间(秒)
-	MaxHeaderBytes    int `mapstructure:"max_header_bytes"`    // 最大头部字节数
+	ReadTimeout       int `mapstructure:"read_timeout"`        // Read timeout in seconds
+	WriteTimeout      int `mapstructure:"write_timeout"`       // Write timeout in seconds
+	IdleTimeout       int `mapstructure:"idle_timeout"`        // Idle timeout in seconds
+	ReadHeaderTimeout int `mapstructure:"read_header_timeout"` // Read header timeout in seconds
+	MaxHeaderBytes    int `mapstructure:"max_header_bytes"`    // Maximum header bytes
 }
 
-// LogConfig 日志配置
+// LogConfig log configuration
 type LogConfig struct {
-	LogLevel      string `mapstructure:"log_leve"` // 注意：保持与配置文件中的拼写一致
+	LogLevel      string `mapstructure:"log_leve"` // Keep spelling consistent with config file
 	LogPath       string `mapstructure:"log_path"`
 	LogMaxSize    int    `mapstructure:"log_max_size"` // MB
 	LogMaxBackups int    `mapstructure:"log_max_backups"`
@@ -158,7 +158,7 @@ func Load() (*Config, error) {
 	_ = viper.BindEnv("jwt.secret", "WEBSOFT9_JWT_SECRET")
 	_ = viper.BindEnv("jwt.expire_time", "WEBSOFT9_JWT_EXPIRE_TIME")
 
-	// 设置默认值
+	// Set default values
 	setDefaults()
 
 	if err := viper.ReadInConfig(); err != nil {

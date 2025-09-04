@@ -6,51 +6,51 @@ import (
 	"context"
 )
 
-// RoleService 角色服务接口
+// RoleService role service interface
 type RoleService interface {
-	// 基础CRUD操作
+	// Basic CRUD operations
 	CreateRole(ctx context.Context, req *request.CreateRoleRequest, createdBy uint) (*response.RoleResponse, error)
 	GetRole(ctx context.Context, id uint) (*response.RoleResponse, error)
 	UpdateRole(ctx context.Context, id uint, req *request.UpdateRoleRequest, updatedBy uint) (*response.RoleResponse, error)
 	DeleteRole(ctx context.Context, id uint) error
 
-	// 查询操作
+	// Query operations
 	ListRoles(ctx context.Context, req *request.ListRolesRequest) (*response.RoleListResponse, error)
 	GetRoleWithPermissions(ctx context.Context, id uint) (*response.RoleResponse, error)
 	GetRoleUsers(ctx context.Context, id uint, page, pageSize int) (*response.RoleListResponse, error)
 
-	// 权限管理
+	// Permission management
 	AssignPermissions(ctx context.Context, roleID uint, req *request.RolePermissionRequest, grantedBy uint) error
 	RemovePermissions(ctx context.Context, roleID uint, req *request.RolePermissionRequest) error
 
-	// 批量操作
+	// Batch operations
 	BatchUpdateRoleStatus(ctx context.Context, ids []uint, status int) error
 
-	// 初始化系统角色
+	// Initialize system roles
 	InitializeSystemRoles(ctx context.Context) error
 }
 
-// PermissionService 权限服务接口
+// PermissionService permission service interface
 type PermissionService interface {
-	// 基础CRUD操作
+	// Basic CRUD operations
 	CreatePermission(ctx context.Context, req *request.CreatePermissionRequest, createdBy uint) (*response.PermissionResponse, error)
 	GetPermission(ctx context.Context, id uint) (*response.PermissionResponse, error)
 	UpdatePermission(ctx context.Context, id uint, req *request.UpdatePermissionRequest, updatedBy uint) (*response.PermissionResponse, error)
 	DeletePermission(ctx context.Context, id uint) error
 
-	// 查询操作
+	// Query operations
 	ListPermissions(ctx context.Context, req *request.ListPermissionsRequest) (*response.PermissionListResponse, error)
 	GetPermissionTree(ctx context.Context, req *request.PermissionTreeRequest) ([]*response.PermissionTreeResponse, error)
 	GetPermissionRoles(ctx context.Context, id uint, page, pageSize int) (*response.RoleListResponse, error)
 
-	// 权限验证
+	// Permission verification
 	CheckUserPermission(ctx context.Context, userID uint, resource, action string) (bool, error)
 	GetUserPermissions(ctx context.Context, userID uint) ([]*response.PermissionResponse, error)
 
-	// 批量操作
+	// Batch operations
 	BatchUpdatePermissionStatus(ctx context.Context, ids []uint, status int) error
 
-	// 初始化系统权限
+	// Initialize system permissions
 	InitializeSystemPermissions(ctx context.Context) error
 }
 
@@ -76,19 +76,19 @@ type APITokenService interface {
 	CheckTokenIsExists(ctx context.Context, token string) bool
 }
 
-// AuthConfigService 认证配置服务接口
+// AuthConfigService authentication configuration service interface
 type AuthConfigService interface {
-	// 配置管理
+	// Configuration management
 	GetAuthConfig(ctx context.Context) (*response.AuthConfigResponse, error)
 	UpdateAuthConfig(ctx context.Context, req *request.UpdateAuthConfigRequest) error
 
-	// OAuth2提供商管理
+	// OAuth2 provider management
 	GetOAuth2Providers(ctx context.Context) ([]*response.OAuth2ProviderResponse, error)
 
-	// 密码策略验证
+	// Password policy validation
 	ValidatePassword(password string) error
 
-	// 登录安全检查
+	// Login security check
 	CheckLoginSecurity(ctx context.Context, userID uint, ip string) error
 	RecordLoginAttempt(ctx context.Context, userID uint, success bool, ip string) error
 }
