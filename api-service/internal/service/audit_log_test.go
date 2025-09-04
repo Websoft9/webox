@@ -1,0 +1,699 @@
+package service
+
+import (
+	"context"
+	"errors"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"gorm.io/gorm"
+
+	"api-service/internal/constants"
+	"api-service/internal/dto/request"
+	"api-service/internal/dto/response"
+	"api-service/internal/interface/repository"
+	"api-service/internal/interface/service"
+	"api-service/internal/model"
+	"api-service/pkg/i18n"
+	"api-service/pkg/logger"
+)
+
+// MockAuditLogRepository mock implementation of AuditLogRepository
+type MockAuditLogRepository struct {
+	mock.Mock
+}
+
+func (m *MockAuditLogRepository) Create(ctx context.Context, auditLog *model.AuditLog) error {
+	args := m.Called(ctx, auditLog)
+	return args.Error(0)
+}
+
+func (m *MockAuditLogRepository) GetByID(ctx context.Context, id uint) (*model.AuditLog, error) {
+	args := m.Called(ctx, id)
+	return args.Get(0).(*model.AuditLog), args.Error(1)
+}
+
+func (m *MockAuditLogRepository) List(ctx context.Context, filter *repository.AuditLogFilter) ([]*model.AuditLog, int64, error) {
+	args := m.Called(ctx, filter)
+	return args.Get(0).([]*model.AuditLog), args.Get(1).(int64), args.Error(2)
+}
+
+func (m *MockAuditLogRepository) GetStatistics(ctx context.Context, filter *repository.StatisticsFilter) (*repository.AuditLogStatistics, error) {
+	args := m.Called(ctx, filter)
+	return args.Get(0).(*repository.AuditLogStatistics), args.Error(1)
+}
+
+func (m *MockAuditLogRepository) Export(ctx context.Context, filter *repository.AuditLogFilter) ([]*model.AuditLog, error) {
+	args := m.Called(ctx, filter)
+	return args.Get(0).([]*model.AuditLog), args.Error(1)
+}
+
+func (m *MockAuditLogRepository) CleanupOldLogs(ctx context.Context, beforeDate time.Time) (int64, error) {
+	args := m.Called(ctx, beforeDate)
+	return args.Get(0).(int64), args.Error(1)
+}
+
+// MockLogger mock implementation of Logger
+type MockLogger struct {
+	mock.Mock
+}
+
+// MockUserService mock implementation of UserService
+type MockUserService struct {
+	mock.Mock
+}
+
+// Only implement the methods needed by audit log service
+func (m *MockUserService) GetUser(ctx context.Context, userID uint) (*response.UserResponse, error) {
+	args := m.Called(ctx, userID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*response.UserResponse), args.Error(1)
+}
+
+// Placeholder implementations for other methods (not used by audit service)
+func (m *MockUserService) Register(ctx context.Context, req *request.UserRegisterRequest) (*response.UserResponse, error) {
+	args := m.Called(ctx, req)
+	return args.Get(0).(*response.UserResponse), args.Error(1)
+}
+
+func (m *MockUserService) Login(ctx context.Context, req *request.UserLoginRequest) (*response.UserLoginResponse, error) {
+	args := m.Called(ctx, req)
+	return args.Get(0).(*response.UserLoginResponse), args.Error(1)
+}
+
+func (m *MockUserService) ChangePassword(ctx context.Context, userID uint, req *request.UserChangePasswordRequest) error {
+	args := m.Called(ctx, userID, req)
+	return args.Error(0)
+}
+
+func (m *MockUserService) ListUsers(ctx context.Context, req *request.UserListRequest) (*response.UserListResponse, int64, error) {
+	args := m.Called(ctx, req)
+	return args.Get(0).(*response.UserListResponse), args.Get(1).(int64), args.Error(2)
+}
+
+func (m *MockUserService) CreateUser(ctx context.Context, req *request.UserCreateRequest) (*response.UserResponse, error) {
+	args := m.Called(ctx, req)
+	return args.Get(0).(*response.UserResponse), args.Error(1)
+}
+
+func (m *MockUserService) UpdateUser(ctx context.Context, userID uint, req *request.UserUpdateRequest) (*response.UserResponse, error) {
+	args := m.Called(ctx, userID, req)
+	return args.Get(0).(*response.UserResponse), args.Error(1)
+}
+
+func (m *MockUserService) UpdateUserStatus(ctx context.Context, userID uint, req *request.UserUpdateStatusRequest) error {
+	args := m.Called(ctx, userID, req)
+	return args.Error(0)
+}
+
+func (m *MockUserService) UpdateUserPassword(ctx context.Context, userID uint, req *request.UserPasswordUpdateRequest) error {
+	args := m.Called(ctx, userID, req)
+	return args.Error(0)
+}
+
+func (m *MockUserService) DeleteUser(ctx context.Context, userID uint) error {
+	args := m.Called(ctx, userID)
+	return args.Error(0)
+}
+
+func (m *MockUserService) ValidateUserAccess(ctx context.Context, userID uint, resource string) error {
+	args := m.Called(ctx, userID, resource)
+	return args.Error(0)
+}
+
+func (m *MockUserService) CheckUserQuota(ctx context.Context, userID uint, resourceType string) error {
+	args := m.Called(ctx, userID, resourceType)
+	return args.Error(0)
+}
+
+func (m *MockLogger) Debug(msg string, fields ...logger.Field) {
+	m.Called(msg, fields)
+}
+
+func (m *MockLogger) Info(msg string, fields ...logger.Field) {
+	m.Called(msg, fields)
+}
+
+func (m *MockLogger) Warn(msg string, fields ...logger.Field) {
+	m.Called(msg, fields)
+}
+
+func (m *MockLogger) Error(msg string, fields ...logger.Field) {
+	m.Called(msg, fields)
+}
+
+func (m *MockLogger) Fatal(msg string, fields ...logger.Field) {
+	m.Called(msg, fields)
+}
+
+func (m *MockLogger) DebugContext(ctx context.Context, msg string, fields ...logger.Field) {
+	m.Called(ctx, msg, fields)
+}
+
+func (m *MockLogger) InfoContext(ctx context.Context, msg string, fields ...logger.Field) {
+	m.Called(ctx, msg, fields)
+}
+
+func (m *MockLogger) WarnContext(ctx context.Context, msg string, fields ...logger.Field) {
+	m.Called(ctx, msg, fields)
+}
+
+func (m *MockLogger) ErrorContext(ctx context.Context, msg string, fields ...logger.Field) {
+	m.Called(ctx, msg, fields)
+}
+
+func (m *MockLogger) IsDebugEnabled() bool {
+	args := m.Called()
+	return args.Bool(0)
+}
+
+func (m *MockLogger) IsInfoEnabled() bool {
+	args := m.Called()
+	return args.Bool(0)
+}
+
+func (m *MockLogger) IsWarnEnabled() bool {
+	args := m.Called()
+	return args.Bool(0)
+}
+
+func (m *MockLogger) IsErrorEnabled() bool {
+	args := m.Called()
+	return args.Bool(0)
+}
+
+func (m *MockLogger) WithFields(fields ...logger.Field) logger.Logger {
+	args := m.Called(fields)
+	return args.Get(0).(logger.Logger)
+}
+
+func (m *MockLogger) WithContext(ctx context.Context) logger.Logger {
+	args := m.Called(ctx)
+	return args.Get(0).(logger.Logger)
+}
+
+func (m *MockLogger) SetLevel(level logger.Level) {
+	m.Called(level)
+}
+
+func (m *MockLogger) SetOutput(w io.Writer) {
+	m.Called(w)
+}
+
+// Test setup helpers
+// setupAuditLogService creates service with mocked dependencies
+func setupAuditLogService() (service.AuditLogService, *MockAuditLogRepository, *MockUserService, *MockLogger) {
+	mockRepo := &MockAuditLogRepository{}
+	mockUserService := &MockUserService{}
+	mockLogger := &MockLogger{}
+
+	// Create mock DB (can be nil for unit tests since we're mocking the repository)
+	var mockDB *gorm.DB
+
+	// Initialize i18n for testing
+	_ = i18n.Init() // Initialize with default config
+	mockI18n := i18n.NewI18n()
+
+	// Setup logger mock expectations
+	mockLogger.On("Info", mock.AnythingOfType("string"), mock.Anything).Maybe().Return()
+	mockLogger.On("Error", mock.AnythingOfType("string"), mock.Anything).Maybe().Return()
+	mockLogger.On("DebugContext", mock.Anything, mock.AnythingOfType("string"), mock.Anything).Maybe().Return()
+	mockLogger.On("InfoContext", mock.Anything, mock.AnythingOfType("string"), mock.Anything).Maybe().Return()
+	mockLogger.On("WarnContext", mock.Anything, mock.AnythingOfType("string"), mock.Anything).Maybe().Return()
+	mockLogger.On("ErrorContext", mock.Anything, mock.AnythingOfType("string"), mock.Anything).Maybe().Return()
+
+	auditLogService := NewAuditLogService(mockRepo, mockUserService, mockDB, mockLogger, mockI18n)
+	return auditLogService, mockRepo, mockUserService, mockLogger
+}
+
+// createTestGinContext creates a mock gin.Context for testing
+func createTestGinContext() *gin.Context {
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+	c.Set("language", "zh-CN") // Set default language for testing
+	return c
+}
+
+func createTestAuditLog() *model.AuditLog {
+	now := time.Now()
+	userID := uint(1)
+	responseStatus := 200
+	responseTime := 150
+
+	return &model.AuditLog{
+		ID:             1, // Set for testing purposes - in real app this would be auto-generated
+		UserID:         &userID,
+		Username:       "testuser",
+		Action:         constants.ActionCreate,
+		Module:         "User Management",
+		ResourceType:   "USER",
+		ResourceID:     &userID,
+		ResourceName:   "Test User",
+		Description:    "Create user test",
+		IPAddress:      "192.168.1.1",
+		UserAgent:      "Mozilla/5.0 Test",
+		RequestMethod:  "POST",
+		RequestURL:     "/api/v1/users",
+		RequestParams:  `{"name": "test"}`,
+		ResponseStatus: &responseStatus,
+		ResponseTime:   &responseTime,
+		Success:        true,
+		ErrorMessage:   "",
+		CreatedAt:      now,
+	}
+}
+
+func createTestCreateRequest() *request.CreateAuditLogRequest {
+	userID := uint(1)
+	responseStatus := 200
+	responseTime := 150
+
+	return &request.CreateAuditLogRequest{
+		UserID:         &userID,
+		Username:       "testuser",
+		Action:         constants.ActionCreate,
+		Module:         "User Management",
+		ResourceType:   "USER",
+		ResourceID:     &userID,
+		ResourceName:   "Test User",
+		Description:    "Create user test",
+		IPAddress:      "192.168.1.1",
+		UserAgent:      "Mozilla/5.0 Test",
+		RequestMethod:  "POST",
+		RequestURL:     "/api/v1/users",
+		RequestParams:  `{"name": "test"}`,
+		ResponseStatus: &responseStatus,
+		ResponseTime:   &responseTime,
+		Success:        true,
+		ErrorMessage:   "",
+	}
+}
+
+// Tests for RecordLog
+func TestAuditLogService_RecordLog_Success(t *testing.T) {
+	service, mockRepo, _, mockLogger := setupAuditLogService()
+	ctx := context.Background()
+	req := createTestCreateRequest()
+
+	// Mock repository call
+	mockRepo.On("Create", ctx, mock.AnythingOfType("*model.AuditLog")).Return(nil)
+
+	// Mock logger calls - RecordLog calls InfoContext twice
+	mockLogger.On("InfoContext", ctx, "Recording audit log", mock.Anything).Return()
+	mockLogger.On("InfoContext", ctx, "Audit log recorded successfully", mock.Anything).Return()
+
+	// Execute
+	err := service.RecordLog(ctx, req)
+
+	// Assert
+	assert.NoError(t, err)
+	mockRepo.AssertExpectations(t)
+	mockLogger.AssertExpectations(t)
+}
+
+func TestAuditLogService_RecordLog_RepositoryError(t *testing.T) {
+	service, mockRepo, _, _ := setupAuditLogService()
+	ctx := context.Background()
+	req := createTestCreateRequest()
+
+	// Mock repository error
+	expectedError := errors.New("database connection failed")
+	mockRepo.On("Create", ctx, mock.AnythingOfType("*model.AuditLog")).Return(expectedError)
+
+	// Execute
+	err := service.RecordLog(ctx, req)
+
+	// Assert
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to record audit log")
+	mockRepo.AssertExpectations(t)
+}
+
+func TestAuditLogService_RecordLog_NilRequest(t *testing.T) {
+	service, _, _, _ := setupAuditLogService()
+	ctx := context.Background()
+
+	// Execute
+	err := service.RecordLog(ctx, nil)
+
+	// Assert
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "audit log request is required")
+}
+
+// Tests for GetAuditLog
+func TestAuditLogService_GetAuditLog_Success(t *testing.T) {
+	service, mockRepo, mockUserService, _ := setupAuditLogService()
+	ctx := context.Background()
+	testLog := createTestAuditLog()
+
+	// Mock repository call
+	mockRepo.On("GetByID", ctx, uint(1)).Return(testLog, nil)
+
+	// Mock user service call for user info
+	userResp := &response.UserResponse{
+		ID:       1,
+		Username: "testuser",
+		Nickname: "Test User",
+		Email:    "test@example.com",
+	}
+	mockUserService.On("GetUser", ctx, uint(1)).Return(userResp, nil)
+
+	// Execute
+	result, err := service.GetAuditLog(ctx, 1)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, testLog.ID, result.ID)
+	assert.Equal(t, testLog.Action, result.Action)
+	assert.Equal(t, testLog.Description, result.Description)
+	assert.Equal(t, "Test User", result.User.Nickname)
+	// Note: AuditLogUserResponse no longer contains Email field
+	mockRepo.AssertExpectations(t)
+}
+
+func TestAuditLogService_GetAuditLog_NotFound(t *testing.T) {
+	service, mockRepo, _, _ := setupAuditLogService()
+	ctx := context.Background()
+
+	// Mock repository call returning nil
+	mockRepo.On("GetByID", ctx, uint(999)).Return((*model.AuditLog)(nil), errors.New("record not found"))
+
+	// Execute
+	result, err := service.GetAuditLog(ctx, 999)
+
+	// Assert
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "failed to get audit log")
+	mockRepo.AssertExpectations(t)
+}
+
+// Tests for ListAuditLogs
+func TestAuditLogService_ListAuditLogs_Success(t *testing.T) {
+	service, mockRepo, mockUserService, _ := setupAuditLogService()
+	ctx := context.Background()
+	testLogs := []*model.AuditLog{createTestAuditLog()}
+	req := &request.ListAuditLogRequest{
+		Page:     1,
+		PageSize: 20,
+		Action:   "CREATE",
+	}
+
+	// Mock repository call
+	mockRepo.On("List", ctx, mock.AnythingOfType("*repository.AuditLogFilter")).Return(testLogs, int64(1), nil)
+
+	// Mock user service call for user info
+	userResp := &response.UserResponse{
+		ID:       1,
+		Username: "testuser",
+		Nickname: "Test User",
+		Email:    "test@example.com",
+	}
+	mockUserService.On("GetUser", ctx, uint(1)).Return(userResp, nil)
+
+	// Execute
+	result, err := service.ListAuditLogs(ctx, req)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, int64(1), result.Total)
+	assert.Equal(t, 1, len(result.Items))
+	assert.Equal(t, "Test User", result.Items[0].User.Nickname)
+	// Note: AuditLogUserResponse no longer contains Email field
+	mockRepo.AssertExpectations(t)
+}
+
+func TestAuditLogService_ListAuditLogs_WithDefaults(t *testing.T) {
+	service, mockRepo, _, _ := setupAuditLogService()
+	ctx := context.Background()
+	testLogs := []*model.AuditLog{}
+	req := &request.ListAuditLogRequest{} // Empty request, should use defaults
+
+	// Mock repository call
+	mockRepo.On("List", ctx, mock.AnythingOfType("*repository.AuditLogFilter")).Return(testLogs, int64(0), nil)
+
+	// Execute
+	result, err := service.ListAuditLogs(ctx, req)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, 1, result.Page)      // Default page
+	assert.Equal(t, 20, result.PageSize) // Default page size
+	mockRepo.AssertExpectations(t)
+}
+
+// Tests for GetStatistics
+func TestAuditLogService_GetStatistics_Success(t *testing.T) {
+	service, mockRepo, _, _ := setupAuditLogService()
+	ctx := context.Background()
+	req := &request.AuditLogStatisticsRequest{
+		GroupBy: "day",
+	}
+
+	mockStats := &repository.AuditLogStatistics{
+		TotalOperations:   100,
+		SuccessOperations: 95,
+		FailedOperations:  5,
+		SuccessRate:       95.0,
+		TopUsers: []repository.UserOperationCount{
+			{UserID: 1, Username: "testuser", OperationCount: 50},
+		},
+		TopActions: []repository.ActionCount{
+			{Action: "CREATE", Count: 30},
+		},
+		Timeline: []repository.TimelineCount{
+			{Date: "2025-08-28", Count: 25},
+		},
+	}
+
+	// Mock repository call
+	mockRepo.On("GetStatistics", ctx, mock.AnythingOfType("*repository.StatisticsFilter")).Return(mockStats, nil)
+
+	// Execute
+	result, err := service.GetStatistics(ctx, req)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, int64(100), result.TotalOperations)
+	assert.Equal(t, int64(95), result.SuccessOperations)
+	assert.Equal(t, int64(5), result.FailedOperations)
+	assert.Equal(t, 1, len(result.TopUsers))
+	assert.Equal(t, 1, len(result.TopActions))
+	mockRepo.AssertExpectations(t)
+}
+
+// Tests for ExportAuditLogs
+func TestAuditLogService_ExportAuditLogs_CSV_Success(t *testing.T) {
+	service, mockRepo, _, _ := setupAuditLogService()
+	ctx := context.Background()
+	ginCtx := createTestGinContext()
+	testLogs := []*model.AuditLog{createTestAuditLog()}
+	req := &request.ExportAuditLogRequest{
+		Format: "csv",
+	}
+
+	// Mock repository call
+	mockRepo.On("Export", ctx, mock.AnythingOfType("*repository.AuditLogFilter")).Return(testLogs, nil)
+
+	// Execute
+	data, contentType, err := service.ExportAuditLogs(ctx, ginCtx, req)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.NotNil(t, data)
+	assert.Equal(t, "text/csv; charset=utf-8", contentType)
+	assert.Contains(t, string(data), "ID") // CSV header with i18n key fallback
+	mockRepo.AssertExpectations(t)
+}
+
+func TestAuditLogService_ExportAuditLogs_JSON_Success(t *testing.T) {
+	service, mockRepo, _, _ := setupAuditLogService()
+	ctx := context.Background()
+	ginCtx := createTestGinContext()
+	testLogs := []*model.AuditLog{createTestAuditLog()}
+	req := &request.ExportAuditLogRequest{
+		Format: "json",
+	}
+
+	// Mock repository call
+	mockRepo.On("Export", ctx, mock.AnythingOfType("*repository.AuditLogFilter")).Return(testLogs, nil)
+
+	// Execute
+	data, contentType, err := service.ExportAuditLogs(ctx, ginCtx, req)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.NotNil(t, data)
+	assert.Equal(t, "application/json", contentType)
+	assert.Contains(t, string(data), `"id":1`) // JSON content
+	mockRepo.AssertExpectations(t)
+}
+
+func TestAuditLogService_ExportAuditLogs_UnsupportedFormat(t *testing.T) {
+	service, mockRepo, _, _ := setupAuditLogService()
+	ctx := context.Background()
+	ginCtx := createTestGinContext()
+	req := &request.ExportAuditLogRequest{
+		Format: "pdf", // Unsupported format
+	}
+
+	// Mock Export method to return test data (even though format is unsupported,
+	// the service layer will call Export first)
+	testLogs := []*model.AuditLog{createTestAuditLog()}
+	mockRepo.On("Export", ctx, mock.AnythingOfType("*repository.AuditLogFilter")).Return(testLogs, nil)
+
+	// Execute
+	data, contentType, err := service.ExportAuditLogs(ctx, ginCtx, req)
+
+	// Assert
+	assert.Error(t, err)
+	assert.Nil(t, data)
+	assert.Empty(t, contentType)
+	assert.Contains(t, err.Error(), "unsupported export format")
+	mockRepo.AssertExpectations(t)
+}
+
+func TestAuditLogService_ExportAuditLogs_Excel_Success(t *testing.T) {
+	service, mockRepo, _, _ := setupAuditLogService()
+	ctx := context.Background()
+	ginCtx := createTestGinContext()
+	testLogs := []*model.AuditLog{createTestAuditLog()}
+	req := &request.ExportAuditLogRequest{
+		Format: "excel",
+	}
+
+	// Mock repository call
+	mockRepo.On("Export", ctx, mock.AnythingOfType("*repository.AuditLogFilter")).Return(testLogs, nil)
+
+	// Execute
+	data, contentType, err := service.ExportAuditLogs(ctx, ginCtx, req)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.NotEmpty(t, data)
+	assert.Equal(t, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", contentType)
+
+	// Verify that data is not empty and contains Excel magic bytes
+	assert.True(t, len(data) > 100) // Excel files are typically larger than 100 bytes
+
+	// Check for Excel file signature (first few bytes should indicate it's a zip-based format)
+	assert.Equal(t, "PK", string(data[0:2])) // Excel files start with "PK" (ZIP signature)
+
+	mockRepo.AssertExpectations(t)
+}
+
+// Tests for CleanupExpiredLogs
+func TestAuditLogService_CleanupExpiredLogs_Success(t *testing.T) {
+	service, mockRepo, _, _ := setupAuditLogService()
+	ctx := context.Background()
+	retentionDays := 90
+
+	// Mock repository call
+	mockRepo.On("CleanupOldLogs", ctx, mock.AnythingOfType("time.Time")).Return(int64(25), nil)
+
+	// Execute
+	deletedCount, err := service.CleanupExpiredLogs(ctx, retentionDays)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.Equal(t, int64(25), deletedCount)
+	mockRepo.AssertExpectations(t)
+}
+
+func TestAuditLogService_CleanupExpiredLogs_InvalidRetentionDays(t *testing.T) {
+	service, mockRepo, _, _ := setupAuditLogService()
+	ctx := context.Background()
+
+	// Mock repository call (service will use default 90 days for negative input)
+	mockRepo.On("CleanupOldLogs", ctx, mock.AnythingOfType("time.Time")).Return(int64(0), nil)
+
+	// Test with negative retention days (should be converted to default 90 days)
+	deletedCount, err := service.CleanupExpiredLogs(ctx, -1)
+
+	// Assert (no error expected as service handles negative values by using default)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(0), deletedCount)
+	mockRepo.AssertExpectations(t)
+}
+
+// Integration-style tests
+func TestAuditLogService_FullWorkflow(t *testing.T) {
+	service, mockRepo, mockUserService, _ := setupAuditLogService()
+	ctx := context.Background()
+
+	// Mock user service for all user info calls
+	userResp := &response.UserResponse{
+		ID:       1,
+		Username: "testuser",
+		Nickname: "Test User",
+		Email:    "test@example.com",
+	}
+	mockUserService.On("GetUser", ctx, uint(1)).Return(userResp, nil)
+
+	// Step 1: Record a log
+	createReq := createTestCreateRequest()
+	mockRepo.On("Create", ctx, mock.AnythingOfType("*model.AuditLog")).Return(nil)
+
+	err := service.RecordLog(ctx, createReq)
+	assert.NoError(t, err)
+
+	// Step 2: Retrieve the log
+	testLog := createTestAuditLog()
+	mockRepo.On("GetByID", ctx, uint(1)).Return(testLog, nil)
+
+	result, err := service.GetAuditLog(ctx, 1)
+	assert.NoError(t, err)
+	assert.Equal(t, testLog.ID, result.ID)
+	assert.Equal(t, "Test User", result.User.Nickname)
+
+	// Step 3: List logs
+	mockRepo.On("List", ctx, mock.AnythingOfType("*repository.AuditLogFilter")).Return([]*model.AuditLog{testLog}, int64(1), nil)
+
+	listReq := &request.ListAuditLogRequest{Page: 1, PageSize: 20}
+	listResult, err := service.ListAuditLogs(ctx, listReq)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), listResult.Total)
+
+	mockRepo.AssertExpectations(t)
+}
+
+// Benchmark tests
+func BenchmarkAuditLogService_RecordLog(b *testing.B) {
+	service, mockRepo, _, _ := setupAuditLogService()
+	ctx := context.Background()
+	req := createTestCreateRequest()
+
+	mockRepo.On("Create", ctx, mock.AnythingOfType("*model.AuditLog")).Return(nil)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = service.RecordLog(ctx, req)
+	}
+}
+
+func BenchmarkAuditLogService_GetAuditLog(b *testing.B) {
+	service, mockRepo, _, _ := setupAuditLogService()
+	ctx := context.Background()
+	testLog := createTestAuditLog()
+
+	mockRepo.On("GetByID", ctx, uint(1)).Return(testLog, nil)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = service.GetAuditLog(ctx, 1)
+	}
+}
