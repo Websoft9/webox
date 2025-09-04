@@ -40,6 +40,35 @@ func BindAndValidateRequest(ctx *gin.Context, req interface{}, validator *valida
 	return true
 }
 
+// BindAndValidateQuery binds query parameters and validates them
+func BindAndValidateQuery(ctx *gin.Context, req interface{}, validator *validator.Validate, log logger.Logger, i18n *i18n.I18n) bool {
+	// Bind query parameters
+	if err := ctx.ShouldBindQuery(req); err != nil {
+		log.ErrorContext(ctx.Request.Context(), "Invalid query parameters", logger.ErrorField(err))
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"code":    http.StatusBadRequest,
+			"message": i18n.T(ctx, "validation.invalid_query_parameters"),
+			"error":   err.Error(),
+		})
+		return false
+	}
+
+	// Validate request parameters
+	if err := validator.Struct(req); err != nil {
+		log.ErrorContext(ctx.Request.Context(), "Query validation failed", logger.ErrorField(err))
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"code":    http.StatusBadRequest,
+			"message": i18n.T(ctx, "validation.query_validation_failed"),
+			"error":   err.Error(),
+		})
+		return false
+	}
+
+	return true
+}
+
 // GetUserID extracts and validates user ID from context
 func GetUserID(ctx *gin.Context, i18n *i18n.I18n) (uint, bool) {
 	userID, exists := ctx.Get("user_id")

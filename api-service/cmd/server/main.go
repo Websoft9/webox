@@ -138,6 +138,7 @@ func initDatabase(cfg *config.Config, zapLogger logger.Logger) (*gorm.DB, error)
 		&model.RolePermission{},
 		&model.APIToken{},
 		&model.UserTwoFactor{},
+		&model.AuditLog{},
 	); migrateErr != nil {
 		return nil, migrateErr
 	}
@@ -179,7 +180,7 @@ func startServer(cfg *config.Config, authConfigManager *config.AuthConfigManager
 	controllers := initControllers(services, validatorInstance, zapLogger, i18nInstance, cfg)
 
 	// Initialize router with complete functionality
-	r := router.SetupRouter(controllers, cfg, zapLogger, services.permissionService)
+	r := router.SetupRouter(controllers, cfg, zapLogger, services.permissionService, services.auditLogService)
 
 	// 获取端口
 	port := os.Getenv("PORT")
@@ -239,6 +240,7 @@ type repositories struct {
 	permissionRepo repoInterface.PermissionRepository
 	apiTokenRepo   repoInterface.APITokenRepository
 	twoFactorRepo  repoInterface.UserTwoFactorRepository
+	auditLogRepo   repoInterface.AuditLogRepository
 }
 
 func initRepositories(db *gorm.DB) *repositories {
@@ -248,6 +250,7 @@ func initRepositories(db *gorm.DB) *repositories {
 		permissionRepo: repoImpl.NewPermissionRepository(db),
 		apiTokenRepo:   repoImpl.NewAPITokenRepository(db),
 		twoFactorRepo:  repoImpl.NewTwoFactorRepository(db),
+		auditLogRepo:   repoImpl.NewAuditLogRepository(db),
 	}
 }
 
@@ -258,16 +261,21 @@ type businessServices struct {
 	apiTokenService   serviceInterface.APITokenService
 	authConfigService serviceInterface.AuthConfigService
 	twoFactorService  serviceInterface.TwoFactorService
+	auditLogService   serviceInterface.AuditLogService
 }
 
 func initBusinessServices(repos *repositories, authConfigManager *config.AuthConfigManager, zapLogger logger.Logger, i18nInstance *i18n.I18n, db *gorm.DB) *businessServices {
+	// Initialize user service first as it's needed by audit log service
+	userService := serviceImpl.NewUserService(repos.userRepo, zapLogger)
+
 	return &businessServices{
-		userService:       serviceImpl.NewUserService(repos.userRepo, zapLogger),
+		userService:       userService,
 		roleService:       serviceImpl.NewRoleService(repos.roleRepo, repos.permissionRepo, db, zapLogger, i18nInstance),
 		permissionService: serviceImpl.NewPermissionService(repos.permissionRepo, db, zapLogger, i18nInstance),
 		apiTokenService:   serviceImpl.NewAPITokenService(repos.apiTokenRepo, db, zapLogger, i18nInstance),
 		authConfigService: serviceImpl.NewAuthConfigService(authConfigManager, zapLogger),
 		twoFactorService:  serviceImpl.NewTwoFactorService(repos.twoFactorRepo, db, zapLogger, i18nInstance),
+		auditLogService:   serviceImpl.NewAuditLogService(repos.auditLogRepo, userService, db, zapLogger, i18nInstance),
 	}
 }
 
@@ -279,6 +287,7 @@ func initControllers(services *businessServices, validatorInstance *validator.Va
 		PermissionController: controller.NewPermissionController(services.permissionService, validatorInstance, zapLogger, i18nInstance),
 		APITokenController:   controller.NewAPITokenController(services.apiTokenService, validatorInstance, zapLogger, i18nInstance),
 		AuthConfigController: controller.NewAuthConfigController(services.authConfigService, validatorInstance, zapLogger, i18nInstance),
+		AuditLogController:   controller.NewAuditLogController(services.auditLogService, validatorInstance, zapLogger, i18nInstance),
 		TwoFactorController:  controller.NewTwoFactorController(services.twoFactorService, validatorInstance, zapLogger, i18nInstance),
 		HealthController:     controller.NewHealthController(cfg),
 	}
