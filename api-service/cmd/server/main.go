@@ -273,7 +273,7 @@ func initBusinessServices(repos *repositories, authConfigManager *config.AuthCon
 
 func initControllers(services *businessServices, validatorInstance *validator.Validate, zapLogger logger.Logger, i18nInstance *i18n.I18n, cfg *config.Config) *router.Controllers {
 	return &router.Controllers{
-		UserController:       controller.NewUserController(services.userService, zapLogger),
+		UserController:       controller.NewUserController(services.userService, zapLogger, i18nInstance), // 添加 i18nInstance 参数
 		I18nController:       controller.NewI18nController(),
 		RoleController:       controller.NewRoleController(services.roleService, validatorInstance, zapLogger, i18nInstance),
 		PermissionController: controller.NewPermissionController(services.permissionService, validatorInstance, zapLogger, i18nInstance),

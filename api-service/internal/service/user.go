@@ -46,7 +46,7 @@ func (s *userService) Register(ctx context.Context, req *request.UserRegisterReq
 		return nil, errors.WrapError(err, errors.CodeInternalError, "Failed to check username")
 	}
 	if exists {
-		return nil, errors.NewAppError(errors.CodeUserAlreadyExists, "用户名已存在")
+		return nil, errors.NewAppError(errors.CodeUserAlreadyExists, "Username already exists")
 	}
 
 	// 2. 检查邮箱是否存在
@@ -56,7 +56,7 @@ func (s *userService) Register(ctx context.Context, req *request.UserRegisterReq
 		return nil, errors.WrapError(err, errors.CodeInternalError, "Failed to check email")
 	}
 	if exists {
-		return nil, errors.NewAppError(errors.CodeEmailAlreadyExists, "邮箱已存在")
+		return nil, errors.NewAppError(errors.CodeEmailAlreadyExists, "Email already exists")
 	}
 
 	// 3. 加密密码
@@ -147,7 +147,7 @@ func (s *userService) ChangePassword(ctx context.Context, userID uint, req *requ
 
 	// 2. 验证旧密码
 	if user.PasswordHash != utils.SHA256Hash(req.OldPassword) {
-		s.logger.WarnContext(ctx, "旧Password verification failed", logger.Uint("user_id", userID))
+		s.logger.WarnContext(ctx, "Old password verification failed", logger.Uint("user_id", userID))
 		return errors.ErrInvalidCredentials
 	}
 
@@ -191,8 +191,8 @@ func (s *userService) ListUsers(ctx context.Context,
 	// Getting user list
 	users, total, err := s.userRepo.ListWithRelations(ctx, req.GetOffset(), req.GetPageSize(), filters)
 	if err != nil {
-		s.logger.ErrorContext(ctx, "Getting user list fail", logger.ErrorField(err))
-		return nil, 0, errors.WrapError(err, errors.CodeInternalError, "Getting user list fail")
+		s.logger.ErrorContext(ctx, "Failed to get user list", logger.ErrorField(err))
+		return nil, 0, errors.WrapError(err, errors.CodeInternalError, "Failed to get user list")
 	}
 
 	// 转换为响应格式
@@ -285,7 +285,7 @@ func (s *userService) UpdateUser(ctx context.Context,
 
 // UpdateUserStatus Updating user状态
 func (s *userService) UpdateUserStatus(ctx context.Context, userID uint, req *request.UserUpdateStatusRequest) error {
-	s.logger.InfoContext(ctx, "Updating user状态", logger.Uint("user_id", userID), logger.Int("status", req.Status))
+	s.logger.InfoContext(ctx, "Updating user status", logger.Uint("user_id", userID), logger.Int("status", req.Status))
 
 	user, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
@@ -297,8 +297,8 @@ func (s *userService) UpdateUserStatus(ctx context.Context, userID uint, req *re
 
 	user.Status = req.Status
 	if err := s.userRepo.Update(ctx, user); err != nil {
-		s.logger.ErrorContext(ctx, "Updating user状态失败", logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeInternalError, "Updating user状态失败")
+		s.logger.ErrorContext(ctx, "Failed to update user status", logger.ErrorField(err))
+		return errors.WrapError(err, errors.CodeInternalError, "Failed to update user status")
 	}
 
 	s.logger.InfoContext(ctx, "User status updated successfully", logger.Uint("user_id", userID))
@@ -321,8 +321,8 @@ func (s *userService) DeleteUser(ctx context.Context, userID uint) error {
 
 	// 2. Deleting user
 	if err := s.userRepo.Delete(ctx, userID); err != nil {
-		s.logger.ErrorContext(ctx, "Deleting user失败", logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeInternalError, "Deleting user失败")
+		s.logger.ErrorContext(ctx, "Failed to delete user", logger.ErrorField(err))
+		return errors.WrapError(err, errors.CodeInternalError, "Failed to delete user")
 	}
 
 	s.logger.InfoContext(ctx, "User deleted successfully", logger.Uint("user_id", userID))
@@ -333,7 +333,7 @@ func (s *userService) DeleteUser(ctx context.Context, userID uint) error {
 func (s *userService) UpdateUserPassword(
 	ctx context.Context, userID uint, req *request.UserPasswordUpdateRequest,
 ) error {
-	s.logger.InfoContext(ctx, "Updating user密码", logger.Uint("user_id", userID))
+	s.logger.InfoContext(ctx, "Updating user password", logger.Uint("user_id", userID))
 
 	// 1. 检查用户是否存在
 	user, err := s.userRepo.GetByID(ctx, userID)
@@ -379,7 +379,7 @@ func (s *userService) validateEmailUniqueness(ctx context.Context, email string,
 		return errors.WrapError(err, errors.CodeInternalError, "Failed to check email uniqueness")
 	}
 	if exists {
-		return errors.NewAppError(errors.CodeEmailAlreadyExists, "邮箱已存在")
+		return errors.NewAppError(errors.CodeEmailAlreadyExists, "Email already exists")
 	}
 	return nil
 }
@@ -393,7 +393,7 @@ func (s *userService) validateUserCreation(ctx context.Context, req *request.Use
 		return errors.WrapError(err, errors.CodeInternalError, "Failed to check username")
 	}
 	if exists {
-		return errors.NewAppError(errors.CodeUserAlreadyExists, "用户名已存在")
+		return errors.NewAppError(errors.CodeUserAlreadyExists, "Username already exists")
 	}
 
 	// 检查邮箱是否存在
@@ -403,7 +403,7 @@ func (s *userService) validateUserCreation(ctx context.Context, req *request.Use
 		return errors.WrapError(err, errors.CodeInternalError, "Failed to check email")
 	}
 	if exists {
-		return errors.NewAppError(errors.CodeEmailAlreadyExists, "邮箱已存在")
+		return errors.NewAppError(errors.CodeEmailAlreadyExists, "Email already exists")
 	}
 	return nil
 }
