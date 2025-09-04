@@ -9,22 +9,22 @@ import (
 	"gorm.io/gorm"
 )
 
-// userTwoFactorRepository 用户双因子认证数据访问实现
+// userTwoFactorRepository user two-factor authentication data access implementation
 type userTwoFactorRepository struct {
 	db *gorm.DB
 }
 
-// NewTwoFactorRepository 创建新的Two Factor Repository实例
+// NewTwoFactorRepository create new Two Factor Repository instance
 func NewTwoFactorRepository(db *gorm.DB) repository.UserTwoFactorRepository {
 	return &userTwoFactorRepository{db: db}
 }
 
-// Create 创建双因子认证记录
+// Create create two-factor authentication record
 func (r *userTwoFactorRepository) Create(ctx context.Context, twoFactor *model.UserTwoFactor) error {
 	return r.db.WithContext(ctx).Create(twoFactor).Error
 }
 
-// GetByUserIDAndMethod 根据用户ID和方法获取双因子认证记录
+// GetByUserIDAndMethod get two-factor authentication record by user ID and method
 func (r *userTwoFactorRepository) GetByUserIDAndMethod(ctx context.Context, userID uint, method string) (*model.UserTwoFactor, error) {
 	var twoFactor model.UserTwoFactor
 	err := r.db.WithContext(ctx).
@@ -37,17 +37,17 @@ func (r *userTwoFactorRepository) GetByUserIDAndMethod(ctx context.Context, user
 	return &twoFactor, nil
 }
 
-// Update 更新双因子认证记录
+// Update update two-factor authentication record
 func (r *userTwoFactorRepository) Update(ctx context.Context, twoFactor *model.UserTwoFactor) error {
 	return r.db.WithContext(ctx).Save(twoFactor).Error
 }
 
-// Delete 删除双因子认证记录
+// Delete delete two-factor authentication record
 func (r *userTwoFactorRepository) Delete(ctx context.Context, id uint) error {
 	return r.db.WithContext(ctx).Delete(&model.UserTwoFactor{}, id).Error
 }
 
-// GetByUserID 根据用户ID获取所有双因子认证记录
+// GetByUserID get all two-factor authentication records by user ID
 func (r *userTwoFactorRepository) GetByUserID(ctx context.Context, userID uint) ([]*model.UserTwoFactor, error) {
 	var twoFactors []*model.UserTwoFactor
 	err := r.db.WithContext(ctx).
@@ -57,7 +57,7 @@ func (r *userTwoFactorRepository) GetByUserID(ctx context.Context, userID uint) 
 	return twoFactors, err
 }
 
-// EnableMethod 启用指定的双因子认证方法
+// EnableMethod enable specified two-factor authentication method
 func (r *userTwoFactorRepository) EnableMethod(ctx context.Context, userID uint, method, secret string) error {
 	now := time.Now()
 	twoFactor := &model.UserTwoFactor{
@@ -74,7 +74,7 @@ func (r *userTwoFactorRepository) EnableMethod(ctx context.Context, userID uint,
 		FirstOrCreate(twoFactor).Error
 }
 
-// DisableMethod 禁用指定的双因子认证方法
+// DisableMethod disable specified two-factor authentication method
 func (r *userTwoFactorRepository) DisableMethod(ctx context.Context, userID uint, method string) error {
 	return r.db.WithContext(ctx).
 		Model(&model.UserTwoFactor{}).
@@ -86,7 +86,7 @@ func (r *userTwoFactorRepository) DisableMethod(ctx context.Context, userID uint
 		}).Error
 }
 
-// IsMethodEnabled 检查指定的双因子认证方法是否已启用
+// IsMethodEnabled check if the specified two-factor authentication method is enabled
 func (r *userTwoFactorRepository) IsMethodEnabled(ctx context.Context, userID uint, method string) (bool, error) {
 	var count int64
 	err := r.db.WithContext(ctx).
@@ -96,12 +96,12 @@ func (r *userTwoFactorRepository) IsMethodEnabled(ctx context.Context, userID ui
 	return count > 0, err
 }
 
-// CreateWithTx 使用事务创建双因子认证记录
+// CreateWithTx create two-factor authentication record with transaction
 func (r *userTwoFactorRepository) CreateWithTx(ctx context.Context, tx *gorm.DB, twoFactor *model.UserTwoFactor) error {
 	return tx.WithContext(ctx).Create(twoFactor).Error
 }
 
-// UpdateWithTx 使用事务更新双因子认证记录
+// UpdateWithTx update two-factor authentication record with transaction
 func (r *userTwoFactorRepository) UpdateWithTx(ctx context.Context, tx *gorm.DB, twoFactor *model.UserTwoFactor) error {
 	return tx.WithContext(ctx).Save(twoFactor).Error
 }

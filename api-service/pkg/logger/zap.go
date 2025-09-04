@@ -21,13 +21,13 @@ const (
 	OutputTypeFile   = "file"
 )
 
-// 常量定义
+// Constant definitions
 const (
-	DefaultFilePermission = 0o666 // 默认文件权限
-	ContextFieldCapacity  = 4     // 上下文字段容量
+	DefaultFilePermission = 0o666 // Default file permission
+	ContextFieldCapacity  = 4     // Context field capacity
 )
 
-// 允许的日志文件目录前缀（安全路径）
+// Allowed log file directory prefixes (safe paths)
 var allowedLogPaths = []string{
 	"/var/log/",
 	"/tmp/",
@@ -35,7 +35,7 @@ var allowedLogPaths = []string{
 	"./data/",
 }
 
-// OutputConfig 输出配置
+// OutputConfig output configuration
 type OutputConfig struct {
 	Path       string
 	MaxSize    int // MB
@@ -44,13 +44,13 @@ type OutputConfig struct {
 	Compress   bool
 }
 
-// ZapLogger Zap日志实现
+// ZapLogger Zap log implementation
 type ZapLogger struct {
 	logger      *zap.Logger
-	atomicLevel zap.AtomicLevel // 支持动态级别调整
+	atomicLevel zap.AtomicLevel // Support dynamic level adjustment
 }
 
-// NewZapLogger 创建新的Zap日志实例
+// NewZapLogger create new Zap logger instance
 func NewZapLogger(level Level, output io.Writer) Logger {
 	encoderConfig := createEncoderConfig()
 	atomicLevel := zap.NewAtomicLevelAt(convertToZapLevel(level))
@@ -73,12 +73,12 @@ func NewZapLogger(level Level, output io.Writer) Logger {
 	}
 }
 
-// NewDefaultZapLogger 创建默认Zap日志实例
+// NewDefaultZapLogger create default Zap logger instance
 func NewDefaultZapLogger() Logger {
 	return NewZapLogger(InfoLevel, os.Stdout)
 }
 
-// NewZapLoggerWithConfig 根据配置创建Zap日志实例
+// NewZapLoggerWithConfig create Zap logger instance from configuration
 func NewZapLoggerWithConfig(config *Config) Logger {
 	output := createOutput(&OutputConfig{
 		Path:       config.Filename,
@@ -91,7 +91,7 @@ func NewZapLoggerWithConfig(config *Config) Logger {
 	return NewZapLogger(config.Level, output)
 }
 
-// NewZapLoggerWithServerConfig 根据服务器配置创建Zap日志实例
+// NewZapLoggerWithServerConfig create Zap logger instance from server configuration
 func NewZapLoggerWithServerConfig(logPath, logLevel string, maxSize, maxBackups, maxAge int, compress bool) Logger {
 	level := ParseLevel(logLevel)
 	output := createOutput(&OutputConfig{
@@ -105,7 +105,7 @@ func NewZapLoggerWithServerConfig(logPath, logLevel string, maxSize, maxBackups,
 	return NewZapLogger(level, output)
 }
 
-// createEncoderConfig 创建编码器配置
+// createEncoderConfig create encoder configuration
 func createEncoderConfig() zapcore.EncoderConfig {
 	return zapcore.EncoderConfig{
 		TimeKey:        "timestamp",
@@ -122,17 +122,17 @@ func createEncoderConfig() zapcore.EncoderConfig {
 	}
 }
 
-// createOutput 创建输出Writer，支持文件轮转
+// createOutput create output Writer with file rotation support
 func createOutput(config *OutputConfig, outputType string) io.Writer {
 	switch outputType {
 	case OutputTypeStderr:
 		return os.Stderr
 	case OutputTypeStdout, "":
-		// 如果明确指定为stdout或配置路径为空/stdout，返回标准输出
+		// If explicitly specified as stdout or config path is empty/stdout, return stdout
 		if config.Path == "" || config.Path == OutputTypeStdout {
 			return os.Stdout
 		}
-		// 如果配置了具体的文件路径，创建文件输出
+		// If specific file path is configured, create file output
 		return createFileOutput(config)
 	case OutputTypeFile:
 		return createFileOutput(config)
@@ -141,32 +141,32 @@ func createOutput(config *OutputConfig, outputType string) io.Writer {
 	}
 }
 
-// createFileOutput 创建文件输出，支持轮转
+// createFileOutput create file output with rotation support
 func createFileOutput(config *OutputConfig) io.Writer {
 	if config.Path == "" {
 		return os.Stdout
 	}
 
-	// 防止使用保留的输出名称作为文件名
+	// Prevent using reserved output names as filenames
 	baseName := filepath.Base(config.Path)
 	if baseName == OutputTypeStdout || baseName == OutputTypeStderr {
 		return os.Stdout
 	}
 
-	// 验证文件路径安全性
+	// Validate file path security
 	if err := validateFilePath(config.Path); err != nil {
 		return os.Stdout
 	}
 
-	// 清理和规范化路径，防止路径遍历攻击
+	// Clean and normalize path to prevent path traversal attacks
 	cleanPath := filepath.Clean(config.Path)
 
-	// 确保日志目录存在
+	// Ensure log directory exists
 	if err := ensureLogDir(cleanPath); err != nil {
 		return os.Stdout
 	}
 
-	// 如果配置了轮转参数，使用 lumberjack
+	// If rotation parameters are configured, use lumberjack
 	if config.MaxSize > 0 || config.MaxBackups > 0 || config.MaxAge > 0 {
 		return &lumberjack.Logger{
 			Filename:   cleanPath,
@@ -178,7 +178,7 @@ func createFileOutput(config *OutputConfig) io.Writer {
 		}
 	}
 
-	// 普通文件输出 - 路径已通过 validateFilePath 验证和 filepath.Clean 清理
+	// Regular file output - path verified by validateFilePath and cleaned by filepath.Clean
 	flags := os.O_CREATE | os.O_WRONLY | os.O_APPEND
 	// #nosec G304 - 路径已经过 validateFilePath 验证并使用 filepath.Clean 清理
 	if file, err := os.OpenFile(cleanPath, flags, DefaultFilePermission); err == nil {
@@ -188,7 +188,7 @@ func createFileOutput(config *OutputConfig) io.Writer {
 	return os.Stdout
 }
 
-// ensureLogDir 确保日志目录存在
+// ensureLogDir ensure log directory exists
 func ensureLogDir(filename string) error {
 	dir := filepath.Dir(filename)
 	if dir == "." || dir == "" {
@@ -202,21 +202,21 @@ func ensureLogDir(filename string) error {
 	return nil
 }
 
-// validateFilePath 验证文件路径安全性
+// validateFilePath validate file path security
 func validateFilePath(filename string) error {
 	if filename == "" {
 		return nil
 	}
 
-	// 检查原始路径中的路径遍历字符（在清理之前）
+	// Check path traversal characters in original path (before cleaning)
 	if strings.Contains(filename, "..") {
 		return fmt.Errorf("path traversal detected: %s", filename)
 	}
 
-	// 清理路径
+	// Clean path
 	cleanPath := filepath.Clean(filename)
 
-	// 检查绝对路径权限
+	// Check absolute path permissions
 	if filepath.IsAbs(cleanPath) {
 		for _, allowedPath := range allowedLogPaths {
 			if strings.HasPrefix(cleanPath, allowedPath) {
@@ -226,7 +226,7 @@ func validateFilePath(filename string) error {
 		return fmt.Errorf("absolute path not allowed: %s", filename)
 	}
 
-	// 检查相对路径安全性
+	// Check relative path security
 	if strings.HasPrefix(cleanPath, "/") || strings.HasPrefix(cleanPath, "\\") {
 		return fmt.Errorf("invalid relative path: %s", filename)
 	}
@@ -234,7 +234,7 @@ func validateFilePath(filename string) error {
 	return nil
 }
 
-// convertToZapLevel 转换到Zap日志级别
+// convertToZapLevel convert to Zap log level
 func convertToZapLevel(level Level) zapcore.Level {
 	switch level {
 	case DebugLevel:
@@ -252,72 +252,72 @@ func convertToZapLevel(level Level) zapcore.Level {
 	}
 }
 
-// Debug 调试级别日志
+// Debug debug level logging
 func (z *ZapLogger) Debug(msg string, fields ...Field) {
 	z.logger.Debug(msg, z.convertFields(fields...)...)
 }
 
-// Info 信息级别日志
+// Info info level logging
 func (z *ZapLogger) Info(msg string, fields ...Field) {
 	z.logger.Info(msg, z.convertFields(fields...)...)
 }
 
-// Warn 警告级别日志
+// Warn warning level logging
 func (z *ZapLogger) Warn(msg string, fields ...Field) {
 	z.logger.Warn(msg, z.convertFields(fields...)...)
 }
 
-// Error 错误级别日志
+// Error error level logging
 func (z *ZapLogger) Error(msg string, fields ...Field) {
 	z.logger.Error(msg, z.convertFields(fields...)...)
 }
 
-// Fatal 致命级别日志
+// Fatal fatal level logging
 func (z *ZapLogger) Fatal(msg string, fields ...Field) {
 	z.logger.Fatal(msg, z.convertFields(fields...)...)
 }
 
-// DebugContext 带上下文的调试日志
+// DebugContext debug logging with context
 func (z *ZapLogger) DebugContext(ctx context.Context, msg string, fields ...Field) {
 	z.Debug(msg, append(fields, z.extractContextFields(ctx)...)...)
 }
 
-// InfoContext 带上下文的信息日志
+// InfoContext info logging with context
 func (z *ZapLogger) InfoContext(ctx context.Context, msg string, fields ...Field) {
 	z.Info(msg, append(fields, z.extractContextFields(ctx)...)...)
 }
 
-// WarnContext 带上下文的警告日志
+// WarnContext warning logging with context
 func (z *ZapLogger) WarnContext(ctx context.Context, msg string, fields ...Field) {
 	z.Warn(msg, append(fields, z.extractContextFields(ctx)...)...)
 }
 
-// ErrorContext 带上下文的错误日志
+// ErrorContext error logging with context
 func (z *ZapLogger) ErrorContext(ctx context.Context, msg string, fields ...Field) {
 	z.Error(msg, append(fields, z.extractContextFields(ctx)...)...)
 }
 
-// IsDebugEnabled 检查是否启用调试日志
+// IsDebugEnabled check if debug logging is enabled
 func (z *ZapLogger) IsDebugEnabled() bool {
 	return z.logger.Core().Enabled(zapcore.DebugLevel)
 }
 
-// IsInfoEnabled 检查是否启用信息日志
+// IsInfoEnabled check if info logging is enabled
 func (z *ZapLogger) IsInfoEnabled() bool {
 	return z.logger.Core().Enabled(zapcore.InfoLevel)
 }
 
-// IsWarnEnabled 检查是否启用警告日志
+// IsWarnEnabled check if warning logging is enabled
 func (z *ZapLogger) IsWarnEnabled() bool {
 	return z.logger.Core().Enabled(zapcore.WarnLevel)
 }
 
-// IsErrorEnabled 检查是否启用错误日志
+// IsErrorEnabled check if error logging is enabled
 func (z *ZapLogger) IsErrorEnabled() bool {
 	return z.logger.Core().Enabled(zapcore.ErrorLevel)
 }
 
-// WithFields 添加字段
+// WithFields add fields
 func (z *ZapLogger) WithFields(fields ...Field) Logger {
 	if len(fields) == 0 {
 		return z
@@ -329,22 +329,22 @@ func (z *ZapLogger) WithFields(fields ...Field) Logger {
 	}
 }
 
-// WithContext 添加上下文
+// WithContext add context
 func (z *ZapLogger) WithContext(ctx context.Context) Logger {
 	return z.WithFields(z.extractContextFields(ctx)...)
 }
 
-// SetLevel 设置日志级别
+// SetLevel set logging level
 func (z *ZapLogger) SetLevel(level Level) {
 	z.atomicLevel.SetLevel(convertToZapLevel(level))
 }
 
-// SetOutput 设置输出（Zap不支持动态修改输出）
+// SetOutput set output (Zap does not support dynamic output modification)
 func (z *ZapLogger) SetOutput(w io.Writer) {
-	// Zap的输出在创建时设置，无法动态修改
+	// Zap output is set at creation time and cannot be dynamically modified
 }
 
-// convertFields 转换字段格式
+// convertFields convert field format
 func (z *ZapLogger) convertFields(fields ...Field) []zap.Field {
 	if len(fields) == 0 {
 		return nil
@@ -357,7 +357,7 @@ func (z *ZapLogger) convertFields(fields ...Field) []zap.Field {
 	return zapFields
 }
 
-// convertField 转换单个字段
+// convertField convert single field
 func (z *ZapLogger) convertField(field Field) zap.Field {
 	switch v := field.Value.(type) {
 	case string:
@@ -382,7 +382,7 @@ func (z *ZapLogger) convertField(field Field) zap.Field {
 	}
 }
 
-// extractContextFields 从上下文中提取字段
+// extractContextFields extract fields from context
 func (z *ZapLogger) extractContextFields(ctx context.Context) []Field {
 	if ctx == nil {
 		return nil
@@ -390,7 +390,7 @@ func (z *ZapLogger) extractContextFields(ctx context.Context) []Field {
 
 	fields := make([]Field, 0, ContextFieldCapacity)
 
-	// 定义要提取的字段名和对应的键
+	// Define field names to extract and their corresponding keys
 	contextKeys := map[string]string{
 		"request_id": "request_id",
 		"user_id":    "user_id",
@@ -404,7 +404,7 @@ func (z *ZapLogger) extractContextFields(ctx context.Context) []Field {
 			if str, ok := value.(string); ok && str != "" {
 				fields = append(fields, String(fieldKey, str))
 			} else if ctxKey == "user_id" {
-				// user_id 可能不是字符串类型
+				// user_id might not be string type
 				fields = append(fields, Any(fieldKey, value))
 			}
 		}
