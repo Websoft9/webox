@@ -1,18 +1,15 @@
 package service
 
 import (
-	"api-service/internal/constants"
 	"api-service/internal/dto/request"
 	"api-service/internal/dto/response"
 	"api-service/internal/interface/repository"
 	"api-service/internal/interface/service"
 	"api-service/internal/model"
-	"api-service/pkg/auth"
 	"api-service/pkg/errors"
 	"api-service/pkg/logger"
 	"api-service/pkg/utils"
 	"context"
-	"time"
 
 	"gorm.io/gorm"
 )
@@ -33,103 +30,6 @@ func NewUserService(userRepo repository.UserRepository, logger logger.Logger) se
 		userRepo: userRepo,
 		logger:   logger,
 	}
-}
-
-// Register 用户注册
-func (s *userService) Register(ctx context.Context, req *request.UserRegisterRequest) (*response.UserResponse, error) {
-	s.logger.InfoContext(ctx, "Starting user registration", logger.String("username", req.Username))
-
-	// 1. 检查用户名是否存在
-	exists, err := s.userRepo.ExistsByUsername(ctx, req.Username)
-	if err != nil {
-		s.logger.ErrorContext(ctx, "Failed to check username", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, "Failed to check username")
-	}
-	if exists {
-		return nil, errors.NewAppError(errors.CodeUserAlreadyExists, "Username already exists")
-	}
-
-	// 2. 检查邮箱是否存在
-	exists, err = s.userRepo.ExistsByEmail(ctx, req.Email)
-	if err != nil {
-		s.logger.ErrorContext(ctx, "Failed to check email", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, "Failed to check email")
-	}
-	if exists {
-		return nil, errors.NewAppError(errors.CodeEmailAlreadyExists, "Email already exists")
-	}
-
-	// 3. 加密密码
-	hashedPassword := utils.SHA256Hash(req.Password)
-
-	// 4. Creating user
-	user := &model.User{
-		Username:     req.Username,
-		Email:        req.Email,
-		PasswordHash: hashedPassword,
-		Status:       UserStatusActive,
-	}
-
-	err = s.userRepo.Create(ctx, user)
-	if err != nil {
-		s.logger.ErrorContext(ctx, "Failed to create user", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, "Failed to create user")
-	}
-
-	s.logger.InfoContext(ctx, "User registration successful", logger.Uint("user_id", user.ID))
-
-	return s.buildUserResponse(user), nil
-}
-
-// Login 用户登录
-func (s *userService) Login(ctx context.Context, req *request.UserLoginRequest) (*response.UserLoginResponse, error) {
-	s.logger.InfoContext(ctx, "Starting user login", logger.String("username", req.Username))
-
-	// 1. 根据用户名查找用户
-	user, err := s.userRepo.GetByUsername(ctx, req.Username)
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			s.logger.WarnContext(ctx, "User not found", logger.String("username", req.Username))
-			return nil, errors.ErrInvalidCredentials
-		}
-		s.logger.ErrorContext(ctx, "Failed to find user", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, "Failed to find user")
-	}
-
-	// 2. 检查用户状态
-	if user.Status != UserStatusActive {
-		s.logger.WarnContext(ctx, "User has been disabled", logger.String("username", req.Username))
-		return nil, errors.NewAppError(errors.CodeForbidden, "User has been disabled")
-	}
-
-	// 3. 验证密码
-	if user.PasswordHash != utils.SHA256Hash(req.Password) {
-		s.logger.WarnContext(ctx, "Password verification failed", logger.String("username", req.Username))
-		return nil, errors.ErrInvalidCredentials
-	}
-
-	// 4. 生成 JWT
-	token, err := auth.GenerateToken(user.ID, user.Username)
-	if err != nil {
-		s.logger.ErrorContext(ctx, "Failed to generate token", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, "Failed to generate token")
-	}
-
-	// 5. 更新最后登录时间
-	now := time.Now()
-	user.LastLoginAt = &now
-	if err := s.userRepo.Update(ctx, user); err != nil {
-		s.logger.WarnContext(ctx, "Failed to update login time", logger.ErrorField(err))
-		// 这里不返回错误，因为登录已经成功
-	}
-
-	s.logger.InfoContext(ctx, "User login successful", logger.Uint("user_id", user.ID))
-
-	return &response.UserLoginResponse{
-		Token:     token,
-		ExpiresAt: time.Now().Add(constants.TokenExpireHours * time.Hour), // 24小时过期
-		User:      *s.buildUserResponse(user),
-	}, nil
 }
 
 // ChangePassword 修改密码

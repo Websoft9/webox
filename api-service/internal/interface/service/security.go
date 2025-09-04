@@ -72,6 +72,8 @@ type APITokenService interface {
 
 	// Maintenance operations
 	CleanExpiredTokens(ctx context.Context) error
+
+	CheckTokenIsExists(ctx context.Context, token string) bool
 }
 
 // AuthConfigService 认证配置服务接口

@@ -1,6 +1,9 @@
 package model
 
 import (
+	"database/sql/driver"
+	"encoding/json"
+	"fmt"
 	"time"
 )
 
@@ -177,6 +180,39 @@ func (UserTwoFactor) TableName() string {
 
 // JSON 自定义JSON类型
 type JSON map[string]interface{}
+
+// Scan implements sql.Scanner interface for GORM
+func (j *JSON) Scan(value interface{}) error {
+	if value == nil {
+		*j = make(map[string]interface{})
+		return nil
+	}
+
+	var bytes []byte
+	switch v := value.(type) {
+	case []byte:
+		bytes = v
+	case string:
+		bytes = []byte(v)
+	default:
+		return fmt.Errorf("cannot convert %T to JSON", value)
+	}
+
+	if len(bytes) == 0 {
+		*j = make(map[string]interface{})
+		return nil
+	}
+
+	return json.Unmarshal(bytes, j)
+}
+
+// Value implements driver.Valuer interface for GORM
+func (j JSON) Value() (driver.Value, error) {
+	if j == nil {
+		return "{}", nil
+	}
+	return json.Marshal(j)
+}
 
 // AuthConfig 认证配置
 type AuthConfig struct {

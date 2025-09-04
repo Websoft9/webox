@@ -10,7 +10,6 @@ import (
 	"time"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
-	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
@@ -302,17 +301,6 @@ func GetDatabaseInfo(cfg *config.Config) (map[string]interface{}, error) {
 	}
 
 	return info, nil
-}
-
-// InitRedis initializes Redis connection (unchanged)
-func InitRedis(cfg *config.Config) (*redis.Client, error) {
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%s", cfg.Redis.Host, cfg.Redis.Port),
-		Password: cfg.Redis.Password,
-		DB:       cfg.Redis.DB,
-	})
-
-	return rdb, nil
 }
 
 // InitInfluxDB initializes InfluxDB connection (unchanged)

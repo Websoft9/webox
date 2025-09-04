@@ -11,8 +11,10 @@ import (
 	"api-service/internal/router"
 	serviceImpl "api-service/internal/service"
 	"api-service/pkg/auth"
+	"api-service/pkg/errors"
 	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
+	"api-service/pkg/redis"
 	"api-service/pkg/utils"
 	"context"
 	"fmt"
@@ -21,11 +23,13 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"gorm.io/gorm"
 
 	_ "api-service/docs" // This line is necessary for go-swagger to find your docs!
@@ -43,7 +47,6 @@ import (
 //	@license.name	Apache 2.0
 //	@license.url	http://www.apache.org/licenses/LICENSE-2.0.html
 
-//	@host		localhost:8080
 //	@BasePath	/
 
 //	@securityDefinitions.apikey	Bearer
@@ -72,7 +75,7 @@ func main() {
 	zapLogger.Info("Application starting")
 	zapLogger.Info("Configuration loaded successfully")
 
-	// Set Gin mode
+	// Set Gin mode based on configuration or environment variable
 	if cfg.Server.Mode != "" {
 		gin.SetMode(cfg.Server.Mode)
 	} else if os.Getenv("GIN_MODE") == "" {
@@ -86,35 +89,40 @@ func main() {
 	}
 	zapLogger.Info("Authentication configuration manager initialized successfully")
 
-	// 4. Initialize i18n
+	// 4. Initialize internationalization system
 	i18nInstance, err := initI18n(cfg)
 	if err != nil {
 		log.Fatal("Failed to initialize i18n:", err)
 	}
 	zapLogger.Info("Internationalization initialized successfully")
 
-	// 5. Initialize database and perform migrations
+	// 5. Initialize database connection and perform migrations
 	db, err := initDatabase(cfg, zapLogger)
 	if err != nil {
 		log.Fatal("Failed to initialize database:", err)
 	}
 
-	// 6. Initialize other services
-	if err := initServices(cfg, zapLogger); err != nil {
+	// 6. Initialize Redis, InfluxDB and JWT authentication services
+	serviceConns, err := initServices(cfg, zapLogger)
+	if err != nil {
 		log.Fatal("Failed to initialize services:", err)
 	}
 
-	// 7. Initialize and start server
-	if err := startServer(cfg, authConfigManager, zapLogger, i18nInstance, db); err != nil {
+	// 7. Initialize repositories, services, controllers and start HTTP server
+	if err := startServer(cfg, authConfigManager, zapLogger, i18nInstance, db, serviceConns); err != nil {
 		log.Fatal("Failed to start server:", err)
 	}
 }
 
+// initAuthConfig creates and returns an authentication configuration manager
+// that handles OAuth2 and other authentication provider configurations
 func initAuthConfig() (*config.AuthConfigManager, error) {
 	authConfigPath := filepath.Join("configs", "auth.yaml")
 	return config.NewAuthConfigManager(authConfigPath)
 }
 
+// initI18n initializes the internationalization system with default and supported languages
+// Returns the i18n instance for use throughout the application
 func initI18n(cfg *config.Config) (*i18n.I18n, error) {
 	if i18nErr := i18n.InitWithConfig(cfg.I18n.DefaultLanguage, cfg.I18n.SupportedLanguages); i18nErr != nil {
 		return nil, i18nErr
@@ -122,6 +130,8 @@ func initI18n(cfg *config.Config) (*i18n.I18n, error) {
 	return i18n.GetInstance(), nil
 }
 
+// initDatabase establishes database connection and performs automatic schema migration
+// Supports SQLite for development and MySQL/PostgreSQL for production environments
 func initDatabase(cfg *config.Config, zapLogger logger.Logger) (*gorm.DB, error) {
 	db, err := utils.InitDB(cfg)
 	if err != nil {
@@ -129,7 +139,7 @@ func initDatabase(cfg *config.Config, zapLogger logger.Logger) (*gorm.DB, error)
 	}
 	zapLogger.Info("Database connection successful")
 
-	// Database migration - add all required models
+	// Auto-migrate all database models to ensure schema consistency
 	if migrateErr := db.AutoMigrate(
 		&model.User{},
 		&model.Role{},
@@ -146,43 +156,62 @@ func initDatabase(cfg *config.Config, zapLogger logger.Logger) (*gorm.DB, error)
 	return db, nil
 }
 
-func initServices(cfg *config.Config, zapLogger logger.Logger) error {
-	// Initialize Redis
-	_, err := utils.InitRedis(cfg)
+// ServiceConnections holds all service connections that need to be closed during shutdown
+type ServiceConnections struct {
+	InfluxDBClient influxdb2.Client
+}
+
+// initServices initializes external service connections (Redis, InfluxDB) and JWT authentication
+// Returns ServiceConnections struct containing clients that need graceful shutdown
+func initServices(cfg *config.Config, zapLogger logger.Logger) (*ServiceConnections, error) {
+	// Initialize Redis connection pool for caching and session storage
+	err := redis.Init(cfg)
 	if err != nil {
-		return fmt.Errorf("failed to initialize Redis: %w", err)
+		return nil, fmt.Errorf("failed to initialize Redis: %w", err)
 	}
 	zapLogger.Info("Redis connection successful")
 
-	// Initialize InfluxDB
-	_, err = utils.InitInfluxDB(cfg)
+	// Initialize InfluxDB client for time-series monitoring data storage
+	influxDBClient, err := utils.InitInfluxDB(cfg)
 	if err != nil {
-		return fmt.Errorf("failed to initialize InfluxDB: %w", err)
+		return nil, fmt.Errorf("failed to initialize InfluxDB: %w", err)
 	}
 	zapLogger.Info("InfluxDB connection successful")
 
-	// Initialize JWT authentication
+	// Initialize JWT authentication with secret key and expiration time
 	auth.InitJWT(cfg.JWT.Secret, cfg.JWT.ExpireTime)
-	return nil
+
+	return &ServiceConnections{
+		InfluxDBClient: influxDBClient,
+	}, nil
 }
 
-func startServer(cfg *config.Config, authConfigManager *config.AuthConfigManager, zapLogger logger.Logger, i18nInstance *i18n.I18n, db *gorm.DB) error {
-	// Initialize validator
+// startServer initializes all application components and starts the HTTP server
+// Handles graceful shutdown when receiving interrupt signals
+func startServer(
+	cfg *config.Config,
+	authConfigManager *config.AuthConfigManager,
+	zapLogger logger.Logger,
+	i18nInstance *i18n.I18n,
+	db *gorm.DB,
+	serviceConns *ServiceConnections,
+) error {
+	// Initialize request validator for input validation
 	validatorInstance := validator.New()
 
-	// Initialize repositories
+	// Initialize data access layer repositories with database connection
 	repos := initRepositories(db)
 
-	// Initialize services
-	services := initBusinessServices(repos, authConfigManager, zapLogger, i18nInstance, db)
+	// Initialize business logic services with dependencies injection
+	services := initBusinessServices(repos, authConfigManager, zapLogger, i18nInstance, db, cfg)
 
-	// Initialize controllers
+	// Initialize HTTP controllers with services and middleware
 	controllers := initControllers(services, validatorInstance, zapLogger, i18nInstance, cfg)
 
-	// Initialize router with complete functionality
-	r := router.SetupRouter(controllers, cfg, zapLogger, services.permissionService, services.auditLogService)
+	// Setup Gin router with all routes, middleware and security configurations
+	r := router.SetupRouter(controllers, cfg, zapLogger, services.permissionService, services.apiTokenService, services.auditLogService)
 
-	// 获取端口
+	// Get server port from environment variable or configuration
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = cfg.Server.Port
@@ -191,7 +220,13 @@ func startServer(cfg *config.Config, authConfigManager *config.AuthConfigManager
 		}
 	}
 
-	// 创建 HTTP 服务器 - 根据配置参数设置服务器参数，防止 Slowloris 攻击
+	// Create HTTP server with timeout configurations to prevent Slowloris attacks
+	// Configure server timeouts to prevent various attack vectors:
+	// - ReadTimeout: Maximum duration for reading the entire request
+	// - ReadHeaderTimeout: Amount of time allowed to read request headers
+	// - WriteTimeout: Maximum duration before timing out writes of the response
+	// - IdleTimeout: Maximum amount of time to wait for the next request
+	// - MaxHeaderBytes: Maximum size of request headers
 	srv := &http.Server{
 		Addr:              ":" + port,
 		Handler:           r,
@@ -202,38 +237,64 @@ func startServer(cfg *config.Config, authConfigManager *config.AuthConfigManager
 		MaxHeaderBytes:    cfg.Server.Config.MaxHeaderBytes,
 	}
 
-	// 启动服务器
+	// Start HTTP server in a separate goroutine for non-blocking execution
 	go func() {
+		// Log server startup information including port, mode and database type
 		zapLogger.Info("Websoft9 API Service starting",
 			logger.String("port", port),
 			logger.String("mode", gin.Mode()),
 			logger.String("database", cfg.Database.Type))
 
+		// Start listening for HTTP requests, handle server startup errors
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Failed to start server: %v", err)
 		}
 	}()
 
-	// 等待中断信号
+	// Wait for interrupt signals (SIGINT, SIGTERM) for graceful shutdown
+	// Create signal channel to capture OS interrupt signals for graceful shutdown
 	quit := make(chan os.Signal, 1)
+	// Register signal handlers for SIGINT (Ctrl+C) and SIGTERM (kill)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	// Block until a signal is received
 	<-quit
 
 	zapLogger.Info("Shutting down server...")
 
-	// 优雅关闭
+	// Graceful shutdown - close services in dependency order
+	// Create context with timeout for graceful shutdown operations
 	ctx, cancel := context.WithTimeout(context.Background(), constants.DefaultShutdownTimeout)
+	// Ensure context is canceled to free resources
 	defer cancel()
 
+	// 1. First shutdown HTTP server to stop accepting new requests
+	// Attempt graceful HTTP server shutdown within timeout period
 	if err := srv.Shutdown(ctx); err != nil {
 		zapLogger.Error("Server forced to shutdown", logger.String("error", err.Error()))
-		return err
 	}
 
+	// 2. Then close all database connections and services
+	// Close all service connections in proper dependency order
+	shutdownErrors := shutdownServices(ctx, zapLogger, db, serviceConns)
+	if len(shutdownErrors) > 0 {
+		// Collect and log all shutdown errors for debugging purposes
+		errorMessages := make([]string, len(shutdownErrors))
+		// Iterate through all shutdown errors and collect error messages
+		for i, err := range shutdownErrors {
+			errorMessages[i] = err.Error()
+		}
+		// Log consolidated error messages for operational visibility
+		zapLogger.Error("Some services failed to shutdown gracefully",
+			logger.String("errors", strings.Join(errorMessages, "; ")))
+	}
+
+	// Log successful server exit
 	zapLogger.Info("Server exited")
 	return nil
 }
 
+// repositories struct holds all repository instances for dependency injection
+// Provides data access layer abstractions for different entities
 type repositories struct {
 	userRepo       repoInterface.UserRepository
 	roleRepo       repoInterface.RoleRepository
@@ -243,6 +304,8 @@ type repositories struct {
 	auditLogRepo   repoInterface.AuditLogRepository
 }
 
+// initRepositories creates and initializes all repository instances
+// Each repository handles data access operations for its respective entity
 func initRepositories(db *gorm.DB) *repositories {
 	return &repositories{
 		userRepo:       repoImpl.NewUserRepository(db),
@@ -254,8 +317,11 @@ func initRepositories(db *gorm.DB) *repositories {
 	}
 }
 
+// businessServices struct holds all service instances for dependency injection
+// Provides business logic layer abstractions for different domains
 type businessServices struct {
 	userService       serviceInterface.UserService
+	userAuthService   serviceInterface.UserAuthService
 	roleService       serviceInterface.RoleService
 	permissionService serviceInterface.PermissionService
 	apiTokenService   serviceInterface.APITokenService
@@ -264,12 +330,22 @@ type businessServices struct {
 	auditLogService   serviceInterface.AuditLogService
 }
 
-func initBusinessServices(repos *repositories, authConfigManager *config.AuthConfigManager, zapLogger logger.Logger, i18nInstance *i18n.I18n, db *gorm.DB) *businessServices {
-	// Initialize user service first as it's needed by audit log service
+// initBusinessServices creates and initializes all service instances with their dependencies
+// Wires up the service layer with repositories and other required components
+func initBusinessServices(
+	repos *repositories,
+	authConfigManager *config.AuthConfigManager,
+	zapLogger logger.Logger,
+	i18nInstance *i18n.I18n,
+	db *gorm.DB,
+	cfg *config.Config,
+) *businessServices {
+	// Create OAuth2 service for external authentication providers
+	oauth2Service := serviceImpl.NewOAuth2Service(authConfigManager, zapLogger)
 	userService := serviceImpl.NewUserService(repos.userRepo, zapLogger)
-
 	return &businessServices{
 		userService:       userService,
+		userAuthService:   serviceImpl.NewUserAuthService(repos.userRepo, repos.apiTokenRepo, oauth2Service, zapLogger, cfg, authConfigManager, i18nInstance),
 		roleService:       serviceImpl.NewRoleService(repos.roleRepo, repos.permissionRepo, db, zapLogger, i18nInstance),
 		permissionService: serviceImpl.NewPermissionService(repos.permissionRepo, db, zapLogger, i18nInstance),
 		apiTokenService:   serviceImpl.NewAPITokenService(repos.apiTokenRepo, db, zapLogger, i18nInstance),
@@ -279,16 +355,108 @@ func initBusinessServices(repos *repositories, authConfigManager *config.AuthCon
 	}
 }
 
-func initControllers(services *businessServices, validatorInstance *validator.Validate, zapLogger logger.Logger, i18nInstance *i18n.I18n, cfg *config.Config) *router.Controllers {
+// initControllers creates and initializes all HTTP controllers with their dependencies
+// Controllers handle HTTP requests and responses, delegating business logic to services
+func initControllers(
+	services *businessServices,
+	validatorInstance *validator.Validate,
+	zapLogger logger.Logger,
+	i18nInstance *i18n.I18n,
+	cfg *config.Config,
+) *router.Controllers {
+	// Create OAuth2 service for SecurityController (placeholder for future implementation)
+	var oauth2ServiceForSecurity *serviceImpl.OAuth2Service
+
 	return &router.Controllers{
-		UserController:       controller.NewUserController(services.userService, zapLogger, i18nInstance), // 添加 i18nInstance 参数
-		I18nController:       controller.NewI18nController(),
-		RoleController:       controller.NewRoleController(services.roleService, validatorInstance, zapLogger, i18nInstance),
-		PermissionController: controller.NewPermissionController(services.permissionService, validatorInstance, zapLogger, i18nInstance),
-		APITokenController:   controller.NewAPITokenController(services.apiTokenService, validatorInstance, zapLogger, i18nInstance),
-		AuthConfigController: controller.NewAuthConfigController(services.authConfigService, validatorInstance, zapLogger, i18nInstance),
-		AuditLogController:   controller.NewAuditLogController(services.auditLogService, validatorInstance, zapLogger, i18nInstance),
-		TwoFactorController:  controller.NewTwoFactorController(services.twoFactorService, validatorInstance, zapLogger, i18nInstance),
-		HealthController:     controller.NewHealthController(cfg),
+		UserController:     controller.NewUserController(services.userService, zapLogger, i18nInstance),
+		UserAuthController: controller.NewUserAuthController(services.userAuthService, zapLogger, i18nInstance),
+		I18nController:     controller.NewI18nController(),
+		RolePermissionController: controller.NewRolePermissionController(
+			services.roleService,
+			services.permissionService,
+			validatorInstance,
+			zapLogger,
+			i18nInstance,
+		),
+		SecurityController: controller.NewSecurityController(
+			services.apiTokenService,
+			services.authConfigService,
+			oauth2ServiceForSecurity,
+			services.twoFactorService,
+			validatorInstance,
+			zapLogger,
+			i18nInstance,
+		),
+		HealthController:   controller.NewHealthController(cfg),
+		AuditLogController: controller.NewAuditLogController(services.auditLogService, validatorInstance, zapLogger, i18nInstance),
 	}
+}
+
+// shutdownServices gracefully shuts down all services and database connections
+// Returns a slice of errors encountered during shutdown for logging purposes
+func shutdownServices(ctx context.Context, zapLogger logger.Logger, db *gorm.DB, serviceConns *ServiceConnections) []error {
+	var shutdownErrors []error
+
+	zapLogger.Info("Starting graceful shutdown of services...")
+
+	// 1. Close Redis connection pool
+	zapLogger.Info("Closing Redis connection...")
+	if err := redis.Close(); err != nil {
+		shutdownErr := errors.WrapError(err, errors.CodeInternalError, "failed to close Redis connection")
+		shutdownErrors = append(shutdownErrors, shutdownErr)
+		zapLogger.Error("Redis shutdown error", logger.String("error", shutdownErr.Error()))
+	} else {
+		zapLogger.Info("Redis connection closed successfully")
+	}
+
+	// 2. Close InfluxDB client connection
+	if serviceConns.InfluxDBClient != nil {
+		zapLogger.Info("Closing InfluxDB connection...")
+		serviceConns.InfluxDBClient.Close()
+		zapLogger.Info("InfluxDB connection closed successfully")
+	}
+
+	// 3. Close database connection (GORM with underlying sql.DB)
+	if db != nil {
+		zapLogger.Info("Closing database connection...")
+		sqlDB, err := db.DB()
+		if err != nil {
+			shutdownErr := errors.WrapError(err, errors.CodeInternalError, "failed to get underlying sql.DB instance")
+			shutdownErrors = append(shutdownErrors, shutdownErr)
+			zapLogger.Error("Database connection retrieval error", logger.String("error", shutdownErr.Error()))
+		} else {
+			// Set timeout for database connection closure to prevent hanging
+			dbCloseCtx, dbCancel := context.WithTimeout(ctx, constants.DefaultReadHeaderTimeout)
+			defer dbCancel()
+
+			// Use goroutine with timeout context to close database connection safely
+			done := make(chan error, 1)
+			go func() {
+				done <- sqlDB.Close()
+			}()
+
+			select {
+			case err := <-done:
+				if err != nil {
+					shutdownErr := errors.WrapError(err, errors.CodeInternalError, "failed to close database connection")
+					shutdownErrors = append(shutdownErrors, shutdownErr)
+					zapLogger.Error("Database shutdown error", logger.String("error", shutdownErr.Error()))
+				} else {
+					zapLogger.Info("Database connection closed successfully")
+				}
+			case <-dbCloseCtx.Done():
+				shutdownErr := errors.NewAppError(errors.CodeInternalError, "database connection close timed out")
+				shutdownErrors = append(shutdownErrors, shutdownErr)
+				zapLogger.Error("Database shutdown timeout", logger.String("error", shutdownErr.Error()))
+			}
+		}
+	}
+
+	if len(shutdownErrors) == 0 {
+		zapLogger.Info("All services shut down successfully")
+	} else {
+		zapLogger.Warn("Service shutdown completed with errors", logger.Int("error_count", len(shutdownErrors)))
+	}
+
+	return shutdownErrors
 }

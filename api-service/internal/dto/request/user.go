@@ -4,14 +4,13 @@ import "api-service/internal/dto"
 
 // UserRegisterRequest 用户注册请求
 type UserRegisterRequest struct {
-	Username string `json:"username" binding:"required,min=3,max=20" example:"john_doe"`
-	Email    string `json:"email" binding:"required,email" example:"john@example.com"`
+	Username string `json:"username" binding:"required,email" example:"john@example.com"`
 	Password string `json:"password" binding:"required,min=6" example:"123456"`
 }
 
 // UserLoginRequest 用户登录请求
 type UserLoginRequest struct {
-	Username string `json:"username" binding:"required" example:"john_doe"`
+	Username string `json:"username" binding:"required,email" example:"john@example.com"`
 	Password string `json:"password" binding:"required" example:"123456"`
 }
 
@@ -66,4 +65,32 @@ type UserUpdateStatusRequest struct {
 // UserPasswordUpdateRequest 管理员修改用户密码请求
 type UserPasswordUpdateRequest struct {
 	NewPassword string `json:"new_password" binding:"required,min=6" example:"newpassword123"`
+}
+
+// ForgotPasswordRequest 忘记密码请求
+type ForgotPasswordRequest struct {
+	Username string `json:"username" binding:"required,email" example:"john@example.com"`
+}
+
+// ResetPasswordRequest 重置密码请求
+type ResetPasswordRequest struct {
+	Token       string `json:"token" binding:"required" example:"abc123def456"`
+	NewPassword string `json:"new_password" binding:"required,min=6" example:"newpassword123"`
+}
+
+// VerifyEmailRequest 验证邮箱请求
+type VerifyEmailRequest struct {
+	Token string `json:"token" binding:"required" example:"abc123def456"`
+}
+
+// ResendVerificationRequest 重新发送验证邮件请求
+type ResendVerificationRequest struct {
+	Username string `json:"username" binding:"required,email" example:"john@example.com"`
+}
+
+// OAuth2LoginRequest OAuth2登录请求
+type OAuth2LoginRequest struct {
+	Provider string `json:"provider" binding:"required" example:"github"`
+	Code     string `json:"code" binding:"required" example:"authorization_code"`
+	State    string `json:"state" binding:"required" example:"random_state"`
 }

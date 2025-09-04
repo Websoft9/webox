@@ -3,7 +3,7 @@ server:
   mode: "debug"
   log:
     log_leve: "debug"
-    log_path: "../logs/websoft9.log"
+    log_path: "logs/websoft9.log"
     log_max_size: 10
     log_max_backups: 5
     log_max_age: 30
@@ -20,34 +20,34 @@ server:
 database:
   # Database type
   type: "sqlite"
-  
+
   # SQLite specific configuration
   path: "./data/websoft9.db"
-  
+
   # MySQL/PostgreSQL configuration
   host: "localhost"
-  port: 3306  # 3306 for MySQL, 5432 for PostgreSQL
+  port: 3306 # 3306 for MySQL, 5432 for PostgreSQL
   database: "websoft9"
   username: "websoft9"
   password: ""
-  
+
   # Connection pool settings
   max_idle_conns: 10
   max_open_conns: 100
-  conn_max_lifetime: 3600  # seconds
-  
+  conn_max_lifetime: 3600 # seconds
+
   # SSL/TLS settings (for MySQL/PostgreSQL)
-  ssl_mode: "disable"  # disable, require, verify-ca, verify-full
+  ssl_mode: "disable" # disable, require, verify-ca, verify-full
   ssl_cert: ""
   ssl_key: ""
   ssl_rootca: ""
-  
+
   # Connection timeout in seconds
   connect_timeout: 30
-  
+
   # MySQL specific settings
   charset: "utf8mb4"
-  timezone: "Local"  # Local, UTC, or specific timezone
+  timezone: "Local" # Local, UTC, or specific timezone
 
 redis:
   host: "localhost"
@@ -64,6 +64,21 @@ influxdb:
 jwt:
   secret: "websoft9-jwt-secret-key"
   expire_time: 3600
+
+# Email configuration
+email:
+  smtp:
+    host: ""
+    port: 465
+    username: ""
+    password: ""
+    from: ""
+    use_tls: true
+
+# Application configuration
+app:
+  base_url: "http://localhost:8080"
+  name: "Websoft9"
 
 grpc:
   port: "9090"

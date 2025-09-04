@@ -59,17 +59,6 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "enum": [
-                            "active",
-                            "revoked",
-                            "expired"
-                        ],
-                        "type": "string",
-                        "description": "Token status",
-                        "name": "status",
-                        "in": "query"
-                    },
-                    {
                         "type": "string",
                         "format": "datetime",
                         "description": "Start time",
@@ -489,6 +478,310 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/audit-logs": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get paginated audit log list with multiple filter conditions",
+                "tags": [
+                    "Audit Log"
+                ],
+                "summary": "Get audit log list",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page Number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Page Size",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Action Type",
+                        "name": "action",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Module Name",
+                        "name": "module",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Resource Type",
+                        "name": "resource_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Resource ID",
+                        "name": "resource_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Start Time",
+                        "name": "start_time",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "End Time",
+                        "name": "end_time",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IP Address",
+                        "name": "ip_address",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Success Status",
+                        "name": "success",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.AuditLogListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/audit-logs/export": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Export audit logs by conditions, supports multiple formats",
+                "tags": [
+                    "Audit Log"
+                ],
+                "summary": "Export audit logs",
+                "parameters": [
+                    {
+                        "enum": [
+                            "csv",
+                            "excel",
+                            "json"
+                        ],
+                        "type": "string",
+                        "default": "csv",
+                        "description": "Export Format",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Start Time",
+                        "name": "start_time",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "End Time",
+                        "name": "end_time",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Action Type",
+                        "name": "action",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Module Name",
+                        "name": "module",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Resource Type",
+                        "name": "resource_type",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Export File",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/audit-logs/statistics": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get audit log statistical analysis data",
+                "tags": [
+                    "Audit Log"
+                ],
+                "summary": "Get audit log statistics",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Start Time",
+                        "name": "start_time",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "End Time",
+                        "name": "end_time",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "hour",
+                            "day",
+                            "week",
+                            "month"
+                        ],
+                        "type": "string",
+                        "default": "day",
+                        "description": "Group By",
+                        "name": "group_by",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.AuditLogStatisticsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/audit-logs/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get audit log details by ID",
+                "tags": [
+                    "Audit Log"
+                ],
+                "summary": "Get audit log details",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Audit Log ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.AuditLogResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/auth-config": {
             "get": {
                 "description": "Get current authentication configuration",
@@ -618,9 +911,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/auth/login": {
+        "/api/v1/auth/forgot-password": {
             "post": {
-                "description": "Authenticate user and return JWT token",
+                "description": "Send password reset email to user",
                 "consumes": [
                     "application/json"
                 ],
@@ -628,7 +921,53 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Users"
+                    "Authentication"
+                ],
+                "summary": "Forgot password",
+                "parameters": [
+                    {
+                        "description": "Forgot password request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.ForgotPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/login": {
+            "post": {
+                "description": "Authenticate user with email and password, return JWT token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
                 ],
                 "summary": "User login",
                 "parameters": [
@@ -682,185 +1021,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/auth/oauth2/providers": {
-            "get": {
-                "description": "Get list of enabled OAuth2 providers",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "OAuth2"
-                ],
-                "summary": "Get OAuth2 providers",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/response.OAuth2ProviderResponse"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/auth/oauth2/{provider}/authorize": {
-            "get": {
-                "description": "Start OAuth2 authorization flow with specified provider",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "OAuth2"
-                ],
-                "summary": "Initiate OAuth2 authorization",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "OAuth2 provider name",
-                        "name": "provider",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/controller.OAuth2AuthorizeResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/auth/oauth2/{provider}/callback": {
-            "get": {
-                "description": "Process OAuth2 callback and complete authentication",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "OAuth2"
-                ],
-                "summary": "Handle OAuth2 callback",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "OAuth2 provider name",
-                        "name": "provider",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Authorization code from provider",
-                        "name": "code",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "State parameter for CSRF protection",
-                        "name": "state",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Error from provider",
-                        "name": "error",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/controller.OAuth2CallbackResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/auth/oauth2/{provider}/refresh": {
+        "/api/v1/auth/logout": {
             "post": {
-                "description": "Refresh OAuth2 access token using refresh token",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Logout user and invalidate JWT token",
                 "consumes": [
                     "application/json"
                 ],
@@ -868,24 +1036,58 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "OAuth2"
+                    "Authentication"
                 ],
-                "summary": "Refresh OAuth2 token",
+                "summary": "User logout",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/oauth2/login": {
+            "post": {
+                "description": "Login with OAuth2 provider",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "OAuth2 login",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "OAuth2 provider name",
-                        "name": "provider",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Refresh token request",
+                        "description": "OAuth2 login request",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/controller.RefreshTokenRequest"
+                            "$ref": "#/definitions/request.OAuth2LoginRequest"
                         }
                     }
                 ],
@@ -901,7 +1103,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/service.OAuth2TokenResponse"
+                                            "$ref": "#/definitions/response.UserLoginResponse"
                                         }
                                     }
                                 }
@@ -910,6 +1112,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/response.APIResponse"
                         }
@@ -925,7 +1133,7 @@ const docTemplate = `{
         },
         "/api/v1/auth/register": {
             "post": {
-                "description": "Register a new user account",
+                "description": "Register a new user account with email verification",
                 "consumes": [
                     "application/json"
                 ],
@@ -933,7 +1141,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Users"
+                    "Authentication"
                 ],
                 "summary": "User registration",
                 "parameters": [
@@ -964,6 +1172,184 @@ const docTemplate = `{
                                     }
                                 }
                             ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/resend-verification": {
+            "post": {
+                "description": "Resend email verification link to user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Resend verification email",
+                "parameters": [
+                    {
+                        "description": "Resend verification request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.ResendVerificationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/reset-password": {
+            "get": {
+                "description": "Validate reset token and show password reset form",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Show reset password form",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Password reset token",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Reset user password with token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Reset password",
+                "parameters": [
+                    {
+                        "description": "Reset password request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.ResetPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/verify-email": {
+            "get": {
+                "description": "Verify user email with token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Verify email",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Verification token",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
                         }
                     },
                     "400": {
@@ -1147,6 +1533,7 @@ const docTemplate = `{
                     },
                     {
                         "enum": [
+                            -1,
                             0,
                             1
                         ],
@@ -1280,6 +1667,7 @@ const docTemplate = `{
                     },
                     {
                         "enum": [
+                            -1,
                             0,
                             1
                         ],
@@ -1584,6 +1972,7 @@ const docTemplate = `{
                     },
                     {
                         "enum": [
+                            -1,
                             0,
                             1
                         ],
@@ -2764,125 +3153,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/users/profile": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Get current user's profile information",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Users"
-                ],
-                "summary": "Get user profile",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/response.UserProfileResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Update current user's profile information",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Users"
-                ],
-                "summary": "Update user profile",
-                "parameters": [
-                    {
-                        "description": "User profile update request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/request.UserUpdateProfileRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/response.UserResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/api/v1/users/{id}": {
             "get": {
                 "security": [
@@ -3467,51 +3737,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "controller.OAuth2AuthorizeResponse": {
-            "type": "object",
-            "properties": {
-                "authorize_url": {
-                    "type": "string"
-                },
-                "provider": {
-                    "type": "string"
-                },
-                "state": {
-                    "type": "string"
-                }
-            }
-        },
-        "controller.OAuth2CallbackResponse": {
-            "type": "object",
-            "properties": {
-                "access_token": {
-                    "type": "string"
-                },
-                "expires_at": {
-                    "type": "string"
-                },
-                "refresh_token": {
-                    "type": "string"
-                },
-                "token_type": {
-                    "type": "string"
-                },
-                "user": {
-                    "$ref": "#/definitions/response.UserSimpleResponse"
-                }
-            }
-        },
-        "controller.RefreshTokenRequest": {
-            "type": "object",
-            "required": [
-                "refresh_token"
-            ],
-            "properties": {
-                "refresh_token": {
-                    "type": "string"
-                }
-            }
-        },
         "request.APIAuthRequest": {
             "type": "object",
             "properties": {
@@ -3637,6 +3862,7 @@ const docTemplate = `{
                 "status": {
                     "type": "integer",
                     "enum": [
+                        -1,
                         0,
                         1
                     ]
@@ -3676,6 +3902,7 @@ const docTemplate = `{
                 "status": {
                     "type": "integer",
                     "enum": [
+                        -1,
                         0,
                         1
                     ]
@@ -3701,6 +3928,18 @@ const docTemplate = `{
             "properties": {
                 "email": {
                     "type": "string"
+                }
+            }
+        },
+        "request.ForgotPasswordRequest": {
+            "type": "object",
+            "required": [
+                "username"
+            ],
+            "properties": {
+                "username": {
+                    "type": "string",
+                    "example": "john@example.com"
                 }
             }
         },
@@ -3748,6 +3987,28 @@ const docTemplate = `{
                     "type": "integer",
                     "maximum": 20,
                     "minimum": 1
+                }
+            }
+        },
+        "request.OAuth2LoginRequest": {
+            "type": "object",
+            "required": [
+                "code",
+                "provider",
+                "state"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "authorization_code"
+                },
+                "provider": {
+                    "type": "string",
+                    "example": "github"
+                },
+                "state": {
+                    "type": "string",
+                    "example": "random_state"
                 }
             }
         },
@@ -3826,6 +4087,36 @@ const docTemplate = `{
                 }
             }
         },
+        "request.ResendVerificationRequest": {
+            "type": "object",
+            "required": [
+                "username"
+            ],
+            "properties": {
+                "username": {
+                    "type": "string",
+                    "example": "john@example.com"
+                }
+            }
+        },
+        "request.ResetPasswordRequest": {
+            "type": "object",
+            "required": [
+                "new_password",
+                "token"
+            ],
+            "properties": {
+                "new_password": {
+                    "type": "string",
+                    "minLength": 6,
+                    "example": "newpassword123"
+                },
+                "token": {
+                    "type": "string",
+                    "example": "abc123def456"
+                }
+            }
+        },
         "request.RolePermissionRequest": {
             "type": "object",
             "required": [
@@ -3878,13 +4169,6 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
-                },
-                "status": {
-                    "type": "integer",
-                    "enum": [
-                        0,
-                        1
-                    ]
                 }
             }
         },
@@ -3920,6 +4204,7 @@ const docTemplate = `{
                 "status": {
                     "type": "integer",
                     "enum": [
+                        -1,
                         0,
                         1
                     ]
@@ -3950,6 +4235,7 @@ const docTemplate = `{
                 "status": {
                     "type": "integer",
                     "enum": [
+                        -1,
                         0,
                         1
                     ]
@@ -4013,7 +4299,6 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "email",
-                "group_id",
                 "password",
                 "username"
             ],
@@ -4030,11 +4315,6 @@ const docTemplate = `{
                     "type": "integer",
                     "maximum": 2,
                     "minimum": 0,
-                    "example": 1
-                },
-                "group_id": {
-                    "type": "integer",
-                    "minimum": 1,
                     "example": 1
                 },
                 "language": {
@@ -4094,7 +4374,7 @@ const docTemplate = `{
                 },
                 "username": {
                     "type": "string",
-                    "example": "john_doe"
+                    "example": "john@example.com"
                 }
             }
         },
@@ -4114,15 +4394,10 @@ const docTemplate = `{
         "request.UserRegisterRequest": {
             "type": "object",
             "required": [
-                "email",
                 "password",
                 "username"
             ],
             "properties": {
-                "email": {
-                    "type": "string",
-                    "example": "john@example.com"
-                },
                 "password": {
                     "type": "string",
                     "minLength": 6,
@@ -4130,53 +4405,7 @@ const docTemplate = `{
                 },
                 "username": {
                     "type": "string",
-                    "maxLength": 20,
-                    "minLength": 3,
-                    "example": "john_doe"
-                }
-            }
-        },
-        "request.UserUpdateProfileRequest": {
-            "type": "object",
-            "properties": {
-                "avatar": {
-                    "type": "string",
-                    "example": "https://example.com/avatar.jpg"
-                },
-                "email": {
-                    "type": "string",
-                    "example": "newemail@example.com"
-                },
-                "gender": {
-                    "type": "integer",
-                    "maximum": 2,
-                    "minimum": 0,
-                    "example": 1
-                },
-                "language": {
-                    "type": "string",
-                    "maxLength": 10,
-                    "example": "zh-CN"
-                },
-                "nickname": {
-                    "type": "string",
-                    "maxLength": 64,
-                    "example": "John Doe"
-                },
-                "phone": {
-                    "type": "string",
-                    "maxLength": 20,
-                    "example": "+1234567890"
-                },
-                "signature": {
-                    "type": "string",
-                    "maxLength": 255,
-                    "example": "This is my signature"
-                },
-                "timezone": {
-                    "type": "string",
-                    "maxLength": 64,
-                    "example": "Asia/Shanghai"
+                    "example": "john@example.com"
                 }
             }
         },
@@ -4195,11 +4424,6 @@ const docTemplate = `{
                     "type": "integer",
                     "maximum": 2,
                     "minimum": 0,
-                    "example": 1
-                },
-                "group_id": {
-                    "type": "integer",
-                    "minimum": 1,
                     "example": 1
                 },
                 "language": {
@@ -4366,9 +4590,6 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
-                "status": {
-                    "type": "integer"
-                },
                 "token": {
                     "description": "only return complete token when creates",
                     "type": "string"
@@ -4401,6 +4622,175 @@ const docTemplate = `{
                 },
                 "valid": {
                     "type": "boolean"
+                }
+            }
+        },
+        "response.ActionStatItem": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "example": "READ"
+                },
+                "count": {
+                    "type": "integer",
+                    "example": 800
+                }
+            }
+        },
+        "response.AuditLogListResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "description": "审计日志列表",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.AuditLogResponse"
+                    }
+                },
+                "page": {
+                    "description": "当前页码",
+                    "type": "integer"
+                },
+                "page_size": {
+                    "description": "每页数量",
+                    "type": "integer"
+                },
+                "total": {
+                    "description": "总记录数",
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "description": "总页数",
+                    "type": "integer"
+                }
+            }
+        },
+        "response.AuditLogResponse": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "example": "CREATE"
+                },
+                "created_at": {
+                    "type": "string",
+                    "example": "2025-07-15T10:30:00Z"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "创建应用实例：我的博客"
+                },
+                "error_message": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "ip_address": {
+                    "type": "string",
+                    "example": "192.168.1.100"
+                },
+                "module": {
+                    "type": "string",
+                    "example": "APP"
+                },
+                "request_data": {},
+                "request_method": {
+                    "type": "string",
+                    "example": "POST"
+                },
+                "request_url": {
+                    "type": "string",
+                    "example": "/api/v1/applications"
+                },
+                "resource_id": {
+                    "type": "integer",
+                    "example": 123
+                },
+                "resource_name": {
+                    "type": "string",
+                    "example": "我的博客"
+                },
+                "resource_type": {
+                    "type": "string",
+                    "example": "APP_INSTANCE"
+                },
+                "response_status": {
+                    "type": "integer",
+                    "example": 200
+                },
+                "response_time": {
+                    "type": "integer",
+                    "example": 1500
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "user": {
+                    "$ref": "#/definitions/response.AuditLogUserResponse"
+                },
+                "user_agent": {
+                    "type": "string",
+                    "example": "Mozilla/5.0"
+                }
+            }
+        },
+        "response.AuditLogStatisticsResponse": {
+            "type": "object",
+            "properties": {
+                "failed_operations": {
+                    "type": "integer",
+                    "example": 50
+                },
+                "success_operations": {
+                    "type": "integer",
+                    "example": 1200
+                },
+                "success_rate": {
+                    "type": "number",
+                    "example": 96
+                },
+                "timeline": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.TimelineStatItem"
+                    }
+                },
+                "top_actions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.ActionStatItem"
+                    }
+                },
+                "top_users": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.UserStatItem"
+                    }
+                },
+                "total_operations": {
+                    "type": "integer",
+                    "example": 1250
+                }
+            }
+        },
+        "response.AuditLogUserResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "nickname": {
+                    "type": "string",
+                    "example": "管理员"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "admin"
                 }
             }
         },
@@ -4875,6 +5265,19 @@ const docTemplate = `{
                 }
             }
         },
+        "response.TimelineStatItem": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer",
+                    "example": 150
+                },
+                "date": {
+                    "type": "string",
+                    "example": "2025-01-22"
+                }
+            }
+        },
         "response.TwoFactorMethodResponse": {
             "type": "object",
             "properties": {
@@ -4958,43 +5361,6 @@ const docTemplate = `{
                 }
             }
         },
-        "response.UserGroupResponse": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "string",
-                    "example": "admin"
-                },
-                "created_at": {
-                    "type": "string",
-                    "example": "2023-01-01T00:00:00Z"
-                },
-                "description": {
-                    "type": "string",
-                    "example": "系统管理员用户组"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "name": {
-                    "type": "string",
-                    "example": "管理员组"
-                },
-                "sort_order": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "status": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "updated_at": {
-                    "type": "string",
-                    "example": "2023-01-01T00:00:00Z"
-                }
-            }
-        },
         "response.UserListResponse": {
             "type": "object",
             "properties": {
@@ -5026,101 +5392,6 @@ const docTemplate = `{
                 }
             }
         },
-        "response.UserProfileResponse": {
-            "type": "object",
-            "properties": {
-                "application_count": {
-                    "type": "integer",
-                    "example": 5
-                },
-                "avatar": {
-                    "type": "string",
-                    "example": "https://example.com/avatar.jpg"
-                },
-                "created_at": {
-                    "type": "string",
-                    "example": "2023-01-01T00:00:00Z"
-                },
-                "email": {
-                    "type": "string",
-                    "example": "john@example.com"
-                },
-                "gender": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "group": {
-                    "description": "关联数据",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/response.UserGroupResponse"
-                        }
-                    ]
-                },
-                "group_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "language": {
-                    "type": "string",
-                    "example": "zh-CN"
-                },
-                "last_login_at": {
-                    "type": "string",
-                    "example": "2023-01-01T12:00:00Z"
-                },
-                "last_login_ip": {
-                    "type": "string",
-                    "example": "192.168.1.1"
-                },
-                "login_count": {
-                    "type": "integer",
-                    "example": 10
-                },
-                "nickname": {
-                    "type": "string",
-                    "example": "John Doe"
-                },
-                "phone": {
-                    "type": "string",
-                    "example": "+1234567890"
-                },
-                "roles": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/response.RoleResponse"
-                    }
-                },
-                "signature": {
-                    "type": "string",
-                    "example": "This is my signature"
-                },
-                "status": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "timezone": {
-                    "type": "string",
-                    "example": "Asia/Shanghai"
-                },
-                "updated_at": {
-                    "type": "string",
-                    "example": "2023-01-01T00:00:00Z"
-                },
-                "username": {
-                    "type": "string",
-                    "example": "john_doe"
-                },
-                "workflow_count": {
-                    "type": "integer",
-                    "example": 3
-                }
-            }
-        },
         "response.UserResponse": {
             "type": "object",
             "properties": {
@@ -5140,18 +5411,6 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
-                "group": {
-                    "description": "关联数据",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/response.UserGroupResponse"
-                        }
-                    ]
-                },
-                "group_id": {
-                    "type": "integer",
-                    "example": 1
-                },
                 "id": {
                     "type": "integer",
                     "example": 1
@@ -5177,6 +5436,7 @@ const docTemplate = `{
                     "example": "+1234567890"
                 },
                 "roles": {
+                    "description": "关联数据",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/response.RoleResponse"
@@ -5218,23 +5478,20 @@ const docTemplate = `{
                 }
             }
         },
-        "service.OAuth2TokenResponse": {
+        "response.UserStatItem": {
             "type": "object",
             "properties": {
-                "access_token": {
-                    "type": "string"
+                "operation_count": {
+                    "type": "integer",
+                    "example": 500
                 },
-                "expires_in": {
-                    "type": "integer"
+                "user_id": {
+                    "type": "integer",
+                    "example": 1
                 },
-                "refresh_token": {
-                    "type": "string"
-                },
-                "scope": {
-                    "type": "string"
-                },
-                "token_type": {
-                    "type": "string"
+                "username": {
+                    "type": "string",
+                    "example": "admin"
                 }
             }
         }
@@ -5252,7 +5509,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:8080",
+	Host:             "",
 	BasePath:         "/",
 	Schemes:          []string{},
 	Title:            "Websoft9 API Service",

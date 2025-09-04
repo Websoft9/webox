@@ -16,15 +16,14 @@ import (
 
 // Controllers controller collection
 type Controllers struct {
-	UserController       *controller.UserController
-	I18nController       *controller.I18nController
-	RoleController       *controller.RoleController
-	PermissionController *controller.PermissionController
-	APITokenController   *controller.APITokenController
-	TwoFactorController  *controller.TwoFactorController
-	AuthConfigController *controller.AuthConfigController
-	AuditLogController   *controller.AuditLogController
-	HealthController     *controller.HealthController
+	UserController           *controller.UserController
+	UserAuthController       *controller.UserAuthController
+	I18nController           *controller.I18nController
+	RolePermissionController *controller.RolePermissionController
+	SecurityController       *controller.SecurityController
+	HealthController         *controller.HealthController
+	AuditLogController       *controller.AuditLogController
+
 	// More controllers can be added
 	// AppController  *controller.ApplicationController
 }
@@ -35,6 +34,7 @@ func SetupRouter(
 	cfg *config.Config,
 	log logger.Logger,
 	permissionService serviceInterface.PermissionService,
+	apiTokenService serviceInterface.APITokenService,
 	auditLogService serviceInterface.AuditLogService,
 ) *gin.Engine {
 	// Set Gin mode
@@ -49,7 +49,7 @@ func SetupRouter(
 	setupSwaggerRoute(r, cfg)
 
 	// Global middleware
-	setupMiddleware(r, cfg, log, permissionService, auditLogService)
+	setupMiddleware(r, cfg, log, permissionService, apiTokenService, auditLogService)
 
 	// API routes
 	v1 := r.Group("/api/v1")
@@ -72,13 +72,13 @@ func setupMiddleware(
 	cfg *config.Config,
 	log logger.Logger,
 	permissionService serviceInterface.PermissionService,
+	apiTokenService serviceInterface.APITokenService,
 	auditLogService serviceInterface.AuditLogService,
 ) {
 	r.Use(middleware.LoggerMiddleware(log))
 	r.Use(middleware.CORS())
 	r.Use(middleware.I18nMiddleware())
-	r.Use(middleware.OptionalJWTAuth(cfg))
-	r.Use(middleware.PermissionMiddleware(permissionService, log))
+	r.Use(middleware.PermissionMiddleware(permissionService, apiTokenService, cfg, log))
 	r.Use(middleware.AuditLogMiddleware(auditLogService, log))
 	r.Use(middleware.ErrorHandler(log))
 	r.Use(middleware.RequestValidator(log))
@@ -129,28 +129,32 @@ func setupSwaggerRoute(r *gin.Engine, cfg *config.Config) {
 
 // setupAPIRoutes sets up API routes
 func setupAPIRoutes(v1 *gin.RouterGroup, controllers *Controllers) {
-	setupUserRoutes(v1, controllers.UserController)
-	setupI18nRoutes(v1, controllers.I18nController)
-
 	// Routes requiring JWT authentication
 	protected := v1.Group("/")
-	// TODO: JWT middleware will be added here when config is available
-
-	setupProtectedUserRoutes(protected, controllers.UserController)
-	setupProtectedRoleRoutes(protected, controllers.RoleController)
-	setupProtectedPermissionRoutes(protected, controllers.PermissionController)
-	setupProtectedAPITokenRoutes(protected, controllers.APITokenController)
-	setupProtectedTwoFactorRoutes(protected, controllers.TwoFactorController)
-	setupProtectedAuthConfigRoutes(protected, controllers.AuthConfigController)
-	setupProtectedAuditLogRoutes(protected, controllers.AuditLogController)
+	setupUserAuthRoutes(v1, controllers.UserAuthController)
+	setupI18nRoutes(v1, controllers.I18nController)
+	setupUserRoutes(protected, controllers.UserController)
+	setupRoleRoutes(protected, controllers.RolePermissionController)
+	setupPermissionRoutes(protected, controllers.RolePermissionController)
+	setupAPITokenRoutes(protected, controllers.SecurityController)
+	setupTwoFactorRoutes(protected, controllers.SecurityController)
+	setupAuthConfigRoutes(protected, controllers.SecurityController)
+	setupAuditLogRoutes(protected, controllers.AuditLogController)
 }
 
 // setupUserRoutes sets up user related routes
-func setupUserRoutes(v1 *gin.RouterGroup, userController *controller.UserController) {
+func setupUserAuthRoutes(v1 *gin.RouterGroup, userAuthController *controller.UserAuthController) {
 	// Authentication related routes (no JWT verification required)
 	auth := v1.Group("/auth")
-	auth.POST("/register", userController.Register)
-	auth.POST("/login", userController.Login)
+	auth.POST("/register", userAuthController.Register)
+	auth.POST("/login", userAuthController.Login)
+	auth.POST("/logout", userAuthController.Logout)
+	auth.POST("/forgot-password", userAuthController.ForgotPassword)
+	auth.GET("/reset-password", userAuthController.ShowResetPasswordForm)
+	auth.POST("/reset-password", userAuthController.ResetPassword)
+	auth.GET("/verify-email", userAuthController.VerifyEmail)
+	auth.POST("/resend-verification", userAuthController.ResendVerificationEmail)
+	auth.POST("/oauth2/login", userAuthController.OAuth2Login)
 }
 
 // setupI18nRoutes sets up internationalization routes
@@ -166,8 +170,8 @@ func setupI18nRoutes(v1 *gin.RouterGroup, i18nController *controller.I18nControl
 	i18nGroup.GET("/test", i18nController.TestI18n)
 }
 
-// setupProtectedUserRoutes sets up user management routes
-func setupProtectedUserRoutes(protected *gin.RouterGroup, userController *controller.UserController) {
+// setupUserRoutes sets up user management routes
+func setupUserRoutes(protected *gin.RouterGroup, userController *controller.UserController) {
 	users := protected.Group("/users")
 	// Current user operations
 	users.PUT("/password", userController.ChangePassword)
@@ -182,8 +186,8 @@ func setupProtectedUserRoutes(protected *gin.RouterGroup, userController *contro
 	users.DELETE("/:id", userController.DeleteUser)
 }
 
-// setupProtectedRoleRoutes sets up role management routes
-func setupProtectedRoleRoutes(protected *gin.RouterGroup, roleController *controller.RoleController) {
+// setupRoleRoutes sets up role management routes
+func setupRoleRoutes(protected *gin.RouterGroup, roleController *controller.RolePermissionController) {
 	if roleController == nil {
 		return
 	}
@@ -201,8 +205,8 @@ func setupProtectedRoleRoutes(protected *gin.RouterGroup, roleController *contro
 	roles.GET("/:id/users", roleController.GetRoleUsers)
 }
 
-// setupProtectedPermissionRoutes sets up permission management routes
-func setupProtectedPermissionRoutes(protected *gin.RouterGroup, permissionController *controller.PermissionController) {
+// setupPermissionRoutes sets up permission management routes
+func setupPermissionRoutes(protected *gin.RouterGroup, permissionController *controller.RolePermissionController) {
 	if permissionController == nil {
 		return
 	}
@@ -217,54 +221,53 @@ func setupProtectedPermissionRoutes(protected *gin.RouterGroup, permissionContro
 	permissions.GET("/:id/roles", permissionController.GetPermissionRoles)
 }
 
-// setupProtectedAPITokenRoutes sets up API token management routes
-func setupProtectedAPITokenRoutes(protected *gin.RouterGroup, apiTokenController *controller.APITokenController) {
-	if apiTokenController == nil {
+// setupAPITokenRoutes sets up API token management routes
+func setupAPITokenRoutes(protected *gin.RouterGroup, securityController *controller.SecurityController) {
+	if securityController == nil {
 		return
 	}
 
 	apiTokens := protected.Group("/api-tokens")
-	apiTokens.GET("", apiTokenController.ListAPITokens)
-	apiTokens.POST("", apiTokenController.CreateAPIToken)
-	apiTokens.GET("/:id", apiTokenController.GetAPIToken)
-	apiTokens.PUT("/:id", apiTokenController.UpdateAPIToken)
-	apiTokens.DELETE("/:id", apiTokenController.RevokeAPIToken)
-	apiTokens.POST("/:id/refresh", apiTokenController.RefreshAPIToken)
-	apiTokens.DELETE("", apiTokenController.BatchRevokeAPITokens)
+	apiTokens.GET("", securityController.ListAPITokens)
+	apiTokens.POST("", securityController.CreateAPIToken)
+	apiTokens.GET("/:id", securityController.GetAPIToken)
+	apiTokens.PUT("/:id", securityController.UpdateAPIToken)
+	apiTokens.DELETE("/:id", securityController.RevokeAPIToken)
+	apiTokens.POST("/:id/refresh", securityController.RefreshAPIToken)
+	apiTokens.DELETE("", securityController.BatchRevokeAPITokens)
 }
 
-// setupProtectedTwoFactorRoutes sets up two-factor authentication routes
-func setupProtectedTwoFactorRoutes(protected *gin.RouterGroup, twoFactorController *controller.TwoFactorController) {
-	if twoFactorController == nil {
+// setupTwoFactorRoutes sets up two-factor authentication routes
+func setupTwoFactorRoutes(protected *gin.RouterGroup, securityController *controller.SecurityController) {
+	if securityController == nil {
 		return
 	}
 
 	// Two-factor authentication routes under users
-	users := protected.Group("/users")
-	twoFactor := users.Group("/:id/two-factor")
-	twoFactor.GET("", twoFactorController.GetTwoFactorStatus)
-	twoFactor.POST("/enable", twoFactorController.EnableTOTP)
-	twoFactor.POST("/confirm", twoFactorController.ConfirmTOTP)
-	twoFactor.POST("/disable", twoFactorController.DisableTwoFactor)
-	twoFactor.POST("/verify", twoFactorController.VerifyTwoFactor)
-	twoFactor.POST("/totp/generate", twoFactorController.GenerateTOTPSecret)
+	twoFactor := protected.Group("/two-factor")
+	twoFactor.GET("", securityController.GetTwoFactorStatus)
+	twoFactor.POST("/enable", securityController.EnableTOTP)
+	twoFactor.POST("/confirm", securityController.ConfirmTOTP)
+	twoFactor.POST("/disable", securityController.DisableTwoFactor)
+	twoFactor.POST("/verify", securityController.VerifyTwoFactor)
+	twoFactor.POST("/totp/generate", securityController.GenerateTOTPSecret)
 }
 
-// setupProtectedAuthConfigRoutes sets up authentication config routes
-func setupProtectedAuthConfigRoutes(protected *gin.RouterGroup, authConfigController *controller.AuthConfigController) {
-	if authConfigController == nil {
+// setupAuthConfigRoutes sets up authentication config routes
+func setupAuthConfigRoutes(protected *gin.RouterGroup, securityController *controller.SecurityController) {
+	if securityController == nil {
 		return
 	}
 
 	// Authentication config routes
 	authConfig := protected.Group("/auth-config")
-	authConfig.GET("", authConfigController.GetAuthConfig)
-	authConfig.PUT("", authConfigController.UpdateAuthConfig)
-	authConfig.GET("/oauth2-providers", authConfigController.GetOAuth2Providers)
+	authConfig.GET("", securityController.GetAuthConfig)
+	authConfig.PUT("", securityController.UpdateAuthConfig)
+	authConfig.GET("/oauth2-providers", securityController.GetOAuth2Providers)
 }
 
-// setupProtectedAuditLogRoutes sets up audit log routes
-func setupProtectedAuditLogRoutes(protected *gin.RouterGroup, auditLogController *controller.AuditLogController) {
+// setupAuditLogRoutes sets up audit log routes
+func setupAuditLogRoutes(protected *gin.RouterGroup, auditLogController *controller.AuditLogController) {
 	if auditLogController == nil {
 		return
 	}

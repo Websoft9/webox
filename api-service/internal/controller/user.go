@@ -39,33 +39,6 @@ func (c *UserController) bindAndValidateRequest(ctx *gin.Context, req interface{
 	return true
 }
 
-// handleUserAuth handle user authentication related requests
-func (c *UserController) handleUserAuth(
-	ctx *gin.Context,
-	req interface{},
-	action string,
-	serviceFunc func(context.Context, interface{}) (interface{}, error),
-	successMessageKey string,
-) {
-	if !c.bindAndValidateRequest(ctx, req, action) {
-		return
-	}
-
-	result, err := serviceFunc(ctx, req)
-	if err != nil {
-		if action == "login" {
-			c.logger.WarnContext(ctx, "User "+action+" failed", logger.ErrorField(err))
-		} else {
-			c.logger.ErrorContext(ctx, "User "+action+" failed", logger.ErrorField(err))
-		}
-		errors.HandleError(ctx, err)
-		return
-	}
-
-	c.logger.InfoContext(ctx, "User "+action+" successful")
-	pkg_response.Success(ctx, c.i18n.T(ctx, successMessageKey), result)
-}
-
 // handleUserIDBasedRequest handle requests that need user ID from URL parameter
 func (c *UserController) handleUserIDBasedRequest(
 	ctx *gin.Context,
@@ -95,43 +68,6 @@ func (c *UserController) handleUserIDBasedRequest(
 
 	c.logger.InfoContext(ctx, "User "+action+" successful", logger.Uint("user_id", uint(userID)))
 	pkg_response.Success(ctx, c.i18n.T(ctx, successMessageKey), nil)
-}
-
-// Register user registration
-// @Summary User registration
-// @Description Register a new user account
-// @Tags Users
-// @Accept json
-// @Produce json
-// @Param request body request.UserRegisterRequest true "User registration request"
-// @Success 200 {object} response.APIResponse{data=response.UserResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
-// @Router /api/v1/auth/register [post]
-func (c *UserController) Register(ctx *gin.Context) {
-	var req request.UserRegisterRequest
-	c.handleUserAuth(ctx, &req, "registration", func(ctx context.Context, r interface{}) (interface{}, error) {
-		return c.userService.Register(ctx, r.(*request.UserRegisterRequest))
-	}, "user.register_success")
-}
-
-// Login user login
-// @Summary User login
-// @Description Authenticate user and return JWT token
-// @Tags Users
-// @Accept json
-// @Produce json
-// @Param request body request.UserLoginRequest true "User login request"
-// @Success 200 {object} response.APIResponse{data=response.UserLoginResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
-// @Router /api/v1/auth/login [post]
-func (c *UserController) Login(ctx *gin.Context) {
-	var req request.UserLoginRequest
-	c.handleUserAuth(ctx, &req, "login", func(ctx context.Context, r interface{}) (interface{}, error) {
-		return c.userService.Login(ctx, r.(*request.UserLoginRequest))
-	}, "user.login_success")
 }
 
 // ChangePassword change user password
