@@ -139,35 +139,11 @@ const (
 
 // Action operation permission constants (based on security design document V1.1)
 const (
-	ActionAll       = "*"         // All operations
-	ActionCreate    = "CREATE"    // Create operation
-	ActionUpdate    = "UPDATE"    // Update/Modify operation
-	ActionDelete    = "DELETE"    // Delete operation
-	ActionQuery     = "QUERY"     // Query operation
-	ActionEnable    = "ENABLE"    // Enable operation
-	ActionDisable   = "DISABLE"   // Disable operation
-	ActionExport    = "EXPORT"    // Export operation
-	ActionImport    = "IMPORT"    // Import operation
-	ActionUpload    = "UPLOAD"    // Upload operation
-	ActionDownload  = "DOWNLOAD"  // Download operation
-	ActionInstall   = "INSTALL"   // Install operation
-	ActionUninstall = "UNINSTALL" // Uninstall operation
-	ActionUpadate   = "UPADATE"   // Update operation (keep original typo from design doc)
-	ActionRestart   = "RESTART"   // Restart operation
-	ActionStop      = "STOP"      // Stop operation
-	ActionPause     = "PAUSE"     // Pause operation
-	ActionStart     = "START"     // Start operation
-	ActionClone     = "CLONE"     // Clone operation
-	ActionPublish   = "PUBLISH"   // Publish operation
-	ActionTerminal  = "TERMINAL"  // Terminal access
-	ActionSftp      = "SFTP"      // File management
-	ActionSystemd   = "SYSTEMD"   // System service management
-	ActionShutdown  = "SHUTDOWN"  // Shutdown operation
-	ActionOnline    = "ONLINE"    // Online operation
-	ActionOffline   = "OFFLINE"   // Offline operation
-	ActionExecute   = "EXECUTE"   // Execute operation
-	ActionArchive   = "ARCHIVE"   // Archive operation
-	ActionRecover   = "RECOVER"   // Recover operation
+	ActionAll    = "*"      // All operations
+	ActionCreate = "CREATE" // Create operation
+	ActionUpdate = "UPDATE" // Update/Modify operation
+	ActionDelete = "DELETE" // Delete operation
+	ActionQuery  = "QUERY"  // Query operation
 
 	// Authentication specific actions
 	ActionLogin          = "LOGIN"           // Login operation

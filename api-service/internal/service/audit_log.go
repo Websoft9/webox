@@ -916,7 +916,7 @@ func (s *auditLogService) extractAuditInfoFromRequest(ctx *gin.Context, response
 func (s *auditLogService) getActionFromMethod(method, path string) string {
 	// Check for export operations first
 	if method == constants.HTTPMethodGET && strings.Contains(path, "/export") {
-		return constants.ActionExport
+		return constants.ActionQuery
 	}
 
 	// Check for specific auth operations
@@ -996,7 +996,7 @@ func (s *auditLogService) buildDescription(method, path string, statusCode int) 
 	action := s.getActionFromMethod(method, path)
 
 	// Special handling for export operations
-	if action == constants.ActionExport {
+	if action == constants.ActionQuery {
 		if statusCode >= 200 && statusCode < 300 {
 			return "Export data successfully"
 		} else {

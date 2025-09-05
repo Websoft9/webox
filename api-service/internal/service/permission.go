@@ -59,9 +59,19 @@ func (s *permissionService) CreatePermission(ctx context.Context, req *request.C
 		return nil, errors.New("permission code already exists")
 	}
 
+	// Get parent code if ParentID is provided
+	var parentCode string
+	if req.ParentID != nil {
+		parent, err := s.permissionRepo.GetByID(ctx, *req.ParentID)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get parent permission")
+		}
+		parentCode = parent.Code
+	}
+
 	// Create permission entity
 	permission := &model.Permission{
-		ParentID:    req.ParentID,
+		ParentCode:  parentCode,
 		Scope:       req.Scope,
 		Name:        req.Name,
 		Code:        req.Code,

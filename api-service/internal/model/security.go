@@ -48,13 +48,14 @@ func (r *Role) IsActive() bool {
 // Permission permission model
 type Permission struct {
 	BaseModel
-	ParentID    *uint  `json:"parent_id" gorm:"index"`
+	ParentCode  string `json:"parent_code" gorm:"index;size:64;"`
 	Scope       string `json:"scope" gorm:"size:64;not null" validate:"required,oneof=platform project"`
 	Name        string `json:"name" gorm:"size:64;not null" validate:"required,min=2,max=64"`
 	Code        string `json:"code" gorm:"uniqueIndex;size:64;not null" validate:"required,min=2,max=64"`
 	Module      string `json:"module" gorm:"size:32;not null" validate:"required,min=2,max=32"`
 	Action      string `json:"action" gorm:"size:32;not null" validate:"required,min=2,max=32"`
-	Resource    string `json:"resource" gorm:"size:256" validate:"max=64"`
+	Resource    string `json:"resource" gorm:"size:64" validate:"max=64"`
+	Element     string `json:"element" gorm:"size:64" validate:"max=64"`
 	Description string `json:"description" gorm:"type:text" validate:"max=500"`
 	IsSystem    bool   `json:"is_system" gorm:"default:false"`
 	IsMenu      bool   `json:"is_menu" gorm:"default:false"`
@@ -64,8 +65,8 @@ type Permission struct {
 	UpdatedBy   *uint  `json:"updated_by" gorm:"index"`
 
 	// Associations
-	Parent   *Permission  `json:"parent,omitempty" gorm:"foreignKey:ParentID"`
-	Children []Permission `json:"children,omitempty" gorm:"foreignKey:ParentID"`
+	Parent   *Permission  `json:"parent,omitempty" gorm:"foreignKey:ParentCode"`
+	Children []Permission `json:"children,omitempty" gorm:"foreignKey:ParentCode"`
 	Roles    []Role       `json:"roles,omitempty" gorm:"many2many:role_permissions"`
 
 	// Statistical fields (not mapped to database)
@@ -106,18 +107,18 @@ func (UserRole) TableName() string {
 
 // RolePermission role permission association table
 type RolePermission struct {
-	ID           uint      `json:"id" gorm:"primarykey"`
-	RoleID       uint      `json:"role_id" gorm:"not null;index"`
-	PermissionID uint      `json:"permission_id" gorm:"not null;index"`
-	GrantedBy    *uint     `json:"granted_by" gorm:"index"`
-	GrantedAt    time.Time `json:"granted_at" gorm:"not null;default:CURRENT_TIMESTAMP"`
-	Status       int       `json:"status" gorm:"default:1"` //  -1:deleted, 0:disabled, 1:enabled
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	ID             uint      `json:"id" gorm:"primarykey"`
+	RoleID         uint      `json:"role_id" gorm:"not null;index"`
+	PermissionCode string    `json:"permission_code" gorm:"not null;size:64;index"`
+	GrantedBy      *uint     `json:"granted_by" gorm:"index"`
+	GrantedAt      time.Time `json:"granted_at" gorm:"not null;default:CURRENT_TIMESTAMP"`
+	Status         int       `json:"status" gorm:"default:1"` //  -1:deleted, 0:disabled, 1:enabled
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
 
 	// Associations
 	Role       Role       `json:"role,omitempty" gorm:"foreignKey:RoleID"`
-	Permission Permission `json:"permission,omitempty" gorm:"foreignKey:PermissionID"`
+	Permission Permission `json:"permission,omitempty" gorm:"foreignKey:PermissionCode"`
 }
 
 // TableName specify table name

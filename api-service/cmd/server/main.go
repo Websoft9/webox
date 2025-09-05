@@ -18,7 +18,6 @@ import (
 	"api-service/pkg/utils"
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -58,7 +57,7 @@ func main() {
 	// 1. Load configuration first
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatal("Failed to load config:", err)
+		panic(fmt.Sprintf("Failed to load config: %v", err))
 	}
 
 	// 2. Initialize logging system with configuration
@@ -85,32 +84,32 @@ func main() {
 	// 3. Initialize authentication configuration manager
 	authConfigManager, err := initAuthConfig()
 	if err != nil {
-		log.Fatal("Failed to initialize auth config manager:", err)
+		zapLogger.Fatal("Failed to initialize auth config manager", logger.String("error", err.Error()))
 	}
 	zapLogger.Info("Authentication configuration manager initialized successfully")
 
 	// 4. Initialize internationalization system
 	i18nInstance, err := initI18n(cfg)
 	if err != nil {
-		log.Fatal("Failed to initialize i18n:", err)
+		zapLogger.Fatal("Failed to initialize i18n", logger.String("error", err.Error()))
 	}
 	zapLogger.Info("Internationalization initialized successfully")
 
 	// 5. Initialize database connection and perform migrations
 	db, err := initDatabase(cfg, zapLogger)
 	if err != nil {
-		log.Fatal("Failed to initialize database:", err)
+		zapLogger.Fatal("Failed to initialize database", logger.String("error", err.Error()))
 	}
 
 	// 6. Initialize Redis, InfluxDB and JWT authentication services
 	serviceConns, err := initServices(cfg, zapLogger)
 	if err != nil {
-		log.Fatal("Failed to initialize services:", err)
+		zapLogger.Fatal("Failed to initialize services", logger.String("error", err.Error()))
 	}
 
 	// 7. Initialize repositories, services, controllers and start HTTP server
 	if err := startServer(cfg, authConfigManager, zapLogger, i18nInstance, db, serviceConns); err != nil {
-		log.Fatal("Failed to start server:", err)
+		zapLogger.Fatal("Failed to start server", logger.String("error", err.Error()))
 	}
 }
 
@@ -138,6 +137,13 @@ func initDatabase(cfg *config.Config, zapLogger logger.Logger) (*gorm.DB, error)
 		return nil, err
 	}
 	zapLogger.Info("Database connection successful")
+
+	// Check if database was already initialized by the init script
+	flagFile := "data/.websoft9_db_initialized"
+	if _, err := os.Stat(flagFile); err == nil {
+		zapLogger.Info("Database already initialized by init script, skipping auto-migration")
+		return db, nil
+	}
 
 	// Auto-migrate all database models to ensure schema consistency
 	if migrateErr := db.AutoMigrate(
@@ -247,7 +253,7 @@ func startServer(
 
 		// Start listening for HTTP requests, handle server startup errors
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Failed to start server: %v", err)
+			zapLogger.Fatal("Failed to start server", logger.String("error", err.Error()))
 		}
 	}()
 
