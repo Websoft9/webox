@@ -104,7 +104,7 @@ func (r *permissionRepository) Delete(ctx context.Context, id uint) error {
 	// Check if there are associated roles
 	var roleCount int64
 	if err := r.db.WithContext(ctx).Model(&model.RolePermission{}).
-		Where("permission_id = ?", id).Count(&roleCount).Error; err != nil {
+		Where("permission_code = ?", id).Count(&roleCount).Error; err != nil {
 		return errors.Wrap(err, "failed to check permission roles")
 	}
 
@@ -119,7 +119,7 @@ func (r *permissionRepository) Delete(ctx context.Context, id uint) error {
 	// Check if there are child permissions that are not deleted
 	var childCount int64
 	if err := r.db.WithContext(ctx).Model(&model.Permission{}).
-		Where("parent_id = ? AND status != -1", id).Count(&childCount).Error; err != nil {
+		Where("parent_code = ? AND status != -1", id).Count(&childCount).Error; err != nil {
 		return errors.Wrap(err, "failed to check child permissions")
 	}
 
@@ -196,7 +196,7 @@ func (r *permissionRepository) List(ctx context.Context, req *request.ListPermis
 		// Get role count
 		var roleCount int64
 		r.db.WithContext(ctx).Model(&model.RolePermission{}).
-			Where("permission_id = ? AND status = 1", permission.ID).Count(&roleCount)
+			Where("permission_code = ? AND status = 1", permission.ID).Count(&roleCount)
 		permission.RoleCount = roleCount
 	}
 
@@ -243,13 +243,16 @@ func (r *permissionRepository) buildPermissionTree(permissions []*model.Permissi
 	// Build tree structure
 	var roots []*model.Permission
 	for _, perm := range permissions {
-		if perm.ParentID == nil {
+		if perm.ParentCode == "" {
 			// Root node
 			roots = append(roots, perm)
 		} else {
-			// Child node
-			if parent, exists := permissionMap[*perm.ParentID]; exists {
-				parent.Children = append(parent.Children, *perm)
+			// Find parent by code
+			for _, parent := range permissions {
+				if parent.Code == perm.ParentCode {
+					parent.Children = append(parent.Children, *perm)
+					break
+				}
 			}
 		}
 	}
@@ -279,7 +282,7 @@ func (r *permissionRepository) GetChildren(ctx context.Context, parentID uint) (
 	var permissions []*model.Permission
 
 	err := r.db.WithContext(ctx).
-		Where("parent_id = ? AND status != -1", parentID).
+		Where("parent_code = ? AND status != -1", parentID).
 		Order("sort_order ASC, created_at ASC").
 		Find(&permissions).Error
 
@@ -299,7 +302,7 @@ func (r *permissionRepository) GetRoles(ctx context.Context, permissionID uint, 
 func (r *permissionRepository) CountRoles(ctx context.Context, permissionID uint) (int64, error) {
 	var count int64
 	err := r.db.WithContext(ctx).Model(&model.RolePermission{}).
-		Where("permission_id = ? AND status = 1", permissionID).Count(&count).Error
+		Where("permission_code = ? AND status = 1", permissionID).Count(&count).Error
 
 	if err != nil {
 		return 0, errors.Wrap(err, "failed to count permission roles")
@@ -347,7 +350,7 @@ func (r *permissionRepository) GetUserPermissions(ctx context.Context, userID ui
 
 	err := r.db.WithContext(ctx).
 		Distinct("permissions.*").
-		Joins("JOIN role_permissions ON permissions.id = role_permissions.permission_id").
+		Joins("JOIN role_permissions ON permissions.code = role_permissions.permission_code").
 		Joins("JOIN user_roles ON role_permissions.role_id = user_roles.role_id").
 		Where("user_roles.user_id = ? AND user_roles.status != -1 AND role_permissions.status != -1 AND permissions.status != -1", userID).
 		Find(&permissions).Error
@@ -364,7 +367,7 @@ func (r *permissionRepository) CheckUserPermission(ctx context.Context, userID u
 	var count int64
 
 	err := r.db.WithContext(ctx).Model(&model.Permission{}).
-		Joins("JOIN role_permissions ON permissions.id = role_permissions.permission_id").
+		Joins("JOIN role_permissions ON permissions.code = role_permissions.permission_code").
 		Joins("JOIN user_roles ON role_permissions.role_id = user_roles.role_id").
 		Where("user_roles.user_id = ? AND permissions.resource = ? AND permissions.action = ?", userID, resource, action).
 		Where("user_roles.status = 1 AND role_permissions.status != -1 AND permissions.status != -1").

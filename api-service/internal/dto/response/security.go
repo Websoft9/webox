@@ -35,13 +35,14 @@ type RoleListResponse struct {
 // PermissionResponse permission response
 type PermissionResponse struct {
 	ID          uint                 `json:"id"`
-	ParentID    *uint                `json:"parent_id,omitempty"`
+	ParentCode  string               `json:"parent_code,omitempty"`
 	Scope       string               `json:"scope"`
 	Name        string               `json:"name"`
 	Code        string               `json:"code"`
 	Module      string               `json:"module"`
 	Action      string               `json:"action"`
 	Resource    string               `json:"resource,omitempty"`
+	Element     string               `json:"element,omitempty"`
 	Description string               `json:"description,omitempty"`
 	IsSystem    bool                 `json:"is_system"`
 	IsMenu      bool                 `json:"is_menu"`
@@ -247,13 +248,14 @@ func ConvertToRoleResponse(role *model.Role) *RoleResponse {
 func ConvertToPermissionResponse(perm *model.Permission) *PermissionResponse {
 	resp := &PermissionResponse{
 		ID:          perm.ID,
-		ParentID:    perm.ParentID,
+		ParentCode:  perm.ParentCode,
 		Scope:       perm.Scope,
 		Name:        perm.Name,
 		Code:        perm.Code,
 		Module:      perm.Module,
 		Action:      perm.Action,
 		Resource:    perm.Resource,
+		Element:     perm.Element,
 		Description: perm.Description,
 		IsSystem:    perm.IsSystem,
 		IsMenu:      perm.IsMenu,
@@ -345,8 +347,9 @@ func ConvertToPermissionTreeResponse(permissions []*model.Permission) []*Permiss
 			Module:      resp.Module,
 			Action:      resp.Action,
 			Resource:    resp.Resource,
+			Element:     resp.Element,
 			Description: resp.Description,
-			ParentID:    resp.ParentID,
+			ParentCode:  resp.ParentCode,
 			IsSystem:    resp.IsSystem,
 			IsMenu:      resp.IsMenu,
 			SortOrder:   resp.SortOrder,

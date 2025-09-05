@@ -236,15 +236,21 @@ func (r *roleRepository) AssignPermissions(ctx context.Context, roleID uint, per
 			return errors.Wrap(err, "failed to remove existing permissions")
 		}
 
+		// Get permission codes first
+		var permissions []*model.Permission
+		if err := tx.Where("id IN ?", permissionIDs).Find(&permissions).Error; err != nil {
+			return errors.Wrap(err, "failed to get permission codes")
+		}
+
 		// Create new permission associations
-		rolePermissions := make([]model.RolePermission, len(permissionIDs))
-		for i, permID := range permissionIDs {
+		rolePermissions := make([]model.RolePermission, len(permissions))
+		for i, perm := range permissions {
 			rolePermissions[i] = model.RolePermission{
-				RoleID:       roleID,
-				PermissionID: permID,
-				GrantedBy:    &grantedBy,
-				GrantedAt:    time.Now(),
-				Status:       1,
+				RoleID:         roleID,
+				PermissionCode: perm.Code,
+				GrantedBy:      &grantedBy,
+				GrantedAt:      time.Now(),
+				Status:         1,
 			}
 		}
 
@@ -263,7 +269,7 @@ func (r *roleRepository) RemovePermissions(ctx context.Context, roleID uint, per
 	}
 
 	result := r.db.WithContext(ctx).
-		Where("role_id = ? AND permission_id IN ?", roleID, permissionIDs).
+		Where("role_id = ? AND permission_code IN ?", roleID, permissionIDs).
 		Delete(&model.RolePermission{})
 
 	if result.Error != nil {
@@ -278,7 +284,7 @@ func (r *roleRepository) GetPermissions(ctx context.Context, roleID uint) ([]mod
 	var permissions []model.Permission
 
 	err := r.db.WithContext(ctx).
-		Joins("JOIN role_permissions ON permissions.id = role_permissions.permission_id").
+		Joins("JOIN role_permissions ON permissions.code = role_permissions.permission_code").
 		Where("role_permissions.role_id = ? AND role_permissions.status != -1 AND permissions.status != -1", roleID).
 		Find(&permissions).Error
 

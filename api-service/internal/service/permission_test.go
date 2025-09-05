@@ -111,16 +111,16 @@ func (suite *PermissionServiceTestSuite) TestGetPermissionTree_Success() {
 	// Mock permissions with parent-child relationship
 	permissions := []*model.Permission{
 		{
-			BaseModel: model.BaseModel{ID: 1},
-			ParentID:  nil,
-			Name:      "User Management",
-			Code:      "user:manage",
+			BaseModel:  model.BaseModel{ID: 1},
+			ParentCode: "",
+			Name:       "User Management",
+			Code:       "user:manage",
 			Children: []model.Permission{
 				{
-					BaseModel: model.BaseModel{ID: 2},
-					ParentID:  func() *uint { id := uint(1); return &id }(),
-					Name:      "Create User",
-					Code:      "user:create",
+					BaseModel:  model.BaseModel{ID: 2},
+					ParentCode: "user:manage",
+					Name:       "Create User",
+					Code:       "user:create",
 				},
 			},
 		},

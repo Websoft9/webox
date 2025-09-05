@@ -26,8 +26,9 @@ const (
 	actionUpdate = "update"
 	actionDelete = "delete"
 
-	// Constants
-	minResourceParts = 3
+	// ID validation constants
+	maxIDLength     = 10
+	minLongIDLength = 8
 )
 
 // publicRoutes defines the list of routes that don't require authentication
@@ -158,7 +159,7 @@ func handleTokenValidationError(c *gin.Context, log logger.Logger) {
 func checkUserPermission(c *gin.Context, permissionService service.PermissionService, userID uint, log logger.Logger) bool {
 	path := c.Request.URL.Path
 	method := c.Request.Method
-	resource, action := buildResourceAction(path, method)
+	resource, action := buildResourceAction(c, path, method)
 
 	hasPermission, err := permissionService.CheckUserPermission(c.Request.Context(), userID, resource, action)
 	if err != nil {
@@ -193,20 +194,32 @@ func checkUserPermission(c *gin.Context, permissionService service.PermissionSer
 }
 
 // buildResourceAction constructs resource and action identifiers from HTTP path and method
-// This function maps REST API endpoints to permission system resources and actions
-// It supports both standard CRUD operations and special administrative actions
-func buildResourceAction(path, method string) (resource, action string) {
-	// Remove API version prefix to get the core resource path
-	path = strings.TrimPrefix(path, "/api/v1")
-
-	// Parse path components to identify the resource
-	parts := strings.Split(strings.Trim(path, "/"), "/")
-	if len(parts) == 0 {
-		return "", ""
+// This function uses Gin's route matching to accurately map dynamic parameters
+//
+// Examples:
+//   - /api/v1/users -> resource: "/users", action: "query"
+//   - /api/v1/users/123 -> resource: "/users/*", action: "query"
+//   - /api/v1/audit-logs/export -> resource: "/audit-logs/export", action: "query"
+//   - /api/v1/roles/5/permissions -> resource: "/roles/*/permissions", action: "query"
+func buildResourceAction(c *gin.Context, path, method string) (resource, action string) {
+	// Get the matched route pattern from Gin context
+	routePattern := c.FullPath()
+	if routePattern != "" {
+		// Remove API version prefix to get the core resource path
+		resource = strings.TrimPrefix(routePattern, "/api/v1")
+		// Normalize Gin's :id parameter format to * for consistency with permissions table
+		resource = strings.ReplaceAll(resource, ":id", "*")
+		if resource == "" {
+			resource = "/"
+		}
+	} else {
+		// Fallback to original logic if route pattern is not available
+		resource = buildResourceFromPath(path)
 	}
 
-	// The first path component is typically the resource name
-	resource = parts[0]
+	if resource == "" || resource == "/" {
+		return "", ""
+	}
 
 	// Map HTTP methods to permission actions
 	switch method {
@@ -222,25 +235,78 @@ func buildResourceAction(path, method string) (resource, action string) {
 		action = actionRead // Default to read for unknown methods
 	}
 
-	// Handle special administrative endpoints with custom actions
-	if len(parts) >= minResourceParts {
-		switch parts[2] {
-		case "permissions":
-			// Permission management endpoints
-			switch method {
-			case methodPOST:
-				action = "assign_permission"
-			case methodDELETE:
-				action = "remove_permission"
-			}
-		case "users":
-			// User management endpoints
-			action = "manage_users"
-		case "roles":
-			// Role management endpoints
-			action = "manage_roles"
+	return resource, action
+}
+
+// buildResourceFromPath is a fallback function that constructs resource from path
+// when Gin route pattern is not available
+func buildResourceFromPath(path string) string {
+	// Remove API version prefix to get the core resource path
+	path = strings.TrimPrefix(path, "/api/v1")
+
+	if path == "" || path == "/" {
+		return ""
+	}
+
+	// Ensure path starts with "/"
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+
+	// Parse path components to build the resource path
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	if len(parts) == 0 {
+		return path
+	}
+
+	// Build resource path with dynamic parameter normalization
+	resourceParts := make([]string, len(parts))
+	for i, part := range parts {
+		// Check if this part looks like a dynamic parameter
+		if isPathParameter(part) {
+			resourceParts[i] = "*"
+		} else {
+			resourceParts[i] = part
 		}
 	}
 
-	return resource, action
+	// Construct the full resource path
+	return "/" + strings.Join(resourceParts, "/")
+}
+
+// isPathParameter determines if a path segment is likely a dynamic parameter
+// It checks for numeric IDs, UUIDs, and other common parameter patterns
+func isPathParameter(segment string) bool {
+	if segment == "" {
+		return false
+	}
+
+	// Check for numeric ID (positive integers)
+	if isNumericID(segment) {
+		return true
+	}
+
+	return false
+}
+
+// isNumericID checks if the segment is a positive integer (common for database IDs)
+func isNumericID(segment string) bool {
+	if segment == "" || len(segment) > maxIDLength { // Reasonable ID length limit
+		return false
+	}
+
+	// For longer numeric strings (8+ digits), be more conservative
+	// They might be legitimate path segments rather than IDs
+	if len(segment) >= minLongIDLength {
+		return false
+	}
+
+	for _, char := range segment {
+		if char < '0' || char > '9' {
+			return false
+		}
+	}
+
+	// Avoid treating "0" as an ID, and ensure it's not just leading zeros
+	return segment != "0" && segment[0] != '0'
 }
