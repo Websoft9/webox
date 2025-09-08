@@ -68,11 +68,11 @@ jwt:
 # Email configuration
 email:
   smtp:
-    host: ""
+    host: "smtp.qcloudmail.com"
     port: 465
-    username: ""
-    password: ""
-    from: ""
+    username: "smtp@websoft9.cn"
+    password: "Pu4P[6c69}pl,QEx"
+    from: "smtp@websoft9.cn"
     use_tls: true
 
 # Application configuration

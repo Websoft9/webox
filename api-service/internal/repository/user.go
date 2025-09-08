@@ -27,7 +27,7 @@ func (r *userRepository) Create(ctx context.Context, user *model.User) error {
 // GetByID 根据ID获取用户
 func (r *userRepository) GetByID(ctx context.Context, id uint) (*model.User, error) {
 	var user model.User
-	err := r.db.WithContext(ctx).First(&user, id).Error
+	err := r.db.WithContext(ctx).Where("status != ?", -1).First(&user, id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -38,6 +38,7 @@ func (r *userRepository) GetByID(ctx context.Context, id uint) (*model.User, err
 func (r *userRepository) GetByIDWithRelations(ctx context.Context, id uint) (*model.User, error) {
 	var user model.User
 	err := r.db.WithContext(ctx).
+		Where("status != ?", -1).
 		Preload("Roles").
 		First(&user, id).Error
 	if err != nil {
@@ -49,7 +50,7 @@ func (r *userRepository) GetByIDWithRelations(ctx context.Context, id uint) (*mo
 // GetByUsername 根据用户名获取用户
 func (r *userRepository) GetByUsername(ctx context.Context, username string) (*model.User, error) {
 	var user model.User
-	err := r.db.WithContext(ctx).Where("username = ?", username).First(&user).Error
+	err := r.db.WithContext(ctx).Where("username = ? AND status != ?", username, -1).First(&user).Error
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +60,7 @@ func (r *userRepository) GetByUsername(ctx context.Context, username string) (*m
 // GetByEmail 根据邮箱获取用户
 func (r *userRepository) GetByEmail(ctx context.Context, email string) (*model.User, error) {
 	var user model.User
-	err := r.db.WithContext(ctx).Where("email = ?", email).First(&user).Error
+	err := r.db.WithContext(ctx).Where("email = ? AND status != ?", email, -1).First(&user).Error
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +115,7 @@ func (r *userRepository) ListWithRelations(
 	var users []*model.User
 	var total int64
 
-	query := r.db.WithContext(ctx).Model(&model.User{})
+	query := r.db.WithContext(ctx).Model(&model.User{}).Where("status != ?", -1)
 
 	// 应用过滤器
 	query = r.applyFilters(query, filters)
@@ -124,13 +125,8 @@ func (r *userRepository) ListWithRelations(
 		return nil, 0, err
 	}
 
-	// 获取数据（包含关联）
-	err := query.
-		Preload("Roles").
-		Offset(offset).
-		Limit(limit).
-		Order("created_at desc").
-		Find(&users).Error
+	// 获取数据
+	err := query.Preload("Roles").Offset(offset).Limit(limit).Order("created_at desc").Find(&users).Error
 	return users, total, err
 }
 
@@ -139,7 +135,7 @@ func (r *userRepository) Search(ctx context.Context, keyword string, offset, lim
 	var users []*model.User
 	var total int64
 
-	query := r.db.WithContext(ctx).Model(&model.User{})
+	query := r.db.WithContext(ctx).Model(&model.User{}).Where("status != ?", -1)
 	if keyword != "" {
 		searchPattern := "%" + keyword + "%"
 		query = query.Where("username LIKE ? OR email LIKE ? OR nickname LIKE ?",
@@ -159,14 +155,14 @@ func (r *userRepository) Search(ctx context.Context, keyword string, offset, lim
 // ExistsByUsername 检查用户名是否存在
 func (r *userRepository) ExistsByUsername(ctx context.Context, username string) (bool, error) {
 	var count int64
-	err := r.db.WithContext(ctx).Model(&model.User{}).Where("username = ?", username).Count(&count).Error
+	err := r.db.WithContext(ctx).Model(&model.User{}).Where("username = ? AND status != ?", username, -1).Count(&count).Error
 	return count > 0, err
 }
 
 // ExistsByEmail 检查邮箱是否存在
 func (r *userRepository) ExistsByEmail(ctx context.Context, email string) (bool, error) {
 	var count int64
-	err := r.db.WithContext(ctx).Model(&model.User{}).Where("email = ?", email).Count(&count).Error
+	err := r.db.WithContext(ctx).Model(&model.User{}).Where("email = ? AND status != ?", email, -1).Count(&count).Error
 	return count > 0, err
 }
 
@@ -174,7 +170,7 @@ func (r *userRepository) ExistsByEmail(ctx context.Context, email string) (bool,
 func (r *userRepository) ExistsByUsernameExcludeID(ctx context.Context, username string, excludeID uint) (bool, error) {
 	var count int64
 	err := r.db.WithContext(ctx).Model(&model.User{}).
-		Where("username = ? AND id != ?", username, excludeID).
+		Where("username = ? AND id != ? AND status != ?", username, excludeID, -1).
 		Count(&count).Error
 	return count > 0, err
 }
@@ -183,7 +179,7 @@ func (r *userRepository) ExistsByUsernameExcludeID(ctx context.Context, username
 func (r *userRepository) ExistsByEmailExcludeID(ctx context.Context, email string, excludeID uint) (bool, error) {
 	var count int64
 	err := r.db.WithContext(ctx).Model(&model.User{}).
-		Where("email = ? AND id != ?", email, excludeID).
+		Where("email = ? AND id != ? AND status != ?", email, excludeID, -1).
 		Count(&count).Error
 	return count > 0, err
 }
@@ -231,21 +227,8 @@ func (r *userRepository) GetUserStats(ctx context.Context, userID uint) (*reposi
 // applyFilters 应用查询过滤器
 func (r *userRepository) applyFilters(query *gorm.DB, filters map[string]interface{}) *gorm.DB {
 	for key, value := range filters {
-		if value != nil && value != "" {
-			switch key {
-			case "status":
-				query = query.Where("status = ?", value)
-			case "gender":
-				query = query.Where("gender = ?", value)
-			case "language":
-				query = query.Where("language = ?", value)
-			case "keyword":
-				if keyword, ok := value.(string); ok && keyword != "" {
-					searchPattern := "%" + keyword + "%"
-					query = query.Where("username LIKE ? OR email LIKE ? OR nickname LIKE ?",
-						searchPattern, searchPattern, searchPattern)
-				}
-			}
+		if value != nil {
+			query = query.Where(key+" = ?", value)
 		}
 	}
 	return query
@@ -254,6 +237,6 @@ func (r *userRepository) applyFilters(query *gorm.DB, filters map[string]interfa
 // ExistsByID 检查ID是否存在
 func (r *userRepository) ExistsByID(ctx context.Context, id uint) (bool, error) {
 	var count int64
-	err := r.db.WithContext(ctx).Model(&model.User{}).Where("id = ?", id).Count(&count).Error
+	err := r.db.WithContext(ctx).Model(&model.User{}).Where("id = ? AND status != ?", id, -1).Count(&count).Error
 	return count > 0, err
 }
