@@ -20,6 +20,9 @@ DB_USER=""
 DB_PASS=""
 SQLITE_PATH="./data/websoft9.db"
 
+ADMIN_USERNAME="${WEBSOFT9_USERNAME:-system@websoft9.com}"
+ADMIN_PASSWORD="${WEBSOFT9_PASSWORD:-changeme}"
+
 # Path to the flag file
 FLAG_FILE="./data/.websoft9_db_initialized"
 
@@ -152,6 +155,43 @@ case $DB_TYPE in
         if sqlite3 "$SQLITE_PATH" < scripts/init_sqlite.sql; then
             print_info "SQLite database initialized successfully!"
             print_info "Database file: $SQLITE_PATH"
+            
+            # Create admin user from environment variables
+            print_info "Creating admin user: $ADMIN_USERNAME"
+            
+            # 使用SHA256生成密码哈希
+            PASSWORD_HASH=$(echo -n "$ADMIN_PASSWORD" | sha256sum | cut -d ' ' -f 1)
+            
+            # 获取当前时间戳，格式为 YYYY-MM-DD HH:MM:SS
+            CURRENT_TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
+    
+            # 插入新用户
+            # 明确指定ID为2
+            sqlite3 "$SQLITE_PATH" <<EOF
+-- 临时关闭外键约束
+PRAGMA foreign_keys = OFF;
+
+-- 插入新用户（明确指定ID为2）
+INSERT OR IGNORE INTO users (id, username, email, password_hash, nickname, gender, signature, status, timezone, language, created_at, updated_at)
+VALUES (2, 'admin2', '$ADMIN_USERNAME', '$PASSWORD_HASH', 'Manager', 0, 'Websoft9 manager', 1, 'Asia/Shanghai', 'zh-CN', '$CURRENT_TIMESTAMP', '$CURRENT_TIMESTAMP');
+
+-- 将新用户关联到超级管理员角色（明确指定ID为2）
+INSERT OR IGNORE INTO user_roles (id, user_id, role_id, granted_by, granted_at, status, created_at, updated_at)
+VALUES (2, 2, 1, 1, '$CURRENT_TIMESTAMP', 1, '$CURRENT_TIMESTAMP', '$CURRENT_TIMESTAMP');
+
+-- 确保角色拥有所有权限（如果需要）
+-- 这部分不需要指定ID，因为role_permissions表可能没有ID字段
+INSERT OR IGNORE INTO role_permissions (role_id, permission_code, granted_by, granted_at, status, created_at, updated_at)
+SELECT 1, code, 1, '$CURRENT_TIMESTAMP', 1, '$CURRENT_TIMESTAMP', '$CURRENT_TIMESTAMP'
+FROM permissions 
+WHERE code NOT IN (SELECT permission_code FROM role_permissions WHERE role_id = 1);
+
+-- 重新启用外键约束
+PRAGMA foreign_keys = ON;
+EOF
+
+            print_info "Admin user created successfully with ID=2 and super_admin role!"
+            
         else
             print_error "Failed to initialize SQLite database"
             exit 1
