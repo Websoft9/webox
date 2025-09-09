@@ -357,7 +357,7 @@ func initBusinessServices(
 		apiTokenService:   serviceImpl.NewAPITokenService(repos.apiTokenRepo, db, zapLogger, i18nInstance),
 		authConfigService: serviceImpl.NewAuthConfigService(authConfigManager, zapLogger),
 		twoFactorService:  serviceImpl.NewTwoFactorService(repos.twoFactorRepo, db, zapLogger, i18nInstance),
-		auditLogService:   serviceImpl.NewAuditLogService(repos.auditLogRepo, userService, db, zapLogger, i18nInstance),
+		auditLogService:   serviceImpl.NewAuditLogService(repos.auditLogRepo, userService, db, zapLogger, i18nInstance, cfg),
 	}
 }
 

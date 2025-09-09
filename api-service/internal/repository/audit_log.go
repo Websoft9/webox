@@ -4,10 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"time"
 
 	"gorm.io/gorm"
 
+	"api-service/internal/dto/request"
+	"api-service/internal/dto/response"
 	"api-service/internal/interface/repository"
 	"api-service/internal/model"
 )
@@ -60,7 +63,7 @@ func (r *auditLogRepository) GetByID(ctx context.Context, id uint) (*model.Audit
 }
 
 // List retrieves audit logs with pagination and filtering
-func (r *auditLogRepository) List(ctx context.Context, filter *repository.AuditLogFilter) ([]*model.AuditLog, int64, error) {
+func (r *auditLogRepository) List(ctx context.Context, filter *request.AuditLogFilter) ([]*model.AuditLog, int64, error) {
 	var auditLogs []*model.AuditLog
 	var total int64
 
@@ -137,8 +140,8 @@ func (r *auditLogRepository) List(ctx context.Context, filter *repository.AuditL
 }
 
 // GetStatistics retrieves audit log statistics
-func (r *auditLogRepository) GetStatistics(ctx context.Context, filter *repository.StatisticsFilter) (*repository.AuditLogStatistics, error) {
-	stats := &repository.AuditLogStatistics{}
+func (r *auditLogRepository) GetStatistics(ctx context.Context, filter *request.StatisticsFilter) (*response.AuditLogStatistics, error) {
+	stats := &response.AuditLogStatistics{}
 
 	// Build base query
 	query := r.db.WithContext(ctx).Model(&model.AuditLog{})
@@ -177,7 +180,7 @@ func (r *auditLogRepository) GetStatistics(ctx context.Context, filter *reposito
 	}
 
 	// Get top users - using Raw SQL to ensure proper field mapping
-	var topUsers []repository.UserOperationCount
+	var topUsers []response.UserOperationCount
 	if err := r.db.WithContext(ctx).Raw(`
 		SELECT user_id, username, COUNT(*) as operation_count
 		FROM audit_logs 
@@ -193,7 +196,7 @@ func (r *auditLogRepository) GetStatistics(ctx context.Context, filter *reposito
 	stats.TopUsers = topUsers
 
 	// Get top actions - using Raw SQL to ensure proper field mapping
-	var topActions []repository.ActionCount
+	var topActions []response.ActionCount
 	if err := r.db.WithContext(ctx).Raw(`
 		SELECT action, COUNT(*) as count
 		FROM audit_logs 
@@ -207,25 +210,9 @@ func (r *auditLogRepository) GetStatistics(ctx context.Context, filter *reposito
 	}
 	stats.TopActions = topActions
 
-	// Get timeline data based on GroupBy
-	var timeline []repository.TimelineCount
-	var dateFormat string
-
-	switch filter.GroupBy {
-	case "hour":
-		dateFormat = "strftime('%Y-%m-%d %H:00', created_at)"
-	case "week":
-		dateFormat = "strftime('%Y-W%W', created_at)"
-	case "month":
-		dateFormat = "strftime('%Y-%m', created_at)"
-	default: // day
-		dateFormat = "strftime('%Y-%m-%d', created_at)"
-	}
-
-	if err := query.Select(fmt.Sprintf("%s as date, COUNT(*) as count", dateFormat)).
-		Group("date").
-		Order("date").
-		Scan(&timeline).Error; err != nil {
+	// Get timeline data - use application layer processing for better database compatibility
+	timeline, err := r.getTimelineData(ctx, filter)
+	if err != nil {
 		return nil, fmt.Errorf("failed to get timeline data: %w", err)
 	}
 	stats.Timeline = timeline
@@ -234,7 +221,7 @@ func (r *auditLogRepository) GetStatistics(ctx context.Context, filter *reposito
 }
 
 // Export exports audit logs for external processing
-func (r *auditLogRepository) Export(ctx context.Context, filter *repository.AuditLogFilter) ([]*model.AuditLog, error) {
+func (r *auditLogRepository) Export(ctx context.Context, filter *request.AuditLogFilter) ([]*model.AuditLog, error) {
 	var auditLogs []*model.AuditLog
 
 	// Build query
@@ -243,18 +230,6 @@ func (r *auditLogRepository) Export(ctx context.Context, filter *repository.Audi
 	// Apply filters (similar to List method but without pagination)
 	if filter.UserID != nil {
 		query = query.Where("user_id = ?", *filter.UserID)
-	}
-
-	if filter.Action != "" {
-		query = query.Where("action = ?", filter.Action)
-	}
-
-	if filter.Module != "" {
-		query = query.Where("module = ?", filter.Module)
-	}
-
-	if filter.ResourceType != "" {
-		query = query.Where("resource_type = ?", filter.ResourceType)
 	}
 
 	if filter.StartTime != nil {
@@ -283,4 +258,80 @@ func (r *auditLogRepository) CleanupOldLogs(ctx context.Context, beforeDate time
 	}
 
 	return result.RowsAffected, nil
+}
+
+// getTimelineData retrieves timeline statistics with database-agnostic implementation
+func (r *auditLogRepository) getTimelineData(ctx context.Context, filter *request.StatisticsFilter) ([]response.TimelineCount, error) {
+	// Get all records within the time range, then process in application layer
+	var auditLogs []model.AuditLog
+
+	query := r.db.WithContext(ctx).Model(&model.AuditLog{}).Select("created_at")
+
+	// Apply time filters
+	if filter.StartTime != nil {
+		query = query.Where("created_at >= ?", *filter.StartTime)
+	}
+	if filter.EndTime != nil {
+		query = query.Where("created_at <= ?", *filter.EndTime)
+	}
+
+	if err := query.Find(&auditLogs).Error; err != nil {
+		return nil, fmt.Errorf("failed to get audit logs for timeline: %w", err)
+	}
+
+	// Group data based on groupBy parameter
+	groupedData := make(map[string]int64)
+
+	for i := range auditLogs {
+		log := auditLogs[i]
+		var key string
+		switch filter.GroupBy {
+		case "hour":
+			// Format: 2025-01-22 14:00:00
+			key = log.CreatedAt.Truncate(time.Hour).Format("2006-01-02 15:04:05")
+		case "week":
+			// Format: 2025-01-22 (Monday of the week)
+			year, week := log.CreatedAt.ISOWeek()
+			// Find the Monday of this ISO week
+			jan1 := time.Date(year, 1, 1, 0, 0, 0, 0, log.CreatedAt.Location())
+			// Find the Monday of week 1
+			mondayWeek1 := jan1
+			for mondayWeek1.Weekday() != time.Monday {
+				if mondayWeek1.Weekday() == time.Sunday {
+					mondayWeek1 = mondayWeek1.AddDate(0, 0, 1)
+				} else {
+					mondayWeek1 = mondayWeek1.AddDate(0, 0, -int(mondayWeek1.Weekday()-time.Monday))
+				}
+			}
+
+			var daysInWeek = 7
+			// Add weeks to get to the target week
+			targetMonday := mondayWeek1.AddDate(0, 0, (week-1)*daysInWeek)
+			key = targetMonday.Format("2006-01-02")
+		case "month":
+			// Format: 2025-01-01 (first day of month)
+			key = time.Date(log.CreatedAt.Year(), log.CreatedAt.Month(), 1, 0, 0, 0, 0, log.CreatedAt.Location()).Format("2006-01-02")
+		default: // day
+			// Format: 2025-01-22
+			key = log.CreatedAt.Format("2006-01-02")
+		}
+
+		groupedData[key]++
+	}
+
+	// Convert map to slice and sort
+	timeline := make([]response.TimelineCount, 0, len(groupedData))
+	for date, count := range groupedData {
+		timeline = append(timeline, response.TimelineCount{
+			Date:  date,
+			Count: count,
+		})
+	}
+
+	// Sort by date
+	sort.Slice(timeline, func(i, j int) bool {
+		return timeline[i].Date < timeline[j].Date
+	})
+
+	return timeline, nil
 }

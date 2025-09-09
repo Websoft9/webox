@@ -155,54 +155,71 @@ const (
 
 // Module constants based on security design document V1.1 section 5.2
 const (
-	ModuleProjectOverview = "PROJECT_OVERVIEW" // 项目总览看板
-	ModuleMonitorOverview = "MONITOR_OVERVIEW" // 监控总览看板
-	ModuleAppNavigation   = "APP_NAVIGATION"   // 应用快捷导航
-	ModuleDashboard       = "DASHBOARD"        // 项目仪表盘
-	ModuleMonitorBoard    = "MONITOR_BOARD"    // 项目监控看板
-	ModuleTaskBoard       = "TASK_BOARD"       // 项目任务看板
-	ModuleResourceBoard   = "RESOURCE_BOARD"   // 项目资源看板
-	ModuleProjectFolder   = "PROJECT_FOLDER"   // 项目文件夹管理
-	ModulePersonalFolder  = "PERSONAL_FOLDER"  // 个人文件夹管理
-	ModuleApplication     = "APPLICATION"      // 应用管理
-	ModuleWorkflow        = "WORKFLOW"         // 工作流管理
-	ModuleJob             = "JOB"              // 任务管理
-	ModuleResourceGroup   = "RESOURCE_GROUP"   // 资源组管理
-	ModuleServer          = "SERVER"           // 服务器管理
-	ModuleSecret          = "SECRET"           // 密钥管理
-	ModuleDatabase        = "DATABASE"         // 数据库管理
-	ModuleGateway         = "GATEWAY"          // 应用网关管理
-	ModuleCertificate     = "CERTIFICATE"      // 证书管理
-	ModuleCloudResource   = "CLOUD_RESOURCE"   // 云资源管理
-	ModuleProjectTeam     = "PROJECT_TEAM"     // 项目团队管理
-	ModuleProjectSetting  = "PROJECT_SETTING"  // 项目设置
-	ModuleMarketplace     = "MARKETPLACE"      // 应用市场
-	ModuleWishlist        = "WISHLIST"         // 应用心愿单
-	ModuleProject         = "PROJECT"          // 项目管理
-	ModulePlatformSetting = "PLATFORM_SETTING" // 平台设置
-	ModuleRole            = "ROLE"             // 角色管理
-	ModulePermission      = "PERMISSION"       // 权限管理
-	ModuleAuth            = "AUTH"             // 认证管理
-	ModuleUser            = "USER"             // 用户管理
-	ModuleNotification    = "NOTIFICATION"     // 告警通知管理
-	ModuleProfile         = "PROFILE"          // 个人中心
-	ModuleAuditLog        = "AUDIT_LOG"        // 审计日志
+	ModulePlatform         = "Websoft9"
+	ModuleHome             = "主页"
+	ModuleProjectOverview  = "项目总览看板"
+	ModuleMonitorOverview  = "监控总览看板"
+	ModuleAppNavigation    = "应用快捷导航"
+	ModulePersonalFolder   = "个人空间"
+	ModuleProject          = "项目"
+	ModuleProjectDashboard = "项目仪表盘"
+	ModuleProjectFolder    = "项目空间"
+	ModuleApplication      = "应用管理"
+	ModuleWorkflow         = "工作流管理"
+	ModuleJob              = "任务管理"
+	ModuleProjectResource  = "资源"
+	ModuleResourceGroup    = "资源组管理"
+	ModuleServer           = "服务器管理"
+	ModuleSecret           = "密钥管理" // #nosec G101 - This is a module name description, not a secret
+	ModuleDatabase         = "数据库管理"
+	ModuleGateway          = "应用网关管理"
+	ModuleCertificate      = "证书管理"
+	ModuleCloudResource    = "云资源管理"
+	ModuleProjectTeam      = "项目团队管理"
+	ModuleProjectSetting   = "项目设置"
+	ModuleApps             = "应用"
+	ModuleMarketplace      = "应用市场"
+	ModuleWishlist         = "应用心愿单"
+	ModuleAdminSetting     = "管理员设置"
+	ModulePlatformSetting  = "平台管理"
+	ModuleProjectManage    = "项目管理"
+	ModuleSecurity         = "安全管理"
+	ModuleRole             = "角色管理"
+	ModulePermission       = "权限管理"
+	ModuleAuth             = "认证管理"
+	ModuleUser             = "用户管理"
+	ModuleNotification     = "告警通知"
+	ModuleProfile          = "个人中心"
+	ModuleAuditLog         = "审计日志"
+	ModuleSystem           = "System"
 )
 
 // GetModuleTableName returns the database table name for a module
 func GetModuleTableName(module string) string {
 	moduleToTableName := map[string]string{
-		ModuleUser:        "users",
-		ModuleRole:        "roles",
-		ModulePermission:  "permissions",
-		ModuleAuth:        "user_roles",
-		ModuleAuditLog:    "audit_logs",
-		ModuleApplication: "applications",
-		ModuleProject:     "projects",
-		ModuleServer:      "servers",
-		ModuleDatabase:    "databases",
-		ModuleSecret:      "secrets",
-		ModuleCertificate: "certificates",
+		ModuleUser:           "users",
+		ModuleRole:           "roles",
+		ModulePermission:     "permissions",
+		ModuleAuth:           "user_roles",
+		ModuleAuditLog:       "audit_logs",
+		ModuleProject:        "projects",
+		ModuleProjectTeam:    "project_members",
+		ModuleProjectSetting: "project_environments",
+		ModuleProjectFolder:  "project_folders",
+		ModuleApplication:    "app_instances",
+		ModuleApps:           "app_instances",
+		ModuleWorkflow:       "workflows",
+		ModuleJob:            "workflow_tasks",
+		ModuleResourceGroup:  "resource_groups",
+		ModuleServer:         "servers",
+		ModuleSecret:         "secret_keys",
+		ModuleDatabase:       "database_connections",
+		ModuleGateway:        "app_gateways",
+		ModuleCertificate:    "ssl_certificates",
+		ModuleCloudResource:  "cloud_resources",
+		ModuleMarketplace:    "app_store_templates",
+		ModuleWishlist:       "app_store_wishlists",
+		ModuleNotification:   "notifications",
 	}
 
 	if tableName, exists := moduleToTableName[module]; exists {
@@ -211,7 +228,65 @@ func GetModuleTableName(module string) string {
 	return ""
 }
 
-// Error message constants
+// GetModuleType determines module name based module
+func GetModuleType(module string) string {
+	module_type_map := map[string]string{
+		"users":             ModuleUser,
+		"roles":             ModuleRole,
+		"permissions":       ModulePermission,
+		"auth":              ModuleAuth,
+		"api-tokens":        ModuleAuth,
+		"two-factor":        ModuleAuth,
+		"auth-config":       ModuleAuth,
+		"audit-logs":        ModuleAuditLog,
+		"platform":          ModulePlatform,
+		"home":              ModuleHome,
+		"projects":          ModuleProject,
+		"project-teams":     ModuleProjectTeam,
+		"project-settings":  ModuleProjectSetting,
+		"applications":      ModuleApplication,
+		"apps":              ModuleApps,
+		"marketplace":       ModuleMarketplace,
+		"wishlist":          ModuleWishlist,
+		"servers":           ModuleServer,
+		"databases":         ModuleDatabase,
+		"secrets":           ModuleSecret,
+		"certificates":      ModuleCertificate,
+		"resource-groups":   ModuleResourceGroup,
+		"cloud-resources":   ModuleCloudResource,
+		"gateways":          ModuleGateway,
+		"workflows":         ModuleWorkflow,
+		"jobs":              ModuleJob,
+		"notifications":     ModuleNotification,
+		"profile":           ModuleProfile,
+		"i18n":              ModuleSystem,
+		"admin-settings":    ModuleAdminSetting,
+		"platform-settings": ModulePlatformSetting,
+		"security":          ModuleSecurity,
+	}
+	if moduleName, exists := module_type_map[module]; exists {
+		return moduleName
+	}
+
+	return ModuleSystem
+}
+
+// Export format constants
+const (
+	FormatExcel = "excel"
+	FormatJSON  = "json"
+	FormatCSV   = "csv"
+)
+
+// audit-logs constants
+const (
+	ExcelRowOffset        = 2      // Excel data starts from row 2 (after header)
+	ExcelColumnDivisor    = 26     // Excel column calculation divisor (A-Z = 26 letters)
+	MaxTimeRangeDays      = 7      // Maximum time range in days for export
+	MinPathSegments       = 3      // Minimum path segments for valid API path
+	DefaultTimeRangeHours = 7 * 24 // Default time range in hours (7 days)
+)
+
 const (
 	ErrInvalidCode        = "invalid code"
 	ErrTokenNotFound      = "token not found"
