@@ -50,22 +50,20 @@ func NewAuditLogController(
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/audit-logs/{id} [get]
 func (c *AuditLogController) GetAuditLog(ctx *gin.Context) {
-	// Get path parameter
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		ResponseBadRequest(ctx, err, "audit_log.parameter_error", c.i18n)
+		ResponseBadRequest(ctx, err, "validation.invalid_query_parameters", c.i18n)
 		return
 	}
 
-	// Call service layer
 	auditLog, err := c.auditLogService.GetAuditLog(ctx.Request.Context(), uint(id))
 	if err != nil {
-		ResponseNotFound(ctx, "audit_log.not_found", c.i18n)
+		ResponseNotFound(ctx, "common.not_found", c.i18n)
 		return
 	}
 
-	ResponseOK(ctx, auditLog, "audit_log.get_success", c.i18n)
+	ResponseOK(ctx, auditLog, "common.success", c.i18n)
 }
 
 // ListAuditLogs get audit log list
@@ -77,13 +75,11 @@ func (c *AuditLogController) GetAuditLog(ctx *gin.Context) {
 // @Param page_size query int false "Page Size" default(20)
 // @Param user_id query int false "User ID"
 // @Param action query string false "Action Type"
-// @Param module query string false "Module Name"
 // @Param resource_type query string false "Resource Type"
 // @Param resource_id query int false "Resource ID"
 // @Param start_time query string false "Start Time" format(date-time)
 // @Param end_time query string false "End Time" format(date-time)
 // @Param ip_address query string false "IP Address"
-// @Param success query bool false "Success Status"
 // @Success 200 {object} response.AuditLogListResponse
 // @Failure 400 {object} response.APIResponse
 // @Failure 500 {object} response.APIResponse
@@ -95,14 +91,13 @@ func (c *AuditLogController) ListAuditLogs(ctx *gin.Context) {
 		return
 	}
 
-	// Call service layer
 	result, err := c.auditLogService.ListAuditLogs(ctx.Request.Context(), &req)
 	if err != nil {
-		ResponseInternalError(ctx, err, "audit_log.failed_to_get_list", c.logger, c.i18n)
+		ResponseInternalError(ctx, err, "common.failed", c.logger, c.i18n)
 		return
 	}
 
-	ResponseOK(ctx, result, "audit_log.list_get_success", c.i18n)
+	ResponseOK(ctx, result, "common.success", c.i18n)
 }
 
 // GetAuditLogStatistics get audit log statistics
@@ -124,14 +119,13 @@ func (c *AuditLogController) GetAuditLogStatistics(ctx *gin.Context) {
 		return
 	}
 
-	// Call service layer
 	statistics, err := c.auditLogService.GetStatistics(ctx.Request.Context(), &req)
 	if err != nil {
-		ResponseInternalError(ctx, err, "audit_log.failed_to_get_statistics", c.logger, c.i18n)
+		ResponseInternalError(ctx, err, "common.failed", c.logger, c.i18n)
 		return
 	}
 
-	ResponseOK(ctx, statistics, "audit_log.statistics_get_success", c.i18n)
+	ResponseOK(ctx, statistics, "audit_log.success", c.i18n)
 }
 
 // ExportAuditLogs export audit logs
@@ -143,9 +137,6 @@ func (c *AuditLogController) GetAuditLogStatistics(ctx *gin.Context) {
 // @Param start_time query string false "Start Time" format(date-time)
 // @Param end_time query string false "End Time" format(date-time)
 // @Param user_id query int false "User ID"
-// @Param action query string false "Action Type"
-// @Param module query string false "Module Name"
-// @Param resource_type query string false "Resource Type"
 // @Success 200 {file} file "Export File"
 // @Failure 400 {object} response.APIResponse
 // @Failure 500 {object} response.APIResponse
@@ -157,12 +148,9 @@ func (c *AuditLogController) ExportAuditLogs(ctx *gin.Context) {
 		return
 	}
 
-	req.SetDefaults()
-
-	// Call service
 	data, contentType, err := c.auditLogService.ExportAuditLogs(ctx.Request.Context(), ctx, &req)
 	if err != nil {
-		ResponseInternalError(ctx, err, "audit_log.export_failed", c.logger, c.i18n)
+		ResponseInternalError(ctx, err, "common.failed", c.logger, c.i18n)
 		return
 	}
 
@@ -172,7 +160,6 @@ func (c *AuditLogController) ExportAuditLogs(ctx *gin.Context) {
 	ctx.Header("Content-Type", contentType)
 	ctx.Header("Content-Length", strconv.Itoa(len(data)))
 
-	// Return file data
 	ctx.Writer.WriteHeader(http.StatusOK)
 	_, _ = ctx.Writer.Write(data)
 }
@@ -191,9 +178,7 @@ func getFileExtensionByFormat(format string) string {
 		return ".xlsx"
 	case "json":
 		return ".json"
-	case "csv":
-		return ".csv"
 	default:
-		return "." + format // fallback to original behavior
+		return ".csv"
 	}
 }

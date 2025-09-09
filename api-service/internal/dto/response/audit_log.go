@@ -64,6 +64,36 @@ type AuditLogStatisticsResponse struct {
 	Timeline          []TimelineStatItem `json:"timeline"`
 }
 
+// AuditLogStatistics audit log statistics information
+type AuditLogStatistics struct {
+	TotalOperations   int64                `json:"total_operations"`
+	SuccessOperations int64                `json:"success_operations"`
+	FailedOperations  int64                `json:"failed_operations"`
+	SuccessRate       float64              `json:"success_rate"`
+	TopUsers          []UserOperationCount `json:"top_users"`
+	TopActions        []ActionCount        `json:"top_actions"`
+	Timeline          []TimelineCount      `json:"timeline"`
+}
+
+// UserOperationCount user operation statistics
+type UserOperationCount struct {
+	UserID         uint   `json:"user_id"`
+	Username       string `json:"username"`
+	OperationCount int64  `json:"operation_count"`
+}
+
+// ActionCount action type statistics
+type ActionCount struct {
+	Action string `json:"action"`
+	Count  int64  `json:"count"`
+}
+
+// TimelineCount timeline statistics
+type TimelineCount struct {
+	Date  string `json:"date"`
+	Count int64  `json:"count"`
+}
+
 // OperationStatItem operation statistics item
 type OperationStatItem struct {
 	OperationType string `json:"operation_type" example:"查询"`

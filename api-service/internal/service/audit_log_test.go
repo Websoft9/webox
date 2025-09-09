@@ -12,12 +12,13 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
+	"api-service/internal/config"
 	"api-service/internal/constants"
 	"api-service/internal/dto/request"
 	"api-service/internal/dto/response"
-	"api-service/internal/interface/repository"
 	"api-service/internal/interface/service"
 	"api-service/internal/model"
 	"api-service/pkg/i18n"
@@ -39,17 +40,17 @@ func (m *MockAuditLogRepository) GetByID(ctx context.Context, id uint) (*model.A
 	return args.Get(0).(*model.AuditLog), args.Error(1)
 }
 
-func (m *MockAuditLogRepository) List(ctx context.Context, filter *repository.AuditLogFilter) ([]*model.AuditLog, int64, error) {
+func (m *MockAuditLogRepository) List(ctx context.Context, filter *request.AuditLogFilter) ([]*model.AuditLog, int64, error) {
 	args := m.Called(ctx, filter)
 	return args.Get(0).([]*model.AuditLog), args.Get(1).(int64), args.Error(2)
 }
 
-func (m *MockAuditLogRepository) GetStatistics(ctx context.Context, filter *repository.StatisticsFilter) (*repository.AuditLogStatistics, error) {
+func (m *MockAuditLogRepository) GetStatistics(ctx context.Context, filter *request.StatisticsFilter) (*response.AuditLogStatistics, error) {
 	args := m.Called(ctx, filter)
-	return args.Get(0).(*repository.AuditLogStatistics), args.Error(1)
+	return args.Get(0).(*response.AuditLogStatistics), args.Error(1)
 }
 
-func (m *MockAuditLogRepository) Export(ctx context.Context, filter *repository.AuditLogFilter) ([]*model.AuditLog, error) {
+func (m *MockAuditLogRepository) Export(ctx context.Context, filter *request.AuditLogFilter) ([]*model.AuditLog, error) {
 	args := m.Called(ctx, filter)
 	return args.Get(0).([]*model.AuditLog), args.Error(1)
 }
@@ -215,12 +216,28 @@ func setupAuditLogService() (service.AuditLogService, *MockAuditLogRepository, *
 	mockUserService := &MockUserService{}
 	mockLogger := &MockLogger{}
 
-	// Create mock DB (can be nil for unit tests since we're mocking the repository)
-	var mockDB *gorm.DB
+	// Create test database for export functionality
+	mockDB := setupAuditTestDB()
 
 	// Initialize i18n for testing
 	_ = i18n.Init() // Initialize with default config
 	mockI18n := i18n.NewI18n()
+
+	// Create test configuration
+	testConfig := &config.Config{
+		AuditLog: config.AuditLogConfig{
+			SkipPaths: []string{"/health", "/api/v1/health"},
+			SensitiveGetPaths: []string{
+				"/api/v1/users/profile",
+				"/api/v1/api-tokens",
+				"/api/v1/roles",
+				"/api/v1/permissions",
+				"/api/v1/users/:id/two-factor",
+			},
+			AuditMethods: []string{"POST", "PUT", "DELETE", "PATCH"},
+			SkipMethods:  []string{"OPTIONS", "HEAD"},
+		},
+	}
 
 	// Setup logger mock expectations
 	mockLogger.On("Info", mock.AnythingOfType("string"), mock.Anything).Maybe().Return()
@@ -230,7 +247,7 @@ func setupAuditLogService() (service.AuditLogService, *MockAuditLogRepository, *
 	mockLogger.On("WarnContext", mock.Anything, mock.AnythingOfType("string"), mock.Anything).Maybe().Return()
 	mockLogger.On("ErrorContext", mock.Anything, mock.AnythingOfType("string"), mock.Anything).Maybe().Return()
 
-	auditLogService := NewAuditLogService(mockRepo, mockUserService, mockDB, mockLogger, mockI18n)
+	auditLogService := NewAuditLogService(mockRepo, mockUserService, mockDB, mockLogger, mockI18n, testConfig)
 	return auditLogService, mockRepo, mockUserService, mockLogger
 }
 
@@ -411,7 +428,7 @@ func TestAuditLogService_ListAuditLogs_Success(t *testing.T) {
 	}
 
 	// Mock repository call
-	mockRepo.On("List", ctx, mock.AnythingOfType("*repository.AuditLogFilter")).Return(testLogs, int64(1), nil)
+	mockRepo.On("List", ctx, mock.AnythingOfType("*request.AuditLogFilter")).Return(testLogs, int64(1), nil)
 
 	// Mock user service call for user info
 	userResp := &response.UserResponse{
@@ -442,7 +459,7 @@ func TestAuditLogService_ListAuditLogs_WithDefaults(t *testing.T) {
 	req := &request.ListAuditLogRequest{} // Empty request, should use defaults
 
 	// Mock repository call
-	mockRepo.On("List", ctx, mock.AnythingOfType("*repository.AuditLogFilter")).Return(testLogs, int64(0), nil)
+	mockRepo.On("List", ctx, mock.AnythingOfType("*request.AuditLogFilter")).Return(testLogs, int64(0), nil)
 
 	// Execute
 	result, err := service.ListAuditLogs(ctx, req)
@@ -463,24 +480,24 @@ func TestAuditLogService_GetStatistics_Success(t *testing.T) {
 		GroupBy: "day",
 	}
 
-	mockStats := &repository.AuditLogStatistics{
+	mockStats := &response.AuditLogStatistics{
 		TotalOperations:   100,
 		SuccessOperations: 95,
 		FailedOperations:  5,
 		SuccessRate:       95.0,
-		TopUsers: []repository.UserOperationCount{
+		TopUsers: []response.UserOperationCount{
 			{UserID: 1, Username: "testuser", OperationCount: 50},
 		},
-		TopActions: []repository.ActionCount{
+		TopActions: []response.ActionCount{
 			{Action: "CREATE", Count: 30},
 		},
-		Timeline: []repository.TimelineCount{
+		Timeline: []response.TimelineCount{
 			{Date: "2025-08-28", Count: 25},
 		},
 	}
 
 	// Mock repository call
-	mockRepo.On("GetStatistics", ctx, mock.AnythingOfType("*repository.StatisticsFilter")).Return(mockStats, nil)
+	mockRepo.On("GetStatistics", ctx, mock.AnythingOfType("*request.StatisticsFilter")).Return(mockStats, nil)
 
 	// Execute
 	result, err := service.GetStatistics(ctx, req)
@@ -498,86 +515,67 @@ func TestAuditLogService_GetStatistics_Success(t *testing.T) {
 
 // Tests for ExportAuditLogs
 func TestAuditLogService_ExportAuditLogs_CSV_Success(t *testing.T) {
-	service, mockRepo, _, _ := setupAuditLogService()
+	service, _, _, _ := setupAuditLogService()
 	ctx := context.Background()
 	ginCtx := createTestGinContext()
-	testLogs := []*model.AuditLog{createTestAuditLog()}
 	req := &request.ExportAuditLogRequest{
 		Format: "csv",
 	}
 
-	// Mock repository call
-	mockRepo.On("Export", ctx, mock.AnythingOfType("*repository.AuditLogFilter")).Return(testLogs, nil)
-
 	// Execute
 	data, contentType, err := service.ExportAuditLogs(ctx, ginCtx, req)
 
 	// Assert
 	assert.NoError(t, err)
 	assert.NotNil(t, data)
-	assert.Equal(t, "text/csv; charset=utf-8", contentType)
-	assert.Contains(t, string(data), "ID") // CSV header with i18n key fallback
-	mockRepo.AssertExpectations(t)
+	assert.Equal(t, "application/octet-stream", contentType)
+	assert.Contains(t, string(data), "action,created_at,description") // CSV header with database fields
+	// Mock repository is no longer called since we use DBExporter now
 }
 
 func TestAuditLogService_ExportAuditLogs_JSON_Success(t *testing.T) {
-	service, mockRepo, _, _ := setupAuditLogService()
+	service, _, _, _ := setupAuditLogService()
 	ctx := context.Background()
 	ginCtx := createTestGinContext()
-	testLogs := []*model.AuditLog{createTestAuditLog()}
 	req := &request.ExportAuditLogRequest{
 		Format: "json",
 	}
 
-	// Mock repository call
-	mockRepo.On("Export", ctx, mock.AnythingOfType("*repository.AuditLogFilter")).Return(testLogs, nil)
-
 	// Execute
 	data, contentType, err := service.ExportAuditLogs(ctx, ginCtx, req)
 
 	// Assert
 	assert.NoError(t, err)
 	assert.NotNil(t, data)
-	assert.Equal(t, "application/json", contentType)
-	assert.Contains(t, string(data), `"id":1`) // JSON content
-	mockRepo.AssertExpectations(t)
+	assert.Equal(t, "application/octet-stream", contentType)
+	assert.Contains(t, string(data), `"id": 2`) // JSON content with actual test data (note the space)
 }
 
 func TestAuditLogService_ExportAuditLogs_UnsupportedFormat(t *testing.T) {
-	service, mockRepo, _, _ := setupAuditLogService()
+	service, _, _, _ := setupAuditLogService()
 	ctx := context.Background()
 	ginCtx := createTestGinContext()
 	req := &request.ExportAuditLogRequest{
-		Format: "pdf", // Unsupported format
+		Format: "pdf", // Unsupported format, should default to CSV
 	}
-
-	// Mock Export method to return test data (even though format is unsupported,
-	// the service layer will call Export first)
-	testLogs := []*model.AuditLog{createTestAuditLog()}
-	mockRepo.On("Export", ctx, mock.AnythingOfType("*repository.AuditLogFilter")).Return(testLogs, nil)
 
 	// Execute
 	data, contentType, err := service.ExportAuditLogs(ctx, ginCtx, req)
 
-	// Assert
-	assert.Error(t, err)
-	assert.Nil(t, data)
-	assert.Empty(t, contentType)
-	assert.Contains(t, err.Error(), "unsupported export format")
-	mockRepo.AssertExpectations(t)
+	// Assert - unsupported format defaults to CSV
+	assert.NoError(t, err)
+	assert.NotNil(t, data)
+	assert.Equal(t, "application/octet-stream", contentType)
+	assert.Contains(t, string(data), "action,created_at,description") // CSV header with database fields
 }
 
 func TestAuditLogService_ExportAuditLogs_Excel_Success(t *testing.T) {
-	service, mockRepo, _, _ := setupAuditLogService()
+	service, _, _, _ := setupAuditLogService()
 	ctx := context.Background()
 	ginCtx := createTestGinContext()
-	testLogs := []*model.AuditLog{createTestAuditLog()}
 	req := &request.ExportAuditLogRequest{
 		Format: "excel",
 	}
-
-	// Mock repository call
-	mockRepo.On("Export", ctx, mock.AnythingOfType("*repository.AuditLogFilter")).Return(testLogs, nil)
 
 	// Execute
 	data, contentType, err := service.ExportAuditLogs(ctx, ginCtx, req)
@@ -585,15 +583,40 @@ func TestAuditLogService_ExportAuditLogs_Excel_Success(t *testing.T) {
 	// Assert
 	assert.NoError(t, err)
 	assert.NotEmpty(t, data)
-	assert.Equal(t, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", contentType)
+	assert.Equal(t, "application/octet-stream", contentType)
 
 	// Verify that data is not empty and contains Excel magic bytes
 	assert.True(t, len(data) > 100) // Excel files are typically larger than 100 bytes
 
 	// Check for Excel file signature (first few bytes should indicate it's a zip-based format)
 	assert.Equal(t, "PK", string(data[0:2])) // Excel files start with "PK" (ZIP signature)
+}
 
-	mockRepo.AssertExpectations(t)
+// TestAuditLogService_ExportAuditLogs_DefaultValues tests export with default user ID and start time
+func TestAuditLogService_ExportAuditLogs_DefaultValues(t *testing.T) {
+	service, _, _, _ := setupAuditLogService()
+	ctx := context.Background()
+	ginCtx := createTestGinContext()
+
+	// Set user ID directly in context to simulate authenticated user
+	testUserID := uint(2) // Use existing user ID from test data
+	ginCtx.Set("user_id", testUserID)
+	ginCtx.Set("username", "testuser")
+
+	req := &request.ExportAuditLogRequest{
+		Format: "csv",
+		// UserID and StartTime intentionally left nil to test defaults
+	}
+
+	// Execute
+	data, contentType, err := service.ExportAuditLogs(ctx, ginCtx, req)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.NotNil(t, data)
+	assert.Equal(t, "application/octet-stream", contentType)
+	// Should return CSV header even if no data matches the user filter
+	assert.Contains(t, string(data), "action,created_at,description")
 }
 
 // Tests for CleanupExpiredLogs
@@ -661,7 +684,7 @@ func TestAuditLogService_FullWorkflow(t *testing.T) {
 	assert.Equal(t, "Test User", result.User.Nickname)
 
 	// Step 3: List logs
-	mockRepo.On("List", ctx, mock.AnythingOfType("*repository.AuditLogFilter")).Return([]*model.AuditLog{testLog}, int64(1), nil)
+	mockRepo.On("List", ctx, mock.AnythingOfType("*request.AuditLogFilter")).Return([]*model.AuditLog{testLog}, int64(1), nil)
 
 	listReq := &request.ListAuditLogRequest{Page: 1, PageSize: 20}
 	listResult, err := service.ListAuditLogs(ctx, listReq)
@@ -696,4 +719,100 @@ func BenchmarkAuditLogService_GetAuditLog(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_, _ = service.GetAuditLog(ctx, 1)
 	}
+}
+
+// TestAuditLogService_ConfigurablePaths tests that the audit service uses configurable paths
+func TestAuditLogService_ConfigurablePaths(t *testing.T) {
+	service, _, _, _ := setupAuditLogService()
+	auditService := service.(*auditLogService)
+
+	// Test skip paths from configuration
+	assert.True(t, auditService.ShouldSkipAudit("GET", "/health"))
+	assert.True(t, auditService.ShouldSkipAudit("GET", "/api/v1/health"))
+	assert.False(t, auditService.ShouldSkipAudit("POST", "/api/v1/users"))
+
+	// Test sensitive GET paths from configuration
+	assert.False(t, auditService.ShouldSkipAudit("GET", "/api/v1/users/profile"))
+	assert.False(t, auditService.ShouldSkipAudit("GET", "/api/v1/api-tokens"))
+	assert.False(t, auditService.ShouldSkipAudit("GET", "/api/v1/roles"))
+	assert.False(t, auditService.ShouldSkipAudit("GET", "/api/v1/permissions"))
+
+	// Test audit methods from configuration
+	assert.False(t, auditService.ShouldSkipAudit("POST", "/api/v1/users"))
+	assert.False(t, auditService.ShouldSkipAudit("PUT", "/api/v1/users/1"))
+	assert.False(t, auditService.ShouldSkipAudit("DELETE", "/api/v1/users/1"))
+	assert.False(t, auditService.ShouldSkipAudit("PATCH", "/api/v1/users/1"))
+
+	// Test skip methods from configuration
+	assert.True(t, auditService.ShouldSkipAudit("OPTIONS", "/api/v1/users"))
+	assert.True(t, auditService.ShouldSkipAudit("HEAD", "/api/v1/users"))
+
+	// Test regular GET requests should be skipped
+	assert.True(t, auditService.ShouldSkipAudit("GET", "/api/v1/users"))
+	assert.True(t, auditService.ShouldSkipAudit("GET", "/api/v1/some/random/path"))
+}
+
+// setupAuditTestDB creates an in-memory SQLite database for testing
+func setupAuditTestDB() *gorm.DB {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		panic("failed to connect to test database: " + err.Error())
+	}
+
+	// Auto-migrate the AuditLog model for testing
+	err = db.AutoMigrate(&model.AuditLog{})
+	if err != nil {
+		panic("failed to auto-migrate test database: " + err.Error())
+	}
+
+	// Create some test data for export functionality
+	userID1 := uint(1)
+	userID2 := uint(2)
+	statusCode1 := 201
+	statusCode2 := 200
+	responseTime1 := 100
+	responseTime2 := 150
+
+	testAuditLogs := []*model.AuditLog{
+		{
+			ID:             1,
+			UserID:         &userID1,
+			Username:       "testuser1",
+			Action:         "CREATE",
+			Module:         "USER",
+			ResourceType:   "user",
+			RequestMethod:  "POST",
+			RequestURL:     "/api/v1/users",
+			ResponseStatus: &statusCode1,
+			ResponseTime:   &responseTime1,
+			IPAddress:      "192.168.1.1",
+			UserAgent:      "TestAgent/1.0",
+			Description:    "Created new user",
+			Success:        true,
+			CreatedAt:      time.Now().Add(-24 * time.Hour),
+		},
+		{
+			ID:             2,
+			UserID:         &userID2,
+			Username:       "testuser2",
+			Action:         "UPDATE",
+			Module:         "USER",
+			ResourceType:   "user",
+			RequestMethod:  "PUT",
+			RequestURL:     "/api/v1/users/2",
+			ResponseStatus: &statusCode2,
+			ResponseTime:   &responseTime2,
+			IPAddress:      "192.168.1.2",
+			UserAgent:      "TestAgent/1.0",
+			Description:    "Updated user profile",
+			Success:        true,
+			CreatedAt:      time.Now().Add(-12 * time.Hour),
+		},
+	}
+
+	for _, log := range testAuditLogs {
+		db.Create(log)
+	}
+
+	return db
 }

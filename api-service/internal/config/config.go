@@ -17,6 +17,7 @@ type Config struct {
 	I18n     I18nConfig      `mapstructure:"i18n"`
 	Email    EmailConfigMain `mapstructure:"email"`
 	App      AppConfig       `mapstructure:"app"`
+	AuditLog AuditLogConfig  `mapstructure:"audit_log"`
 }
 
 type ServerConfig struct {
@@ -124,6 +125,14 @@ type SMTPConfigMain struct {
 type AppConfig struct {
 	BaseURL string `mapstructure:"base_url"`
 	Name    string `mapstructure:"name"`
+}
+
+// AuditLogConfig audit log configuration
+type AuditLogConfig struct {
+	SkipPaths         []string `mapstructure:"skip_paths"`
+	SensitiveGetPaths []string `mapstructure:"sensitive_get_paths"`
+	AuditMethods      []string `mapstructure:"audit_methods"`
+	SkipMethods       []string `mapstructure:"skip_methods"`
 }
 
 func Load() (*Config, error) {
@@ -237,4 +246,16 @@ func setDefaults() {
 	// App defaults
 	viper.SetDefault("app.base_url", "http://localhost:3000")
 	viper.SetDefault("app.name", "Websoft9")
+
+	// Audit log defaults
+	viper.SetDefault("audit_log.skip_paths", []string{"/health", "/api/v1/health"})
+	viper.SetDefault("audit_log.sensitive_get_paths", []string{
+		"/api/v1/users/profile",
+		"/api/v1/api-tokens",
+		"/api/v1/roles",
+		"/api/v1/permissions",
+		"/api/v1/users/:id/two-factor",
+	})
+	viper.SetDefault("audit_log.audit_methods", []string{"POST", "PUT", "DELETE", "PATCH"})
+	viper.SetDefault("audit_log.skip_methods", []string{"OPTIONS", "HEAD"})
 }
