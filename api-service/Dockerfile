@@ -28,7 +28,7 @@ COPY go.mod go.sum ./
 # Download dependencies
 RUN go mod download
 
-# Copy source code
+# Copy Source code
 COPY . .
 
 # Building Application
@@ -45,7 +45,7 @@ RUN CGO_ENABLED=1 GOOS=linux go build \
 # Runtime
 FROM alpine:latest
 
-LABEL version="0.1.4"
+LABEL version="0.1.5"
 
 # Declare variables
 ARG INFLUXDB_VERSION
