@@ -23,8 +23,6 @@ type Role struct {
 	IsSystem    bool   `json:"is_system" gorm:"default:false"`
 	SortOrder   int    `json:"sort_order" gorm:"default:0"`
 	Status      int    `json:"status" gorm:"default:1"` // -1:deleted, 0:disabled, 1:enabled
-	CreatedBy   *uint  `json:"created_by" gorm:"index"`
-	UpdatedBy   *uint  `json:"updated_by" gorm:"index"`
 
 	// Associations
 	Permissions []Permission `json:"permissions,omitempty" gorm:"many2many:role_permissions"`
@@ -65,9 +63,9 @@ type Permission struct {
 	UpdatedBy   *uint  `json:"updated_by" gorm:"index"`
 
 	// Associations
-	Parent   *Permission  `json:"parent,omitempty" gorm:"foreignKey:ParentCode"`
-	Children []Permission `json:"children,omitempty" gorm:"foreignKey:ParentCode"`
-	Roles    []Role       `json:"roles,omitempty" gorm:"many2many:role_permissions"`
+	Parent   *Permission   `json:"parent,omitempty" gorm:"foreignKey:ParentCode"`
+	Children []*Permission `json:"children,omitempty" gorm:"foreignKey:ParentCode"`
+	Roles    []Role        `json:"roles,omitempty" gorm:"many2many:role_permissions"`
 
 	// Statistical fields (not mapped to database)
 	RoleCount int64 `json:"role_count,omitempty" gorm:"-"`

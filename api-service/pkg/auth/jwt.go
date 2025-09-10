@@ -2,7 +2,7 @@ package auth
 
 import (
 	"api-service/internal/constants"
-	"errors"
+	"api-service/pkg/errors"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -126,7 +126,7 @@ func (j *JWTAuth) ValidateToken(tokenString string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		// Validate signing method
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errors.New("invalid signing method")
+			return nil, errors.NewAppErrorWithMessage(errors.CodeInvalidParameterFormat, "invalid signing method")
 		}
 		return []byte(j.secretKey), nil
 	}, jwt.WithLeeway(constants.JWTLeewaySeconds*time.Second))
@@ -139,7 +139,7 @@ func (j *JWTAuth) ValidateToken(tokenString string) (*Claims, error) {
 		return claims, nil
 	}
 
-	return nil, errors.New("invalid token")
+	return nil, errors.NewAppErrorWithMessage(errors.CodeValidationFailed, "invalid token")
 }
 
 // RefreshToken refreshes an access token using a refresh token
@@ -147,7 +147,7 @@ func (j *JWTAuth) RefreshToken(refreshTokenString string) (*TokenPair, error) {
 	// Validate refresh token
 	claims, err := j.ValidateToken(refreshTokenString)
 	if err != nil {
-		return nil, errors.New("invalid refresh token")
+		return nil, errors.NewAppErrorWithMessage(errors.CodeValidationFailed, "invalid refresh token")
 	}
 
 	// Generate new token pair
@@ -157,12 +157,12 @@ func (j *JWTAuth) RefreshToken(refreshTokenString string) (*TokenPair, error) {
 // ExtractTokenFromHeader extracts token from Authorization header
 func ExtractTokenFromHeader(authHeader string) (string, error) {
 	if authHeader == "" {
-		return "", errors.New("authorization header is empty")
+		return "", errors.NewAppErrorWithMessage(errors.CodeRequiredParameterMissing, "authorization header is empty")
 	}
 
 	const bearerPrefix = "Bearer "
 	if len(authHeader) < len(bearerPrefix) || authHeader[:len(bearerPrefix)] != bearerPrefix {
-		return "", errors.New("invalid authorization header format")
+		return "", errors.NewAppErrorWithMessage(errors.CodeInvalidParameterFormat, "invalid authorization header format")
 	}
 
 	return authHeader[len(bearerPrefix):], nil

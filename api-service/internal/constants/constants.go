@@ -5,13 +5,36 @@ import "time"
 // HTTP status code constants
 const (
 	StatusOK                  = 200
-	StatusCreated             = 201
-	StatusNoContent           = 204
 	StatusBadRequest          = 400
 	StatusUnauthorized        = 401
 	StatusForbidden           = 403
 	StatusNotFound            = 404
+	StatusConflict            = 409
+	StatusUnprocessableEntity = 422
+	StatusTooManyRequests     = 429
 	StatusInternalServerError = 500
+	StatusBadGateway          = 502
+	StatusServiceUnavailable  = 503
+)
+
+// Standard error codes mapping to HTTP status codes
+const (
+	// Success response
+	SUCCESS = 200
+
+	// Client error responses
+	VALIDATION_ERROR     = 400 // Parameter validation error
+	AUTHENTICATION_ERROR = 401 // Authentication failed
+	AUTHORIZATION_ERROR  = 403 // Insufficient permissions
+	NOT_FOUND_ERROR      = 404 // Resource not found
+	CONFLICT_ERROR       = 409 // Resource conflict
+	BUSINESS_ERROR       = 422 // Business logic error
+	RATE_LIMIT_ERROR     = 429 // Request rate limit exceeded
+
+	// Server error responses
+	INTERNAL_ERROR      = 500 // Internal server error
+	GATEWAY_ERROR       = 502 // Gateway error
+	SERVICE_UNAVAILABLE = 503 // Service unavailable
 )
 
 // Application status constants
@@ -287,9 +310,9 @@ const (
 	DefaultTimeRangeHours = 7 * 24 // Default time range in hours (7 days)
 )
 
-const (
-	ErrInvalidCode        = "invalid code"
-	ErrTokenNotFound      = "token not found"
-	ErrPermissionNotFound = "permission not found"
-	ErrRoleNotFound       = "role not found"
-)
+// const (
+// 	ErrInvalidCode        = "invalid code"
+// 	ErrTokenNotFound      = "token not found"
+// 	ErrPermissionNotFound = "permission not found"
+// 	ErrRoleNotFound       = "role not found"
+// )

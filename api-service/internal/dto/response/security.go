@@ -18,7 +18,6 @@ type RoleResponse struct {
 	UserCount       int64                `json:"user_count,omitempty"`
 	CreatedAt       time.Time            `json:"created_at"`
 	UpdatedAt       time.Time            `json:"updated_at"`
-	CreatedBy       string               `json:"created_by,omitempty"`
 	Permissions     []PermissionResponse `json:"permissions,omitempty"`
 	Users           []UserSimpleResponse `json:"users,omitempty"`
 }
@@ -270,7 +269,7 @@ func ConvertToPermissionResponse(perm *model.Permission) *PermissionResponse {
 	if len(perm.Children) > 0 {
 		resp.Children = make([]PermissionResponse, len(perm.Children))
 		for i := range perm.Children {
-			resp.Children[i] = *ConvertToPermissionResponse(&perm.Children[i])
+			resp.Children[i] = *ConvertToPermissionResponse(perm.Children[i])
 		}
 	}
 

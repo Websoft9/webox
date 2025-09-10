@@ -81,12 +81,6 @@ definitions:
         type: string
       sort_order:
         type: integer
-      status:
-        enum:
-        - -1
-        - 0
-        - 1
-        type: integer
     required:
     - action
     - code
@@ -112,12 +106,6 @@ definitions:
           type: integer
         type: array
       sort_order:
-        type: integer
-      status:
-        enum:
-        - -1
-        - 0
-        - 1
         type: integer
     required:
     - code
@@ -870,6 +858,8 @@ definitions:
         type: string
       description:
         type: string
+      element:
+        type: string
       id:
         type: integer
       is_menu:
@@ -880,8 +870,8 @@ definitions:
         type: string
       name:
         type: string
-      parent_id:
-        type: integer
+      parent_code:
+        type: string
       resource:
         type: string
       role_count:
@@ -913,6 +903,8 @@ definitions:
         type: string
       description:
         type: string
+      element:
+        type: string
       id:
         type: integer
       is_menu:
@@ -923,8 +915,8 @@ definitions:
         type: string
       name:
         type: string
-      parent_id:
-        type: integer
+      parent_code:
+        type: string
       resource:
         type: string
       role_count:
@@ -975,8 +967,6 @@ definitions:
       code:
         type: string
       created_at:
-        type: string
-      created_by:
         type: string
       description:
         type: string
@@ -1532,10 +1522,6 @@ paths:
         in: query
         name: action
         type: string
-      - description: Module Name
-        in: query
-        name: module
-        type: string
       - description: Resource Type
         in: query
         name: resource_type
@@ -1558,10 +1544,6 @@ paths:
         in: query
         name: ip_address
         type: string
-      - description: Success Status
-        in: query
-        name: success
-        type: boolean
       responses:
         "200":
           description: OK
@@ -1638,18 +1620,6 @@ paths:
         in: query
         name: user_id
         type: integer
-      - description: Action Type
-        in: query
-        name: action
-        type: string
-      - description: Module Name
-        in: query
-        name: module
-        type: string
-      - description: Resource Type
-        in: query
-        name: resource_type
-        type: string
       responses:
         "200":
           description: Export File
@@ -2209,6 +2179,8 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
       summary: Get permission list
       tags:
       - Permission Management
@@ -2243,6 +2215,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
       summary: Create permission
       tags:
       - Permission Management
@@ -2272,6 +2246,8 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
       summary: Delete permission
       tags:
       - Permission Management
@@ -2305,6 +2281,8 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
       summary: Get permission details
       tags:
       - Permission Management
@@ -2344,6 +2322,8 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
       summary: Update permission
       tags:
       - Permission Management
@@ -2388,6 +2368,8 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
       summary: Get roles associated with permission
       tags:
       - Permission Management
@@ -2428,6 +2410,8 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
       summary: Get permission tree
       tags:
       - Permission Management
@@ -2485,6 +2469,8 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
       summary: Get role list
       tags:
       - Role Management
@@ -2519,6 +2505,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
       summary: Create role
       tags:
       - Role Management
@@ -2548,6 +2536,8 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
       summary: Delete role
       tags:
       - Role Management
@@ -2581,6 +2571,8 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
       summary: Get role details
       tags:
       - Role Management
@@ -2620,6 +2612,8 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
       summary: Update role
       tags:
       - Role Management
@@ -2655,6 +2649,8 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
       summary: Remove permissions from role
       tags:
       - Role Management
@@ -2689,6 +2685,8 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
       summary: Assign permissions to role
       tags:
       - Role Management
@@ -2733,6 +2731,8 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
       summary: Get users associated with role
       tags:
       - Role Management
@@ -3569,8 +3569,8 @@ paths:
       tags:
       - health
 securityDefinitions:
-  Bearer:
-    description: Type "Bearer" followed by a space and JWT token.
+  BearerAuth:
+    description: Enter the token with the 'Bearer ' prefix, e.g. 'Bearer abc123'
     in: header
     name: Authorization
     type: apiKey

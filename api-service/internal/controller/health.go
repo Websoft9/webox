@@ -2,9 +2,9 @@ package controller
 
 import (
 	"api-service/internal/config"
+	"api-service/pkg/database"
 	"api-service/pkg/redis"
 	"api-service/pkg/response"
-	"api-service/pkg/utils"
 	"net/http"
 	"time"
 
@@ -37,7 +37,7 @@ func (hc *HealthController) DatabaseHealth(c *gin.Context) {
 	start := time.Now()
 
 	// Test database connection
-	err := utils.TestDatabaseConnection(hc.config)
+	err := database.TestDatabaseConnection(hc.config)
 	duration := time.Since(start).Milliseconds()
 
 	if err != nil {
@@ -46,7 +46,7 @@ func (hc *HealthController) DatabaseHealth(c *gin.Context) {
 	}
 
 	// Get database info
-	dbInfo, err := utils.GetDatabaseInfo(hc.config)
+	dbInfo, err := database.GetDatabaseInfo(hc.config)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, "Failed to get database info", err.Error())
 		return
@@ -90,7 +90,7 @@ func (hc *HealthController) SystemHealth(c *gin.Context) {
 
 func (hc *HealthController) checkDatabase(checks map[string]interface{}) bool {
 	dbStart := time.Now()
-	dbErr := utils.TestDatabaseConnection(hc.config)
+	dbErr := database.TestDatabaseConnection(hc.config)
 	dbDuration := time.Since(dbStart).Milliseconds()
 
 	if dbErr != nil {
@@ -102,7 +102,7 @@ func (hc *HealthController) checkDatabase(checks map[string]interface{}) bool {
 		return false
 	}
 
-	dbInfo, _ := utils.GetDatabaseInfo(hc.config)
+	dbInfo, _ := database.GetDatabaseInfo(hc.config)
 	checks["database"] = map[string]interface{}{
 		"status":        "healthy",
 		"response_time": dbDuration,
@@ -145,7 +145,7 @@ func (hc *HealthController) checkInfluxDB(c *gin.Context, checks map[string]inte
 	}
 
 	influxStart := time.Now()
-	influxClient, err := utils.InitInfluxDB(hc.config)
+	influxClient, err := database.InitInfluxDB(hc.config)
 	influxDuration := time.Since(influxStart).Milliseconds()
 
 	if err != nil {
@@ -214,7 +214,7 @@ func (hc *HealthController) finalizeHealthResponse(c *gin.Context, healthData ma
 // @Failure 500 {object} response.Response "Failed to get database statistics"
 // @Router /health/database/stats [get]
 func (hc *HealthController) DatabaseStats(c *gin.Context) {
-	dbInfo, err := utils.GetDatabaseInfo(hc.config)
+	dbInfo, err := database.GetDatabaseInfo(hc.config)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, "Failed to get database statistics", err.Error())
 		return
@@ -249,7 +249,7 @@ func (hc *HealthController) Ping(c *gin.Context) {
 // @Router /readiness [get]
 func (hc *HealthController) Readiness(c *gin.Context) {
 	// Check if database is ready
-	if err := utils.TestDatabaseConnection(hc.config); err != nil {
+	if err := database.TestDatabaseConnection(hc.config); err != nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{
 			"ready":   false,
 			"message": "Database not ready",

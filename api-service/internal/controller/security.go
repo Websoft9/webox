@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"api-service/internal/constants"
 	"api-service/internal/dto/request"
 	"api-service/internal/dto/response"
 	securityInterface "api-service/internal/interface/service"
@@ -141,7 +140,7 @@ func (c *SecurityController) CreateAPIToken(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, gin.H{
 		"success": true,
 		"code":    http.StatusCreated,
-		"message": c.i18n.T(ctx, "api_token.create_success"),
+		"message": c.i18n.T(ctx, "api_token.created_success"),
 		"data":    token,
 	})
 }
@@ -184,30 +183,11 @@ func (c *SecurityController) GetAPIToken(ctx *gin.Context) {
 	// Get API token
 	token, err := c.apiTokenService.GetAPIToken(ctx.Request.Context(), uint(id), userID.(uint))
 	if err != nil {
-		if err.Error() == constants.ErrTokenNotFound {
-			ctx.JSON(http.StatusNotFound, gin.H{
-				"success": false,
-				"code":    http.StatusNotFound,
-				"message": c.i18n.T(ctx, "api_token.not_found"),
-			})
-			return
-		}
-
-		c.logger.ErrorContext(ctx.Request.Context(), "Failed to get API token", logger.ErrorField(err))
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"code":    http.StatusInternalServerError,
-			"message": c.i18n.T(ctx, "api_token.get_failed"),
-		})
+		ResponseWithError(ctx, err, c.logger, c.i18n)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"code":    http.StatusOK,
-		"message": c.i18n.T(ctx, "common.success"),
-		"data":    token,
-	})
+	ResponseOKWithData(ctx, token, "common.success", c.i18n)
 }
 
 // UpdateAPIToken updates API token
@@ -275,31 +255,11 @@ func (c *SecurityController) UpdateAPIToken(ctx *gin.Context) {
 	// Update API token
 	token, err := c.apiTokenService.UpdateAPIToken(ctx.Request.Context(), uint(id), &req, userID.(uint))
 	if err != nil {
-		if err.Error() == constants.ErrTokenNotFound {
-			ctx.JSON(http.StatusNotFound, gin.H{
-				"success": false,
-				"code":    http.StatusNotFound,
-				"message": c.i18n.T(ctx, "api_token.not_found"),
-			})
-			return
-		}
-
-		c.logger.ErrorContext(ctx.Request.Context(), "Failed to update API token", logger.ErrorField(err))
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"code":    http.StatusInternalServerError,
-			"message": c.i18n.T(ctx, "api_token.update_failed"),
-			"error":   err.Error(),
-		})
+		ResponseWithError(ctx, err, c.logger, c.i18n)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"code":    http.StatusOK,
-		"message": c.i18n.T(ctx, "api_token.update_success"),
-		"data":    token,
-	})
+	ResponseOKWithData(ctx, token, "api_token.update_success", c.i18n)
 }
 
 // RevokeAPIToken revokes API token
@@ -340,30 +300,10 @@ func (c *SecurityController) RevokeAPIToken(ctx *gin.Context) {
 	// Revoke API token
 	err = c.apiTokenService.RevokeAPIToken(ctx.Request.Context(), uint(id), userID.(uint))
 	if err != nil {
-		if err.Error() == constants.ErrTokenNotFound {
-			ctx.JSON(http.StatusNotFound, gin.H{
-				"success": false,
-				"code":    http.StatusNotFound,
-				"message": c.i18n.T(ctx, "api_token.not_found"),
-			})
-			return
-		}
-
-		c.logger.ErrorContext(ctx.Request.Context(), "Failed to revoke API token", logger.ErrorField(err))
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"code":    http.StatusInternalServerError,
-			"message": c.i18n.T(ctx, "api_token.revoke_failed"),
-			"error":   err.Error(),
-		})
+		ResponseWithError(ctx, err, c.logger, c.i18n)
 		return
 	}
-
-	ctx.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"code":    http.StatusOK,
-		"message": c.i18n.T(ctx, "api_token.revoke_success"),
-	})
+	ResponseOK(ctx, "api_token.revoke_success", c.i18n)
 }
 
 // RefreshAPIToken refreshes API token
@@ -404,31 +344,10 @@ func (c *SecurityController) RefreshAPIToken(ctx *gin.Context) {
 	// Refresh API token
 	token, err := c.apiTokenService.RefreshAPIToken(ctx.Request.Context(), uint(id), userID.(uint))
 	if err != nil {
-		if err.Error() == constants.ErrTokenNotFound {
-			ctx.JSON(http.StatusNotFound, gin.H{
-				"success": false,
-				"code":    http.StatusNotFound,
-				"message": c.i18n.T(ctx, "api_token.not_found"),
-			})
-			return
-		}
-
-		c.logger.ErrorContext(ctx.Request.Context(), "Failed to refresh API token", logger.ErrorField(err))
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"code":    http.StatusInternalServerError,
-			"message": c.i18n.T(ctx, "api_token.refresh_failed"),
-			"error":   err.Error(),
-		})
+		ResponseWithError(ctx, err, c.logger, c.i18n)
 		return
 	}
-
-	ctx.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"code":    http.StatusOK,
-		"message": c.i18n.T(ctx, "api_token.refresh_success"),
-		"data":    token,
-	})
+	ResponseOKWithData(ctx, token, "api_token.refresh_success", c.i18n)
 }
 
 // ListAPITokens gets API token list
@@ -486,21 +405,10 @@ func (c *SecurityController) ListAPITokens(ctx *gin.Context) {
 	// Get API token list
 	tokens, err := c.apiTokenService.ListAPITokens(ctx.Request.Context(), &req, userID.(uint))
 	if err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Failed to list API tokens", logger.ErrorField(err))
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"code":    http.StatusInternalServerError,
-			"message": c.i18n.T(ctx, "api_token.list_failed"),
-		})
+		ResponseWithError(ctx, err, c.logger, c.i18n)
 		return
 	}
-
-	ctx.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"code":    http.StatusOK,
-		"message": c.i18n.T(ctx, "common.success"),
-		"data":    tokens,
-	})
+	ResponseOKWithData(ctx, tokens, "common.success", c.i18n)
 }
 
 // ValidateAPIToken validates API token
@@ -552,22 +460,10 @@ func (c *SecurityController) ValidateAPIToken(ctx *gin.Context) {
 			})
 			return
 		}
-
-		c.logger.ErrorContext(ctx.Request.Context(), "Failed to validate API token", logger.ErrorField(err))
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"code":    http.StatusInternalServerError,
-			"message": c.i18n.T(ctx, "api_token.validate_failed"),
-		})
+		ResponseWithError(ctx, err, c.logger, c.i18n)
 		return
 	}
-
-	ctx.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"code":    http.StatusOK,
-		"message": c.i18n.T(ctx, "api_token.validate_success"),
-		"data":    validation,
-	})
+	ResponseOKWithData(ctx, validation, "api_token.validate_success", c.i18n)
 }
 
 // BatchRevokeAPITokens batch revokes API tokens
@@ -622,21 +518,10 @@ func (c *SecurityController) BatchRevokeAPITokens(ctx *gin.Context) {
 	// Batch revoke API tokens
 	err := c.apiTokenService.BatchRevokeAPITokens(ctx.Request.Context(), req.IDs, userID.(uint))
 	if err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Failed to batch revoke API tokens", logger.ErrorField(err))
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"code":    http.StatusInternalServerError,
-			"message": c.i18n.T(ctx, "api_token.batch_revoke_failed"),
-			"error":   err.Error(),
-		})
+		ResponseWithError(ctx, err, c.logger, c.i18n)
 		return
 	}
-
-	ctx.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"code":    http.StatusOK,
-		"message": c.i18n.T(ctx, "api_token.batch_revoke_success"),
-	})
+	ResponseOK(ctx, "api_token.batch_revoke_success", c.i18n)
 }
 
 // GetAuthConfig gets authentication config
@@ -652,11 +537,10 @@ func (c *SecurityController) GetAuthConfig(ctx *gin.Context) {
 	// Get auth config
 	config, err := c.authConfigService.GetAuthConfig(ctx.Request.Context())
 	if err != nil {
-		ResponseInternalError(ctx, err, "auth_config.get_failed", c.logger, c.i18n)
+		ResponseWithError(ctx, err, c.logger, c.i18n)
 		return
 	}
-
-	ResponseOK(ctx, config, "common.success", c.i18n)
+	ResponseOKWithData(ctx, config, "common.success", c.i18n)
 }
 
 // UpdateAuthConfig updates authentication config
@@ -681,11 +565,10 @@ func (c *SecurityController) UpdateAuthConfig(ctx *gin.Context) {
 	// Update auth config
 	err := c.authConfigService.UpdateAuthConfig(ctx.Request.Context(), &req)
 	if err != nil {
-		ResponseInternalError(ctx, err, "auth_config.update_failed", c.logger, c.i18n)
+		ResponseWithError(ctx, err, c.logger, c.i18n)
 		return
 	}
-
-	ResponseOK(ctx, nil, "auth_config.update_success", c.i18n)
+	ResponseOK(ctx, "auth_config.update_success", c.i18n)
 }
 
 // GetOAuth2Providers gets OAuth2 providers
@@ -701,11 +584,10 @@ func (c *SecurityController) GetOAuth2Providers(ctx *gin.Context) {
 	// Get OAuth2 providers
 	providers, err := c.authConfigService.GetOAuth2Providers(ctx.Request.Context())
 	if err != nil {
-		ResponseInternalError(ctx, err, "auth_config.oauth2_providers_failed", c.logger, c.i18n)
+		ResponseWithError(ctx, err, c.logger, c.i18n)
 		return
 	}
-
-	ResponseOK(ctx, providers, "common.success", c.i18n)
+	ResponseOKWithData(ctx, providers, "common.success", c.i18n)
 }
 
 // EnableTOTP enables TOTP two-factor authentication
@@ -733,22 +615,10 @@ func (c *SecurityController) EnableTOTP(ctx *gin.Context) {
 	// Enable TOTP
 	setup, err := c.twoFactorService.EnableTOTP(ctx.Request.Context(), userID.(uint))
 	if err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Failed to enable TOTP", logger.ErrorField(err))
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"code":    http.StatusInternalServerError,
-			"message": c.i18n.T(ctx, "two_factor.enable_totp_failed"),
-			"error":   err.Error(),
-		})
+		ResponseWithError(ctx, err, c.logger, c.i18n)
 		return
 	}
-
-	ctx.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"code":    http.StatusOK,
-		"message": c.i18n.T(ctx, "two_factor.enable_totp_success"),
-		"data":    setup,
-	})
+	ResponseOKWithData(ctx, setup, "two_factor.enable_totp_success", c.i18n)
 }
 
 // ConfirmTOTP confirms TOTP setup
@@ -803,31 +673,10 @@ func (c *SecurityController) ConfirmTOTP(ctx *gin.Context) {
 	// Confirm TOTP
 	result, err := c.twoFactorService.ConfirmTOTP(ctx.Request.Context(), userID.(uint), req.Code)
 	if err != nil {
-		if err.Error() == constants.ErrInvalidCode {
-			ctx.JSON(http.StatusBadRequest, gin.H{
-				"success": false,
-				"code":    http.StatusBadRequest,
-				"message": c.i18n.T(ctx, "two_factor.invalid_code"),
-			})
-			return
-		}
-
-		c.logger.ErrorContext(ctx.Request.Context(), "Failed to confirm TOTP", logger.ErrorField(err))
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"code":    http.StatusInternalServerError,
-			"message": c.i18n.T(ctx, "two_factor.confirm_totp_failed"),
-			"error":   err.Error(),
-		})
+		ResponseWithError(ctx, err, c.logger, c.i18n)
 		return
 	}
-
-	ctx.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"code":    http.StatusOK,
-		"message": c.i18n.T(ctx, "two_factor.confirm_totp_success"),
-		"data":    result,
-	})
+	ResponseOKWithData(ctx, result, "two_factor.confirm_totp_success", c.i18n)
 }
 
 // DisableTOTP disables TOTP two-factor authentication
@@ -882,30 +731,10 @@ func (c *SecurityController) DisableTOTP(ctx *gin.Context) {
 	// Disable TOTP
 	err := c.twoFactorService.DisableTOTP(ctx.Request.Context(), userID.(uint), req.Code)
 	if err != nil {
-		if err.Error() == constants.ErrInvalidCode {
-			ctx.JSON(http.StatusBadRequest, gin.H{
-				"success": false,
-				"code":    http.StatusBadRequest,
-				"message": c.i18n.T(ctx, "two_factor.invalid_code"),
-			})
-			return
-		}
-
-		c.logger.ErrorContext(ctx.Request.Context(), "Failed to disable TOTP", logger.ErrorField(err))
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"code":    http.StatusInternalServerError,
-			"message": c.i18n.T(ctx, "two_factor.disable_totp_failed"),
-			"error":   err.Error(),
-		})
+		ResponseWithError(ctx, err, c.logger, c.i18n)
 		return
 	}
-
-	ctx.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"code":    http.StatusOK,
-		"message": c.i18n.T(ctx, "two_factor.disable_totp_success"),
-	})
+	ResponseOK(ctx, "two_factor.disable_totp_success", c.i18n)
 }
 
 // EnableEmailTwoFactor enables email two-factor authentication
@@ -960,21 +789,10 @@ func (c *SecurityController) EnableEmailTwoFactor(ctx *gin.Context) {
 	// Enable email two-factor
 	err := c.twoFactorService.EnableEmailTwoFactor(ctx.Request.Context(), userID.(uint), req.Email)
 	if err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Failed to enable email 2FA", logger.ErrorField(err))
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"code":    http.StatusInternalServerError,
-			"message": c.i18n.T(ctx, "two_factor.enable_email_failed"),
-			"error":   err.Error(),
-		})
+		ResponseWithError(ctx, err, c.logger, c.i18n)
 		return
 	}
-
-	ctx.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"code":    http.StatusOK,
-		"message": c.i18n.T(ctx, "two_factor.enable_email_success"),
-	})
+	ResponseOK(ctx, "two_factor.enable_email_success", c.i18n)
 }
 
 // DisableEmailTwoFactor disables email two-factor authentication
@@ -1002,21 +820,10 @@ func (c *SecurityController) DisableEmailTwoFactor(ctx *gin.Context) {
 	// Disable email two-factor
 	err := c.twoFactorService.DisableEmailTwoFactor(ctx.Request.Context(), userID.(uint))
 	if err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Failed to disable email 2FA", logger.ErrorField(err))
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"code":    http.StatusInternalServerError,
-			"message": c.i18n.T(ctx, "two_factor.disable_email_failed"),
-			"error":   err.Error(),
-		})
+		ResponseWithError(ctx, err, c.logger, c.i18n)
 		return
 	}
-
-	ctx.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"code":    http.StatusOK,
-		"message": c.i18n.T(ctx, "two_factor.disable_email_success"),
-	})
+	ResponseOK(ctx, "two_factor.disable_email_success", c.i18n)
 }
 
 // SendEmailCode sends email verification code
@@ -1044,21 +851,10 @@ func (c *SecurityController) SendEmailCode(ctx *gin.Context) {
 	// Send email code
 	err := c.twoFactorService.SendEmailCode(ctx.Request.Context(), userID.(uint))
 	if err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Failed to send email code", logger.ErrorField(err))
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"code":    http.StatusInternalServerError,
-			"message": c.i18n.T(ctx, "two_factor.send_email_code_failed"),
-			"error":   err.Error(),
-		})
+		ResponseWithError(ctx, err, c.logger, c.i18n)
 		return
 	}
-
-	ctx.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"code":    http.StatusOK,
-		"message": c.i18n.T(ctx, "two_factor.send_email_code_success"),
-	})
+	ResponseOK(ctx, "two_factor.send_email_code_success", c.i18n)
 }
 
 // VerifyTwoFactor verifies two-factor authentication code
@@ -1110,23 +906,10 @@ func (c *SecurityController) VerifyTwoFactor(ctx *gin.Context) {
 			})
 			return
 		}
-
-		c.logger.ErrorContext(ctx.Request.Context(), "Failed to verify 2FA code", logger.ErrorField(err))
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"code":    http.StatusInternalServerError,
-			"message": c.i18n.T(ctx, "two_factor.verify_failed"),
-			"error":   err.Error(),
-		})
+		ResponseWithError(ctx, err, c.logger, c.i18n)
 		return
 	}
-
-	ctx.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"code":    http.StatusOK,
-		"message": c.i18n.T(ctx, "two_factor.verify_success"),
-		"data":    result,
-	})
+	ResponseOKWithData(ctx, result, "two_factor.verify_success", c.i18n)
 }
 
 // GetTwoFactorStatus gets user's two-factor authentication status
@@ -1153,21 +936,10 @@ func (c *SecurityController) GetTwoFactorStatus(ctx *gin.Context) {
 	// Get two-factor status
 	status, err := c.twoFactorService.GetTwoFactorStatus(ctx.Request.Context(), userID.(uint))
 	if err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Failed to get 2FA status", logger.ErrorField(err))
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"code":    http.StatusInternalServerError,
-			"message": c.i18n.T(ctx, "two_factor.status_failed"),
-		})
+		ResponseWithError(ctx, err, c.logger, c.i18n)
 		return
 	}
-
-	ctx.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"code":    http.StatusOK,
-		"message": c.i18n.T(ctx, "common.success"),
-		"data":    status,
-	})
+	ResponseOKWithData(ctx, status, "common.success", c.i18n)
 }
 
 // GenerateBackupCodes generates backup codes for two-factor authentication
@@ -1195,22 +967,10 @@ func (c *SecurityController) GenerateBackupCodes(ctx *gin.Context) {
 	// Generate backup codes
 	codes, err := c.twoFactorService.GenerateBackupCodes(ctx.Request.Context(), userID.(uint))
 	if err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Failed to generate backup codes", logger.ErrorField(err))
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"code":    http.StatusInternalServerError,
-			"message": c.i18n.T(ctx, "two_factor.backup_codes_failed"),
-			"error":   err.Error(),
-		})
+		ResponseWithError(ctx, err, c.logger, c.i18n)
 		return
 	}
-
-	ctx.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"code":    http.StatusOK,
-		"message": c.i18n.T(ctx, "two_factor.backup_codes_success"),
-		"data":    codes,
-	})
+	ResponseOKWithData(ctx, codes, "two_factor.backup_codes_success", c.i18n)
 }
 
 // DisableTwoFactor disables two-factor authentication
@@ -1247,11 +1007,10 @@ func (c *SecurityController) DisableTwoFactor(ctx *gin.Context) {
 	// Disable two-factor authentication
 	err := c.twoFactorService.DisableEmailTwoFactor(ctx.Request.Context(), userID)
 	if err != nil {
-		ResponseInternalError(ctx, err, "two_factor.disable_failed", c.logger, c.i18n)
+		ResponseWithError(ctx, err, c.logger, c.i18n)
 		return
 	}
-
-	ResponseOK(ctx, nil, "two_factor.disable_success", c.i18n)
+	ResponseOK(ctx, "two_factor.disable_success", c.i18n)
 }
 
 // GenerateTOTPSecret generates TOTP secret
@@ -1288,9 +1047,8 @@ func (c *SecurityController) GenerateTOTPSecret(ctx *gin.Context) {
 	// Generate TOTP secret
 	setup, err := c.twoFactorService.EnableTOTP(ctx.Request.Context(), userID)
 	if err != nil {
-		ResponseInternalError(ctx, err, "two_factor.totp_generate_failed", c.logger, c.i18n)
+		ResponseWithError(ctx, err, c.logger, c.i18n)
 		return
 	}
-
-	ResponseOK(ctx, setup, "two_factor.totp_generate_success", c.i18n)
+	ResponseOKWithData(ctx, setup, "two_factor.totp_generate_success", c.i18n)
 }

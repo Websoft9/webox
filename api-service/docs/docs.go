@@ -519,12 +519,6 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Module Name",
-                        "name": "module",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
                         "description": "Resource Type",
                         "name": "resource_type",
                         "in": "query"
@@ -553,12 +547,6 @@ const docTemplate = `{
                         "type": "string",
                         "description": "IP Address",
                         "name": "ip_address",
-                        "in": "query"
-                    },
-                    {
-                        "type": "boolean",
-                        "description": "Success Status",
-                        "name": "success",
                         "in": "query"
                     }
                 ],
@@ -627,24 +615,6 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "User ID",
                         "name": "user_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Action Type",
-                        "name": "action",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Module Name",
-                        "name": "module",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Resource Type",
-                        "name": "resource_type",
                         "in": "query"
                     }
                 ],
@@ -1483,6 +1453,11 @@ const docTemplate = `{
         },
         "/api/v1/permissions": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Get paginated permission list",
                 "consumes": [
                     "application/json"
@@ -1585,6 +1560,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Create a new permission",
                 "consumes": [
                     "application/json"
@@ -1643,6 +1623,11 @@ const docTemplate = `{
         },
         "/api/v1/permissions/tree": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Get permission tree structure",
                 "consumes": [
                     "application/json"
@@ -1707,6 +1692,11 @@ const docTemplate = `{
         },
         "/api/v1/permissions/{id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Get permission details by ID",
                 "consumes": [
                     "application/json"
@@ -1761,6 +1751,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Update permission information",
                 "consumes": [
                     "application/json"
@@ -1824,6 +1819,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Delete specified permission",
                 "consumes": [
                     "application/json"
@@ -1868,6 +1868,11 @@ const docTemplate = `{
         },
         "/api/v1/permissions/{id}/roles": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Get list of roles associated with specified permission",
                 "consumes": [
                     "application/json"
@@ -1938,6 +1943,11 @@ const docTemplate = `{
         },
         "/api/v1/roles": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Get paginated role list",
                 "consumes": [
                     "application/json"
@@ -2024,6 +2034,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Create a new role",
                 "consumes": [
                     "application/json"
@@ -2082,6 +2097,11 @@ const docTemplate = `{
         },
         "/api/v1/roles/{id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Get role details by ID",
                 "consumes": [
                     "application/json"
@@ -2136,6 +2156,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Update role information",
                 "consumes": [
                     "application/json"
@@ -2199,6 +2224,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Delete specified role",
                 "consumes": [
                     "application/json"
@@ -2243,6 +2273,11 @@ const docTemplate = `{
         },
         "/api/v1/roles/{id}/permissions": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Assign permissions to specified role",
                 "consumes": [
                     "application/json"
@@ -2294,6 +2329,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Remove permissions from specified role",
                 "consumes": [
                     "application/json"
@@ -2347,6 +2387,11 @@ const docTemplate = `{
         },
         "/api/v1/roles/{id}/users": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Get list of users associated with specified role",
                 "consumes": [
                     "application/json"
@@ -3858,14 +3903,6 @@ const docTemplate = `{
                 },
                 "sort_order": {
                     "type": "integer"
-                },
-                "status": {
-                    "type": "integer",
-                    "enum": [
-                        -1,
-                        0,
-                        1
-                    ]
                 }
             }
         },
@@ -3898,14 +3935,6 @@ const docTemplate = `{
                 },
                 "sort_order": {
                     "type": "integer"
-                },
-                "status": {
-                    "type": "integer",
-                    "enum": [
-                        -1,
-                        0,
-                        1
-                    ]
                 }
             }
         },
@@ -4983,6 +5012,9 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
+                "element": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer"
                 },
@@ -4998,8 +5030,8 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
-                "parent_id": {
-                    "type": "integer"
+                "parent_code": {
+                    "type": "string"
                 },
                 "resource": {
                     "type": "string"
@@ -5048,6 +5080,9 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
+                "element": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer"
                 },
@@ -5063,8 +5098,8 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
-                "parent_id": {
-                    "type": "integer"
+                "parent_code": {
+                    "type": "string"
                 },
                 "resource": {
                     "type": "string"
@@ -5140,9 +5175,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "created_at": {
-                    "type": "string"
-                },
-                "created_by": {
                     "type": "string"
                 },
                 "description": {
@@ -5497,8 +5529,8 @@ const docTemplate = `{
         }
     },
     "securityDefinitions": {
-        "Bearer": {
-            "description": "Type \"Bearer\" followed by a space and JWT token.",
+        "BearerAuth": {
+            "description": "Enter the token with the 'Bearer ' prefix, e.g. 'Bearer abc123'",
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"
