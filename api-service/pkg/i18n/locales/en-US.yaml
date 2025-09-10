@@ -34,6 +34,12 @@ user:
   verification_token_expired: "Verification token has expired"
   password_reset_token_expired: "Password reset token has expired"
 
+user_profile:
+  get_success: "User profile retrieved successfully"
+  update_success: "User profile updated successfully"
+  update_failed: "Failed to update user profile"
+  not_found: "User profile not found"
+
 # Role module messages
 role:
   not_found: "Role not found"
