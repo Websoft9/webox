@@ -18,6 +18,7 @@ import (
 type Controllers struct {
 	UserController           *controller.UserController
 	UserAuthController       *controller.UserAuthController
+	UserProfileController    *controller.UserProfileController
 	I18nController           *controller.I18nController
 	RolePermissionController *controller.RolePermissionController
 	SecurityController       *controller.SecurityController
@@ -134,6 +135,7 @@ func setupAPIRoutes(v1 *gin.RouterGroup, controllers *Controllers) {
 	setupUserAuthRoutes(v1, controllers.UserAuthController)
 	setupI18nRoutes(v1, controllers.I18nController)
 	setupUserRoutes(protected, controllers.UserController)
+	setupUserProfileRoutes(protected, controllers.UserProfileController)
 	setupRoleRoutes(protected, controllers.RolePermissionController)
 	setupPermissionRoutes(protected, controllers.RolePermissionController)
 	setupAPITokenRoutes(protected, controllers.SecurityController)
@@ -278,4 +280,16 @@ func setupAuditLogRoutes(protected *gin.RouterGroup, auditLogController *control
 	auditLogs.GET("/:id", auditLogController.GetAuditLog)
 	auditLogs.GET("/statistics", auditLogController.GetAuditLogStatistics)
 	auditLogs.GET("/export", auditLogController.ExportAuditLogs)
+}
+
+// setupUserProfileRoutes sets up user profile routes
+func setupUserProfileRoutes(protected *gin.RouterGroup, userProfileController *controller.UserProfileController) {
+	if userProfileController == nil {
+		return
+	}
+
+	// User profile routes
+	protected.GET("/api/v1/profile", userProfileController.GetProfile)
+	protected.PUT("/api/v1/profile", userProfileController.UpdateProfile)
+	protected.PUT("/api/v1/profile/password", userProfileController.ChangePassword)
 }
