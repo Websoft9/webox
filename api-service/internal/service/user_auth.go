@@ -195,7 +195,7 @@ func (s *userAuthService) Register(ctx context.Context, req *request.UserRegiste
 	// 1. Validate email format
 	if err := validator.ValidateEmail(req.Username); err != nil {
 		s.logger.WarnContext(ctx, "Invalid email format", logger.String("email", req.Username))
-		return nil, errors.ErrInvalidEmail
+		return nil, errors.ErrInvalidEmailFormat
 	}
 
 	// 2. Validate password strength
@@ -208,7 +208,7 @@ func (s *userAuthService) Register(ctx context.Context, req *request.UserRegiste
 	exists, err := s.userRepo.ExistsByEmail(ctx, req.Username)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to check email existence", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, "common.internal_error")
+		return nil, errors.ErrInternalError
 	}
 	if exists {
 		return nil, errors.ErrEmailAlreadyExists
@@ -233,7 +233,7 @@ func (s *userAuthService) Register(ctx context.Context, req *request.UserRegiste
 	err = s.userRepo.Create(ctx, user)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to create user", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, "common.internal_error")
+		return nil, errors.ErrInternalError
 	}
 
 	// 7. Set email verification lock in Redis to prevent duplicate verification attempts
@@ -281,7 +281,7 @@ func (s *userAuthService) Login(ctx context.Context, req *request.UserLoginReque
 			return nil, errors.ErrInvalidCredentials
 		}
 		s.logger.ErrorContext(ctx, "Failed to find user", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, "common.internal_error")
+		return nil, errors.ErrInternalError
 	}
 
 	// 3. Check if user has pending email verification
@@ -310,14 +310,14 @@ func (s *userAuthService) Login(ctx context.Context, req *request.UserLoginReque
 	// 5. Check user status
 	if user.Status != UserStatusActive {
 		s.logger.WarnContext(ctx, "User account is inactive", logger.String("email", req.Username))
-		return nil, errors.ErrUserInactive
+		return nil, errors.ErrAccountDisabled
 	}
 
 	// 6. Generate JWT token using configured expiration time
 	token, expiresAt, err := s.generateJWTTokenWithAuthConfig(user.ID, user.Username, "user")
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to generate JWT token", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, "common.internal_error")
+		return nil, errors.ErrInternalError
 	}
 
 	// 7. Store JWT token in database and Redis cache (according to security design)
@@ -354,7 +354,7 @@ func (s *userAuthService) ForgotPassword(ctx context.Context, req *request.Forgo
 	// 1. Validate email format
 	if err := validator.ValidateEmail(req.Username); err != nil {
 		s.logger.WarnContext(ctx, "Invalid email format", logger.String("email", req.Username))
-		return errors.ErrInvalidEmail
+		return errors.ErrInvalidEmailFormat
 	}
 
 	// 2. Check if user exists
@@ -366,7 +366,7 @@ func (s *userAuthService) ForgotPassword(ctx context.Context, req *request.Forgo
 			return nil
 		}
 		s.logger.ErrorContext(ctx, "Failed to find user", logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeInternalError, "common.internal_error")
+		return errors.ErrInternalError
 	}
 
 	// 3. Check user status
@@ -380,13 +380,13 @@ func (s *userAuthService) ForgotPassword(ctx context.Context, req *request.Forgo
 	resetToken, err := s.generateVerificationToken(ctx, req.Username, "password_reset")
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to generate reset token", logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeInternalError, "common.internal_error")
+		return errors.ErrInternalError
 	}
 
 	// 5. Send password reset email
 	if err := s.emailService.SendPasswordResetEmail(ctx, req.Username, resetToken.Token, s.config.App.BaseURL, user.Language); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to send password reset email", logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeInternalError, "common.internal_error")
+		return errors.ErrInternalError
 	}
 
 	s.logger.InfoContext(ctx, "Password reset email sent successfully", logger.String("email", req.Username))
@@ -440,10 +440,10 @@ func (s *userAuthService) ResetPassword(ctx context.Context, req *request.ResetP
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			s.logger.WarnContext(ctx, "User not found for password reset", logger.String("email", verificationToken.Email))
-			return errors.ErrUserNotFound
+			return errors.ErrRecordNotFound
 		}
 		s.logger.ErrorContext(ctx, "Failed to find user", logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeInternalError, "common.internal_error")
+		return errors.ErrInternalError
 	}
 
 	// 4. Update password
@@ -452,7 +452,7 @@ func (s *userAuthService) ResetPassword(ctx context.Context, req *request.ResetP
 
 	if err := s.userRepo.Update(ctx, user); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to update password", logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeInternalError, "common.internal_error")
+		return errors.ErrInternalError
 	}
 
 	// 5. Mark token as used
@@ -489,10 +489,10 @@ func (s *userAuthService) VerifyEmail(ctx context.Context, req *request.VerifyEm
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			s.logger.WarnContext(ctx, "User not found for email verification", logger.String("email", verificationToken.Email))
-			return errors.ErrUserNotFound
+			return errors.ErrRecordNotFound
 		}
 		s.logger.ErrorContext(ctx, "Failed to find user", logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeInternalError, "common.internal_error")
+		return errors.ErrInternalError
 	}
 
 	// 3. Check if user has pending email verification lock
@@ -504,7 +504,7 @@ func (s *userAuthService) VerifyEmail(ctx context.Context, req *request.VerifyEm
 	} else if !hasLock {
 		s.logger.InfoContext(ctx, "User does not have pending email verification, may be already verified",
 			logger.String("email", verificationToken.Email))
-		return errors.NewAppErrorWithI18n(errors.CodeValidationError, "Email already verified", "user.email_already_verified")
+		return errors.ErrValidationFailed
 	}
 
 	// 4. Update user status
@@ -514,7 +514,7 @@ func (s *userAuthService) VerifyEmail(ctx context.Context, req *request.VerifyEm
 
 	if err := s.userRepo.Update(ctx, user); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to update email verification status", logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeInternalError, "common.internal_error")
+		return errors.ErrInternalError
 	}
 
 	// 5. Mark token as used
@@ -544,7 +544,7 @@ func (s *userAuthService) ResendVerificationEmail(ctx context.Context, req *requ
 	// 1. Validate email format
 	if err := validator.ValidateEmail(req.Username); err != nil {
 		s.logger.WarnContext(ctx, "Invalid email format", logger.String("email", req.Username))
-		return errors.ErrInvalidEmail
+		return errors.ErrInvalidEmailFormat
 	}
 
 	// 2. Find user
@@ -552,10 +552,10 @@ func (s *userAuthService) ResendVerificationEmail(ctx context.Context, req *requ
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			s.logger.WarnContext(ctx, "User not found for resend verification", logger.String("email", req.Username))
-			return errors.ErrUserNotFound
+			return errors.ErrRecordNotFound
 		}
 		s.logger.ErrorContext(ctx, "Failed to find user", logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeInternalError, "common.internal_error")
+		return errors.ErrInternalError
 	}
 
 	// 3. Check if user has pending email verification lock
@@ -567,20 +567,20 @@ func (s *userAuthService) ResendVerificationEmail(ctx context.Context, req *requ
 	} else if !hasLock {
 		s.logger.InfoContext(ctx, "User does not have pending email verification, may be already verified",
 			logger.String("email", req.Username))
-		return errors.NewAppErrorWithI18n(errors.CodeValidationError, "Email already verified", "user.email_already_verified")
+		return errors.ErrValidationFailed
 	}
 
 	// 4. Generate new verification token
 	verificationToken, err := s.generateVerificationToken(ctx, req.Username, "email_verification")
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to generate verification token", logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeInternalError, "common.internal_error")
+		return errors.ErrInternalError
 	}
 
 	// 5. Send verification email
 	if err := s.emailService.SendVerificationEmail(ctx, req.Username, verificationToken.Token, s.config.App.BaseURL, user.Language); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to send verification email", logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeInternalError, "common.internal_error")
+		return errors.ErrInternalError
 	}
 
 	s.logger.InfoContext(ctx, "Verification email resent successfully", logger.String("email", req.Username))
@@ -595,27 +595,27 @@ func (s *userAuthService) OAuth2Login(ctx context.Context, req *request.OAuth2Lo
 	// Check if OAuth2 service is available
 	if s.oauth2Service == nil {
 		s.logger.ErrorContext(ctx, "OAuth2 service not available")
-		return nil, errors.NewAppError(errors.CodeInternalError, "common.internal_error")
+		return nil, errors.ErrInternalError
 	}
 
 	// 1. Validate state parameter (prevent CSRF attacks)
 	if err := s.oauth2Service.ValidateState(ctx, req.State, req.State); err != nil {
 		s.logger.WarnContext(ctx, "OAuth2 state validation failed", logger.ErrorField(err))
-		return nil, errors.NewAppError(errors.CodeValidationError, "common.validation_failed")
+		return nil, errors.ErrValidationFailed
 	}
 
 	// 2. Exchange authorization code for access token
 	tokenResp, err := s.oauth2Service.ExchangeCodeForToken(ctx, req.Provider, req.Code)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to exchange OAuth2 code for token", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, "common.internal_error")
+		return nil, errors.ErrInternalError
 	}
 
 	// 3. Get user information
 	userInfo, err := s.oauth2Service.GetUserInfo(ctx, req.Provider, tokenResp.AccessToken)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to get OAuth2 user info", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, "common.internal_error")
+		return nil, errors.ErrInternalError
 	}
 
 	// 4. Find or create user
@@ -628,14 +628,14 @@ func (s *userAuthService) OAuth2Login(ctx context.Context, req *request.OAuth2Lo
 	// 5. Check user status
 	if user.Status != UserStatusActive {
 		s.logger.WarnContext(ctx, "OAuth2 user account is inactive", logger.String("email", user.Email))
-		return nil, errors.ErrUserInactive
+		return nil, errors.ErrAccountDisabled
 	}
 
 	// 6. Generate JWT token using configured expiration time
 	token, expiresAt, err := s.generateJWTTokenWithAuthConfig(user.ID, user.Username, "user")
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to generate JWT token", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, "common.internal_error")
+		return nil, errors.ErrInternalError
 	}
 
 	// 7. Store JWT token in database and Redis cache (according to security design)
@@ -707,7 +707,7 @@ func (s *userAuthService) findOrCreateOAuth2User(ctx context.Context, userInfo *
 	autoRegister := true // 临时硬编码，应该从OAuth2配置中获取
 
 	if !autoRegister {
-		return nil, errors.NewAppErrorWithI18n(errors.CodeUserNotFound, "User not found and auto-registration disabled", "user.auto_registration_disabled")
+		return nil, errors.NewAppErrorWithI18n(errors.CodeRecordNotFound, "User not found and auto-registration disabled", "user.auto_registration_disabled")
 	}
 
 	// 3. 创建新用户

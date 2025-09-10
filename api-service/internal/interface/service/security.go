@@ -25,9 +25,6 @@ type RoleService interface {
 
 	// Batch operations
 	BatchUpdateRoleStatus(ctx context.Context, ids []uint, status int) error
-
-	// Initialize system roles
-	InitializeSystemRoles(ctx context.Context) error
 }
 
 // PermissionService permission service interface
@@ -49,9 +46,6 @@ type PermissionService interface {
 
 	// Batch operations
 	BatchUpdatePermissionStatus(ctx context.Context, ids []uint, status int) error
-
-	// Initialize system permissions
-	InitializeSystemPermissions(ctx context.Context) error
 }
 
 // APITokenService API token service interface

@@ -6,18 +6,13 @@ import (
 	"api-service/internal/interface/repository"
 	"api-service/internal/interface/service"
 	"api-service/internal/model"
+	"api-service/pkg/errors"
 	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
 	"context"
 	"math"
 
-	"github.com/pkg/errors"
 	"gorm.io/gorm"
-)
-
-const (
-	RoleManagementSortOrder       = 2
-	PermissionManagementSortOrder = 3
 )
 
 type permissionService struct {
@@ -51,12 +46,12 @@ func (s *permissionService) CreatePermission(ctx context.Context, req *request.C
 
 	// Check if permission code already exists
 	existing, err := s.permissionRepo.GetByCode(ctx, req.Code)
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+	if err != nil && !errors.Is(err, errors.ErrRecordNotFound) {
 		s.logger.ErrorContext(ctx, "Failed to check existing permission", logger.ErrorField(err))
-		return nil, errors.Wrap(err, "failed to check existing permission")
+		return nil, err
 	}
 	if existing != nil {
-		return nil, errors.New("permission code already exists")
+		return nil, errors.NewAppErrorWithMessage(errors.CodeResourceAlreadyExists, "permission code already exists")
 	}
 
 	// Get parent code if ParentID is provided
@@ -64,7 +59,7 @@ func (s *permissionService) CreatePermission(ctx context.Context, req *request.C
 	if req.ParentID != nil {
 		parent, err := s.permissionRepo.GetByID(ctx, *req.ParentID)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to get parent permission")
+			return nil, err
 		}
 		parentCode = parent.Code
 	}
@@ -82,14 +77,14 @@ func (s *permissionService) CreatePermission(ctx context.Context, req *request.C
 		IsSystem:    false,
 		IsMenu:      req.IsMenu,
 		SortOrder:   req.SortOrder,
-		Status:      req.Status,
+		Status:      1,
 		CreatedBy:   &createdBy,
 		UpdatedBy:   &createdBy,
 	}
 
 	if err := s.permissionRepo.Create(ctx, permission); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to create permission", logger.ErrorField(err))
-		return nil, errors.Wrap(err, "failed to create permission")
+		return nil, err
 	}
 
 	s.logger.InfoContext(ctx, "Permission created successfully",
@@ -107,11 +102,8 @@ func (s *permissionService) GetPermission(ctx context.Context, id uint) (*respon
 
 	permission, err := s.permissionRepo.GetByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("permission not found")
-		}
 		s.logger.ErrorContext(ctx, "Failed to get permission", logger.ErrorField(err))
-		return nil, errors.Wrap(err, "failed to get permission")
+		return nil, err
 	}
 
 	return response.ConvertToPermissionResponse(permission), nil
@@ -127,16 +119,13 @@ func (s *permissionService) UpdatePermission(ctx context.Context, id uint, req *
 	// Get existing permission
 	permission, err := s.permissionRepo.GetByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("permission not found")
-		}
 		s.logger.ErrorContext(ctx, "Failed to get permission", logger.ErrorField(err))
-		return nil, errors.Wrap(err, "failed to get permission")
+		return nil, err
 	}
 
 	// Check if it's a system permission
 	if permission.IsSystem {
-		return nil, errors.New("cannot update system permission")
+		return nil, errors.NewAppErrorWithMessage(errors.CodeRecordUpdateFailed, "cannot update system permission")
 	}
 
 	// Update fields
@@ -152,7 +141,7 @@ func (s *permissionService) UpdatePermission(ctx context.Context, id uint, req *
 
 	if err := s.permissionRepo.Update(ctx, permission); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to update permission", logger.ErrorField(err))
-		return nil, errors.Wrap(err, "failed to update permission")
+		return nil, err
 	}
 
 	s.logger.InfoContext(ctx, "Permission updated successfully",
@@ -171,31 +160,27 @@ func (s *permissionService) DeletePermission(ctx context.Context, id uint) error
 	// Get existing permission
 	permission, err := s.permissionRepo.GetByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("permission not found")
-		}
 		s.logger.ErrorContext(ctx, "Failed to get permission", logger.ErrorField(err))
-		return errors.Wrap(err, "failed to get permission")
+		return err
 	}
 
 	// Check if it's a system permission
 	if permission.IsSystem {
-		return errors.New("cannot delete system permission")
+		return errors.NewAppErrorWithMessage(errors.CodeRecordDeleteFailed, "cannot delete system permission")
 	}
 
 	// Check if permission has associated roles
 	roleCount, err := s.permissionRepo.CountRoles(ctx, id)
 	if err != nil {
-		s.logger.ErrorContext(ctx, "Failed to count permission roles", logger.ErrorField(err))
-		return errors.Wrap(err, "failed to count permission roles")
+		return err
 	}
 	if roleCount > 0 {
-		return errors.New("permission has associated roles and cannot be deleted")
+		return errors.NewAppErrorWithMessage(errors.CodeResourceInUse, "permission has associated roles and cannot be deleted")
 	}
 
 	if err := s.permissionRepo.Delete(ctx, id); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to delete permission", logger.ErrorField(err))
-		return errors.Wrap(err, "failed to delete permission")
+		return err
 	}
 
 	s.logger.InfoContext(ctx, "Permission deleted successfully",
@@ -213,7 +198,7 @@ func (s *permissionService) ListPermissions(ctx context.Context, req *request.Li
 	permissions, total, err := s.permissionRepo.List(ctx, req)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to list permissions", logger.ErrorField(err))
-		return nil, errors.Wrap(err, "failed to list permissions")
+		return nil, err
 	}
 
 	// Convert to response format
@@ -243,7 +228,7 @@ func (s *permissionService) GetPermissionTree(ctx context.Context, req *request.
 	permissions, err := s.permissionRepo.GetTree(ctx, req)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to get permission tree", logger.ErrorField(err))
-		return nil, errors.Wrap(err, "failed to get permission tree")
+		return nil, err
 	}
 
 	tree := response.ConvertToPermissionTreeResponse(permissions)
@@ -260,7 +245,7 @@ func (s *permissionService) GetPermissionRoles(ctx context.Context, id uint, pag
 	roles, total, err := s.permissionRepo.GetRoles(ctx, id, page, pageSize)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to get permission roles", logger.ErrorField(err))
-		return nil, errors.Wrap(err, "failed to get permission roles")
+		return nil, err
 	}
 
 	// Convert to response format
@@ -293,7 +278,7 @@ func (s *permissionService) CheckUserPermission(ctx context.Context, userID uint
 	hasPermission, err := s.permissionRepo.CheckUserPermission(ctx, userID, resource, action)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to check user permission", logger.ErrorField(err))
-		return false, errors.Wrap(err, "failed to check user permission")
+		return false, err
 	}
 
 	return hasPermission, nil
@@ -309,7 +294,7 @@ func (s *permissionService) GetUserPermissions(ctx context.Context, userID uint)
 	permissions, err := s.permissionRepo.GetUserPermissions(ctx, userID)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to get user permissions", logger.ErrorField(err))
-		return nil, errors.Wrap(err, "failed to get user permissions")
+		return nil, err
 	}
 
 	// Convert to response format
@@ -331,82 +316,11 @@ func (s *permissionService) BatchUpdatePermissionStatus(ctx context.Context, ids
 
 	if err := s.permissionRepo.BatchUpdateStatus(ctx, ids, status); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to batch update permission status", logger.ErrorField(err))
-		return errors.Wrap(err, "failed to batch update permission status")
+		return err
 	}
 
 	s.logger.InfoContext(ctx, "Permission status updated successfully",
 		logger.Int("count", len(ids)))
 
-	return nil
-}
-
-// InitializeSystemPermissions initializes system permissions
-func (s *permissionService) InitializeSystemPermissions(ctx context.Context) error {
-	s.logger.InfoContext(ctx, "Initializing system permissions",
-		logger.String("service", "permission"),
-		logger.String("operation", "InitializeSystemPermissions"))
-
-	// Define system permissions
-	systemPermissions := []*model.Permission{
-		{
-			Scope:       "platform",
-			Name:        "User Management",
-			Code:        "user.manage",
-			Module:      "user",
-			Action:      "manage",
-			Resource:    "user",
-			Description: "Manage users",
-			IsSystem:    true,
-			IsMenu:      true,
-			SortOrder:   1,
-			Status:      1,
-		},
-		{
-			Scope:       "platform",
-			Name:        "Role Management",
-			Code:        "role.manage",
-			Module:      "role",
-			Action:      "manage",
-			Resource:    "role",
-			Description: "Manage roles",
-			IsSystem:    true,
-			IsMenu:      true,
-			SortOrder:   RoleManagementSortOrder,
-			Status:      1,
-		},
-		{
-			Scope:       "platform",
-			Name:        "Permission Management",
-			Code:        "permission.manage",
-			Module:      "permission",
-			Action:      "manage",
-			Resource:    "permission",
-			Description: "Manage permissions",
-			IsSystem:    true,
-			IsMenu:      true,
-			SortOrder:   PermissionManagementSortOrder,
-			Status:      1,
-		},
-	}
-
-	// Create system permissions if they don't exist
-	for _, perm := range systemPermissions {
-		existing, err := s.permissionRepo.GetByCode(ctx, perm.Code)
-		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			s.logger.ErrorContext(ctx, "Failed to check existing permission", logger.ErrorField(err))
-			return errors.Wrap(err, "failed to check existing permission")
-		}
-
-		if existing == nil {
-			if err := s.permissionRepo.Create(ctx, perm); err != nil {
-				s.logger.ErrorContext(ctx, "Failed to create system permission", logger.ErrorField(err))
-				return errors.Wrap(err, "failed to create system permission")
-			}
-			s.logger.InfoContext(ctx, "System permission created",
-				logger.String("code", perm.Code))
-		}
-	}
-
-	s.logger.InfoContext(ctx, "System permissions initialized successfully")
 	return nil
 }

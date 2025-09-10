@@ -52,6 +52,17 @@ func NewAppErrorWithI18n(code int, message, i18nKey string) *AppError {
 	}
 }
 
+// NewAppErrorWithMessage creates a new application error with automatic i18n key resolution
+// The i18nKey is automatically determined based on the error code
+func NewAppErrorWithMessage(code int, message string) *AppError {
+	return &AppError{
+		Code:       code,
+		Message:    message,
+		HTTPStatus: getHTTPStatusByCode(code),
+		I18nKey:    getI18nKeyByCode(code),
+	}
+}
+
 // NewAppErrorWithDetails creates a new application error with additional details
 // The details parameter provides extra context for debugging purposes
 func NewAppErrorWithDetails(code int, message, details string) *AppError {
@@ -79,24 +90,75 @@ func WrapError(err error, code int, message string) *AppError {
 var codeToHTTPStatus = map[int]int{
 	CodeSuccess: http.StatusOK,
 
-	// General errors (10000-19999)
-	CodeInvalidRequest:  http.StatusBadRequest,
-	CodeValidationError: http.StatusBadRequest,
-	CodeUnauthorized:    http.StatusUnauthorized,
-	CodeForbidden:       http.StatusForbidden,
-	CodeNotFound:        http.StatusNotFound,
+	// Authentication related errors (1000-1999)
+	CodeInvalidCredentials:      http.StatusUnauthorized,
+	CodeTokenExpired:            http.StatusUnauthorized,
+	CodeInvalidToken:            http.StatusUnauthorized,
+	CodeAccountDisabled:         http.StatusForbidden,
+	CodeAccountLocked:           http.StatusForbidden,
+	CodePasswordTooWeak:         http.StatusBadRequest,
+	CodeInvalidVerificationCode: http.StatusBadRequest,
+	CodeLoginAttemptsExceeded:   http.StatusTooManyRequests,
+	CodeEmailAlreadyExists:      http.StatusBadRequest,
+	CodeTokenAlreadyUsed:        http.StatusUnauthorized,
 
-	// User-related errors (20000-29999)
-	CodeUserNotFound:       http.StatusNotFound,
-	CodeUserAlreadyExists:  http.StatusConflict,
-	CodeEmailAlreadyExists: http.StatusConflict,
-	CodeInvalidCredentials: http.StatusUnauthorized,
-	CodeInvalidPassword:    http.StatusUnauthorized,
-	CodeUserInactive:       http.StatusForbidden,
+	// Permission related errors (2000-2999)
+	CodeInsufficientPermissions:       http.StatusForbidden,
+	CodeResourceAccessDenied:          http.StatusForbidden,
+	CodeOperationPermissionDenied:     http.StatusForbidden,
+	CodeRolePermissionDenied:          http.StatusForbidden,
+	CodeResourceGroupPermissionDenied: http.StatusForbidden,
 
-	// Application-related errors (30000-39999)
-	CodeAppNotFound:      http.StatusNotFound,
-	CodeAppAlreadyExists: http.StatusConflict,
+	// Parameter validation errors (3000-3999)
+	CodeValidationFailed:         http.StatusBadRequest,
+	CodeRequiredParameterMissing: http.StatusBadRequest,
+	CodeInvalidParameterFormat:   http.StatusBadRequest,
+	CodeParameterOutOfRange:      http.StatusBadRequest,
+	CodeInvalidParameterLength:   http.StatusBadRequest,
+	CodeInvalidEmailFormat:       http.StatusBadRequest,
+	CodeInvalidPhoneFormat:       http.StatusBadRequest,
+	CodeInvalidURLFormat:         http.StatusBadRequest,
+	CodeInvalidDateFormat:        http.StatusBadRequest,
+	CodeEmailNotVerified:         http.StatusBadRequest,
+
+	// Resource related errors (4000-4999)
+	CodeRecordNotFound:             http.StatusNotFound,
+	CodeResourceNotFound:           http.StatusNotFound,
+	CodeResourceAlreadyExists:      http.StatusConflict,
+	CodeResourceStateNotAllowed:    http.StatusConflict,
+	CodeResourceDependencyConflict: http.StatusConflict,
+	CodeResourceQuotaInsufficient:  http.StatusConflict,
+	CodeResourceInUse:              http.StatusConflict,
+	CodeRecordQueryFailed:          http.StatusConflict,
+	CodeRecordCreateFailed:         http.StatusConflict,
+	CodeRecordUpdateFailed:         http.StatusConflict,
+	CodeRecordDeleteFailed:         http.StatusConflict,
+	CodeRecordIsDisabled:           http.StatusConflict,
+	CodeRecordNoAffected:           http.StatusConflict,
+	CodeRecordDeleteDenied:         http.StatusConflict,
+
+	// Business logic errors (5000-5999)
+	CodeServerOffline:                  http.StatusServiceUnavailable,
+	CodeAppDeploymentFailed:            http.StatusUnprocessableEntity,
+	CodeWorkflowExecutionFailed:        http.StatusUnprocessableEntity,
+	CodeCertificateRequestFailed:       http.StatusUnprocessableEntity,
+	CodeBackupOperationFailed:          http.StatusUnprocessableEntity,
+	CodeMonitoringDataCollectionFailed: http.StatusServiceUnavailable,
+	CodeAppPublishFailed:               http.StatusUnprocessableEntity,
+	CodeAppOfflineFailed:               http.StatusUnprocessableEntity,
+	CodeHealthCheckFailed:              http.StatusServiceUnavailable,
+	CodeGatewayConfigUpdateFailed:      http.StatusUnprocessableEntity,
+	CodeUserAlreadyExists:              http.StatusConflict,
+	CodePermissionInvalid:              http.StatusUnprocessableEntity,
+
+	// System related errors (6000-6999)
+	CodeInternalError:                http.StatusInternalServerError,
+	CodeDatabaseConnectionFailed:     http.StatusInternalServerError,
+	CodeCacheServiceUnavailable:      http.StatusServiceUnavailable,
+	CodeFilesystemError:              http.StatusInternalServerError,
+	CodeNetworkTimeout:               http.StatusRequestTimeout,
+	CodeThirdPartyServiceUnavailable: http.StatusServiceUnavailable,
+	CodeSystemMaintenance:            http.StatusServiceUnavailable,
 }
 
 // getHTTPStatusByCode maps business error codes to appropriate HTTP status codes
@@ -108,16 +170,31 @@ func getHTTPStatusByCode(code int) int {
 	return getDefaultStatusByCodeRange(code)
 }
 
+// getI18nKeyByCode retrieves the internationalization key for a given error code
+// If no specific mapping exists, it returns a default unknown error key
+func getI18nKeyByCode(code int) string {
+	if key, exists := CodeToI18nKey[code]; exists {
+		return key
+	}
+	return "system.unknown_error"
+}
+
 // getDefaultStatusByCodeRange returns default HTTP status codes based on error code ranges
 // This provides a fallback mechanism for unmapped error codes
 func getDefaultStatusByCodeRange(code int) int {
 	switch {
-	case code >= 10000 && code < 20000: // System errors
+	case code >= 1000 && code < 2000: // Authentication errors
+		return http.StatusUnauthorized
+	case code >= 2000 && code < 3000: // Permission errors
+		return http.StatusForbidden
+	case code >= 3000 && code < 4000: // Validation errors
+		return http.StatusBadRequest
+	case code >= 4000 && code < 5000: // Resource errors
+		return http.StatusNotFound
+	case code >= 5000 && code < 6000: // Business logic errors
+		return http.StatusUnprocessableEntity
+	case code >= 6000 && code < 7000: // System errors
 		return http.StatusInternalServerError
-	case code >= 20000 && code < 30000: // User errors
-		return http.StatusBadRequest
-	case code >= 30000 && code < 40000: // Application errors
-		return http.StatusBadRequest
 	default: // Unknown error codes
 		return http.StatusInternalServerError
 	}
@@ -126,32 +203,100 @@ func getDefaultStatusByCodeRange(code int) int {
 // Predefined common errors with internationalization support
 // These errors can be reused throughout the application for consistency
 var (
-	// General system errors
-	ErrInternalError   = NewAppErrorWithI18n(CodeInternalError, CodeMessages[CodeInternalError], "error.internal_error")
-	ErrInvalidRequest  = NewAppErrorWithI18n(CodeInvalidRequest, CodeMessages[CodeInvalidRequest], "common.invalid_request")
-	ErrUnauthorized    = NewAppErrorWithI18n(CodeUnauthorized, CodeMessages[CodeUnauthorized], "auth.unauthorized")
-	ErrForbidden       = NewAppErrorWithI18n(CodeForbidden, CodeMessages[CodeForbidden], "common.forbidden")
-	ErrNotFound        = NewAppErrorWithI18n(CodeNotFound, CodeMessages[CodeNotFound], "common.not_found")
-	ErrValidationError = NewAppErrorWithI18n(CodeValidationError, CodeMessages[CodeValidationError], "common.validation_failed")
+	// Authentication related errors (1000-1999)
+	ErrInvalidCredentials      = NewAppErrorWithI18n(CodeInvalidCredentials, CodeMessages[CodeInvalidCredentials], CodeToI18nKey[CodeInvalidCredentials])
+	ErrTokenExpired            = NewAppErrorWithI18n(CodeTokenExpired, CodeMessages[CodeTokenExpired], CodeToI18nKey[CodeTokenExpired])
+	ErrInvalidToken            = NewAppErrorWithI18n(CodeInvalidToken, CodeMessages[CodeInvalidToken], CodeToI18nKey[CodeInvalidToken])
+	ErrAccountDisabled         = NewAppErrorWithI18n(CodeAccountDisabled, CodeMessages[CodeAccountDisabled], CodeToI18nKey[CodeAccountDisabled])
+	ErrAccountLocked           = NewAppErrorWithI18n(CodeAccountLocked, CodeMessages[CodeAccountLocked], CodeToI18nKey[CodeAccountLocked])
+	ErrPasswordTooWeak         = NewAppErrorWithI18n(CodePasswordTooWeak, CodeMessages[CodePasswordTooWeak], CodeToI18nKey[CodePasswordTooWeak])
+	ErrInvalidVerificationCode = NewAppErrorWithI18n(CodeInvalidVerificationCode, CodeMessages[CodeInvalidVerificationCode], CodeToI18nKey[CodeInvalidVerificationCode])
+	ErrLoginAttemptsExceeded   = NewAppErrorWithI18n(CodeLoginAttemptsExceeded, CodeMessages[CodeLoginAttemptsExceeded], CodeToI18nKey[CodeLoginAttemptsExceeded])
+	ErrEmailAlreadyExists      = NewAppErrorWithI18n(CodeEmailAlreadyExists, CodeMessages[CodeEmailAlreadyExists], CodeToI18nKey[CodeEmailAlreadyExists])
+	ErrTokenAlreadyUsed        = NewAppErrorWithI18n(CodeTokenAlreadyUsed, CodeMessages[CodeTokenAlreadyUsed], CodeToI18nKey[CodeTokenAlreadyUsed])
 
-	// User-related errors with specific business logic
-	ErrUserNotFound       = NewAppErrorWithI18n(CodeUserNotFound, CodeMessages[CodeUserNotFound], "user.not_found")
-	ErrUserAlreadyExists  = NewAppErrorWithI18n(CodeUserAlreadyExists, CodeMessages[CodeUserAlreadyExists], "user.already_exists")
-	ErrInvalidCredentials = NewAppErrorWithI18n(CodeInvalidCredentials, CodeMessages[CodeInvalidCredentials], "user.invalid_credentials")
-	ErrUserInactive       = NewAppErrorWithI18n(CodeUserInactive, CodeMessages[CodeUserInactive], "auth.permission_denied")
-	ErrInvalidPassword    = NewAppErrorWithI18n(CodeInvalidPassword, CodeMessages[CodeInvalidPassword], "user.password_required")
-	ErrPasswordTooWeak    = NewAppErrorWithI18n(CodePasswordTooWeak, CodeMessages[CodePasswordTooWeak], "user.password_too_short")
-	ErrEmailAlreadyExists = NewAppErrorWithI18n(CodeEmailAlreadyExists, CodeMessages[CodeEmailAlreadyExists], "user.already_exists")
-	ErrInvalidEmail       = NewAppErrorWithI18n(CodeInvalidEmail, CodeMessages[CodeInvalidEmail], "user.invalid_email")
-	ErrUsernameReserved   = NewAppErrorWithI18n(CodeUsernameReserved, CodeMessages[CodeUsernameReserved], "user.username_required")
-	ErrUserQuotaExceeded  = NewAppErrorWithI18n(CodeUserQuotaExceeded, CodeMessages[CodeUserQuotaExceeded], "common.forbidden")
-	ErrEmailNotVerified   = NewAppErrorWithI18n(CodeEmailNotVerified, CodeMessages[CodeEmailNotVerified], "user.email_not_verified")
+	// Permission related errors (2000-2999)
+	ErrInsufficientPermissions       = NewAppErrorWithI18n(CodeInsufficientPermissions, CodeMessages[CodeInsufficientPermissions], CodeToI18nKey[CodeInsufficientPermissions])
+	ErrResourceAccessDenied          = NewAppErrorWithI18n(CodeResourceAccessDenied, CodeMessages[CodeResourceAccessDenied], CodeToI18nKey[CodeResourceAccessDenied])
+	ErrOperationPermissionDenied     = NewAppErrorWithI18n(CodeOperationPermissionDenied, CodeMessages[CodeOperationPermissionDenied], CodeToI18nKey[CodeOperationPermissionDenied])
+	ErrRolePermissionDenied          = NewAppErrorWithI18n(CodeRolePermissionDenied, CodeMessages[CodeRolePermissionDenied], CodeToI18nKey[CodeRolePermissionDenied])
+	ErrResourceGroupPermissionDenied = NewAppErrorWithI18n(
+		CodeResourceGroupPermissionDenied,
+		CodeMessages[CodeResourceGroupPermissionDenied],
+		CodeToI18nKey[CodeResourceGroupPermissionDenied],
+	)
 
-	// Authentication and token-related errors
-	ErrInvalidToken     = NewAppErrorWithI18n(CodeInvalidToken, CodeMessages[CodeInvalidToken], "auth.invalid_token")
-	ErrTokenExpired     = NewAppErrorWithI18n(CodeTokenExpired, CodeMessages[CodeTokenExpired], "auth.token_expired")
-	ErrTokenAlreadyUsed = NewAppErrorWithI18n(CodeTokenAlreadyUsed, CodeMessages[CodeTokenAlreadyUsed], "auth.token_already_used")
+	// Parameter validation errors (3000-3999)
+	ErrValidationFailed         = NewAppErrorWithI18n(CodeValidationFailed, CodeMessages[CodeValidationFailed], CodeToI18nKey[CodeValidationFailed])
+	ErrRequiredParameterMissing = NewAppErrorWithI18n(CodeRequiredParameterMissing, CodeMessages[CodeRequiredParameterMissing], CodeToI18nKey[CodeRequiredParameterMissing])
+	ErrInvalidParameterFormat   = NewAppErrorWithI18n(CodeInvalidParameterFormat, CodeMessages[CodeInvalidParameterFormat], CodeToI18nKey[CodeInvalidParameterFormat])
+	ErrParameterOutOfRange      = NewAppErrorWithI18n(CodeParameterOutOfRange, CodeMessages[CodeParameterOutOfRange], CodeToI18nKey[CodeParameterOutOfRange])
+	ErrInvalidParameterLength   = NewAppErrorWithI18n(CodeInvalidParameterLength, CodeMessages[CodeInvalidParameterLength], CodeToI18nKey[CodeInvalidParameterLength])
+	ErrInvalidEmailFormat       = NewAppErrorWithI18n(CodeInvalidEmailFormat, CodeMessages[CodeInvalidEmailFormat], CodeToI18nKey[CodeInvalidEmailFormat])
+	ErrInvalidPhoneFormat       = NewAppErrorWithI18n(CodeInvalidPhoneFormat, CodeMessages[CodeInvalidPhoneFormat], CodeToI18nKey[CodeInvalidPhoneFormat])
+	ErrInvalidURLFormat         = NewAppErrorWithI18n(CodeInvalidURLFormat, CodeMessages[CodeInvalidURLFormat], CodeToI18nKey[CodeInvalidURLFormat])
+	ErrInvalidDateFormat        = NewAppErrorWithI18n(CodeInvalidDateFormat, CodeMessages[CodeInvalidDateFormat], CodeToI18nKey[CodeInvalidDateFormat])
+	ErrEmailNotVerified         = NewAppErrorWithI18n(CodeEmailNotVerified, CodeMessages[CodeEmailNotVerified], CodeToI18nKey[CodeEmailNotVerified])
+
+	// Resource related errors (4000-4999)
+	ErrRecordNotFound             = NewAppErrorWithI18n(CodeRecordNotFound, CodeMessages[CodeRecordNotFound], CodeToI18nKey[CodeRecordNotFound])
+	ErrResourceNotFound           = NewAppErrorWithI18n(CodeResourceNotFound, CodeMessages[CodeResourceNotFound], CodeToI18nKey[CodeResourceNotFound])
+	ErrResourceAlreadyExists      = NewAppErrorWithI18n(CodeResourceAlreadyExists, CodeMessages[CodeResourceAlreadyExists], CodeToI18nKey[CodeResourceAlreadyExists])
+	ErrResourceStateNotAllowed    = NewAppErrorWithI18n(CodeResourceStateNotAllowed, CodeMessages[CodeResourceStateNotAllowed], CodeToI18nKey[CodeResourceStateNotAllowed])
+	ErrResourceDependencyConflict = NewAppErrorWithI18n(CodeResourceDependencyConflict, CodeMessages[CodeResourceDependencyConflict], CodeToI18nKey[CodeResourceDependencyConflict])
+	ErrResourceQuotaInsufficient  = NewAppErrorWithI18n(CodeResourceQuotaInsufficient, CodeMessages[CodeResourceQuotaInsufficient], CodeToI18nKey[CodeResourceQuotaInsufficient])
+	ErrResourceInUse              = NewAppErrorWithI18n(CodeResourceInUse, CodeMessages[CodeResourceInUse], CodeToI18nKey[CodeResourceInUse])
+	ErrRecordQueryFailed          = NewAppErrorWithI18n(CodeRecordQueryFailed, CodeMessages[CodeRecordQueryFailed], CodeToI18nKey[CodeRecordQueryFailed])
+	ErrRecordCreateFailed         = NewAppErrorWithI18n(CodeRecordCreateFailed, CodeMessages[CodeRecordCreateFailed], CodeToI18nKey[CodeRecordCreateFailed])
+	ErrRecordUpdateFailed         = NewAppErrorWithI18n(CodeRecordUpdateFailed, CodeMessages[CodeRecordUpdateFailed], CodeToI18nKey[CodeRecordUpdateFailed])
+	ErrRecordDeleteFailed         = NewAppErrorWithI18n(CodeRecordDeleteFailed, CodeMessages[CodeRecordDeleteFailed], CodeToI18nKey[CodeRecordDeleteFailed])
+	ErrRecordIsDisabled           = NewAppErrorWithI18n(CodeRecordIsDisabled, CodeMessages[CodeRecordIsDisabled], CodeToI18nKey[CodeRecordIsDisabled])
+	ErrRecordNoAffected           = NewAppErrorWithI18n(CodeRecordNoAffected, CodeMessages[CodeRecordNoAffected], CodeToI18nKey[CodeRecordNoAffected])
+	ErrRecordDeleteDenied         = NewAppErrorWithI18n(CodeRecordDeleteDenied, CodeMessages[CodeRecordDeleteDenied], CodeToI18nKey[CodeRecordDeleteDenied])
+
+	// Business logic errors (5000-5999)
+	ErrServerOffline                  = NewAppErrorWithI18n(CodeServerOffline, CodeMessages[CodeServerOffline], CodeToI18nKey[CodeServerOffline])
+	ErrAppDeploymentFailed            = NewAppErrorWithI18n(CodeAppDeploymentFailed, CodeMessages[CodeAppDeploymentFailed], CodeToI18nKey[CodeAppDeploymentFailed])
+	ErrWorkflowExecutionFailed        = NewAppErrorWithI18n(CodeWorkflowExecutionFailed, CodeMessages[CodeWorkflowExecutionFailed], CodeToI18nKey[CodeWorkflowExecutionFailed])
+	ErrCertificateRequestFailed       = NewAppErrorWithI18n(CodeCertificateRequestFailed, CodeMessages[CodeCertificateRequestFailed], CodeToI18nKey[CodeCertificateRequestFailed])
+	ErrBackupOperationFailed          = NewAppErrorWithI18n(CodeBackupOperationFailed, CodeMessages[CodeBackupOperationFailed], CodeToI18nKey[CodeBackupOperationFailed])
+	ErrMonitoringDataCollectionFailed = NewAppErrorWithI18n(
+		CodeMonitoringDataCollectionFailed,
+		CodeMessages[CodeMonitoringDataCollectionFailed],
+		CodeToI18nKey[CodeMonitoringDataCollectionFailed],
+	)
+	ErrAppPublishFailed          = NewAppErrorWithI18n(CodeAppPublishFailed, CodeMessages[CodeAppPublishFailed], CodeToI18nKey[CodeAppPublishFailed])
+	ErrAppOfflineFailed          = NewAppErrorWithI18n(CodeAppOfflineFailed, CodeMessages[CodeAppOfflineFailed], CodeToI18nKey[CodeAppOfflineFailed])
+	ErrHealthCheckFailed         = NewAppErrorWithI18n(CodeHealthCheckFailed, CodeMessages[CodeHealthCheckFailed], CodeToI18nKey[CodeHealthCheckFailed])
+	ErrGatewayConfigUpdateFailed = NewAppErrorWithI18n(CodeGatewayConfigUpdateFailed, CodeMessages[CodeGatewayConfigUpdateFailed], CodeToI18nKey[CodeGatewayConfigUpdateFailed])
+	ErrUserAlreadyExists         = NewAppErrorWithI18n(CodeUserAlreadyExists, CodeMessages[CodeUserAlreadyExists], CodeToI18nKey[CodeUserAlreadyExists])
+	ErrPermissionInvalid         = NewAppErrorWithI18n(CodePermissionInvalid, CodeMessages[CodePermissionInvalid], CodeToI18nKey[CodePermissionInvalid])
+
+	// System related errors (6000-6999)
+	ErrInternalError                = NewAppErrorWithI18n(CodeInternalError, CodeMessages[CodeInternalError], CodeToI18nKey[CodeInternalError])
+	ErrCacheServiceUnavailable      = NewAppErrorWithI18n(CodeCacheServiceUnavailable, CodeMessages[CodeCacheServiceUnavailable], CodeToI18nKey[CodeCacheServiceUnavailable])
+	ErrFilesystemError              = NewAppErrorWithI18n(CodeFilesystemError, CodeMessages[CodeFilesystemError], CodeToI18nKey[CodeFilesystemError])
+	ErrNetworkTimeout               = NewAppErrorWithI18n(CodeNetworkTimeout, CodeMessages[CodeNetworkTimeout], CodeToI18nKey[CodeNetworkTimeout])
+	ErrThirdPartyServiceUnavailable = NewAppErrorWithI18n(
+		CodeThirdPartyServiceUnavailable,
+		CodeMessages[CodeThirdPartyServiceUnavailable],
+		CodeToI18nKey[CodeThirdPartyServiceUnavailable],
+	)
+	ErrSystemMaintenance        = NewAppErrorWithI18n(CodeSystemMaintenance, CodeMessages[CodeSystemMaintenance], CodeToI18nKey[CodeSystemMaintenance])
+	ErrDatabaseConnectionFailed = NewAppErrorWithI18n(CodeDatabaseConnectionFailed, CodeMessages[CodeDatabaseConnectionFailed], CodeToI18nKey[CodeDatabaseConnectionFailed])
 )
+
+// GetErrCodeAndMessageKey extracts HTTP status code and i18n message key from an error
+// This function is used by the controller helpers to provide consistent error responses
+func GetErrCodeAndMessageKey(err error) (statusCode int, messageKey string) {
+	if appErr, ok := err.(*AppError); ok {
+		// For AppError, return the HTTP status and i18n key
+		return appErr.HTTPStatus, appErr.I18nKey
+	}
+
+	// For standard errors, return default values
+	return http.StatusInternalServerError, "system.internal_error"
+}
 
 // Is checks if an error matches a target error
 // It provides enhanced error matching for AppError types by comparing error codes

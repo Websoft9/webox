@@ -3,12 +3,13 @@ package service
 import (
 	"api-service/internal/dto/request"
 	"api-service/internal/model"
+	"api-service/pkg/errors"
 	"api-service/pkg/logger"
 	"context"
+	stderrors "errors"
 	"fmt"
 	"testing"
 
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"gorm.io/driver/sqlite"
@@ -95,6 +96,11 @@ func (m *MockRoleRepository) GetPermissions(ctx context.Context, roleID uint) ([
 
 func (m *MockRoleRepository) AssignPermissions(ctx context.Context, roleID uint, permissionIDs []uint, grantedBy uint) error {
 	args := m.Called(ctx, roleID, permissionIDs, grantedBy)
+	return args.Error(0)
+}
+
+func (m *MockRoleRepository) AssignPermissionsWithTx(ctx context.Context, tx *gorm.DB, roleID uint, permissionIDs []uint, grantedBy uint) error {
+	args := m.Called(ctx, tx, roleID, permissionIDs, grantedBy)
 	return args.Error(0)
 }
 
@@ -273,12 +279,11 @@ func TestRoleService_CreateRole_Success(t *testing.T) {
 		Description:   "Test role description",
 		PermissionIDs: []uint{1, 2, 3},
 		SortOrder:     1,
-		Status:        1,
 	}
 	createdBy := uint(1)
 
 	// Mock expectations
-	mockRoleRepo.On("GetByCode", ctx, req.Code).Return(nil, gorm.ErrRecordNotFound)
+	mockRoleRepo.On("GetByCode", ctx, req.Code).Return(nil, errors.ErrRecordNotFound)
 	mockPermissionRepo.On("GetByIDs", ctx, req.PermissionIDs).Return([]*model.Permission{
 		{BaseModel: model.BaseModel{ID: 1}},
 		{BaseModel: model.BaseModel{ID: 2}},
@@ -291,7 +296,7 @@ func TestRoleService_CreateRole_Success(t *testing.T) {
 			role := args.Get(2).(*model.Role)
 			role.ID = 1 // Simulate database ID assignment
 		}).Return(nil)
-	mockRoleRepo.On("AssignPermissions", ctx, uint(1), req.PermissionIDs, createdBy).Return(nil)
+	mockRoleRepo.On("AssignPermissionsWithTx", ctx, mock.AnythingOfType("*gorm.DB"), uint(1), req.PermissionIDs, createdBy).Return(nil)
 
 	// Mock GetRole call for return value
 	expectedRole := &model.Role{
@@ -301,7 +306,6 @@ func TestRoleService_CreateRole_Success(t *testing.T) {
 		Description:     req.Description,
 		IsSystem:        false,
 		SortOrder:       req.SortOrder,
-		Status:          req.Status,
 		PermissionCount: 3,
 		UserCount:       0,
 	}
@@ -363,7 +367,7 @@ func TestRoleService_CreateRole_InvalidPermissionIDs(t *testing.T) {
 	createdBy := uint(1)
 
 	// Mock expectations
-	mockRoleRepo.On("GetByCode", ctx, req.Code).Return(nil, gorm.ErrRecordNotFound)
+	mockRoleRepo.On("GetByCode", ctx, req.Code).Return(nil, errors.ErrRecordNotFound)
 	mockPermissionRepo.On("GetByIDs", ctx, req.PermissionIDs).Return([]*model.Permission{
 		{BaseModel: model.BaseModel{ID: 1}},
 		{BaseModel: model.BaseModel{ID: 2}}, // Only 2 permissions found, not 3
@@ -410,7 +414,7 @@ func TestRoleService_UpdateRole_Success(t *testing.T) {
 
 	// Mock update operations
 	mockRoleRepo.On("UpdateWithTx", ctx, mock.AnythingOfType("*gorm.DB"), mock.AnythingOfType("*model.Role")).Return(nil)
-	mockRoleRepo.On("AssignPermissions", ctx, roleID, req.PermissionIDs, updatedBy).Return(nil)
+	mockRoleRepo.On("AssignPermissionsWithTx", ctx, mock.AnythingOfType("*gorm.DB"), roleID, req.PermissionIDs, updatedBy).Return(nil)
 
 	// Mock GetRole call for return value
 	updatedRole := &model.Role{
@@ -493,7 +497,7 @@ func TestRoleService_DeleteRole_Error(t *testing.T) {
 	ctx := context.Background()
 
 	roleID := uint(1)
-	expectedError := errors.New("database error")
+	expectedError := stderrors.New("database error")
 
 	mockRoleRepo.On("Delete", ctx, roleID).Return(expectedError)
 
@@ -572,7 +576,7 @@ func TestRoleService_AssignPermissions_Success(t *testing.T) {
 		{BaseModel: model.BaseModel{ID: 2}},
 		{BaseModel: model.BaseModel{ID: 3}},
 	}, nil)
-	mockRoleRepo.On("AssignPermissions", ctx, roleID, req.PermissionIDs, grantedBy).Return(nil)
+	mockRoleRepo.On("AssignPermissionsWithTx", ctx, mock.AnythingOfType("*gorm.DB"), roleID, req.PermissionIDs, grantedBy).Return(nil)
 
 	// Execute
 	err := service.AssignPermissions(ctx, roleID, req, grantedBy)
@@ -657,55 +661,6 @@ func TestRoleService_BatchUpdateRoleStatus_Success(t *testing.T) {
 	mockRoleRepo.AssertExpectations(t)
 }
 
-func TestRoleService_InitializeSystemRoles_Success(t *testing.T) {
-	service, mockRoleRepo, _, _ := setupRoleServiceTest()
-	ctx := context.Background()
-
-	// Mock that no system roles exist
-	mockRoleRepo.On("GetByCode", ctx, "admin").Return(nil, gorm.ErrRecordNotFound)
-	mockRoleRepo.On("GetByCode", ctx, "user").Return(nil, gorm.ErrRecordNotFound)
-	mockRoleRepo.On("GetByCode", ctx, "operator").Return(nil, gorm.ErrRecordNotFound)
-	mockRoleRepo.On("GetByCode", ctx, "developer").Return(nil, gorm.ErrRecordNotFound)
-
-	// Mock role creation
-	mockRoleRepo.On("Create", ctx, mock.AnythingOfType("*model.Role")).Return(nil).Times(4)
-
-	// Execute
-	err := service.InitializeSystemRoles(ctx)
-
-	// Assert
-	assert.NoError(t, err)
-
-	mockRoleRepo.AssertExpectations(t)
-}
-
-func TestRoleService_InitializeSystemRoles_RoleExists(t *testing.T) {
-	service, mockRoleRepo, _, _ := setupRoleServiceTest()
-	ctx := context.Background()
-
-	// Mock that admin role already exists
-	existingRole := &model.Role{
-		BaseModel: model.BaseModel{ID: 1},
-		Code:      "admin",
-		Name:      "Administrator",
-	}
-	mockRoleRepo.On("GetByCode", ctx, "admin").Return(existingRole, nil)
-	mockRoleRepo.On("GetByCode", ctx, "user").Return(nil, gorm.ErrRecordNotFound)
-	mockRoleRepo.On("GetByCode", ctx, "operator").Return(nil, gorm.ErrRecordNotFound)
-	mockRoleRepo.On("GetByCode", ctx, "developer").Return(nil, gorm.ErrRecordNotFound)
-
-	// Mock role creation for non-existing roles
-	mockRoleRepo.On("Create", ctx, mock.AnythingOfType("*model.Role")).Return(nil).Times(3)
-
-	// Execute
-	err := service.InitializeSystemRoles(ctx)
-
-	// Assert
-	assert.NoError(t, err)
-
-	mockRoleRepo.AssertExpectations(t)
-}
-
 // Benchmark tests
 func BenchmarkRoleService_CreateRole(b *testing.B) {
 	service, mockRoleRepo, mockPermissionRepo, _ := setupRoleServiceTest()
@@ -717,12 +672,11 @@ func BenchmarkRoleService_CreateRole(b *testing.B) {
 		Description:   "Benchmark role description",
 		PermissionIDs: []uint{1, 2, 3},
 		SortOrder:     1,
-		Status:        1,
 	}
 	createdBy := uint(1)
 
 	// Setup mocks for benchmark
-	mockRoleRepo.On("GetByCode", ctx, mock.AnythingOfType("string")).Return(nil, gorm.ErrRecordNotFound)
+	mockRoleRepo.On("GetByCode", ctx, mock.AnythingOfType("string")).Return(nil, errors.ErrRecordNotFound)
 	mockPermissionRepo.On("GetByIDs", ctx, mock.AnythingOfType("[]uint")).Return([]*model.Permission{
 		{BaseModel: model.BaseModel{ID: 1}},
 		{BaseModel: model.BaseModel{ID: 2}},
@@ -733,7 +687,7 @@ func BenchmarkRoleService_CreateRole(b *testing.B) {
 			role := args.Get(2).(*model.Role)
 			role.ID = 1
 		}).Return(nil)
-	mockRoleRepo.On("AssignPermissions", ctx, mock.AnythingOfType("uint"), mock.AnythingOfType("[]uint"), mock.AnythingOfType("uint")).Return(nil)
+	mockRoleRepo.On("AssignPermissionsWithTx", ctx, mock.AnythingOfType("*gorm.DB"), mock.AnythingOfType("uint"), mock.AnythingOfType("[]uint"), mock.AnythingOfType("uint")).Return(nil)
 	mockRoleRepo.On("GetByID", ctx, mock.AnythingOfType("uint")).Return(&model.Role{
 		BaseModel: model.BaseModel{ID: 1},
 		Name:      req.Name,

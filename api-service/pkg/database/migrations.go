@@ -1,4 +1,4 @@
-package utils
+package database
 
 import (
 	"api-service/internal/config"
@@ -228,11 +228,11 @@ func RunMigrations(cfg *config.Config) error {
 
 	// Add migrations based on database type
 	switch strings.ToLower(cfg.Database.Type) {
-	case "sqlite":
+	case DatabaseTypeSQLite:
 		addSQLiteMigrations(migrator)
-	case "mysql":
+	case DatabaseTypeMySQL:
 		addMySQLMigrations(migrator)
-	case "postgres", "postgresql":
+	case DatabaseTypePostgres, DatabaseTypePostgreSQL:
 		addPostgresMigrations(migrator)
 	default:
 		return fmt.Errorf("unsupported database type for migrations: %s", cfg.Database.Type)

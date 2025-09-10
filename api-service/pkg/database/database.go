@@ -1,4 +1,4 @@
-package utils
+package database
 
 import (
 	"api-service/internal/config"
@@ -9,12 +9,11 @@ import (
 	"strings"
 	"time"
 
-	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+	gormlogger "gorm.io/gorm/logger"
 )
 
 // Database type constants
@@ -25,9 +24,26 @@ const (
 	DatabaseTypePostgreSQL = "postgresql"
 )
 
+// parseLogLevel converts string log level to gorm logger level
+func parseLogLevel(level string) gormlogger.LogLevel {
+	switch strings.ToLower(level) {
+	case "error":
+		return gormlogger.Error
+	case "warn", "warning":
+		return gormlogger.Warn
+	case "info":
+		return gormlogger.Info
+	case "debug":
+		return gormlogger.Info // GORM doesn't have debug level, use Info
+	default:
+		return gormlogger.Info // Default to Info level
+	}
+}
+
 // DatabaseConfig contains database connection parameters
 type DatabaseConnectionConfig struct {
 	Type            string
+	Path            string
 	Host            string
 	Port            int
 	Database        string
@@ -40,6 +56,7 @@ type DatabaseConnectionConfig struct {
 	ConnectTimeout  int
 	Charset         string
 	Timezone        string
+	LogLevel        string
 }
 
 // InitDB initializes database connection based on configuration
@@ -50,6 +67,7 @@ func InitDB(cfg *config.Config) (*gorm.DB, error) {
 	// Convert config to connection config
 	dbConfig := &DatabaseConnectionConfig{
 		Type:            cfg.Database.Type,
+		Path:            cfg.Database.Path,
 		Host:            cfg.Database.Host,
 		Port:            cfg.Database.Port,
 		Database:        cfg.Database.Database,
@@ -62,12 +80,13 @@ func InitDB(cfg *config.Config) (*gorm.DB, error) {
 		ConnectTimeout:  cfg.Database.ConnectTimeout,
 		Charset:         cfg.Database.Charset,
 		Timezone:        cfg.Database.Timezone,
+		LogLevel:        cfg.Server.Log.LogLevel,
 	}
 
 	// Initialize database connection based on type
 	switch strings.ToLower(cfg.Database.Type) {
 	case DatabaseTypeSQLite:
-		db, err = initSQLite(cfg.Database.Path)
+		db, err = initSQLite(dbConfig)
 	case DatabaseTypeMySQL:
 		db, err = initMySQL(dbConfig)
 	case DatabaseTypePostgres, DatabaseTypePostgreSQL:
@@ -80,7 +99,7 @@ func InitDB(cfg *config.Config) (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to initialize %s database: %v", cfg.Database.Type, err)
 	}
 
-	// Configure connection pool for MySQL and PostgreSQL
+	// Configure connection pool (SQLite already configured in initSQLite)
 	if cfg.Database.Type != DatabaseTypeSQLite {
 		if err := configureConnectionPool(db, dbConfig); err != nil {
 			return nil, fmt.Errorf("failed to configure connection pool: %v", err)
@@ -90,24 +109,38 @@ func InitDB(cfg *config.Config) (*gorm.DB, error) {
 	return db, nil
 }
 
-// initSQLite initializes SQLite database connection
-func initSQLite(dbPath string) (*gorm.DB, error) {
+// initSQLite initializes basic SQLite database connection
+func initSQLite(cfg *DatabaseConnectionConfig) (*gorm.DB, error) {
 	// Ensure database directory exists
-	dbDir := filepath.Dir(dbPath)
+	dbDir := filepath.Dir(cfg.Path)
 	if err := os.MkdirAll(dbDir, constants.DefaultDirPerm); err != nil {
 		return nil, fmt.Errorf("failed to create database directory: %v", err)
 	}
 
-	// Open SQLite database
-	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+	// Basic SQLite DSN (optimizations will be handled by SQLiteManager)
+	dsn := cfg.Path + "?_foreign_keys=ON"
+
+	// Basic GORM configuration
+	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{
+		Logger: gormlogger.Default.LogMode(parseLogLevel(cfg.LogLevel)),
+		// Enable prepared statements to improve performance
+		PrepareStmt: true,
+		// Disable default transaction, manually manage transactions for better control
+		SkipDefaultTransaction: true,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to SQLite database: %v", err)
 	}
 
-	// Enable foreign key constraints for SQLite
-	db.Exec("PRAGMA foreign_keys = ON")
+	// Basic connection pool configuration (SQLiteManager will optimize further)
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get underlying sql.DB: %v", err)
+	}
+
+	sqlDB.SetMaxOpenConns(1) // SQLite single writer constraint
+	sqlDB.SetMaxIdleConns(1)
+	sqlDB.SetConnMaxLifetime(time.Duration(cfg.ConnMaxLifetime) * time.Second)
 
 	return db, nil
 }
@@ -119,7 +152,7 @@ func initMySQL(cfg *DatabaseConnectionConfig) (*gorm.DB, error) {
 
 	// Open MySQL database
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger: gormlogger.Default.LogMode(parseLogLevel(cfg.LogLevel)),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to MySQL database: %v", err)
@@ -135,7 +168,7 @@ func initPostgreSQL(cfg *DatabaseConnectionConfig) (*gorm.DB, error) {
 
 	// Open PostgreSQL database
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger: gormlogger.Default.LogMode(parseLogLevel(cfg.LogLevel)),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to PostgreSQL database: %v", err)
@@ -264,7 +297,7 @@ func TestDatabaseConnection(cfg *config.Config) error {
 }
 
 // GetDatabaseInfo returns database connection information
-func GetDatabaseInfo(cfg *config.Config) (map[string]interface{}, error) {
+func GetDatabaseInfo(cfg *config.Config) (map[string]any, error) {
 	db, err := InitDB(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %v", err)
@@ -278,7 +311,7 @@ func GetDatabaseInfo(cfg *config.Config) (map[string]interface{}, error) {
 
 	stats := sqlDB.Stats()
 
-	info := map[string]interface{}{
+	info := map[string]any{
 		"type":           cfg.Database.Type,
 		"host":           cfg.Database.Host,
 		"port":           cfg.Database.Port,
@@ -301,10 +334,4 @@ func GetDatabaseInfo(cfg *config.Config) (map[string]interface{}, error) {
 	}
 
 	return info, nil
-}
-
-// InitInfluxDB initializes InfluxDB connection (unchanged)
-func InitInfluxDB(cfg *config.Config) (influxdb2.Client, error) {
-	client := influxdb2.NewClient(cfg.InfluxDB.URL, cfg.InfluxDB.Token)
-	return client, nil
 }

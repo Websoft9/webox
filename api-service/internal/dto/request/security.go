@@ -9,7 +9,6 @@ type CreateRoleRequest struct {
 	Description   string `json:"description" validate:"max=500"`
 	PermissionIDs []uint `json:"permission_ids"`
 	SortOrder     int    `json:"sort_order"`
-	Status        int    `json:"status" validate:"oneof=-1 0 1"`
 }
 
 // UpdateRoleRequest updates role request
@@ -47,7 +46,6 @@ type CreatePermissionRequest struct {
 	Description string `json:"description" validate:"max=500"`
 	IsMenu      bool   `json:"is_menu"`
 	SortOrder   int    `json:"sort_order"`
-	Status      int    `json:"status" validate:"oneof=-1 0 1"`
 }
 
 // UpdatePermissionRequest updates permission request

@@ -3,6 +3,7 @@ package service
 import (
 	"api-service/internal/dto/request"
 	"api-service/internal/model"
+	"api-service/pkg/errors"
 	"api-service/pkg/logger"
 	"context"
 	"fmt"
@@ -47,12 +48,11 @@ func (suite *PermissionServiceTestSuite) TestCreatePermission_Success() {
 		Description: "Test permission description",
 		IsMenu:      false,
 		SortOrder:   10,
-		Status:      1,
 	}
 	createdBy := uint(1)
 
 	// Mock expectations
-	suite.mockPermissionRepo.On("GetByCode", ctx, req.Code).Return(nil, gorm.ErrRecordNotFound)
+	suite.mockPermissionRepo.On("GetByCode", ctx, req.Code).Return(nil, errors.ErrRecordNotFound)
 	suite.mockPermissionRepo.On("Create", ctx, mock.AnythingOfType("*model.Permission")).
 		Run(func(args mock.Arguments) {
 			perm := args.Get(1).(*model.Permission)
@@ -109,20 +109,20 @@ func (suite *PermissionServiceTestSuite) TestGetPermissionTree_Success() {
 	}
 
 	// Mock permissions with parent-child relationship
+	childPermission := &model.Permission{
+		BaseModel:  model.BaseModel{ID: 2},
+		ParentCode: "user:manage",
+		Name:       "Create User",
+		Code:       "user:create",
+	}
+
 	permissions := []*model.Permission{
 		{
 			BaseModel:  model.BaseModel{ID: 1},
 			ParentCode: "",
 			Name:       "User Management",
 			Code:       "user:manage",
-			Children: []model.Permission{
-				{
-					BaseModel:  model.BaseModel{ID: 2},
-					ParentCode: "user:manage",
-					Name:       "Create User",
-					Code:       "user:create",
-				},
-			},
+			Children:   []*model.Permission{childPermission},
 		},
 	}
 
@@ -343,22 +343,6 @@ func (suite *PermissionServiceTestSuite) TestBatchUpdatePermissionStatus_Success
 	suite.mockPermissionRepo.AssertExpectations(suite.T())
 }
 
-func (suite *PermissionServiceTestSuite) TestInitializeSystemPermissions_Success() {
-	ctx := context.Background()
-
-	// Mock that no system permissions exist
-	suite.mockPermissionRepo.On("GetByCode", ctx, mock.AnythingOfType("string")).Return(nil, gorm.ErrRecordNotFound)
-	suite.mockPermissionRepo.On("Create", ctx, mock.AnythingOfType("*model.Permission")).Return(nil)
-
-	// Execute
-	err := suite.service.InitializeSystemPermissions(ctx)
-
-	// Assert
-	suite.NoError(err)
-
-	suite.mockPermissionRepo.AssertExpectations(suite.T())
-}
-
 // Run the permission service test suite
 func TestPermissionServiceTestSuite(t *testing.T) {
 	suite.Run(t, new(PermissionServiceTestSuite))
@@ -383,12 +367,11 @@ func BenchmarkPermissionService_CreatePermission(b *testing.B) {
 		Code:   "benchmark:permission",
 		Module: "benchmark",
 		Action: "manage",
-		Status: 1,
 	}
 	createdBy := uint(1)
 
 	// Setup mocks for benchmark
-	mockPermissionRepo.On("GetByCode", ctx, mock.AnythingOfType("string")).Return(nil, gorm.ErrRecordNotFound)
+	mockPermissionRepo.On("GetByCode", ctx, mock.AnythingOfType("string")).Return(nil, errors.ErrRecordNotFound)
 	mockPermissionRepo.On("Create", ctx, mock.AnythingOfType("*model.Permission")).
 		Run(func(args mock.Arguments) {
 			perm := args.Get(1).(*model.Permission)
