@@ -46,25 +46,24 @@ func NewUserProfileController(
 // @Router /api/v1/profile [get]
 func (c *UserProfileController) GetProfile(ctx *gin.Context) {
 	// 解析请求参数
-	var req request.UserProfileRequest
-	if err := ctx.ShouldBindQuery(&req); err != nil {
-		c.logger.WarnContext(ctx, "Invalid request parameters", logger.ErrorField(err))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, c.i18n.T(ctx, "common.validation_failed")))
+	currentUserID, exists := ctx.Get("user_id")
+	if !exists || currentUserID == nil {
+		c.logger.WarnContext(ctx, "Missing user ID in context")
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeUnauthorized, c.i18n.T(ctx, "auth.unauthorized")))
 		return
 	}
 
-	// 验证userid参数是否存在
-	if req.UserID == 0 {
-		c.logger.WarnContext(ctx, "Missing required user ID parameter")
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, c.i18n.T(ctx, "common.missing_parameter")))
+	userID, ok := currentUserID.(uint)
+	if !ok {
+		c.logger.WarnContext(ctx, "Invalid user ID type in context")
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeInternalError, c.i18n.T(ctx, "common.internal_error")))
 		return
 	}
 
-	c.logger.InfoContext(ctx, "Handling get profile request",
-		logger.Uint("requestedUserID", req.UserID))
+	c.logger.InfoContext(ctx, "Handling get profile request", logger.Uint("userID", userID))
 
 	// 调用服务层获取用户资料
-	profile, err := c.profileService.GetUserProfile(ctx, &req)
+	profile, err := c.profileService.GetUserProfile(ctx, userID)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Failed to get user profile", logger.ErrorField(err))
 		errors.HandleError(ctx, err)
@@ -91,6 +90,7 @@ func (c *UserProfileController) GetProfile(ctx *gin.Context) {
 // @Router /api/v1/profile [put]
 // UpdateProfile 处理更新用户个人资料的请求
 func (c *UserProfileController) UpdateProfile(ctx *gin.Context) {
+
 	// 解析请求参数
 	var req request.UserProfileUpdateRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -99,17 +99,25 @@ func (c *UserProfileController) UpdateProfile(ctx *gin.Context) {
 		return
 	}
 
-	// 验证userid参数是否存在
-	if req.UserID == 0 {
-		c.logger.WarnContext(ctx, "Missing required user ID parameter")
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, c.i18n.T(ctx, "common.missing_parameter")))
+	// 获取当前登录的用户ID
+	currentUserID, exists := ctx.Get("user_id")
+	if !exists || currentUserID == nil {
+		c.logger.WarnContext(ctx, "Missing user ID in context")
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeUnauthorized, c.i18n.T(ctx, "auth.unauthorized")))
 		return
 	}
 
-	c.logger.InfoContext(ctx, "Handling update profile request", logger.Uint("userID", req.UserID))
+	userID, ok := currentUserID.(uint)
+	if !ok {
+		c.logger.WarnContext(ctx, "Invalid user ID type in context")
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeInternalError, c.i18n.T(ctx, "common.internal_error")))
+		return
+	}
+
+	c.logger.InfoContext(ctx, "Handling update profile request", logger.Uint("userID", userID))
 
 	// 调用服务层更新用户资料
-	profile, err := c.profileService.UpdateUserProfile(ctx, req.UserID, &req)
+	profile, err := c.profileService.UpdateUserProfile(ctx, userID, &req)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Failed to update user profile", logger.ErrorField(err))
 		errors.HandleError(ctx, err)
@@ -142,37 +150,31 @@ func (c *UserProfileController) ChangePassword(ctx *gin.Context) {
 		return
 	}
 
-	// 验证userid参数是否存在
-	if req.UserID == 0 {
-		c.logger.WarnContext(ctx, "Missing required user ID parameter")
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, c.i18n.T(ctx, "common.missing_parameter")))
-		return
-	}
-
-	// 获取当前登录的用户ID，用于权限检查（可选）
-	currentUserID := ctx.GetUint("user_id")
-	if currentUserID == 0 {
+	// 获取当前登录的用户ID
+	currentUserID, exists := ctx.Get("user_id")
+	if !exists || currentUserID == nil {
 		c.logger.WarnContext(ctx, "Missing user ID in context")
 		errors.HandleError(ctx, errors.NewAppError(errors.CodeUnauthorized, c.i18n.T(ctx, "auth.unauthorized")))
 		return
 	}
 
-	// 如果不是当前用户本人，则需要进行权限检查（可选，取决于业务需求）
-	// 这里省略了权限检查的代码，如果需要，可以添加相关逻辑
+	userID, ok := currentUserID.(uint)
+	if !ok {
+		c.logger.WarnContext(ctx, "Invalid user ID type in context")
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeInternalError, c.i18n.T(ctx, "common.internal_error")))
+		return
+	}
 
-	c.logger.InfoContext(ctx, "Handling change password request",
-		logger.Uint("requestedUserID", req.UserID),
-		logger.Uint("currentUserID", currentUserID))
+	c.logger.InfoContext(ctx, "Handling update profile request", logger.Uint("userID", userID))
 
 	// 调用服务层修改密码
-	// 注意第二个参数其实没有使用了，因为我们在服务层使用的是请求中的UserID
-	err := c.profileService.ChangeProfilePassword(ctx, 0, &req)
+	err := c.profileService.ChangeProfilePassword(ctx, userID, &req)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Failed to change user password", logger.ErrorField(err))
 		errors.HandleError(ctx, err)
 		return
 	}
 
-	c.logger.InfoContext(ctx, "User password changed successfully", logger.Uint("userID", req.UserID))
+	c.logger.InfoContext(ctx, "User password changed successfully", logger.Uint("userID", userID))
 	pkg_response.Success(ctx, c.i18n.T(ctx, "user_profile.password_change_success"), nil)
 }

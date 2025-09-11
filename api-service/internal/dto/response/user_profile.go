@@ -24,3 +24,21 @@ type UserProfileResponse struct {
 	// 关联数据
 	Roles []RoleResponse `json:"roles,omitempty"`
 }
+
+// LoginHistoryItem 登录历史记录项
+type LoginHistoryItem struct {
+	ID         uint       `json:"id"`
+	IPAddress  string     `json:"ip_address"`
+	UserAgent  string     `json:"user_agent"`
+	Location   string     `json:"location"`
+	Device     string     `json:"device"`
+	Browser    string     `json:"browser"`
+	LoginTime  time.Time  `json:"login_time"`
+	LogoutTime *time.Time `json:"logout_time"`
+	Status     string     `json:"status"`
+}
+
+// LoginHistoryResponse 登录历史记录列表响应
+type LoginHistoryResponse struct {
+	Items []LoginHistoryItem `json:"items"`
+}

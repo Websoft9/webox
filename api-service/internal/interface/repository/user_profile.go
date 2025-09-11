@@ -18,4 +18,7 @@ type UserProfileRepository interface {
 
 	// UpdateUserPassword 更新用户密码
 	UpdateUserPassword(ctx context.Context, userID uint, passwordHash string) error
+
+	// GetLoginHistories 获取用户登录历史记录
+	GetLoginHistories(ctx context.Context, userID uint, page, pageSize int) ([]model.UserLoginHistory, int64, error)
 }

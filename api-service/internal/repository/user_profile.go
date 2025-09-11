@@ -90,3 +90,26 @@ func (r *userProfileRepository) UpdateUserPassword(ctx context.Context, userID u
 
 	return nil
 }
+
+// GetLoginHistories 获取用户登录历史记录
+func (r *userProfileRepository) GetLoginHistories(ctx context.Context, userID uint, page, pageSize int) ([]model.UserLoginHistory, int64, error) {
+	var records []model.UserLoginHistory
+	var total int64
+
+	query := r.db.WithContext(ctx).Model(&model.UserLoginHistory{}).Where("user_id = ?", userID)
+
+	// 计算总记录数
+	err := query.Count(&total).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// 分页查询
+	offset := (page - 1) * pageSize
+	err = query.Order("login_time DESC").Offset(offset).Limit(pageSize).Find(&records).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return records, total, nil
+}

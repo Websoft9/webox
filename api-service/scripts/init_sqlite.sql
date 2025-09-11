@@ -693,8 +693,6 @@ CREATE TABLE IF NOT EXISTS user_login_history (
     browser VARCHAR(100),
     login_time DATETIME DEFAULT CURRENT_TIMESTAMP,
     logout_time DATETIME,
-    status VARCHAR(20) DEFAULT 'ACTIVE',
-    session_id VARCHAR(128),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
