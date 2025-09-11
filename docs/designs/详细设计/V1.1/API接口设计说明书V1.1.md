@@ -4900,7 +4900,6 @@ POST /api/v1/system-configs/smtp/test
 | ---------- | -------- | -------- | -------- |
 | test_email | string   | 否       | 测试邮箱 |
 
-
 **获取License信息**
 
 ```text
@@ -5895,86 +5894,22 @@ GET /api/v1/auth-config/oauth2-providers
 }
 ```
 
-**创建API访问令牌**
-
-```text
-POST /api/v1/api-tokens
-```
-
-请求体参数：
-
-| 参数名      | 数据类型 | 是否可空 | 描述                                              |
-| ----------- | -------- | -------- | ------------------------------------------------- |
-| name        | string   | 否       | 令牌名称，长度2-64字符                            |
-| description | string   | 是       | 令牌描述，最大500字符                             |
-| scopes      | array    | 否       | 权限范围，权限编码数组                            |
-| expires_at  | string   | 是       | 过期时间，格式：2025-12-31 23:59:59，null表示永久 |
-
-请求示例：
-
-```json
-{
-  "name": "第三方集成令牌",
-  "description": "用于第三方系统集成访问",
-  "scopes": ["user:read", "project:read", "application:deploy"],
-  "expires_at": "2025-12-31 23:59:59"
-}
-```
-
-响应示例：
-
-```json
-{
-  "code": 200,
-  "message": "令牌创建成功",
-  "data": {
-    "id": 1,
-    "name": "第三方集成令牌",
-    "token": "ws9_1234567890abcdef1234567890abcdef",
-    "scopes": ["user:read", "project:read", "application:deploy"],
-    "expires_at": "2025-12-31 23:59:59",
-    "created_at": "2025-01-01 10:00:00"
-  }
-}
-```
-
-**更新API访问令牌**
-
-```text
-PUT /api/v1/api-tokens/{id}
-```
-
-请求体参数：
-
-| 参数名      | 数据类型 | 是否可空 | 描述                   |
-| ----------- | -------- | -------- | ---------------------- |
-| name        | string   | 是       | 令牌名称，长度2-64字符 |
-| description | string   | 是       | 令牌描述，最大500字符  |
-| scopes      | array    | 是       | 权限范围，权限编码数组 |
-| expires_at  | string   | 是       | 过期时间               |
-
 **撤销API访问令牌**
 
 ```text
-DELETE /api/v1/api-tokens/{id}
-```
-
-**批量撤销API访问令牌**
-
-```text
-DELETE /api/v1/api-tokens
+POST /api/v1/api-tokens/revoke
 ```
 
 请求体参数：
 
-| 参数名 | 数据类型 | 是否可空 | 描述       |
-| ------ | -------- | -------- | ---------- |
-| ids    | array    | 否       | 令牌ID数组 |
+| 参数名 | 数据类型 | 是否可空 | 描述        |
+| ------ | -------- | -------- | ----------- |
+| token  | string   | 否       | API访问令牌 |
 
 **刷新API访问令牌**
 
 ```text
-POST /api/v1/api-tokens/{id}/refresh
+POST /api/v1/api-tokens/refresh
 ```
 
 响应示例：

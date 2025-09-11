@@ -187,17 +187,23 @@ type PaginatedResponse struct {
 
 - Use standard error interface
 - Error messages should be clear and specific
-- Use `github.com/pkg/errors` to add context information
+- Use `api-service/pkg/i18n` to add internationalization
+- Use `api-service/pkg/errors` to add context information
 
 ```go
-import "github.com/pkg/errors"
+import "api-service/pkg/errors"
 
-func (s *UserService) GetUser(id int64) (*User, error) {
-    user, err := s.repo.FindByID(id)
+// GetByID retrieves a permission by ID
+func (r *permissionRepository) GetByID(ctx context.Context, id uint) (*model.Permission, error) {
+    var permission model.Permission
+    err := r.db.WithContext(ctx).Where("status != -1").First(&permission, id).Error
     if err != nil {
-        return nil, errors.Wrapf(err, "failed to get user with id %d", id)
+        if errors.Is(err, gorm.ErrRecordNotFound) {
+            return nil, errors.NewAppErrorWithMessage(errors.CodeRecordNotFound, "permission not found")
+        }
+        return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to get permission by ID")
     }
-    return user, nil
+    return &permission, nil
 }
 ```
 
@@ -212,16 +218,16 @@ import "api-service/pkg/logger"
 
 func (s *UserService) CreateUser(ctx context.Context, req *CreateUserRequest) (*User, error) {
     s.logger.InfoContext(ctx, "Creating user", logger.String("username", req.Username))
-    
+
     logger.Info("Creating new user")
-    
+
     user, err := s.repo.Create(req)
     if err != nil {
         s.logger.ErrorContext(ctx, "Failed to create user", logger.ErrorField(err))
 
         return nil, errors.WrapError(err, errors.CodeInternalError, "Failed to create user")
     }
-    
+
     s.logger.InfoContext(ctx, "User created successfully", logger.Uint("user_id", user.ID))
     return s.buildUserResponse(user), nil
 }
