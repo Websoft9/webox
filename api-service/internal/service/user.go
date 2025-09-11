@@ -40,7 +40,7 @@ func (s *userService) ChangePassword(ctx context.Context, userID uint, req *requ
 	user, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return errors.NewAppError(errors.CodeNotFound, "User not found")
+			return errors.NewAppError(errors.CodeRecordNotFound, "User not found")
 		}
 		return errors.WrapError(err, errors.CodeInternalError, "Failed to get user information")
 	}
@@ -114,7 +114,7 @@ func (s *userService) GetUser(ctx context.Context, userID uint) (*response.UserR
 	user, err := s.userRepo.GetByIDWithRelations(ctx, userID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, errors.NewAppError(errors.CodeNotFound, "User not found")
+			return nil, errors.NewAppError(errors.CodeRecordNotFound, "User not found")
 		}
 		s.logger.ErrorContext(ctx, "Failed to get user", logger.ErrorField(err))
 		return nil, errors.WrapError(err, errors.CodeInternalError, "Failed to get user")
@@ -156,7 +156,7 @@ func (s *userService) UpdateUser(ctx context.Context,
 	user, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, errors.NewAppError(errors.CodeNotFound, "User not found")
+			return nil, errors.NewAppError(errors.CodeRecordNotFound, "User not found")
 		}
 		s.logger.ErrorContext(ctx, "Failed to get user", logger.ErrorField(err))
 		return nil, errors.WrapError(err, errors.CodeInternalError, "Failed to get user")
@@ -190,7 +190,7 @@ func (s *userService) UpdateUserStatus(ctx context.Context, userID uint, req *re
 	user, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return errors.NewAppError(errors.CodeNotFound, "User not found")
+			return errors.NewAppError(errors.CodeRecordNotFound, "User not found")
 		}
 		return errors.WrapError(err, errors.CodeInternalError, "Failed to get user information")
 	}
@@ -213,7 +213,7 @@ func (s *userService) DeleteUser(ctx context.Context, userID uint) error {
 	_, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return errors.NewAppError(errors.CodeNotFound, "User not found")
+			return errors.NewAppError(errors.CodeRecordNotFound, "User not found")
 		}
 		s.logger.ErrorContext(ctx, "Failed to check user", logger.ErrorField(err))
 		return errors.WrapError(err, errors.CodeInternalError, "Failed to check user")
@@ -239,7 +239,7 @@ func (s *userService) UpdateUserPassword(
 	user, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return errors.NewAppError(errors.CodeNotFound, "User not found")
+			return errors.NewAppError(errors.CodeRecordNotFound, "User not found")
 		}
 		return errors.WrapError(err, errors.CodeInternalError, "Failed to get user information")
 	}
@@ -293,7 +293,7 @@ func (s *userService) validateUserCreation(ctx context.Context, req *request.Use
 		return errors.WrapError(err, errors.CodeInternalError, "Failed to check username")
 	}
 	if exists {
-		return errors.NewAppError(errors.CodeUserAlreadyExists, "Username already exists")
+		return errors.ErrUserAlreadyExists
 	}
 
 	// 检查邮箱是否存在

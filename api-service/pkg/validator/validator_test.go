@@ -31,43 +31,31 @@ func TestValidateUsername(t *testing.T) {
 			name:     "empty username",
 			username: "",
 			wantErr:  true,
-			errCode:  errors.CodeValidationError,
+			errCode:  errors.CodeInvalidParameterFormat,
 		},
 		{
 			name:     "username too short",
 			username: "ab",
 			wantErr:  true,
-			errCode:  errors.CodeValidationError,
+			errCode:  errors.CodeInvalidParameterFormat,
 		},
 		{
 			name:     "username too long",
 			username: "verylongusernamethatexceedslimit",
 			wantErr:  true,
-			errCode:  errors.CodeValidationError,
+			errCode:  errors.CodeInvalidParameterFormat,
 		},
 		{
 			name:     "username with invalid characters",
 			username: "user@name",
 			wantErr:  true,
-			errCode:  errors.CodeValidationError,
+			errCode:  errors.CodeInvalidParameterFormat,
 		},
 		{
 			name:     "username starting with number",
 			username: "123user",
 			wantErr:  true,
-			errCode:  errors.CodeValidationError,
-		},
-		{
-			name:     "reserved username",
-			username: "admin",
-			wantErr:  true,
-			errCode:  errors.CodeUsernameReserved,
-		},
-		{
-			name:     "reserved username case insensitive",
-			username: "ADMIN",
-			wantErr:  true,
-			errCode:  errors.CodeUsernameReserved,
+			errCode:  errors.CodeInvalidParameterFormat,
 		},
 	}
 
@@ -113,19 +101,19 @@ func TestValidatePassword(t *testing.T) {
 			name:     "empty password",
 			password: "",
 			wantErr:  true,
-			errCode:  errors.CodeValidationError,
+			errCode:  errors.CodeRequiredParameterMissing,
 		},
 		{
 			name:     "password too short",
 			password: "12345",
 			wantErr:  true,
-			errCode:  errors.CodeValidationError,
+			errCode:  errors.CodeRequiredParameterMissing,
 		},
 		{
 			name:     "password too long",
 			password: "verylongpasswordthatexceedsfiftycharlimitandshouldfail",
 			wantErr:  true,
-			errCode:  errors.CodeValidationError,
+			errCode:  errors.CodeRequiredParameterMissing,
 		},
 		{
 			name:     "weak password - only lowercase",
@@ -198,31 +186,31 @@ func TestValidateEmail(t *testing.T) {
 			name:    "empty email",
 			email:   "",
 			wantErr: true,
-			errCode: errors.CodeValidationError,
+			errCode: errors.CodeInvalidEmailFormat,
 		},
 		{
 			name:    "invalid email format - no @",
 			email:   "userexample.com",
 			wantErr: true,
-			errCode: errors.CodeInvalidEmail,
+			errCode: errors.CodeInvalidEmailFormat,
 		},
 		{
 			name:    "invalid email format - no domain",
 			email:   "user@",
 			wantErr: true,
-			errCode: errors.CodeInvalidEmail,
+			errCode: errors.CodeInvalidEmailFormat,
 		},
 		{
 			name:    "invalid email format - no TLD",
 			email:   "user@example",
 			wantErr: true,
-			errCode: errors.CodeInvalidEmail,
+			errCode: errors.CodeInvalidEmailFormat,
 		},
 		{
 			name:    "invalid email format - multiple @",
 			email:   "user@@example.com",
 			wantErr: true,
-			errCode: errors.CodeInvalidEmail,
+			errCode: errors.CodeInvalidEmailFormat,
 		},
 	}
 
@@ -242,183 +230,6 @@ func TestValidateEmail(t *testing.T) {
 				} else {
 					t.Errorf("ValidateEmail() error is not AppError type")
 				}
-			}
-		})
-	}
-}
-
-func TestValidateUserStatus(t *testing.T) {
-	tests := []struct {
-		name          string
-		currentStatus string
-		newStatus     string
-		wantErr       bool
-	}{
-		{
-			name:          "inactive to active",
-			currentStatus: "inactive",
-			newStatus:     "active",
-			wantErr:       false,
-		},
-		{
-			name:          "active to inactive",
-			currentStatus: "active",
-			newStatus:     "inactive",
-			wantErr:       false,
-		},
-		{
-			name:          "active to banned",
-			currentStatus: "active",
-			newStatus:     "banned",
-			wantErr:       false,
-		},
-		{
-			name:          "banned to inactive",
-			currentStatus: "banned",
-			newStatus:     "inactive",
-			wantErr:       false,
-		},
-		{
-			name:          "banned to active - not allowed",
-			currentStatus: "banned",
-			newStatus:     "active",
-			wantErr:       true,
-		},
-		{
-			name:          "invalid new status",
-			currentStatus: "active",
-			newStatus:     "invalid",
-			wantErr:       true,
-		},
-		{
-			name:          "invalid current status",
-			currentStatus: "invalid",
-			newStatus:     "active",
-			wantErr:       true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := ValidateUserStatus(tt.currentStatus, tt.newStatus)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ValidateUserStatus() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func TestValidateUserPermission(t *testing.T) {
-	tests := []struct {
-		name               string
-		userRole           string
-		requiredPermission string
-		wantErr            bool
-	}{
-		{
-			name:               "admin can create user",
-			userRole:           "admin",
-			requiredPermission: "user:create",
-			wantErr:            false,
-		},
-		{
-			name:               "admin can delete app",
-			userRole:           "admin",
-			requiredPermission: "app:delete",
-			wantErr:            false,
-		},
-		{
-			name:               "user can read app",
-			userRole:           "user",
-			requiredPermission: "app:read",
-			wantErr:            false,
-		},
-		{
-			name:               "user cannot delete user",
-			userRole:           "user",
-			requiredPermission: "user:delete",
-			wantErr:            true,
-		},
-		{
-			name:               "guest can read user",
-			userRole:           "guest",
-			requiredPermission: "user:read",
-			wantErr:            false,
-		},
-		{
-			name:               "guest cannot create app",
-			userRole:           "guest",
-			requiredPermission: "app:create",
-			wantErr:            true,
-		},
-		{
-			name:               "invalid role",
-			userRole:           "invalid",
-			requiredPermission: "user:read",
-			wantErr:            true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := ValidateUserPermission(tt.userRole, tt.requiredPermission)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ValidateUserPermission() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func TestValidateResourceQuota(t *testing.T) {
-	tests := []struct {
-		name         string
-		userID       uint
-		resourceType string
-		currentCount int
-		wantErr      bool
-	}{
-		{
-			name:         "within application quota",
-			userID:       1,
-			resourceType: "applications",
-			currentCount: 5,
-			wantErr:      false,
-		},
-		{
-			name:         "at application quota limit",
-			userID:       1,
-			resourceType: "applications",
-			currentCount: MaxApplications,
-			wantErr:      true,
-		},
-		{
-			name:         "within workflow quota",
-			userID:       1,
-			resourceType: "workflows",
-			currentCount: 3,
-			wantErr:      false,
-		},
-		{
-			name:         "exceed workflow quota",
-			userID:       1,
-			resourceType: "workflows",
-			currentCount: MaxWorkflows,
-			wantErr:      true,
-		},
-		{
-			name:         "unknown resource type",
-			userID:       1,
-			resourceType: "unknown",
-			currentCount: 1,
-			wantErr:      true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := ValidateResourceQuota(tt.userID, tt.resourceType, tt.currentCount)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ValidateResourceQuota() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

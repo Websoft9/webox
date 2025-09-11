@@ -230,7 +230,6 @@ func setupAPITokenRoutes(protected *gin.RouterGroup, securityController *control
 	}
 
 	apiTokens := protected.Group("/api-tokens")
-	apiTokens.GET("", securityController.ListAPITokens)
 	apiTokens.POST("", securityController.CreateAPIToken)
 	apiTokens.GET("/:id", securityController.GetAPIToken)
 	apiTokens.PUT("/:id", securityController.UpdateAPIToken)

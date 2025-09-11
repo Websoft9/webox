@@ -33,7 +33,7 @@ func NewUserController(userService service.UserService, logger logger.Logger, i1
 func (c *UserController) bindAndValidateRequest(ctx *gin.Context, req interface{}, action string) bool {
 	if err := ctx.ShouldBindJSON(req); err != nil {
 		c.logger.WarnContext(ctx, action+" request parameter binding failed", logger.ErrorField(err))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, c.i18n.T(ctx, "common.validation_failed")))
+		errors.HandleError(ctx, errors.ErrValidationFailed)
 		return false
 	}
 	return true
@@ -51,7 +51,7 @@ func (c *UserController) handleUserIDBasedRequest(
 	userID, err := strconv.ParseUint(userIDStr, 10, 32)
 	if err != nil {
 		c.logger.WarnContext(ctx, "Invalid user ID parameter", logger.String("user_id", userIDStr))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeInvalidRequest, c.i18n.T(ctx, "common.invalid_request")))
+		errors.HandleError(ctx, errors.ErrValidationFailed)
 		return
 	}
 
@@ -86,7 +86,7 @@ func (c *UserController) handleUserIDBasedRequest(
 func (c *UserController) ChangePassword(ctx *gin.Context) {
 	userID := c.getCurrentUserID(ctx)
 	if userID == 0 {
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeUnauthorized, c.i18n.T(ctx, "auth.unauthorized")))
+		errors.HandleError(ctx, errors.ErrInvalidToken)
 		return
 	}
 
@@ -131,7 +131,7 @@ func (c *UserController) ListUsers(ctx *gin.Context) {
 	// Bind query parameters
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		c.logger.WarnContext(ctx, "List users request parameter binding failed", logger.ErrorField(err))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, c.i18n.T(ctx, "common.validation_failed")))
+		errors.HandleError(ctx, errors.ErrValidationFailed)
 		return
 	}
 
@@ -216,7 +216,7 @@ func (c *UserController) GetUser(ctx *gin.Context) {
 	userID, err := strconv.ParseUint(userIDStr, 10, 32)
 	if err != nil {
 		c.logger.WarnContext(ctx, "Invalid user ID parameter", logger.String("user_id", userIDStr))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeInvalidRequest, c.i18n.T(ctx, "common.invalid_request")))
+		errors.HandleError(ctx, errors.ErrValidationFailed)
 		return
 	}
 
@@ -252,7 +252,7 @@ func (c *UserController) UpdateUser(ctx *gin.Context) {
 	userID, err := strconv.ParseUint(userIDStr, 10, 32)
 	if err != nil {
 		c.logger.WarnContext(ctx, "Invalid user ID parameter", logger.String("user_id", userIDStr))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeInvalidRequest, c.i18n.T(ctx, "common.invalid_request")))
+		errors.HandleError(ctx, errors.ErrValidationFailed)
 		return
 	}
 
@@ -292,7 +292,7 @@ func (c *UserController) DeleteUser(ctx *gin.Context) {
 	userID, err := strconv.ParseUint(userIDStr, 10, 32)
 	if err != nil {
 		c.logger.WarnContext(ctx, "Invalid user ID parameter", logger.String("user_id", userIDStr))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeInvalidRequest, c.i18n.T(ctx, "common.invalid_request")))
+		errors.HandleError(ctx, errors.ErrValidationFailed)
 		return
 	}
 

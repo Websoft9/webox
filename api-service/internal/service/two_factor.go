@@ -1,10 +1,12 @@
 package service
 
 import (
+	"api-service/internal/constants"
 	"api-service/internal/dto/response"
 	"api-service/internal/interface/repository"
 	"api-service/internal/interface/service"
 	"api-service/internal/model"
+	"api-service/pkg/errors"
 	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
 	"api-service/pkg/security"
@@ -14,7 +16,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
 	"gorm.io/gorm"
 )
 
@@ -59,7 +60,7 @@ func (s *twoFactorService) GetTwoFactorStatus(ctx context.Context, userID uint) 
 	methods, err := s.twoFactorRepo.GetByUserID(ctx, userID)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to get two-factor methods", logger.ErrorField(err))
-		return nil, errors.Wrap(err, "failed to get two-factor methods")
+		return nil, err
 	}
 
 	return response.ConvertToTwoFactorStatusResponse(methods), nil
@@ -74,20 +75,20 @@ func (s *twoFactorService) EnableTOTP(ctx context.Context, userID uint) (*respon
 
 	// Check if TOTP is already enabled
 	existing, err := s.twoFactorRepo.GetByUserIDAndMethod(ctx, userID, "TOTP")
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+	if err != nil && !errors.Is(err, errors.ErrRecordNotFound) {
 		s.logger.ErrorContext(ctx, "Failed to check existing TOTP", logger.ErrorField(err))
-		return nil, errors.Wrap(err, "failed to check existing TOTP")
+		return nil, err
 	}
 
 	if existing != nil && existing.Enabled {
-		return nil, errors.New("TOTP is already enabled")
+		return nil, errors.NewAppErrorWithMessage(errors.CodeResourceStateNotAllowed, "TOTP is already enabled")
 	}
 
 	// Generate TOTP secret
 	secret, err := security.GenerateSimpleTOTPSecret()
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to generate TOTP secret", logger.ErrorField(err))
-		return nil, errors.Wrap(err, "failed to generate TOTP secret")
+		return nil, errors.WrapError(err, errors.CodeRecordCreateFailed, "failed to generate TOTP secret")
 	}
 
 	// Generate QR code URL
@@ -97,7 +98,7 @@ func (s *twoFactorService) EnableTOTP(ctx context.Context, userID uint) (*respon
 	backupCodes, err := s.generateBackupCodes()
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to generate backup codes", logger.ErrorField(err))
-		return nil, errors.Wrap(err, "failed to generate backup codes")
+		return nil, errors.WrapError(err, errors.CodeRecordCreateFailed, "failed to generate backup codes")
 	}
 
 	// Create or update TOTP record (not enabled yet)
@@ -113,12 +114,12 @@ func (s *twoFactorService) EnableTOTP(ctx context.Context, userID uint) (*respon
 		twoFactor.ID = existing.ID
 		if err := s.twoFactorRepo.Update(ctx, twoFactor); err != nil {
 			s.logger.ErrorContext(ctx, "Failed to update TOTP record", logger.ErrorField(err))
-			return nil, errors.Wrap(err, "failed to update TOTP record")
+			return nil, err
 		}
 	} else {
 		if err := s.twoFactorRepo.Create(ctx, twoFactor); err != nil {
 			s.logger.ErrorContext(ctx, "Failed to create TOTP record", logger.ErrorField(err))
-			return nil, errors.Wrap(err, "failed to create TOTP record")
+			return nil, err
 		}
 	}
 
@@ -142,22 +143,19 @@ func (s *twoFactorService) ConfirmTOTP(ctx context.Context, userID uint, code st
 	// Get TOTP record
 	twoFactor, err := s.twoFactorRepo.GetByUserIDAndMethod(ctx, userID, "TOTP")
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("TOTP not found")
-		}
 		s.logger.ErrorContext(ctx, "Failed to get TOTP record", logger.ErrorField(err))
-		return nil, errors.Wrap(err, "failed to get TOTP record")
+		return nil, err
 	}
 
 	// Verify TOTP code
 	valid, err := security.ValidateSimpleTOTP(twoFactor.Secret, code)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to validate TOTP code", logger.ErrorField(err))
-		return nil, errors.Wrap(err, "failed to validate TOTP code")
+		return nil, errors.WrapError(err, errors.CodeValidationFailed, "failed to validate TOTP code")
 	}
 
 	if !valid {
-		return nil, errors.New("invalid code")
+		return nil, errors.NewAppErrorWithMessage(errors.CodeValidationFailed, "invalid code")
 	}
 
 	// Enable TOTP
@@ -166,8 +164,7 @@ func (s *twoFactorService) ConfirmTOTP(ctx context.Context, userID uint, code st
 	twoFactor.VerifiedAt = &now
 
 	if err := s.twoFactorRepo.Update(ctx, twoFactor); err != nil {
-		s.logger.ErrorContext(ctx, "Failed to enable TOTP", logger.ErrorField(err))
-		return nil, errors.Wrap(err, "failed to enable TOTP")
+		return nil, err
 	}
 
 	s.logger.InfoContext(ctx, "TOTP confirmed and enabled successfully",
@@ -204,28 +201,25 @@ func (s *twoFactorService) DisableTOTP(ctx context.Context, userID uint, code st
 	// Get TOTP record
 	twoFactor, err := s.twoFactorRepo.GetByUserIDAndMethod(ctx, userID, "TOTP")
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("TOTP not found")
-		}
 		s.logger.ErrorContext(ctx, "Failed to get TOTP record", logger.ErrorField(err))
-		return errors.Wrap(err, "failed to get TOTP record")
+		return err
 	}
 
 	// Verify TOTP code
 	valid, err := security.ValidateSimpleTOTP(twoFactor.Secret, code)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to validate TOTP code", logger.ErrorField(err))
-		return errors.Wrap(err, "failed to validate TOTP code")
+		return errors.WrapError(err, errors.CodeValidationFailed, "failed to validate TOTP code")
 	}
 
 	if !valid {
-		return errors.New("invalid code")
+		return errors.NewAppErrorWithMessage(errors.CodeValidationFailed, "invalid code")
 	}
 
 	// Delete TOTP record
 	if err := s.twoFactorRepo.Delete(ctx, twoFactor.ID); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to delete TOTP record", logger.ErrorField(err))
-		return errors.Wrap(err, "failed to delete TOTP record")
+		return err
 	}
 
 	s.logger.InfoContext(ctx, "TOTP disabled successfully",
@@ -243,9 +237,9 @@ func (s *twoFactorService) EnableEmailTwoFactor(ctx context.Context, userID uint
 
 	// Check if email 2FA is already enabled
 	existing, err := s.twoFactorRepo.GetByUserIDAndMethod(ctx, userID, "EMAIL")
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+	if err != nil && !errors.Is(err, errors.ErrRecordNotFound) {
 		s.logger.ErrorContext(ctx, "Failed to check existing email 2FA", logger.ErrorField(err))
-		return errors.Wrap(err, "failed to check existing email 2FA")
+		return err
 	}
 
 	// Create or update email 2FA record
@@ -260,12 +254,12 @@ func (s *twoFactorService) EnableEmailTwoFactor(ctx context.Context, userID uint
 		twoFactor.ID = existing.ID
 		if err := s.twoFactorRepo.Update(ctx, twoFactor); err != nil {
 			s.logger.ErrorContext(ctx, "Failed to update email 2FA record", logger.ErrorField(err))
-			return errors.Wrap(err, "failed to update email 2FA record")
+			return err
 		}
 	} else {
 		if err := s.twoFactorRepo.Create(ctx, twoFactor); err != nil {
 			s.logger.ErrorContext(ctx, "Failed to create email 2FA record", logger.ErrorField(err))
-			return errors.Wrap(err, "failed to create email 2FA record")
+			return err
 		}
 	}
 
@@ -285,17 +279,14 @@ func (s *twoFactorService) DisableEmailTwoFactor(ctx context.Context, userID uin
 	// Get email 2FA record
 	twoFactor, err := s.twoFactorRepo.GetByUserIDAndMethod(ctx, userID, "EMAIL")
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("email 2FA not found")
-		}
 		s.logger.ErrorContext(ctx, "Failed to get email 2FA record", logger.ErrorField(err))
-		return errors.Wrap(err, "failed to get email 2FA record")
+		return err
 	}
 
 	// Delete email 2FA record
 	if err := s.twoFactorRepo.Delete(ctx, twoFactor.ID); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to delete email 2FA record", logger.ErrorField(err))
-		return errors.Wrap(err, "failed to delete email 2FA record")
+		return err
 	}
 
 	s.logger.InfoContext(ctx, "Email two-factor disabled successfully",
@@ -314,11 +305,8 @@ func (s *twoFactorService) SendEmailCode(ctx context.Context, userID uint) error
 	// Get email 2FA record
 	twoFactor, err := s.twoFactorRepo.GetByUserIDAndMethod(ctx, userID, "EMAIL")
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("email 2FA not enabled")
-		}
 		s.logger.ErrorContext(ctx, "Failed to get email 2FA record", logger.ErrorField(err))
-		return errors.Wrap(err, "failed to get email 2FA record")
+		return err
 	}
 
 	// Generate verification code
@@ -331,7 +319,7 @@ func (s *twoFactorService) SendEmailCode(ctx context.Context, userID uint) error
 
 	if err := s.twoFactorRepo.Update(ctx, twoFactor); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to store email code", logger.ErrorField(err))
-		return errors.Wrap(err, "failed to store email code")
+		return err
 	}
 
 	// TODO: Send email with code
@@ -352,14 +340,14 @@ func (s *twoFactorService) VerifyTwoFactor(ctx context.Context, userID uint, cod
 		logger.String("method", method))
 
 	switch method {
-	case "totp":
+	case constants.TwoFactorMethodTOTP:
 		return s.verifyTOTP(ctx, userID, code)
-	case "email":
+	case constants.TwoFactorMethodEmail:
 		return s.verifyEmail(ctx, userID, code)
-	case "backup":
+	case constants.TwoFactorMethodBackup:
 		return s.verifyBackupCode(ctx, userID, code)
 	default:
-		return nil, errors.New("unsupported 2FA method")
+		return nil, errors.NewAppErrorWithMessage(errors.CodeInvalidParameterFormat, "unsupported 2FA method")
 	}
 }
 
@@ -373,18 +361,15 @@ func (s *twoFactorService) GenerateBackupCodes(ctx context.Context, userID uint)
 	// Get TOTP record (backup codes are associated with TOTP)
 	twoFactor, err := s.twoFactorRepo.GetByUserIDAndMethod(ctx, userID, "TOTP")
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("TOTP not enabled")
-		}
 		s.logger.ErrorContext(ctx, "Failed to get TOTP record", logger.ErrorField(err))
-		return nil, errors.Wrap(err, "failed to get TOTP record")
+		return nil, err
 	}
 
 	// Generate new backup codes
 	backupCodes, err := s.generateBackupCodes()
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to generate backup codes", logger.ErrorField(err))
-		return nil, errors.Wrap(err, "failed to generate backup codes")
+		return nil, errors.WrapError(err, errors.CodeRecordCreateFailed, "failed to generate backup codes")
 	}
 
 	// Update backup codes
@@ -392,7 +377,7 @@ func (s *twoFactorService) GenerateBackupCodes(ctx context.Context, userID uint)
 
 	if err := s.twoFactorRepo.Update(ctx, twoFactor); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to update backup codes", logger.ErrorField(err))
-		return nil, errors.Wrap(err, "failed to update backup codes")
+		return nil, err
 	}
 
 	s.logger.InfoContext(ctx, "Backup codes generated successfully",
@@ -457,7 +442,7 @@ func (s *twoFactorService) verifyBackupCode(ctx context.Context, userID uint, co
 						codesSlice = append(codesSlice[:i], codesSlice[i+1:]...)
 						twoFactor.BackupCodes["codes"] = codesSlice
 						if err := s.twoFactorRepo.Update(ctx, twoFactor); err != nil {
-							return nil, errors.Wrap(err, "failed to update backup codes")
+							return nil, err
 						}
 
 						return &response.TwoFactorVerificationResponse{

@@ -31,7 +31,6 @@
       - [4.2.2 任务看板](#422-任务看板)
       - [4.2.3 资源看板](#423-资源看板)
       - [4.2.4 文件夹](#424-文件夹)
-        - [通用文件上传下载接口](#通用文件上传下载接口)
       - [4.2.5 应用](#425-应用)
       - [4.2.6 工作流](#426-工作流)
         - [工作流执行](#工作流执行)
@@ -1055,9 +1054,9 @@ POST /api/v1/tasks/batch-actions
 
 请求体参数：
 
-| 参数名   | 数据类型  | 是否可空 | 描述                                |
-| -------- | --------- | -------- | ----------------------------------- |
-| task_ids | integer[] | 否       | 任务ID数组                          |
+| 参数名   | 数据类型  | 是否可空 | 描述                                     |
+| -------- | --------- | -------- | ---------------------------------------- |
+| task_ids | integer[] | 否       | 任务ID数组                               |
 | action   | string    | 否       | 操作类型（start, stop, enable, disable） |
 
 响应示例：
@@ -1457,41 +1456,6 @@ POST /api/v1/my-space/files/copy
 | ----------- | -------- | -------- | ------------ |
 | source_path | string   | 否       | 源文件路径   |
 | target_path | string   | 否       | 目标文件路径 |
-
-##### 通用文件上传下载接口
-
-**通用文件上传**
-
-```text
-POST /api/v1/upload
-```
-
-请求体（multipart/form-data）：
-
-```text
-file: [文件内容]
-type: avatar|document|image|other
-max_size: 10485760
-allowed_types: jpg,png,gif,pdf,doc,docx
-```
-
-响应：
-
-```json
-{
-  "code": 200,
-  "message": "文件上传成功",
-  "data": {
-    "file_id": "file_123456789",
-    "filename": "document.pdf",
-    "original_name": "项目文档.pdf",
-    "size": 2048576,
-    "mime_type": "application/pdf",
-    "url": "https://cdn.websoft9.com/files/file_123456789.pdf",
-    "thumbnail_url": "https://cdn.websoft9.com/thumbnails/file_123456789.jpg"
-  }
-}
-```
 
 **获取文件信息**
 
@@ -2628,8 +2592,8 @@ DELETE /api/v1/servers/{id}
 
 请求体参数：
 
-| 参数名 | 数据类型 | 是否可空 | 描述         |
-| ------ | -------- | -------- | ------------ |
+| 参数名          | 数据类型 | 是否可空 | 描述           |
+| --------------- | -------- | -------- | -------------- |
 | force           | boolean  | 是       | 是否强制删除   |
 | cleanup_apps    | boolean  | 是       | 是否清理应用   |
 | uninstall_agent | boolean  | 是       | 是否卸载客户端 |
@@ -3014,13 +2978,13 @@ POST /api/v1/ssl-certificates
 
 请求体参数：
 
-| 参数名           | 数据类型 | 是否可空 | 描述                                                |
-| ---------------- | -------- | -------- | --------------------------------------------------- |
-| name             | string   | 否       | 证书名称                                            |
-| domain           | string   | 否       | 主域名                                              |
+| 参数名           | 数据类型 | 是否可空 | 描述                                                                |
+| ---------------- | -------- | -------- | ------------------------------------------------------------------- |
+| name             | string   | 否       | 证书名称                                                            |
+| domain           | string   | 否       | 主域名                                                              |
 | certificate_type | string   | 是       | 证书类型（LETS_ENCRYPT, COMMERCIAL, SELF_SIGNED），默认LETS_ENCRYPT |
-| auto_renew       | boolean  | 是       | 是否自动续期，默认true                              |
-| owner_id         | integer  | 否       | 所有者ID                                            |
+| auto_renew       | boolean  | 是       | 是否自动续期，默认true                                              |
+| owner_id         | integer  | 否       | 所有者ID                                                            |
 
 **更新SSL证书**
 
@@ -3072,12 +3036,12 @@ GET /api/v1/cloud-accounts
 
 查询参数：
 
-| 参数      | 类型    | 必填 | 默认值 | 描述                                      |
-| --------- | ------- | ---- | ------ | ----------------------------------------- |
-| page      | integer | 否   | 1      | 页码                                      |
-| page_size | integer | 否   | 20     | 每页数量                                  |
+| 参数      | 类型    | 必填 | 默认值 | 描述                                            |
+| --------- | ------- | ---- | ------ | ----------------------------------------------- |
+| page      | integer | 否   | 1      | 页码                                            |
+| page_size | integer | 否   | 20     | 每页数量                                        |
 | provider  | string  | 否   | -      | 云服务商（aliyun, tencent, aws, huawei, azure） |
-| status    | string  | 否   | -      | 账号状态（ACTIVE, INACTIVE, ERROR）       |
+| status    | string  | 否   | -      | 账号状态（ACTIVE, INACTIVE, ERROR）             |
 
 响应示例：
 
@@ -3114,14 +3078,14 @@ POST /api/v1/cloud-accounts
 
 请求体参数：
 
-| 参数名         | 数据类型 | 是否可空 | 描述                                      |
-| -------------- | -------- | -------- | ----------------------------------------- |
-| name           | string   | 否       | 账号名称                                  |
+| 参数名         | 数据类型 | 是否可空 | 描述                                            |
+| -------------- | -------- | -------- | ----------------------------------------------- |
+| name           | string   | 否       | 账号名称                                        |
 | provider       | string   | 否       | 云服务商（aliyun, tencent, aws, huawei, azure） |
-| credentials    | object   | 否       | 认证信息（加密存储）                      |
-| regions        | array    | 是       | 支持的地域列表                            |
-| default_region | string   | 是       | 默认地域                                  |
-| description    | string   | 是       | 账号描述                                  |
+| credentials    | object   | 否       | 认证信息（加密存储）                            |
+| regions        | array    | 是       | 支持的地域列表                                  |
+| default_region | string   | 是       | 默认地域                                        |
+| description    | string   | 是       | 账号描述                                        |
 
 请求示例：
 
@@ -3147,11 +3111,11 @@ POST /api/v1/cloud-accounts/test-connection
 
 请求体参数：
 
-| 参数名      | 数据类型 | 是否可空 | 描述         |
-| ----------- | -------- | -------- | ------------ |
-| provider    | string   | 否       | 云服务商     |
-| credentials | object   | 否       | 认证信息     |
-| region      | string   | 是       | 测试地域     |
+| 参数名      | 数据类型 | 是否可空 | 描述     |
+| ----------- | -------- | -------- | -------- |
+| provider    | string   | 否       | 云服务商 |
+| credentials | object   | 否       | 认证信息 |
+| region      | string   | 是       | 测试地域 |
 
 响应示例：
 
@@ -3183,14 +3147,14 @@ GET /api/v1/cloud-resources
 
 查询参数：
 
-| 参数            | 类型    | 必填 | 默认值 | 描述                                    |
-| --------------- | ------- | ---- | ------ | --------------------------------------- |
-| cloud_account_id | integer | 否   | -      | 云账号ID                                |
-| resource_type   | string  | 否   | -      | 资源类型（ecs, oss, rds, slb, vpc）     |
-| region          | string  | 否   | -      | 地域                                    |
-| status          | string  | 否   | -      | 资源状态（Running, Stopped, Creating）  |
-| page            | integer | 否   | 1      | 页码                                    |
-| page_size       | integer | 否   | 20     | 每页数量                                |
+| 参数             | 类型    | 必填 | 默认值 | 描述                                   |
+| ---------------- | ------- | ---- | ------ | -------------------------------------- |
+| cloud_account_id | integer | 否   | -      | 云账号ID                               |
+| resource_type    | string  | 否   | -      | 资源类型（ecs, oss, rds, slb, vpc）    |
+| region           | string  | 否   | -      | 地域                                   |
+| status           | string  | 否   | -      | 资源状态（Running, Stopped, Creating） |
+| page             | integer | 否   | 1      | 页码                                   |
+| page_size        | integer | 否   | 20     | 每页数量                               |
 
 响应示例：
 
@@ -3247,10 +3211,10 @@ POST /api/v1/cloud-resources/{id}/actions
 
 请求体参数：
 
-| 参数名     | 数据类型 | 是否可空 | 描述                                                |
-| ---------- | -------- | -------- | --------------------------------------------------- |
-| action     | string   | 否       | 操作类型（start, stop, restart, delete, resize）   |
-| parameters | object   | 是       | 操作参数，根据不同操作类型包含不同参数              |
+| 参数名     | 数据类型 | 是否可空 | 描述                                             |
+| ---------- | -------- | -------- | ------------------------------------------------ |
+| action     | string   | 否       | 操作类型（start, stop, restart, delete, resize） |
+| parameters | object   | 是       | 操作参数，根据不同操作类型包含不同参数           |
 
 请求示例：
 
@@ -3301,11 +3265,11 @@ POST /api/v1/cloud-accounts/{id}/sync
 
 请求体参数：
 
-| 参数名         | 数据类型  | 是否可空 | 描述                                    |
-| -------------- | --------- | -------- | --------------------------------------- |
-| resource_types | string[]  | 是       | 要同步的资源类型，为空则同步所有类型    |
-| regions        | string[]  | 是       | 要同步的地域，为空则同步所有地域        |
-| force          | boolean   | 是       | 是否强制同步，默认false                 |
+| 参数名         | 数据类型 | 是否可空 | 描述                                 |
+| -------------- | -------- | -------- | ------------------------------------ |
+| resource_types | string[] | 是       | 要同步的资源类型，为空则同步所有类型 |
+| regions        | string[] | 是       | 要同步的地域，为空则同步所有地域     |
+| force          | boolean  | 是       | 是否强制同步，默认false              |
 
 响应示例：
 
@@ -3342,13 +3306,13 @@ GET /api/v1/cloud-resources/cost-analysis
 
 查询参数：
 
-| 参数            | 类型    | 必填 | 默认值 | 描述                               |
-| --------------- | ------- | ---- | ------ | ---------------------------------- |
-| cloud_account_id | integer | 否   | -      | 云账号ID                           |
-| start_time      | string  | 否   | -      | 开始时间                           |
-| end_time        | string  | 否   | -      | 结束时间                           |
-| group_by        | string  | 否   | day    | 分组方式（day, week, month）       |
-| resource_type   | string  | 否   | -      | 资源类型                           |
+| 参数             | 类型    | 必填 | 默认值 | 描述                         |
+| ---------------- | ------- | ---- | ------ | ---------------------------- |
+| cloud_account_id | integer | 否   | -      | 云账号ID                     |
+| start_time       | string  | 否   | -      | 开始时间                     |
+| end_time         | string  | 否   | -      | 结束时间                     |
+| group_by         | string  | 否   | day    | 分组方式（day, week, month） |
+| resource_type    | string  | 否   | -      | 资源类型                     |
 
 响应示例：
 
@@ -3405,13 +3369,13 @@ GET /api/v1/projects/{project_id}/members
 
 查询参数：
 
-| 参数      | 类型    | 必填 | 默认值 | 描述                                      |
-| --------- | ------- | ---- | ------ | ----------------------------------------- |
-| page      | integer | 否   | 1      | 页码                                      |
-| page_size | integer | 否   | 20     | 每页数量                                  |
+| 参数      | 类型    | 必填 | 默认值 | 描述                                           |
+| --------- | ------- | ---- | ------ | ---------------------------------------------- |
+| page      | integer | 否   | 1      | 页码                                           |
+| page_size | integer | 否   | 20     | 每页数量                                       |
 | role      | string  | 否   | -      | 角色筛选（admin, developer, operator, viewer） |
-| status    | string  | 否   | -      | 状态筛选（ACTIVE, INACTIVE, PENDING）     |
-| keyword   | string  | 否   | -      | 搜索关键词（用户名、昵称）                |
+| status    | string  | 否   | -      | 状态筛选（ACTIVE, INACTIVE, PENDING）          |
+| keyword   | string  | 否   | -      | 搜索关键词（用户名、昵称）                     |
 
 响应示例：
 
@@ -3509,13 +3473,13 @@ POST /api/v1/projects/{project_id}/members/invite
 
 请求体参数：
 
-| 参数名      | 数据类型  | 是否可空 | 描述                                      |
-| ----------- | --------- | -------- | ----------------------------------------- |
-| email       | string    | 否       | 被邀请人邮箱                              |
-| role        | string    | 否       | 项目角色（admin, developer, operator, viewer） |
-| permissions | string[]  | 是       | 自定义权限列表                            |
-| message     | string    | 是       | 邀请消息                                  |
-| expires_in  | integer   | 是       | 邀请有效期（小时），默认72小时            |
+| 参数名      | 数据类型 | 是否可空 | 描述                                           |
+| ----------- | -------- | -------- | ---------------------------------------------- |
+| email       | string   | 否       | 被邀请人邮箱                                   |
+| role        | string   | 否       | 项目角色（admin, developer, operator, viewer） |
+| permissions | string[] | 是       | 自定义权限列表                                 |
+| message     | string   | 是       | 邀请消息                                       |
+| expires_in  | integer  | 是       | 邀请有效期（小时），默认72小时                 |
 
 响应示例：
 
@@ -3543,10 +3507,10 @@ GET /api/v1/projects/{project_id}/invitations
 
 查询参数：
 
-| 参数      | 类型    | 必填 | 默认值 | 描述                                    |
-| --------- | ------- | ---- | ------ | --------------------------------------- |
-| page      | integer | 否   | 1      | 页码                                    |
-| page_size | integer | 否   | 20     | 每页数量                                |
+| 参数      | 类型    | 必填 | 默认值 | 描述                                              |
+| --------- | ------- | ---- | ------ | ------------------------------------------------- |
+| page      | integer | 否   | 1      | 页码                                              |
+| page_size | integer | 否   | 20     | 每页数量                                          |
 | status    | string  | 否   | -      | 邀请状态（PENDING, ACCEPTED, EXPIRED, CANCELLED） |
 
 **取消邀请**
@@ -3587,11 +3551,11 @@ PUT /api/v1/projects/{project_id}/members/{member_id}
 
 请求体参数：
 
-| 参数名      | 数据类型  | 是否可空 | 描述           |
-| ----------- | --------- | -------- | -------------- |
-| role        | string    | 是       | 项目角色       |
-| permissions | string[]  | 是       | 自定义权限列表 |
-| status      | string    | 是       | 成员状态       |
+| 参数名      | 数据类型 | 是否可空 | 描述           |
+| ----------- | -------- | -------- | -------------- |
+| role        | string   | 是       | 项目角色       |
+| permissions | string[] | 是       | 自定义权限列表 |
+| status      | string   | 是       | 成员状态       |
 
 **移除项目成员**
 
@@ -3613,13 +3577,13 @@ GET /api/v1/projects/{project_id}/members/{member_id}/activities
 
 查询参数：
 
-| 参数       | 类型    | 必填 | 默认值 | 描述                               |
-| ---------- | ------- | ---- | ------ | ---------------------------------- |
-| page       | integer | 否   | 1      | 页码                               |
-| page_size  | integer | 否   | 20     | 每页数量                           |
-| start_time | string  | 否   | -      | 开始时间                           |
-| end_time   | string  | 否   | -      | 结束时间                           |
-| action     | string  | 否   | -      | 操作类型                           |
+| 参数       | 类型    | 必填 | 默认值 | 描述     |
+| ---------- | ------- | ---- | ------ | -------- |
+| page       | integer | 否   | 1      | 页码     |
+| page_size  | integer | 否   | 20     | 每页数量 |
+| start_time | string  | 否   | -      | 开始时间 |
+| end_time   | string  | 否   | -      | 结束时间 |
+| action     | string  | 否   | -      | 操作类型 |
 
 响应示例：
 
@@ -3723,12 +3687,12 @@ GET /api/v1/projects/{project_id}/environment-variables
 
 查询参数：
 
-| 参数      | 类型    | 必填 | 默认值 | 描述                                    |
-| --------- | ------- | ---- | ------ | --------------------------------------- |
-| page      | integer | 否   | 1      | 页码                                    |
-| page_size | integer | 否   | 50     | 每页数量                                |
-| scope     | string  | 否   | -      | 作用域筛选（global, app, workflow）     |
-| keyword   | string  | 否   | -      | 搜索关键词                              |
+| 参数      | 类型    | 必填 | 默认值 | 描述                                |
+| --------- | ------- | ---- | ------ | ----------------------------------- |
+| page      | integer | 否   | 1      | 页码                                |
+| page_size | integer | 否   | 50     | 每页数量                            |
+| scope     | string  | 否   | -      | 作用域筛选（global, app, workflow） |
+| keyword   | string  | 否   | -      | 搜索关键词                          |
 
 响应示例：
 
@@ -3802,13 +3766,13 @@ POST /api/v1/projects/{project_id}/environment-variables
 
 请求体参数：
 
-| 参数名      | 数据类型 | 是否可空 | 描述                                    |
-| ----------- | -------- | -------- | --------------------------------------- |
-| name        | string   | 否       | 变量名称，大写字母和下划线              |
-| value       | string   | 否       | 变量值                                  |
-| type        | string   | 是       | 变量类型（NORMAL, SENSITIVE），默认NORMAL |
+| 参数名      | 数据类型 | 是否可空 | 描述                                        |
+| ----------- | -------- | -------- | ------------------------------------------- |
+| name        | string   | 否       | 变量名称，大写字母和下划线                  |
+| value       | string   | 否       | 变量值                                      |
+| type        | string   | 是       | 变量类型（NORMAL, SENSITIVE），默认NORMAL   |
 | scope       | string   | 是       | 作用域（global, app, workflow），默认global |
-| description | string   | 是       | 变量描述                                |
+| description | string   | 是       | 变量描述                                    |
 
 验证规则：
 
@@ -3846,10 +3810,10 @@ POST /api/v1/projects/{project_id}/environment-variables/batch
 
 请求体参数：
 
-| 参数名    | 数据类型  | 是否可空 | 描述                     |
-| --------- | --------- | -------- | ------------------------ |
-| action    | string    | 否       | 操作类型（delete, export） |
-| var_ids   | integer[] | 否       | 环境变量ID数组           |
+| 参数名  | 数据类型  | 是否可空 | 描述                       |
+| ------- | --------- | -------- | -------------------------- |
+| action  | string    | 否       | 操作类型（delete, export） |
+| var_ids | integer[] | 否       | 环境变量ID数组             |
 
 **获取项目配置**
 
@@ -3925,13 +3889,13 @@ PUT /api/v1/projects/{project_id}/settings
 
 请求体参数：
 
-| 参数名               | 数据类型 | 是否可空 | 描述         |
-| -------------------- | -------- | -------- | ------------ |
-| basic_info           | object   | 是       | 基本信息     |
-| advanced_settings    | object   | 是       | 高级设置     |
-| security_settings    | object   | 是       | 安全设置     |
-| notification_settings | object   | 是       | 通知设置     |
-| integration_settings | object   | 是       | 集成设置     |
+| 参数名                | 数据类型 | 是否可空 | 描述     |
+| --------------------- | -------- | -------- | -------- |
+| basic_info            | object   | 是       | 基本信息 |
+| advanced_settings     | object   | 是       | 高级设置 |
+| security_settings     | object   | 是       | 安全设置 |
+| notification_settings | object   | 是       | 通知设置 |
+| integration_settings  | object   | 是       | 集成设置 |
 
 **获取项目使用统计**
 
@@ -4600,15 +4564,15 @@ GET /api/v1/admin/projects
 
 查询参数：
 
-| 参数      | 类型    | 必填 | 默认值 | 描述                                    |
-| --------- | ------- | ---- | ------ | --------------------------------------- |
-| page      | integer | 否   | 1      | 页码                                    |
-| page_size | integer | 否   | 20     | 每页数量                                |
-| keyword   | string  | 否   | -      | 搜索关键词（项目名称、标识符）          |
-| status    | string  | 否   | -      | 项目状态（ACTIVE, INACTIVE, SUSPENDED） |
-| owner_id  | integer | 否   | -      | 项目所有者ID                            |
+| 参数       | 类型    | 必填 | 默认值 | 描述                                    |
+| ---------- | ------- | ---- | ------ | --------------------------------------- |
+| page       | integer | 否   | 1      | 页码                                    |
+| page_size  | integer | 否   | 20     | 每页数量                                |
+| keyword    | string  | 否   | -      | 搜索关键词（项目名称、标识符）          |
+| status     | string  | 否   | -      | 项目状态（ACTIVE, INACTIVE, SUSPENDED） |
+| owner_id   | integer | 否   | -      | 项目所有者ID                            |
 | start_time | string  | 否   | -      | 创建开始时间                            |
-| end_time  | string  | 否   | -      | 创建结束时间                            |
+| end_time   | string  | 否   | -      | 创建结束时间                            |
 
 响应示例：
 
@@ -4678,21 +4642,21 @@ POST /api/v1/admin/projects
 
 请求体参数：
 
-| 参数名                | 数据类型 | 是否可空 | 描述                                    |
-| --------------------- | -------- | -------- | --------------------------------------- |
-| name                  | string   | 否       | 项目名称，3-50字符                      |
-| identifier            | string   | 否       | 项目标识符，3-50字符，字母数字下划线    |
-| description           | string   | 是       | 项目描述                                |
-| tags                  | array    | 是       | 项目标签                                |
-| icon                  | string   | 是       | 项目图标URL                             |
-| owner_id              | integer  | 否       | 项目所有者ID                            |
-| default_resource_group | string   | 是       | 默认资源组，默认"default"               |
-| default_timezone      | string   | 是       | 默认时区，默认"Asia/Shanghai"           |
-| log_retention_days    | integer  | 是       | 日志保留天数，默认30                    |
-| backup_strategy       | string   | 是       | 备份策略，默认"daily"                   |
-| access_control        | string   | 是       | 访问控制，默认"members"                 |
-| api_access            | boolean  | 是       | API访问权限，默认true                   |
-| audit_enabled         | boolean  | 是       | 审计日志开启，默认true                  |
+| 参数名                 | 数据类型 | 是否可空 | 描述                                 |
+| ---------------------- | -------- | -------- | ------------------------------------ |
+| name                   | string   | 否       | 项目名称，3-50字符                   |
+| identifier             | string   | 否       | 项目标识符，3-50字符，字母数字下划线 |
+| description            | string   | 是       | 项目描述                             |
+| tags                   | array    | 是       | 项目标签                             |
+| icon                   | string   | 是       | 项目图标URL                          |
+| owner_id               | integer  | 否       | 项目所有者ID                         |
+| default_resource_group | string   | 是       | 默认资源组，默认"default"            |
+| default_timezone       | string   | 是       | 默认时区，默认"Asia/Shanghai"        |
+| log_retention_days     | integer  | 是       | 日志保留天数，默认30                 |
+| backup_strategy        | string   | 是       | 备份策略，默认"daily"                |
+| access_control         | string   | 是       | 访问控制，默认"members"              |
+| api_access             | boolean  | 是       | API访问权限，默认true                |
+| audit_enabled          | boolean  | 是       | 审计日志开启，默认true               |
 
 验证规则：
 
@@ -4787,21 +4751,21 @@ PUT /api/v1/admin/projects/{id}
 
 请求体参数：
 
-| 参数名                | 数据类型 | 是否可空 | 描述         |
-| --------------------- | -------- | -------- | ------------ |
-| name                  | string   | 是       | 项目名称     |
-| description           | string   | 是       | 项目描述     |
-| tags                  | array    | 是       | 项目标签     |
-| icon                  | string   | 是       | 项目图标URL  |
-| owner_id              | integer  | 是       | 项目所有者ID |
-| status                | string   | 是       | 项目状态     |
+| 参数名                 | 数据类型 | 是否可空 | 描述         |
+| ---------------------- | -------- | -------- | ------------ |
+| name                   | string   | 是       | 项目名称     |
+| description            | string   | 是       | 项目描述     |
+| tags                   | array    | 是       | 项目标签     |
+| icon                   | string   | 是       | 项目图标URL  |
+| owner_id               | integer  | 是       | 项目所有者ID |
+| status                 | string   | 是       | 项目状态     |
 | default_resource_group | string   | 是       | 默认资源组   |
-| default_timezone      | string   | 是       | 默认时区     |
-| log_retention_days    | integer  | 是       | 日志保留天数 |
-| backup_strategy       | string   | 是       | 备份策略     |
-| access_control        | string   | 是       | 访问控制     |
-| api_access            | boolean  | 是       | API访问权限  |
-| audit_enabled         | boolean  | 是       | 审计日志开启 |
+| default_timezone       | string   | 是       | 默认时区     |
+| log_retention_days     | integer  | 是       | 日志保留天数 |
+| backup_strategy        | string   | 是       | 备份策略     |
+| access_control         | string   | 是       | 访问控制     |
+| api_access             | boolean  | 是       | API访问权限  |
+| audit_enabled          | boolean  | 是       | 审计日志开启 |
 
 **删除项目**
 
@@ -4852,11 +4816,11 @@ POST /api/v1/admin/projects/batch-actions
 
 请求体参数：
 
-| 参数名      | 数据类型  | 是否可空 | 描述                                          |
-| ----------- | --------- | -------- | --------------------------------------------- |
-| project_ids | integer[] | 否       | 项目ID数组                                    |
+| 参数名      | 数据类型  | 是否可空 | 描述                                              |
+| ----------- | --------- | -------- | ------------------------------------------------- |
+| project_ids | integer[] | 否       | 项目ID数组                                        |
 | action      | string    | 否       | 操作类型（activate, deactivate, suspend, delete） |
-| reason      | string    | 是       | 操作原因                                      |
+| reason      | string    | 是       | 操作原因                                          |
 
 #### 4.4.2 平台设置
 
@@ -4936,17 +4900,6 @@ POST /api/v1/system-configs/smtp/test
 | ---------- | -------- | -------- | -------- |
 | test_email | string   | 否       | 测试邮箱 |
 
-**测试短信配置**
-
-```text
-POST /api/v1/system-configs/sms/test
-```
-
-请求体参数：
-
-| 参数名     | 数据类型 | 是否可空 | 描述       |
-| ---------- | -------- | -------- | ---------- |
-| test_phone | string   | 否       | 测试手机号 |
 
 **获取License信息**
 
@@ -5377,6 +5330,89 @@ POST /api/v1/system-maintenance/updates
 GET /api/v1/roles
 ```
 
+查询参数：
+
+| 参数名     | 数据类型 | 是否可空 | 描述                                        |
+| ---------- | -------- | -------- | ------------------------------------------- |
+| page       | integer  | 是       | 页码，默认1                                 |
+| page_size  | integer  | 是       | 每页数量，默认20                            |
+| search     | string   | 是       | 搜索关键词，支持角色名称的精确或模糊查询    |
+| status     | integer  | 是       | 角色状态筛选（0-禁用，1-启用）              |
+| start_time | string   | 是       | 更新时间范围开始，格式：2025-01-01 00:00:00 |
+| end_time   | string   | 是       | 更新时间范围结束，格式：2025-01-01 23:59:59 |
+
+响应示例：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "items": [
+      {
+        "id": 1,
+        "name": "管理员",
+        "code": "admin",
+        "description": "系统管理员，拥有所有功能的完整权限",
+        "is_system": true,
+        "sort_order": 1,
+        "status": 1,
+        "permission_count": 50,
+        "user_count": 2,
+        "created_at": "2025-01-01 10:00:00",
+        "updated_at": "2025-01-01 10:00:00",
+        "created_by": "system"
+      }
+    ],
+    "total": 4,
+    "page": 1,
+    "page_size": 20,
+    "total_pages": 1
+  }
+}
+```
+
+**获取角色详情**
+
+```text
+GET /api/v1/roles/{id}
+```
+
+响应示例：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 1,
+    "name": "管理员",
+    "code": "admin",
+    "description": "系统管理员，拥有所有功能的完整权限",
+    "is_system": true,
+    "sort_order": 1,
+    "status": 1,
+    "permissions": [
+      {
+        "id": 1,
+        "name": "用户管理",
+        "code": "user:manage",
+        "module": "user"
+      }
+    ],
+    "users": [
+      {
+        "id": 1,
+        "username": "admin",
+        "email": "admin@websoft9.com"
+      }
+    ],
+    "created_at": "2025-01-01 10:00:00",
+    "updated_at": "2025-01-01 10:00:00"
+  }
+}
+```
+
 **创建角色**
 
 ```text
@@ -5385,15 +5421,25 @@ POST /api/v1/roles
 
 请求体参数：
 
-| 参数名         | 数据类型 | 是否可空 | 描述                          |
-| -------------- | -------- | -------- | ----------------------------- |
-| name           | string   | 否       | 角色名称                      |
-| code           | string   | 否       | 角色代码，唯一标识            |
-| description    | string   | 是       | 角色描述                      |
-| permission_ids | array    | 是       | 权限ID数组                    |
-| is_system      | boolean  | 是       | 是否系统角色                  |
-| sort_order     | integer  | 是       | 排序顺序，默认0               |
-| status         | integer  | 是       | 状态（0-禁用，1-启用），默认1 |
+| 参数名         | 数据类型 | 是否可空 | 描述                             |
+| -------------- | -------- | -------- | -------------------------------- |
+| name           | string   | 否       | 角色名称，长度2-64字符           |
+| code           | string   | 否       | 角色代码，唯一标识，长度2-32字符 |
+| description    | string   | 是       | 角色描述，最大500字符            |
+| permission_ids | array    | 是       | 权限ID数组                       |
+| sort_order     | integer  | 是       | 排序顺序，默认0                  |
+
+请求示例：
+
+```json
+{
+  "name": "项目管理员",
+  "code": "project_admin",
+  "description": "项目管理员，拥有项目完全管理权限",
+  "permission_ids": [1, 2, 3, 4],
+  "sort_order": 10
+}
+```
 
 **更新角色**
 
@@ -5401,11 +5447,67 @@ POST /api/v1/roles
 PUT /api/v1/roles/{id}
 ```
 
+请求体参数：
+
+| 参数名         | 数据类型 | 是否可空 | 描述                   |
+| -------------- | -------- | -------- | ---------------------- |
+| name           | string   | 是       | 角色名称，长度2-64字符 |
+| description    | string   | 是       | 角色描述，最大500字符  |
+| permission_ids | array    | 是       | 权限ID数组             |
+| sort_order     | integer  | 是       | 排序顺序               |
+| status         | integer  | 是       | 状态（0-禁用，1-启用） |
+
 **删除角色**
 
 ```text
 DELETE /api/v1/roles/{id}
 ```
+
+响应示例：
+
+```json
+{
+  "code": 200,
+  "message": "角色删除成功"
+}
+```
+
+**角色权限分配**
+
+```text
+POST /api/v1/roles/{id}/permissions
+```
+
+请求体参数：
+
+| 参数名         | 数据类型 | 是否可空 | 描述       |
+| -------------- | -------- | -------- | ---------- |
+| permission_ids | array    | 否       | 权限ID数组 |
+
+**角色权限移除**
+
+```text
+DELETE /api/v1/roles/{id}/permissions
+```
+
+请求体参数：
+
+| 参数名         | 数据类型 | 是否可空 | 描述       |
+| -------------- | -------- | -------- | ---------- |
+| permission_ids | array    | 否       | 权限ID数组 |
+
+**获取角色用户列表**
+
+```text
+GET /api/v1/roles/{id}/users
+```
+
+查询参数：
+
+| 参数名    | 数据类型 | 是否可空 | 描述             |
+| --------- | -------- | -------- | ---------------- |
+| page      | integer  | 是       | 页码，默认1      |
+| page_size | integer  | 是       | 每页数量，默认20 |
 
 ##### 权限管理
 
@@ -5415,11 +5517,64 @@ DELETE /api/v1/roles/{id}
 GET /api/v1/permissions
 ```
 
+查询参数：
+
+| 参数名     | 数据类型 | 是否可空 | 描述                                          |
+| ---------- | -------- | -------- | --------------------------------------------- |
+| page       | integer  | 是       | 页码，默认1                                   |
+| page_size  | integer  | 是       | 每页数量，默认20                              |
+| search     | string   | 是       | 搜索关键词，支持权限名称的精确或模糊查询      |
+| module     | string   | 是       | 权限模块筛选                                  |
+| scope      | string   | 是       | 权限域筛选（platform-平台级，project-项目级） |
+| status     | integer  | 是       | 权限状态筛选（0-禁用，1-启用）                |
+| start_time | string   | 是       | 更新时间范围开始，格式：2025-01-01 00:00:00   |
+| end_time   | string   | 是       | 更新时间范围结束，格式：2025-01-01 23:59:59   |
+
+响应示例：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "items": [
+      {
+        "id": 1,
+        "scope": "platform",
+        "name": "用户管理",
+        "code": "user:manage",
+        "module": "user",
+        "action": "manage",
+        "resource": "user",
+        "description": "用户管理权限",
+        "is_system": true,
+        "sort_order": 1,
+        "status": 1,
+        "role_count": 2,
+        "created_at": "2025-01-01 10:00:00",
+        "updated_at": "2025-01-01 10:00:00"
+      }
+    ],
+    "total": 50,
+    "page": 1,
+    "page_size": 20,
+    "total_pages": 3
+  }
+}
+```
+
 **获取权限树**
 
 ```text
 GET /api/v1/permissions/tree
 ```
+
+查询参数：
+
+| 参数名 | 数据类型 | 是否可空 | 描述                                           |
+| ------ | -------- | -------- | ---------------------------------------------- |
+| scope  | string   | 是       | 权限域筛选（platform-平台级，project-项目级）  |
+| status | integer  | 是       | 权限状态筛选（0-禁用，1-启用），默认仅显示启用 |
 
 响应示例：
 
@@ -5430,29 +5585,182 @@ GET /api/v1/permissions/tree
   "data": [
     {
       "id": 1,
-      "name": "用户管理",
-      "code": "user",
-      "module": "user",
+      "scope": "platform",
+      "name": "平台管理",
+      "code": "platform",
+      "module": "platform",
+      "description": "平台管理模块",
       "children": [
         {
           "id": 2,
-          "name": "查看用户",
-          "code": "user:read",
+          "scope": "platform",
+          "name": "用户管理",
+          "code": "user",
           "module": "user",
-          "action": "read"
-        },
+          "description": "用户管理模块",
+          "children": [
+            {
+              "id": 3,
+              "scope": "platform",
+              "name": "查看用户",
+              "code": "user:read",
+              "module": "user",
+              "action": "read",
+              "resource": "user",
+              "description": "查看用户列表和详情"
+            },
+            {
+              "id": 4,
+              "scope": "platform",
+              "name": "创建用户",
+              "code": "user:create",
+              "module": "user",
+              "action": "create",
+              "resource": "user",
+              "description": "创建新用户"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "scope": "project",
+      "name": "项目管理",
+      "code": "project",
+      "module": "project",
+      "description": "项目管理模块",
+      "children": [
         {
-          "id": 3,
-          "name": "创建用户",
-          "code": "user:create",
-          "module": "user",
-          "action": "create"
+          "id": 21,
+          "scope": "project",
+          "name": "应用管理",
+          "code": "application",
+          "module": "application",
+          "description": "应用管理模块",
+          "children": [
+            {
+              "id": 22,
+              "scope": "project",
+              "name": "部署应用",
+              "code": "application:deploy",
+              "module": "application",
+              "action": "deploy",
+              "resource": "application",
+              "description": "部署新应用"
+            }
+          ]
         }
       ]
     }
   ]
 }
 ```
+
+**获取权限详情**
+
+```text
+GET /api/v1/permissions/{id}
+```
+
+响应示例：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 1,
+    "scope": "platform",
+    "name": "用户管理",
+    "code": "user:manage",
+    "module": "user",
+    "action": "manage",
+    "resource": "user",
+    "description": "用户管理权限",
+    "is_system": true,
+    "sort_order": 1,
+    "status": 1,
+    "roles": [
+      {
+        "id": 1,
+        "name": "管理员",
+        "code": "admin"
+      }
+    ],
+    "created_at": "2025-01-01 10:00:00",
+    "updated_at": "2025-01-01 10:00:00"
+  }
+}
+```
+
+**创建权限**
+
+```text
+POST /api/v1/permissions
+```
+
+请求体参数：
+
+| 参数名      | 数据类型 | 是否可空 | 描述                                      |
+| ----------- | -------- | -------- | ----------------------------------------- |
+| scope       | string   | 否       | 权限域（platform-平台级，project-项目级） |
+| name        | string   | 否       | 权限名称，长度2-64字符                    |
+| code        | string   | 否       | 权限编码，唯一标识，长度2-64字符          |
+| module      | string   | 否       | 模块名称，长度2-32字符                    |
+| action      | string   | 否       | 操作名称，长度2-32字符                    |
+| resource    | string   | 是       | 资源标识，长度2-64字符                    |
+| description | string   | 是       | 权限描述，最大500字符                     |
+| sort_order  | integer  | 是       | 排序顺序，默认0                           |
+
+请求示例：
+
+```json
+{
+  "scope": "project",
+  "name": "应用部署",
+  "code": "application:deploy",
+  "module": "application",
+  "action": "deploy",
+  "resource": "application",
+  "description": "部署应用权限",
+  "sort_order": 10
+}
+```
+
+**更新权限**
+
+```text
+PUT /api/v1/permissions/{id}
+```
+
+请求体参数：
+
+| 参数名      | 数据类型 | 是否可空 | 描述                   |
+| ----------- | -------- | -------- | ---------------------- |
+| name        | string   | 是       | 权限名称，长度2-64字符 |
+| description | string   | 是       | 权限描述，最大500字符  |
+| sort_order  | integer  | 是       | 排序顺序               |
+| status      | integer  | 是       | 状态（0-禁用，1-启用） |
+
+**删除权限**
+
+```text
+DELETE /api/v1/permissions/{id}
+```
+
+**获取权限关联的角色列表**
+
+```text
+GET /api/v1/permissions/{id}/roles
+```
+
+查询参数：
+
+| 参数名    | 数据类型 | 是否可空 | 描述             |
+| --------- | -------- | -------- | ---------------- |
+| page      | integer  | 是       | 页码，默认1      |
+| page_size | integer  | 是       | 每页数量，默认20 |
 
 ##### 认证管理
 
@@ -5469,26 +5777,61 @@ GET /api/v1/auth-config
   "code": 200,
   "message": "success",
   "data": {
-    "oauth2_enabled": true,
-    "oauth2_providers": [
-      {
-        "name": "Google",
-        "client_id": "***",
-        "enabled": true
+    "api_auth": {
+      "token_auth_enabled": true,
+      "oauth2_enabled": true,
+      "jwt_config": {
+        "algorithm": "HS256",
+        "expires_in": 3600,
+        "refresh_expires_in": 86400,
+        "auto_refresh": true
       }
-    ],
-    "two_factor_enabled": true,
-    "two_factor_methods": ["TOTP", "EMAIL", "SMS"],
-    "password_policy": {
-      "min_length": 8,
-      "require_uppercase": true,
-      "require_lowercase": true,
-      "require_numbers": true,
-      "require_symbols": false
+    },
+    "user_auth": {
+      "oauth2_enabled": true,
+      "oauth2_providers": [
+        {
+          "name": "Google",
+          "provider": "google",
+          "client_id": "***",
+          "enabled": true,
+          "auto_register": false
+        },
+        {
+          "name": "企业微信",
+          "provider": "wechat_work",
+          "client_id": "***",
+          "enabled": true,
+          "auto_register": true
+        }
+      ],
+      "two_factor_enabled": true,
+      "two_factor_methods": ["TOTP", "EMAIL"],
+      "two_factor_required_roles": ["admin"],
+      "password_policy": {
+        "min_length": 8,
+        "max_length": 128,
+        "require_uppercase": true,
+        "require_lowercase": true,
+        "require_numbers": true,
+        "require_symbols": false,
+        "password_history": 5,
+        "password_expires_days": 90
+      },
+      "login_security": {
+        "max_login_attempts": 5,
+        "lockout_duration": 1800,
+        "ip_whitelist_enabled": false,
+        "ip_whitelist": [],
+        "login_time_restriction": false,
+        "allowed_login_hours": "09:00-18:00"
+      }
     },
     "session_config": {
       "timeout": 3600,
-      "max_concurrent_sessions": 5
+      "max_concurrent_sessions": 5,
+      "remember_me_enabled": true,
+      "remember_me_duration": 2592000
     }
   }
 }
@@ -5502,20 +5845,54 @@ PUT /api/v1/auth-config
 
 请求体参数：
 
-| 参数名                  | 数据类型 | 是否可空 | 描述               |
-| ----------------------- | -------- | -------- | ------------------ |
-| oauth2_enabled          | boolean  | 是       | 是否启用OAuth2     |
-| oauth2_providers        | object[] | 是       | OAuth2提供商配置   |
-| two_factor_enabled      | boolean  | 是       | 是否启用双因子认证 |
-| two_factor_methods      | string[] | 是       | 双因子认证方法     |
-| password_policy         | object   | 是       | 密码策略配置       |
-| session_timeout         | integer  | 是       | 会话超时时间（秒） |
-| max_concurrent_sessions | integer  | 是       | 最大并发会话数     |
+| 参数名                       | 数据类型 | 是否可空 | 描述               |
+| ---------------------------- | -------- | -------- | ------------------ |
+| api_auth                     | object   | 是       | API认证配置        |
+| api_auth.token_auth_enabled  | boolean  | 是       | 是否启用Token认证  |
+| api_auth.oauth2_enabled      | boolean  | 是       | 是否启用OAuth2认证 |
+| api_auth.jwt_config          | object   | 是       | JWT配置            |
+| user_auth                    | object   | 是       | 用户认证配置       |
+| user_auth.oauth2_enabled     | boolean  | 是       | 是否启用OAuth2登录 |
+| user_auth.oauth2_providers   | array    | 是       | OAuth2提供商配置   |
+| user_auth.two_factor_enabled | boolean  | 是       | 是否启用双因子认证 |
+| user_auth.two_factor_methods | array    | 是       | 双因子认证方法     |
+| user_auth.password_policy    | object   | 是       | 密码策略配置       |
+| user_auth.login_security     | object   | 是       | 登录安全配置       |
+| session_config               | object   | 是       | 会话配置           |
 
-**获取API访问令牌列表**
+**获取OAuth2提供商配置**
 
 ```text
-GET /api/v1/api-tokens
+GET /api/v1/auth-config/oauth2-providers
+```
+
+响应示例：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": [
+    {
+      "id": 1,
+      "name": "Google",
+      "provider": "google",
+      "client_id": "***",
+      "client_secret": "***",
+      "redirect_uri": "https://websoft9.com/auth/callback/google",
+      "scopes": ["openid", "profile", "email"],
+      "enabled": true,
+      "auto_register": false,
+      "user_mapping": {
+        "username": "email",
+        "email": "email",
+        "name": "name"
+      },
+      "created_at": "2025-01-01 10:00:00",
+      "updated_at": "2025-01-01 10:00:00"
+    }
+  ]
+}
 ```
 
 **创建API访问令牌**
@@ -5526,17 +5903,166 @@ POST /api/v1/api-tokens
 
 请求体参数：
 
+| 参数名      | 数据类型 | 是否可空 | 描述                                              |
+| ----------- | -------- | -------- | ------------------------------------------------- |
+| name        | string   | 否       | 令牌名称，长度2-64字符                            |
+| description | string   | 是       | 令牌描述，最大500字符                             |
+| scopes      | array    | 否       | 权限范围，权限编码数组                            |
+| expires_at  | string   | 是       | 过期时间，格式：2025-12-31 23:59:59，null表示永久 |
+
+请求示例：
+
+```json
+{
+  "name": "第三方集成令牌",
+  "description": "用于第三方系统集成访问",
+  "scopes": ["user:read", "project:read", "application:deploy"],
+  "expires_at": "2025-12-31 23:59:59"
+}
+```
+
+响应示例：
+
+```json
+{
+  "code": 200,
+  "message": "令牌创建成功",
+  "data": {
+    "id": 1,
+    "name": "第三方集成令牌",
+    "token": "ws9_1234567890abcdef1234567890abcdef",
+    "scopes": ["user:read", "project:read", "application:deploy"],
+    "expires_at": "2025-12-31 23:59:59",
+    "created_at": "2025-01-01 10:00:00"
+  }
+}
+```
+
+**更新API访问令牌**
+
+```text
+PUT /api/v1/api-tokens/{id}
+```
+
+请求体参数：
+
 | 参数名      | 数据类型 | 是否可空 | 描述                   |
 | ----------- | -------- | -------- | ---------------------- |
-| name        | string   | 否       | 令牌名称               |
-| description | string   | 是       | 令牌描述               |
-| scopes      | string[] | 否       | 权限范围               |
-| expires_at  | string   | 是       | 过期时间，null表示永久 |
+| name        | string   | 是       | 令牌名称，长度2-64字符 |
+| description | string   | 是       | 令牌描述，最大500字符  |
+| scopes      | array    | 是       | 权限范围，权限编码数组 |
+| expires_at  | string   | 是       | 过期时间               |
 
 **撤销API访问令牌**
 
 ```text
 DELETE /api/v1/api-tokens/{id}
+```
+
+**批量撤销API访问令牌**
+
+```text
+DELETE /api/v1/api-tokens
+```
+
+请求体参数：
+
+| 参数名 | 数据类型 | 是否可空 | 描述       |
+| ------ | -------- | -------- | ---------- |
+| ids    | array    | 否       | 令牌ID数组 |
+
+**刷新API访问令牌**
+
+```text
+POST /api/v1/api-tokens/{id}/refresh
+```
+
+响应示例：
+
+```json
+{
+  "code": 200,
+  "message": "令牌刷新成功",
+  "data": {
+    "id": 1,
+    "token": "ws9_new1234567890abcdef1234567890abcdef",
+    "expires_at": "2025-12-31 23:59:59"
+  }
+}
+```
+
+**用户双因子认证设置**
+
+```text
+GET /api/v1/users/{user_id}/two-factor
+```
+
+响应示例：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "enabled": true,
+    "methods": [
+      {
+        "type": "TOTP",
+        "enabled": true,
+        "configured": true
+      },
+      {
+        "type": "EMAIL",
+        "enabled": true,
+        "configured": true,
+        "email": "user@example.com"
+      }
+    ],
+    "backup_codes": 8
+  }
+}
+```
+
+**启用用户双因子认证**
+
+```text
+POST /api/v1/users/{user_id}/two-factor/enable
+```
+
+请求体参数：
+
+| 参数名 | 数据类型 | 是否可空 | 描述                    |
+| ------ | -------- | -------- | ----------------------- |
+| method | string   | 否       | 认证方法（TOTP、EMAIL） |
+| code   | string   | 否       | 验证码                  |
+
+**禁用用户双因子认证**
+
+```text
+POST /api/v1/users/{user_id}/two-factor/disable
+```
+
+**生成TOTP密钥**
+
+```text
+POST /api/v1/users/{user_id}/two-factor/totp/generate
+```
+
+响应示例：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "secret": "JBSWY3DPEHPK3PXP",
+    "qr_code": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...",
+    "backup_codes": [
+      "12345678",
+      "87654321"
+    ]
+  }
+}
 ```
 
 #### 4.4.4 用户管理
@@ -6137,6 +6663,8 @@ Content-Disposition: attachment; filename="audit-logs-20250122.csv"
 | 1006   | 密码强度不足     |
 | 1007   | 验证码错误       |
 | 1008   | 登录失败次数过多 |
+| 1009   | 邮箱已存在       |
+| 1010   | Token已使用      |
 
 #### 5.2.2 权限相关错误（2000-2999）
 
@@ -6152,6 +6680,7 @@ Content-Disposition: attachment; filename="audit-logs-20250122.csv"
 
 | 错误码 | 描述               |
 | ------ | ------------------ |
+| 3000   | 参数验证失败       |
 | 3001   | 必填参数缺失       |
 | 3002   | 参数格式错误       |
 | 3003   | 参数值超出范围     |
@@ -6160,17 +6689,26 @@ Content-Disposition: attachment; filename="audit-logs-20250122.csv"
 | 3006   | 手机号格式错误     |
 | 3007   | URL格式错误        |
 | 3008   | 日期格式错误       |
+| 3009   | 邮箱未验证         |
 
 #### 5.2.4 资源相关错误（4000-4999）
 
 | 错误码 | 描述               |
 | ------ | ------------------ |
+| 4000   | 数据库记录不存在   |
 | 4001   | 资源不存在         |
 | 4002   | 资源已存在         |
 | 4003   | 资源状态不允许操作 |
 | 4004   | 资源依赖关系冲突   |
 | 4005   | 资源配额不足       |
 | 4006   | 资源正在使用中     |
+| 4007   | 查询失败           |
+| 4008   | 创建失败           |
+| 4009   | 更新失败           |
+| 4010   | 删除失败           |
+| 4011   | 资源被禁用         |
+| 4012   | 没有资源被更新     |
+| 4013   | 不允许删除         |
 
 #### 5.2.5 业务逻辑错误（5000-5999）
 
@@ -6186,17 +6724,20 @@ Content-Disposition: attachment; filename="audit-logs-20250122.csv"
 | 5008   | 应用下线失败       |
 | 5009   | 健康检查失败       |
 | 5010   | 网关配置更新失败   |
+| 5011   | 用户名已经存在     |
+| 5012   | 权限验证无效       |
 
 #### 5.2.6 系统相关错误（6000-6999）
 
 | 错误码 | 描述             |
 | ------ | ---------------- |
-| 6001   | 数据库连接失败   |
+| 6001   | 系统内部错误     |
 | 6002   | 缓存服务不可用   |
 | 6003   | 文件系统错误     |
 | 6004   | 网络连接超时     |
 | 6005   | 第三方服务不可用 |
 | 6006   | 系统维护中       |
+| 6007   | 数据库连接失败   |
 
 ### 5.3 错误响应示例
 

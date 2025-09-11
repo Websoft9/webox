@@ -1,11 +1,11 @@
 package controller
 
 import (
-	"net/http"
-	"strconv"
-
+	"api-service/pkg/errors"
 	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
+	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -118,16 +118,6 @@ func GetPaginationParams(ctx *gin.Context) (page, pageSize int) {
 	return page, pageSize
 }
 
-// ResponseCreated sends a created response
-func ResponseCreated(ctx *gin.Context, data interface{}, messageKey string, i18n *i18n.I18n) {
-	ctx.JSON(http.StatusCreated, gin.H{
-		"success": true,
-		"code":    http.StatusCreated,
-		"message": i18n.T(ctx, messageKey),
-		"data":    data,
-	})
-}
-
 // ResponseBadRequest sends a bad request response
 func ResponseBadRequest(ctx *gin.Context, err error, messageKey string, i18n *i18n.I18n) {
 	ctx.JSON(http.StatusBadRequest, gin.H{
@@ -139,12 +129,21 @@ func ResponseBadRequest(ctx *gin.Context, err error, messageKey string, i18n *i1
 }
 
 // ResponseOK sends a success response
-func ResponseOK(ctx *gin.Context, data interface{}, messageKey string, i18n *i18n.I18n) {
+func ResponseOKWithData(ctx *gin.Context, data interface{}, messageKey string, i18n *i18n.I18n) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"code":    http.StatusOK,
 		"message": i18n.T(ctx, messageKey),
 		"data":    data,
+	})
+}
+
+// ResponseOK sends a success response with a localized message
+func ResponseOK(ctx *gin.Context, messageKey string, i18n *i18n.I18n) {
+	ctx.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"code":    http.StatusOK,
+		"message": i18n.T(ctx, messageKey),
 	})
 }
 
@@ -181,6 +180,20 @@ func ResponseInternalError(ctx *gin.Context, err error, messageKey string, log l
 	ctx.JSON(http.StatusInternalServerError, gin.H{
 		"success": false,
 		"code":    http.StatusInternalServerError,
+		"message": i18n.T(ctx, messageKey),
+		"error":   err.Error(),
+	})
+}
+
+// ResponseWithError sends an error response using AppError information
+// It extracts the HTTP status code and i18n message key from the error
+// and logs the error with appropriate context
+func ResponseWithError(ctx *gin.Context, err error, log logger.Logger, i18n *i18n.I18n) {
+	httpStatus, messageKey := errors.GetErrCodeAndMessageKey(err)
+	log.ErrorContext(ctx.Request.Context(), i18n.T(ctx, messageKey), logger.ErrorField(err))
+	ctx.JSON(httpStatus, gin.H{
+		"success": false,
+		"code":    httpStatus,
 		"message": i18n.T(ctx, messageKey),
 		"error":   err.Error(),
 	})

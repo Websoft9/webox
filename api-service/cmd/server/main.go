@@ -11,11 +11,11 @@ import (
 	"api-service/internal/router"
 	serviceImpl "api-service/internal/service"
 	"api-service/pkg/auth"
+	"api-service/pkg/database"
 	"api-service/pkg/errors"
 	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
 	"api-service/pkg/redis"
-	"api-service/pkg/utils"
 	"context"
 	"fmt"
 	"net/http"
@@ -48,10 +48,10 @@ import (
 
 //	@BasePath	/
 
-//	@securityDefinitions.apikey	Bearer
+//	@securitydefinitions.apikey BearerAuth
 //	@in							header
 //	@name						Authorization
-//	@description				Type "Bearer" followed by a space and JWT token.
+//	@description				Enter the token with the 'Bearer ' prefix, e.g. 'Bearer abc123'
 
 func main() {
 	// 1. Load configuration first
@@ -96,7 +96,7 @@ func main() {
 	zapLogger.Info("Internationalization initialized successfully")
 
 	// 5. Initialize database connection and perform migrations
-	db, err := initDatabase(cfg, zapLogger)
+	dbWrapper, err := initDatabaseWrapper(cfg, zapLogger)
 	if err != nil {
 		zapLogger.Fatal("Failed to initialize database", logger.String("error", err.Error()))
 	}
@@ -108,7 +108,7 @@ func main() {
 	}
 
 	// 7. Initialize repositories, services, controllers and start HTTP server
-	if err := startServer(cfg, authConfigManager, zapLogger, i18nInstance, db, serviceConns); err != nil {
+	if err := startServer(cfg, authConfigManager, zapLogger, i18nInstance, dbWrapper.GetDB(), serviceConns); err != nil {
 		zapLogger.Fatal("Failed to start server", logger.String("error", err.Error()))
 	}
 }
@@ -129,23 +129,26 @@ func initI18n(cfg *config.Config) (*i18n.I18n, error) {
 	return i18n.GetInstance(), nil
 }
 
-// initDatabase establishes database connection and performs automatic schema migration
-// Supports SQLite for development and MySQL/PostgreSQL for production environments
-func initDatabase(cfg *config.Config, zapLogger logger.Logger) (*gorm.DB, error) {
-	db, err := utils.InitDB(cfg)
+// initDatabaseWrapper establishes database connection using our enhanced SQLite manager
+// and performs automatic schema migration. Supports SQLite with optimized concurrent access
+func initDatabaseWrapper(cfg *config.Config, zapLogger logger.Logger) (*database.DBWrapper, error) {
+	dbWrapper, err := database.InitDBWrapper(cfg)
 	if err != nil {
 		return nil, err
 	}
-	zapLogger.Info("Database connection successful")
+	zapLogger.Info("Database connection successful",
+		logger.String("type", cfg.Database.Type),
+		logger.Bool("sqlite_optimized", cfg.Database.Type == "sqlite"))
 
 	// Check if database was already initialized by the init script
 	flagFile := "data/.websoft9_db_initialized"
 	if _, err := os.Stat(flagFile); err == nil {
 		zapLogger.Info("Database already initialized by init script, skipping auto-migration")
-		return db, nil
+		return dbWrapper, nil
 	}
 
 	// Auto-migrate all database models to ensure schema consistency
+	db := dbWrapper.GetDB()
 	if migrateErr := db.AutoMigrate(
 		&model.User{},
 		&model.Role{},
@@ -156,10 +159,22 @@ func initDatabase(cfg *config.Config, zapLogger logger.Logger) (*gorm.DB, error)
 		&model.UserTwoFactor{},
 		&model.AuditLog{},
 	); migrateErr != nil {
-		return nil, migrateErr
+		return nil, fmt.Errorf("failed to migrate database models: %v", migrateErr)
 	}
-	zapLogger.Info("Database migration completed")
-	return db, nil
+
+	zapLogger.Info("Database schema migration completed successfully")
+
+	// Create flag file to indicate database is initialized
+	flagDir := filepath.Dir(flagFile)
+	if err := os.MkdirAll(flagDir, constants.DefaultDirPerm); err != nil {
+		zapLogger.Warn("Failed to create flag directory", logger.String("error", err.Error()))
+	} else {
+		if flagFileErr := os.WriteFile(flagFile, []byte("initialized"), constants.DefaultFilePerm); flagFileErr != nil {
+			zapLogger.Warn("Failed to create initialization flag file", logger.String("error", flagFileErr.Error()))
+		}
+	}
+
+	return dbWrapper, nil
 }
 
 // ServiceConnections holds all service connections that need to be closed during shutdown
@@ -178,7 +193,7 @@ func initServices(cfg *config.Config, zapLogger logger.Logger) (*ServiceConnecti
 	zapLogger.Info("Redis connection successful")
 
 	// Initialize InfluxDB client for time-series monitoring data storage
-	influxDBClient, err := utils.InitInfluxDB(cfg)
+	influxDBClient, err := database.InitInfluxDB(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize InfluxDB: %w", err)
 	}

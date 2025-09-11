@@ -7,6 +7,7 @@ import (
 	"api-service/internal/interface/repository"
 	"api-service/internal/interface/service"
 	"api-service/internal/model"
+	"api-service/pkg/errors"
 	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
 	"api-service/pkg/redis"
@@ -15,10 +16,8 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"math"
 	"time"
 
-	"github.com/pkg/errors"
 	"gorm.io/gorm"
 )
 
@@ -61,7 +60,7 @@ func (s *apiTokenService) CreateAPIToken(ctx context.Context, req *request.Creat
 	token, tokenHash, err := s.generateToken()
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to generate token", logger.ErrorField(err))
-		return nil, errors.Wrap(err, "failed to generate token")
+		return nil, errors.WrapError(err, errors.CodeRecordCreateFailed, "failed to generate token")
 	}
 
 	// Convert scopes to JSON format
@@ -83,7 +82,7 @@ func (s *apiTokenService) CreateAPIToken(ctx context.Context, req *request.Creat
 	// Save to database
 	if err := s.tokenRepo.Create(ctx, apiToken); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to create API token", logger.ErrorField(err))
-		return nil, errors.Wrap(err, "failed to create API token")
+		return nil, errors.WrapError(err, errors.CodeRecordCreateFailed, "failed to create API token")
 	}
 
 	s.logger.InfoContext(ctx, "API token created successfully",
@@ -107,16 +106,13 @@ func (s *apiTokenService) GetAPIToken(ctx context.Context, id, userID uint) (*re
 	// Get token from database
 	token, err := s.tokenRepo.GetByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("token not found")
-		}
 		s.logger.ErrorContext(ctx, "Failed to get API token", logger.ErrorField(err))
-		return nil, errors.Wrap(err, "failed to get API token")
+		return nil, err
 	}
 
 	// Check if user owns the token
 	if token.UserID != userID {
-		return nil, errors.New("token not found")
+		return nil, errors.NewAppErrorWithMessage(errors.CodeRecordNotFound, "token not found")
 	}
 
 	return response.ConvertToAPITokenResponse(token), nil
@@ -133,16 +129,13 @@ func (s *apiTokenService) UpdateAPIToken(ctx context.Context, id uint, req *requ
 	// Get existing token
 	token, err := s.tokenRepo.GetByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("token not found")
-		}
 		s.logger.ErrorContext(ctx, "Failed to get API token", logger.ErrorField(err))
-		return nil, errors.Wrap(err, "failed to get API token")
+		return nil, err
 	}
 
 	// Check if user owns the token
 	if token.UserID != userID {
-		return nil, errors.New("token not found")
+		return nil, errors.NewAppErrorWithMessage(errors.CodeRecordNotFound, "token not found")
 	}
 
 	// Update fields
@@ -164,7 +157,7 @@ func (s *apiTokenService) UpdateAPIToken(ctx context.Context, id uint, req *requ
 	// Save changes
 	if err := s.tokenRepo.Update(ctx, token); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to update API token", logger.ErrorField(err))
-		return nil, errors.Wrap(err, "failed to update API token")
+		return nil, err
 	}
 
 	s.logger.InfoContext(ctx, "API token updated successfully",
@@ -184,22 +177,19 @@ func (s *apiTokenService) RevokeAPIToken(ctx context.Context, id, userID uint) e
 	// Get existing token
 	token, err := s.tokenRepo.GetByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("token not found")
-		}
 		s.logger.ErrorContext(ctx, "Failed to get API token", logger.ErrorField(err))
-		return errors.Wrap(err, "failed to get API token")
+		return err
 	}
 
 	// Check if user owns the token
 	if token.UserID != userID {
-		return errors.New("token not found")
+		return errors.NewAppErrorWithMessage(errors.CodeRecordNotFound, "token not found")
 	}
 
 	// Delete the token (revoke)
 	if err := s.tokenRepo.Delete(ctx, token.ID); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to revoke API token", logger.ErrorField(err))
-		return errors.Wrap(err, "failed to revoke API token")
+		return err
 	}
 
 	s.logger.InfoContext(ctx, "API token revoked successfully",
@@ -219,23 +209,20 @@ func (s *apiTokenService) RefreshAPIToken(ctx context.Context, id, userID uint) 
 	// Get existing token
 	token, err := s.tokenRepo.GetByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("token not found")
-		}
 		s.logger.ErrorContext(ctx, "Failed to get API token", logger.ErrorField(err))
-		return nil, errors.Wrap(err, "failed to get API token")
+		return nil, err
 	}
 
 	// Check if user owns the token
 	if token.UserID != userID {
-		return nil, errors.New("token not found")
+		return nil, errors.NewAppErrorWithMessage(errors.CodeRecordNotFound, "token not found")
 	}
 
 	// Generate new token
 	newToken, newTokenHash, err := s.generateToken()
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to generate new token", logger.ErrorField(err))
-		return nil, errors.Wrap(err, "failed to generate new token")
+		return nil, errors.WrapError(err, errors.CodeRecordCreateFailed, "failed to generate new token")
 	}
 
 	// Update token
@@ -253,7 +240,7 @@ func (s *apiTokenService) RefreshAPIToken(ctx context.Context, id, userID uint) 
 	// Save changes
 	if err := s.tokenRepo.Update(ctx, token); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to refresh API token", logger.ErrorField(err))
-		return nil, errors.Wrap(err, "failed to refresh API token")
+		return nil, err
 	}
 
 	s.logger.InfoContext(ctx, "API token refreshed successfully",
@@ -264,42 +251,6 @@ func (s *apiTokenService) RefreshAPIToken(ctx context.Context, id, userID uint) 
 	resp.Token = newToken
 
 	return resp, nil
-}
-
-// ListAPITokens gets API token list
-func (s *apiTokenService) ListAPITokens(ctx context.Context, req *request.ListAPITokensRequest, userID uint) (*response.APITokenListResponse, error) {
-	s.logger.InfoContext(ctx, "Listing API tokens",
-		logger.String("service", "api-token"),
-		logger.String("operation", "ListAPITokens"),
-		logger.Uint("user_id", userID))
-
-	// Set user ID filter
-	req.UserID = &userID
-
-	// Get tokens from database
-	tokens, total, err := s.tokenRepo.List(ctx, req)
-	if err != nil {
-		s.logger.ErrorContext(ctx, "Failed to list API tokens", logger.ErrorField(err))
-		return nil, errors.Wrap(err, "failed to list API tokens")
-	}
-
-	// Convert to response
-	items := make([]response.APITokenResponse, len(tokens))
-	for i, token := range tokens {
-		items[i] = *response.ConvertToAPITokenResponse(token)
-		// Token is already masked by ConvertToAPITokenResponse
-	}
-
-	// Calculate pagination
-	totalPages := int(math.Ceil(float64(total) / float64(req.GetPageSize())))
-
-	return &response.APITokenListResponse{
-		Items:      items,
-		Total:      total,
-		Page:       req.GetPage(),
-		PageSize:   req.GetPageSize(),
-		TotalPages: totalPages,
-	}, nil
 }
 
 // ValidateAPIToken validates API token
@@ -314,11 +265,8 @@ func (s *apiTokenService) ValidateAPIToken(ctx context.Context, token string) (*
 	// Get token from database
 	apiToken, err := s.tokenRepo.GetByToken(ctx, tokenHash)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return &response.APITokenValidationResponse{Valid: false}, nil
-		}
 		s.logger.ErrorContext(ctx, "Failed to get API token", logger.ErrorField(err))
-		return nil, errors.Wrap(err, "failed to validate API token")
+		return nil, err
 	}
 
 	// Check if token is not expired
@@ -385,7 +333,7 @@ func (s *apiTokenService) CleanExpiredTokens(ctx context.Context) error {
 
 	if err := s.tokenRepo.CleanExpiredTokens(ctx); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to clean expired tokens", logger.ErrorField(err))
-		return errors.Wrap(err, "failed to clean expired tokens")
+		return errors.WrapError(err, errors.CodeInternalError, "failed to clean expired tokens")
 	}
 
 	s.logger.InfoContext(ctx, "Expired API tokens cleaned successfully")

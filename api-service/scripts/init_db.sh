@@ -20,8 +20,9 @@ DB_USER=""
 DB_PASS=""
 SQLITE_PATH="./data/websoft9.db"
 
-ADMIN_USERNAME="${WEBSOFT9_USERNAME:-system@websoft9.com}"
+ADMIN_USERNAME="${WEBSOFT9_USERNAME:-system}"
 ADMIN_PASSWORD="${WEBSOFT9_PASSWORD:-changeme}"
+ADMIN_EMAIL="${WEBSOFT9_EMAIL:-system@websoft9.com}"
 
 # Path to the flag file
 FLAG_FILE="./data/.websoft9_db_initialized"
@@ -173,7 +174,7 @@ PRAGMA foreign_keys = OFF;
 
 -- 插入新用户（明确指定ID为2）
 INSERT OR IGNORE INTO users (id, username, email, password_hash, nickname, gender, signature, status, timezone, language, created_at, updated_at)
-VALUES (2, 'admin2', '$ADMIN_USERNAME', '$PASSWORD_HASH', 'Manager', 0, 'Websoft9 manager', 1, 'Asia/Shanghai', 'zh-CN', '$CURRENT_TIMESTAMP', '$CURRENT_TIMESTAMP');
+VALUES (2, '$ADMIN_USERNAME', '$ADMIN_EMAIL', '$PASSWORD_HASH', 'Manager', 0, 'Websoft9 manager', 1, 'Asia/Shanghai', 'zh-CN', '$CURRENT_TIMESTAMP', '$CURRENT_TIMESTAMP');
 
 -- 将新用户关联到超级管理员角色（明确指定ID为2）
 INSERT OR IGNORE INTO user_roles (id, user_id, role_id, granted_by, granted_at, status, created_at, updated_at)

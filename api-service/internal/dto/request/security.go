@@ -9,7 +9,6 @@ type CreateRoleRequest struct {
 	Description   string `json:"description" validate:"max=500"`
 	PermissionIDs []uint `json:"permission_ids"`
 	SortOrder     int    `json:"sort_order"`
-	Status        int    `json:"status" validate:"oneof=-1 0 1"`
 }
 
 // UpdateRoleRequest updates role request
@@ -47,7 +46,6 @@ type CreatePermissionRequest struct {
 	Description string `json:"description" validate:"max=500"`
 	IsMenu      bool   `json:"is_menu"`
 	SortOrder   int    `json:"sort_order"`
-	Status      int    `json:"status" validate:"oneof=-1 0 1"`
 }
 
 // UpdatePermissionRequest updates permission request
@@ -89,14 +87,6 @@ type UpdateAPITokenRequest struct {
 	Description string     `json:"description" validate:"max=500"`
 	Scopes      []string   `json:"scopes"`
 	ExpiresAt   *time.Time `json:"expires_at"`
-}
-
-// ListAPITokensRequest API token list query request
-type ListAPITokensRequest struct {
-	PaginationRequest
-	Search  string `form:"search"`
-	UserID  *uint  `form:"user_id"`
-	Expired *bool  `form:"expired"`
 }
 
 // BatchRevokeAPITokensRequest batch revoke API tokens request

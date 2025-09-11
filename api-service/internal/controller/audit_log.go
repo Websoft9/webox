@@ -63,7 +63,7 @@ func (c *AuditLogController) GetAuditLog(ctx *gin.Context) {
 		return
 	}
 
-	ResponseOK(ctx, auditLog, "common.success", c.i18n)
+	ResponseOKWithData(ctx, auditLog, "common.success", c.i18n)
 }
 
 // ListAuditLogs get audit log list
@@ -97,7 +97,7 @@ func (c *AuditLogController) ListAuditLogs(ctx *gin.Context) {
 		return
 	}
 
-	ResponseOK(ctx, result, "common.success", c.i18n)
+	ResponseOKWithData(ctx, result, "common.success", c.i18n)
 }
 
 // GetAuditLogStatistics get audit log statistics
@@ -125,7 +125,7 @@ func (c *AuditLogController) GetAuditLogStatistics(ctx *gin.Context) {
 		return
 	}
 
-	ResponseOK(ctx, statistics, "audit_log.success", c.i18n)
+	ResponseOKWithData(ctx, statistics, "audit_log.success", c.i18n)
 }
 
 // ExportAuditLogs export audit logs

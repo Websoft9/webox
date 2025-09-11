@@ -2,7 +2,7 @@ package main
 
 import (
 	"api-service/internal/config"
-	"api-service/pkg/utils"
+	"api-service/pkg/database"
 	"fmt"
 )
 
@@ -12,7 +12,7 @@ func main() {
 		panic(fmt.Sprintf("Failed to load config: %v", err))
 	}
 
-	_, err = utils.InitDB(cfg)
+	_, err = database.InitDB(cfg)
 	if err != nil {
 		panic(fmt.Sprintf("Database connection failed: %v", err))
 	}

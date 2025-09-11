@@ -23,7 +23,7 @@ type RoleRepository interface {
 	GetWithUsers(ctx context.Context, id uint) (*model.Role, error)
 
 	// Permission association operations
-	AssignPermissions(ctx context.Context, roleID uint, permissionIDs []uint, grantedBy uint) error
+	AssignPermissionsWithTx(ctx context.Context, tx *gorm.DB, roleID uint, permissionIDs []uint, grantedBy uint) error
 	RemovePermissions(ctx context.Context, roleID uint, permissionIDs []uint) error
 	GetPermissions(ctx context.Context, roleID uint) ([]model.Permission, error)
 
@@ -86,7 +86,6 @@ type APITokenRepository interface {
 	Delete(ctx context.Context, id uint) error
 
 	// Query operations
-	List(ctx context.Context, req *request.ListAPITokensRequest) ([]*model.APIToken, int64, error)
 	GetByUserID(ctx context.Context, userID uint) ([]*model.APIToken, error)
 
 	// Batch operations

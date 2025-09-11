@@ -26,13 +26,6 @@ user:
   email_verify_success: "Email verified successfully"
   verification_email_sent: "Verification email has been sent"
   oauth2_login_success: "OAuth2 login successful"
-  email_not_verified: "Please verify your email address before logging in"
-  email_already_verified: "Email address is already verified or no verification is needed"
-  invalid_verification_token: "Invalid or expired verification token"
-  password_reset_token_invalid: "Invalid or expired password reset token"
-  user_account_disabled: "Your account has been disabled"
-  verification_token_expired: "Verification token has expired"
-  password_reset_token_expired: "Password reset token has expired"
 
 user_profile:
   get_success: "User profile retrieved successfully"
@@ -162,13 +155,7 @@ auth:
 # Common messages
 common:
   success: "Operation successful"
-  failed: "Operation failed"
-  invalid_request: "Invalid request"
-  internal_error: "Internal server error"
   validation_failed: "Validation failed"
-  not_found: "Resource not found"
-  bad_request: "Bad request"
-  forbidden: "Access forbidden"
 
 # Error messages
 error:
@@ -242,3 +229,56 @@ validation:
   query_validation_failed: "Query validation failed"
   invalid_permission_id: "Invalid permission ID"
   invalid_token_id: "Invalid token ID"
+  validation_failed: "Validation failed"
+  required_parameter_missing: "Required parameter missing"
+  invalid_parameter_format: "Parameter format error"
+  parameter_out_of_range: "Parameter value out of range"
+  invalid_parameter_length: "Parameter length does not meet requirements"
+  invalid_email_format: "Email format error"
+  invalid_phone_format: "Phone number format error"
+  invalid_url_format: "URL format error"
+  invalid_date_format: "Date format error"
+  email_not_verified: "Email not verified"
+
+# Resource management messages
+resource:
+  record_not_found: "Record does not exist"
+  not_found: "Resource does not exist"
+  already_exists: "Resource already exists"
+  state_not_allowed: "Resource state does not allow operation"
+  dependency_conflict: "Resource dependency conflict"
+  quota_insufficient: "Resource quota insufficient"
+  in_use: "Resource is in use"
+  record_query_failed: "Record query failed"
+  record_create_failed: "Record create failed"
+  record_update_failed: "Record update failed"
+  record_delete_failed: "Record delete failed"
+  record_is_disabled: "Record is disabled"
+  record_no_affected: "No rows affected"
+  record_delete_denied: "Record delete denied"
+
+# Business logic messages
+business:
+  server_offline: "Server offline, cannot operate"
+  app_deployment_failed: "Application deployment failed"
+  workflow_execution_failed: "Workflow execution failed"
+  certificate_request_failed: "Certificate request failed"
+  backup_operation_failed: "Backup operation failed"
+  monitoring_data_collection_failed: "Monitoring data collection failed"
+  app_publish_failed: "Application publish failed"
+  app_offline_failed: "Application offline failed"
+  health_check_failed: "Health check failed"
+  gateway_config_update_failed: "Gateway configuration update failed"
+  user_already_exists: "Username already exists"
+  permission_invalid: "Permission invalid"
+
+# System error messages
+system:
+  internal_error: "System Internal Error"
+  cache_service_unavailable: "Cache service unavailable"
+  filesystem_error: "Filesystem error"
+  network_timeout: "Network connection timeout"
+  third_party_service_unavailable: "Third party service unavailable"
+  system_maintenance: "System under maintenance"
+  database_connection_failed: "Database connection failed"
+  unknown_error: "Unknown error"

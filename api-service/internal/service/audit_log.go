@@ -619,7 +619,9 @@ func (s *auditLogService) buildDescription(method, path string, statusCode int) 
 
 // getModuleFromPath extracts module from URL path in format /api/v1/{module}
 func (s *auditLogService) getModuleFromPath(path string) string {
-	pathSegments := strings.Split(strings.Trim(path, "/"), "/")
+	// Remove query parameters first
+	pathWithoutQuery := s.extractPathWithoutQuery(path)
+	pathSegments := strings.Split(strings.Trim(pathWithoutQuery, "/"), "/")
 
 	// Expected format: /api/v1/{module}/...
 	if len(pathSegments) < constants.MinPathSegments {

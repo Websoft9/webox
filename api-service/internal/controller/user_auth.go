@@ -37,7 +37,7 @@ func NewUserAuthController(
 func (c *UserAuthController) bindAndValidateRequest(ctx *gin.Context, req interface{}, action string) bool {
 	if err := ctx.ShouldBindJSON(req); err != nil {
 		c.logger.WarnContext(ctx, action+" request parameter binding failed", logger.ErrorField(err))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, c.i18n.T(ctx, "common.validation_failed")))
+		errors.HandleError(ctx, errors.ErrValidationFailed)
 		return false
 	}
 	return true
@@ -162,7 +162,7 @@ func (c *UserAuthController) ShowResetPasswordForm(ctx *gin.Context) {
 	token := ctx.Query("token")
 	if token == "" {
 		c.logger.WarnContext(ctx, "Password reset token missing")
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, c.i18n.T(ctx, "common.validation_failed")))
+		errors.HandleError(ctx, errors.ErrValidationFailed)
 		return
 	}
 
@@ -223,7 +223,7 @@ func (c *UserAuthController) VerifyEmail(ctx *gin.Context) {
 	token := ctx.Query("token")
 	if token == "" {
 		c.logger.WarnContext(ctx, "Email verification token missing")
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, c.i18n.T(ctx, "common.validation_failed")))
+		errors.HandleError(ctx, errors.ErrValidationFailed)
 		return
 	}
 
@@ -318,7 +318,7 @@ func (c *UserAuthController) Logout(ctx *gin.Context) {
 	authHeader := ctx.GetHeader("Authorization")
 	if authHeader == "" {
 		c.logger.WarnContext(ctx, "Authorization header missing during logout")
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeUnauthorized, c.i18n.T(ctx, "common.unauthorized")))
+		errors.HandleError(ctx, errors.ErrInvalidToken)
 		return
 	}
 
@@ -328,7 +328,7 @@ func (c *UserAuthController) Logout(ctx *gin.Context) {
 		token = authHeader[7:]
 	} else {
 		c.logger.WarnContext(ctx, "Invalid authorization header format during logout")
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeUnauthorized, c.i18n.T(ctx, "common.unauthorized")))
+		errors.HandleError(ctx, errors.ErrInvalidToken)
 		return
 	}
 

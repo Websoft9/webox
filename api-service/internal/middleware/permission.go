@@ -127,10 +127,11 @@ func authenticateRequest(c *gin.Context) (*auth.Claims, string, error) {
 
 // extractBearerToken extracts token from Bearer authorization header
 func extractBearerToken(authHeader string) (string, error) {
-	if len(authHeader) <= 7 || authHeader[:7] != "Bearer " {
+	const bearerPrefix = "Bearer "
+	if len(authHeader) < len(bearerPrefix) || authHeader[:len(bearerPrefix)] != bearerPrefix {
 		return "", errors.New("invalid authorization header format")
 	}
-	return authHeader[7:], nil
+	return authHeader[len(bearerPrefix):], nil
 }
 
 // handleAuthError handles authentication errors
