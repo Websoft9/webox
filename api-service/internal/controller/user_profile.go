@@ -88,9 +88,7 @@ func (c *UserProfileController) GetProfile(ctx *gin.Context) {
 // @Failure 404 {object} response.APIResponse
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/profile [put]
-// UpdateProfile 处理更新用户个人资料的请求
 func (c *UserProfileController) UpdateProfile(ctx *gin.Context) {
-
 	// 解析请求参数
 	var req request.UserProfileUpdateRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {

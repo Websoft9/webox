@@ -296,5 +296,4 @@ func setupUserProfileRoutes(protected *gin.RouterGroup, userProfileController *c
 	protected.PUT("/notification-settings", userProfileController.UpdateNotificationSettings)
 	protected.GET("/security-settings", userProfileController.GetSecuritySettings)
 	protected.PUT("/security-settings", userProfileController.UpdateSecuritySettings)
-
 }

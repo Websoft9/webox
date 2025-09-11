@@ -316,6 +316,16 @@ const (
 	DefaultTimeRangeHours = 7 * 24 // Default time range in hours (7 days)
 )
 
+const (
+	// StringTrue 表示字符串形式的 "true"
+	StringTrue = "true"
+
+	// StringFalse 表示字符串形式的 "false"
+	StringFalse = "false"
+
+	DefaultSessionTimeoutSeconds = 1800
+)
+
 // const (
 // 	ErrInvalidCode        = "invalid code"
 // 	ErrTokenNotFound      = "token not found"

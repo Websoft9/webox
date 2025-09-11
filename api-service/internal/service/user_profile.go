@@ -1,6 +1,7 @@
 package service
 
 import (
+	"api-service/internal/constants"
 	"api-service/internal/dto/request"
 	"api-service/internal/dto/response"
 	"api-service/internal/interface/repository"
@@ -209,16 +210,16 @@ func (s *userProfileService) GetLoginHistories(ctx context.Context, userID uint,
 	}
 
 	// 转换记录格式
-	for _, record := range records {
+	for i := range records {
 		item := response.LoginHistoryItem{
-			ID:         record.ID,
-			IPAddress:  record.IPAddress,
-			UserAgent:  record.UserAgent,
-			Device:     record.Device,
-			Browser:    record.Browser,
-			Location:   record.Location,
-			LoginTime:  record.LoginTime,
-			LogoutTime: record.LogoutTime,
+			ID:         records[i].ID,
+			IPAddress:  records[i].IPAddress,
+			UserAgent:  records[i].UserAgent,
+			Device:     records[i].Device,
+			Browser:    records[i].Browser,
+			Location:   records[i].Location,
+			LoginTime:  records[i].LoginTime,
+			LogoutTime: records[i].LogoutTime,
 		}
 
 		result.Items = append(result.Items, item)
@@ -251,13 +252,13 @@ func (s *userProfileService) GetNotificationSettings(ctx context.Context, userID
 	for _, config := range configs {
 		switch config.ConfigKey {
 		case "email_notifications":
-			settings.EmailNotifications = config.ConfigValue == "true"
+			settings.EmailNotifications = config.ConfigValue == constants.StringTrue
 		case "sms_notifications":
-			settings.SmsNotifications = config.ConfigValue == "true"
+			settings.SmsNotifications = config.ConfigValue == constants.StringTrue
 		case "push_notifications":
-			settings.PushNotifications = config.ConfigValue == "true"
+			settings.PushNotifications = config.ConfigValue == constants.StringTrue
 		case "marketing_emails":
-			settings.MarketingEmails = config.ConfigValue == "true"
+			settings.MarketingEmails = config.ConfigValue == constants.StringTrue
 		}
 	}
 
@@ -323,8 +324,8 @@ func (s *userProfileService) GetSecuritySettings(ctx context.Context, userID uin
 
 	// 设置默认值
 	settings := &response.SecuritySettingsResponse{
-		LoginAlerts:    true, // 默认开启登录提醒
-		SessionTimeout: 1800, // 默认会话超时时间30分钟
+		LoginAlerts:    true,                                   // 默认开启登录提醒
+		SessionTimeout: constants.DefaultSessionTimeoutSeconds, // 默认会话超时时间30分钟
 	}
 
 	// 如果找到配置，则使用配置值
@@ -394,7 +395,7 @@ func (s *userProfileService) saveUserConfig(ctx context.Context, userID uint, ca
 // 将bool转换为字符串的辅助方法
 func boolToString(b bool) string {
 	if b {
-		return "true"
+		return constants.StringTrue
 	}
-	return "false"
+	return constants.StringFalse
 }
