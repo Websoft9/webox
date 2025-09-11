@@ -178,3 +178,53 @@ func (c *UserProfileController) ChangePassword(ctx *gin.Context) {
 	c.logger.InfoContext(ctx, "User password changed successfully", logger.Uint("userID", userID))
 	pkg_response.Success(ctx, c.i18n.T(ctx, "user_profile.password_change_success"), nil)
 }
+
+// GetLoginHistories 获取登录历史记录
+// @Summary 获取登录历史记录
+// @Description 获取当前用户的登录历史记录
+// @Tags 用户配置文件
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param page query int false "页码" default(1)
+// @Param page_size query int false "每页数量" default(20)
+// @Success 200 {object} response.APIResponse{data=response.LoginHistoryResponse}
+// @Failure 400 {object} response.APIResponse
+// @Failure 401 {object} response.APIResponse
+// @Failure 500 {object} response.APIResponse
+// @Router /api/v1/profile/login-history [get]
+func (c *UserProfileController) GetLoginHistories(ctx *gin.Context) {
+	// 获取当前用户ID
+	userID, exists := ctx.Get("user_id")
+	if !exists {
+		c.logger.WarnContext(ctx, "User ID not found in context")
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeUnauthorized, c.i18n.T(ctx, "auth.unauthorized")))
+		return
+	}
+
+	currentUserID, ok := userID.(uint)
+	if !ok {
+		c.logger.WarnContext(ctx, "Invalid user ID type in context")
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeUnauthorized, c.i18n.T(ctx, "auth.unauthorized")))
+		return
+	}
+
+	// 绑定请求参数
+	var req request.LoginHistoryRequest
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		c.logger.WarnContext(ctx, "Login history request parameter binding failed", logger.ErrorField(err))
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, c.i18n.T(ctx, "common.validation_failed")))
+		return
+	}
+
+	// 获取登录历史
+	result, err := c.profileService.GetLoginHistories(ctx, currentUserID, &req)
+	if err != nil {
+		c.logger.ErrorContext(ctx, "Failed to get login histories", logger.Uint("user_id", currentUserID), logger.ErrorField(err))
+		errors.HandleError(ctx, err)
+		return
+	}
+
+	c.logger.InfoContext(ctx, "Login histories retrieved successfully", logger.Uint("user_id", currentUserID))
+	pkg_response.Success(ctx, c.i18n.T(ctx, "profile.login_history_get_success"), result)
+}
