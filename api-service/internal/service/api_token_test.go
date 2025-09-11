@@ -50,11 +50,6 @@ func (m *MockAPITokenRepository) Delete(ctx context.Context, id uint) error {
 	return args.Error(0)
 }
 
-func (m *MockAPITokenRepository) List(ctx context.Context, req *request.ListAPITokensRequest) ([]*model.APIToken, int64, error) {
-	args := m.Called(ctx, req)
-	return args.Get(0).([]*model.APIToken), args.Get(1).(int64), args.Error(2)
-}
-
 func (m *MockAPITokenRepository) GetByUserID(ctx context.Context, userID uint) ([]*model.APIToken, error) {
 	args := m.Called(ctx, userID)
 	return args.Get(0).([]*model.APIToken), args.Error(1)
@@ -207,49 +202,6 @@ func (suite *APITokenServiceTestSuite) TestGetAPIToken_NotOwner() {
 	suite.Error(err)
 	suite.Nil(result)
 	suite.Contains(err.Error(), "token not found")
-
-	suite.mockTokenRepo.AssertExpectations(suite.T())
-}
-
-func (suite *APITokenServiceTestSuite) TestListAPITokens_Success() {
-	ctx := context.Background()
-	userID := uint(1)
-	req := &request.ListAPITokensRequest{
-		PaginationRequest: request.PaginationRequest{
-			Page:     1,
-			PageSize: 10,
-		},
-		UserID: &userID,
-	}
-
-	tokens := []*model.APIToken{
-		{
-			BaseModel: model.BaseModel{ID: 1},
-			Name:      "Token 1",
-			UserID:    userID,
-		},
-		{
-			BaseModel: model.BaseModel{ID: 2},
-			Name:      "Token 2",
-			UserID:    userID,
-		},
-	}
-	total := int64(2)
-
-	suite.mockTokenRepo.On("List", ctx, req).Return(tokens, total, nil)
-
-	// Execute
-	result, err := suite.service.ListAPITokens(ctx, req, userID)
-
-	// Assert
-	suite.NoError(err)
-	suite.NotNil(result)
-	suite.Equal(2, len(result.Items))
-	suite.Equal(total, result.Total)
-	// All tokens should have masked token values
-	for _, token := range result.Items {
-		suite.Equal("***", token.Token)
-	}
 
 	suite.mockTokenRepo.AssertExpectations(suite.T())
 }

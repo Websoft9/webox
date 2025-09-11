@@ -13,6 +13,7 @@ type UserRepository interface {
 	GetByIDWithRelations(ctx context.Context, id uint) (*model.User, error)
 	GetByUsername(ctx context.Context, username string) (*model.User, error)
 	GetByEmail(ctx context.Context, email string) (*model.User, error)
+	GetByUsernameOrEmail(ctx context.Context, usernameOrEmail string) (*model.User, error)
 	Update(ctx context.Context, user *model.User) error
 	Delete(ctx context.Context, id uint) error
 

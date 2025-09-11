@@ -89,14 +89,6 @@ type UpdateAPITokenRequest struct {
 	ExpiresAt   *time.Time `json:"expires_at"`
 }
 
-// ListAPITokensRequest API token list query request
-type ListAPITokensRequest struct {
-	PaginationRequest
-	Search  string `form:"search"`
-	UserID  *uint  `form:"user_id"`
-	Expired *bool  `form:"expired"`
-}
-
 // BatchRevokeAPITokensRequest batch revoke API tokens request
 type BatchRevokeAPITokensRequest struct {
 	IDs []uint `json:"ids" validate:"required,min=1"`

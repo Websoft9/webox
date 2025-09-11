@@ -56,9 +56,6 @@ type APITokenService interface {
 	UpdateAPIToken(ctx context.Context, id uint, req *request.UpdateAPITokenRequest, userID uint) (*response.APITokenResponse, error)
 	RevokeAPIToken(ctx context.Context, id uint, userID uint) error
 
-	// Query operations
-	ListAPITokens(ctx context.Context, req *request.ListAPITokensRequest, userID uint) (*response.APITokenListResponse, error)
-
 	// Token management
 	RefreshAPIToken(ctx context.Context, id uint, userID uint) (*response.APITokenResponse, error)
 	ValidateAPIToken(ctx context.Context, token string) (*response.APITokenValidationResponse, error)

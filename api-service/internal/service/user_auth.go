@@ -263,21 +263,22 @@ func (s *userAuthService) Register(ctx context.Context, req *request.UserRegiste
 	return s.buildUserResponse(user), nil
 }
 
-// Login handles user authentication with email and password
+// Login handles user authentication with username/email and password
 func (s *userAuthService) Login(ctx context.Context, req *request.UserLoginRequest, clientIP string) (*response.UserLoginResponse, error) {
-	s.logger.InfoContext(ctx, "Starting user login", logger.String("email", req.Username))
+	s.logger.InfoContext(ctx, "Starting user login", logger.String("username_or_email", req.Username))
 
-	// 1. Validate email format
-	if err := validator.ValidateEmail(req.Username); err != nil {
-		s.logger.WarnContext(ctx, "Invalid email format", logger.String("email", req.Username))
+	// 1. Validate username or email format
+	if err := validator.ValidateUsernameOrEmail(req.Username); err != nil {
+		s.logger.WarnContext(ctx, "Invalid username or email format",
+			logger.String("username_or_email", req.Username), logger.ErrorField(err))
 		return nil, errors.ErrInvalidCredentials
 	}
 
-	// 2. Find user by email
-	user, err := s.userRepo.GetByEmail(ctx, req.Username)
+	// 2. Find user by username or email
+	user, err := s.userRepo.GetByUsernameOrEmail(ctx, req.Username)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			s.logger.WarnContext(ctx, "User not found", logger.String("email", req.Username))
+			s.logger.WarnContext(ctx, "User not found", logger.String("username_or_email", req.Username))
 			return nil, errors.ErrInvalidCredentials
 		}
 		s.logger.ErrorContext(ctx, "Failed to find user", logger.ErrorField(err))
@@ -285,7 +286,7 @@ func (s *userAuthService) Login(ctx context.Context, req *request.UserLoginReque
 	}
 
 	// 3. Check if user has pending email verification
-	hasLock, err := s.hasEmailVerificationLock(ctx, req.Username)
+	hasLock, err := s.hasEmailVerificationLock(ctx, user.Email)
 	if err != nil {
 		s.logger.WarnContext(ctx, "Failed to check email verification lock",
 			logger.ErrorField(err), logger.String("email", req.Username))
@@ -297,7 +298,7 @@ func (s *userAuthService) Login(ctx context.Context, req *request.UserLoginReque
 
 	// 4. Verify password
 	if user.PasswordHash != utils.SHA256Hash(req.Password) {
-		s.logger.WarnContext(ctx, "Password verification failed", logger.String("email", req.Username))
+		s.logger.WarnContext(ctx, "Password verification failed", logger.String("username_or_email", req.Username))
 
 		// Update failure count and lock status
 		if updateErr := s.userRepo.Update(ctx, user); updateErr != nil {
@@ -309,7 +310,7 @@ func (s *userAuthService) Login(ctx context.Context, req *request.UserLoginReque
 
 	// 5. Check user status
 	if user.Status != UserStatusActive {
-		s.logger.WarnContext(ctx, "User account is inactive", logger.String("email", req.Username))
+		s.logger.WarnContext(ctx, "User account is inactive", logger.String("username_or_email", req.Username))
 		return nil, errors.ErrAccountDisabled
 	}
 
@@ -338,7 +339,14 @@ func (s *userAuthService) Login(ctx context.Context, req *request.UserLoginReque
 
 	s.logger.InfoContext(ctx, "User login successful",
 		logger.Uint("user_id", user.ID),
-		logger.String("email", req.Username))
+		logger.String("username", user.Username),
+		logger.String("email", user.Email),
+		logger.String("login_method", func() string {
+			if validator.IsEmail(req.Username) {
+				return "email"
+			}
+			return "username"
+		}()))
 
 	return &response.UserLoginResponse{
 		Token:     token,

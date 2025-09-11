@@ -264,7 +264,7 @@ func (s *OAuth2Service) mapSingleUserField(field string, value interface{}, user
 	}
 
 	switch field {
-	case "username":
+	case constants.UserMappingUsername:
 		userInfo.Username = strVal
 	case constants.UserMappingEmail:
 		userInfo.Email = strVal

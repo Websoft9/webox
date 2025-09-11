@@ -143,3 +143,29 @@ func ValidateEmail(email string) error {
 
 	return nil
 }
+
+// IsEmail checks if the given string is a valid email format
+func IsEmail(input string) bool {
+	if input == "" {
+		return false
+	}
+
+	// Basic email format check
+	emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
+	return emailRegex.MatchString(input)
+}
+
+// ValidateUsernameOrEmail validates that input is either a valid username or email
+func ValidateUsernameOrEmail(input string) error {
+	if input == "" {
+		return errors.NewAppError(errors.CodeRequiredParameterMissing, "Username or email cannot be empty")
+	}
+
+	// Check if it's an email
+	if IsEmail(input) {
+		return ValidateEmail(input)
+	}
+
+	// If not an email, validate as username
+	return ValidateUsername(input)
+}
