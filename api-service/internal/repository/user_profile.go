@@ -113,3 +113,106 @@ func (r *userProfileRepository) GetLoginHistories(ctx context.Context, userID ui
 
 	return records, total, nil
 }
+
+// 获取用户配置
+func (r *userProfileRepository) GetUserConfig(ctx context.Context, userID uint, category, configKey string) (*model.UserProfile, error) {
+	r.logger.InfoContext(ctx, "Getting user config",
+		logger.Uint("userID", userID),
+		logger.String("category", category),
+		logger.String("configKey", configKey))
+
+	var config model.UserProfile
+	result := r.db.WithContext(ctx).Where("user_id = ? AND category = ? AND config_key = ?", userID, category, configKey).First(&config)
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			r.logger.WarnContext(ctx, "User config not found",
+				logger.Uint("userID", userID),
+				logger.String("category", category),
+				logger.String("configKey", configKey))
+			return nil, result.Error
+		}
+		r.logger.ErrorContext(ctx, "Failed to get user config",
+			logger.Uint("userID", userID),
+			logger.String("category", category),
+			logger.String("configKey", configKey),
+			logger.ErrorField(result.Error))
+		return nil, result.Error
+	}
+
+	return &config, nil
+}
+
+// 获取用户分类下的所有配置
+func (r *userProfileRepository) GetUserConfigsByCategory(ctx context.Context, userID uint, category string) ([]*model.UserProfile, error) {
+	r.logger.InfoContext(ctx, "Getting user configs by category",
+		logger.Uint("userID", userID),
+		logger.String("category", category))
+
+	var configs []*model.UserProfile
+	result := r.db.WithContext(ctx).Where("user_id = ? AND category = ?", userID, category).Find(&configs)
+	if result.Error != nil {
+		r.logger.ErrorContext(ctx, "Failed to get user configs by category",
+			logger.Uint("userID", userID),
+			logger.String("category", category),
+			logger.ErrorField(result.Error))
+		return nil, result.Error
+	}
+
+	return configs, nil
+}
+
+// 保存用户配置（不存在则创建，存在则更新）
+func (r *userProfileRepository) SaveUserConfig(ctx context.Context, userProfile *model.UserProfile) error {
+	r.logger.InfoContext(ctx, "Saving user config",
+		logger.Uint("userID", userProfile.UserID),
+		logger.String("category", userProfile.Category),
+		logger.String("configKey", userProfile.ConfigKey))
+
+	var existing model.UserProfile
+	result := r.db.WithContext(ctx).Where("user_id = ? AND category = ? AND config_key = ?",
+		userProfile.UserID, userProfile.Category, userProfile.ConfigKey).First(&existing)
+
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			// 记录不存在，创建新记录
+			r.logger.InfoContext(ctx, "Creating new user config",
+				logger.Uint("userID", userProfile.UserID),
+				logger.String("category", userProfile.Category),
+				logger.String("configKey", userProfile.ConfigKey))
+
+			if err := r.db.WithContext(ctx).Create(userProfile).Error; err != nil {
+				r.logger.ErrorContext(ctx, "Failed to create user config",
+					logger.Uint("userID", userProfile.UserID),
+					logger.String("category", userProfile.Category),
+					logger.String("configKey", userProfile.ConfigKey),
+					logger.ErrorField(err))
+				return err
+			}
+			return nil
+		}
+		r.logger.ErrorContext(ctx, "Failed to query user config",
+			logger.Uint("userID", userProfile.UserID),
+			logger.String("category", userProfile.Category),
+			logger.String("configKey", userProfile.ConfigKey),
+			logger.ErrorField(result.Error))
+		return result.Error
+	}
+
+	// 记录已存在，更新记录
+	r.logger.InfoContext(ctx, "Updating existing user config",
+		logger.Uint("userID", userProfile.UserID),
+		logger.String("category", userProfile.Category),
+		logger.String("configKey", userProfile.ConfigKey))
+
+	existing.ConfigValue = userProfile.ConfigValue
+	existing.Description = userProfile.Description
+	if err := r.db.WithContext(ctx).Save(&existing).Error; err != nil {
+		r.logger.ErrorContext(ctx, "Failed to update user config",
+			logger.Uint("userID", userProfile.UserID),
+			logger.String("category", userProfile.Category),
+			logger.String("configKey", userProfile.ConfigKey),
+			logger.ErrorField(err))
+		return err
+	}
+	return nil
+}

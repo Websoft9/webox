@@ -49,7 +49,7 @@ func (c *UserProfileController) GetProfile(ctx *gin.Context) {
 	currentUserID, exists := ctx.Get("user_id")
 	if !exists || currentUserID == nil {
 		c.logger.WarnContext(ctx, "Missing user ID in context")
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeUnauthorized, c.i18n.T(ctx, "auth.unauthorized")))
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed, c.i18n.T(ctx, "auth.unauthorized")))
 		return
 	}
 
@@ -95,7 +95,7 @@ func (c *UserProfileController) UpdateProfile(ctx *gin.Context) {
 	var req request.UserProfileUpdateRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		c.logger.WarnContext(ctx, "Invalid request parameters", logger.ErrorField(err))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, c.i18n.T(ctx, "common.validation_failed")))
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed, c.i18n.T(ctx, "common.validation_failed")))
 		return
 	}
 
@@ -103,7 +103,7 @@ func (c *UserProfileController) UpdateProfile(ctx *gin.Context) {
 	currentUserID, exists := ctx.Get("user_id")
 	if !exists || currentUserID == nil {
 		c.logger.WarnContext(ctx, "Missing user ID in context")
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeUnauthorized, c.i18n.T(ctx, "auth.unauthorized")))
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed, c.i18n.T(ctx, "auth.unauthorized")))
 		return
 	}
 
@@ -146,7 +146,7 @@ func (c *UserProfileController) ChangePassword(ctx *gin.Context) {
 	var req request.ProfileChangePasswordRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		c.logger.WarnContext(ctx, "Invalid request parameters", logger.ErrorField(err))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, c.i18n.T(ctx, "common.validation_failed")))
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed, c.i18n.T(ctx, "common.validation_failed")))
 		return
 	}
 
@@ -154,7 +154,7 @@ func (c *UserProfileController) ChangePassword(ctx *gin.Context) {
 	currentUserID, exists := ctx.Get("user_id")
 	if !exists || currentUserID == nil {
 		c.logger.WarnContext(ctx, "Missing user ID in context")
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeUnauthorized, c.i18n.T(ctx, "auth.unauthorized")))
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed, c.i18n.T(ctx, "auth.unauthorized")))
 		return
 	}
 
@@ -198,14 +198,14 @@ func (c *UserProfileController) GetLoginHistories(ctx *gin.Context) {
 	userID, exists := ctx.Get("user_id")
 	if !exists {
 		c.logger.WarnContext(ctx, "User ID not found in context")
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeUnauthorized, c.i18n.T(ctx, "auth.unauthorized")))
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed, c.i18n.T(ctx, "auth.unauthorized")))
 		return
 	}
 
 	currentUserID, ok := userID.(uint)
 	if !ok {
 		c.logger.WarnContext(ctx, "Invalid user ID type in context")
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeUnauthorized, c.i18n.T(ctx, "auth.unauthorized")))
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed, c.i18n.T(ctx, "auth.unauthorized")))
 		return
 	}
 
@@ -213,7 +213,7 @@ func (c *UserProfileController) GetLoginHistories(ctx *gin.Context) {
 	var req request.LoginHistoryRequest
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		c.logger.WarnContext(ctx, "Login history request parameter binding failed", logger.ErrorField(err))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationError, c.i18n.T(ctx, "common.validation_failed")))
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed, c.i18n.T(ctx, "common.validation_failed")))
 		return
 	}
 
@@ -226,5 +226,177 @@ func (c *UserProfileController) GetLoginHistories(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "Login histories retrieved successfully", logger.Uint("user_id", currentUserID))
-	pkg_response.Success(ctx, c.i18n.T(ctx, "profile.login_history_get_success"), result)
+	pkg_response.Success(ctx, c.i18n.T(ctx, "user_profile.login_history_get_success"), result)
+}
+
+// GetNotificationSettings 获取通知设置
+// @Summary 获取通知设置
+// @Description 获取当前用户的通知设置
+// @Tags 个人中心
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} response.APIResponse{data=response.NotificationSettingsResponse}
+// @Failure 401 {object} response.APIResponse
+// @Failure 500 {object} response.APIResponse
+// @Router /api/v1/profile/notification-settings [get]
+func (c *UserProfileController) GetNotificationSettings(ctx *gin.Context) {
+	// 获取当前用户ID
+	userID, exists := ctx.Get("user_id")
+	if !exists {
+		c.logger.WarnContext(ctx, "User ID not found in context")
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed, c.i18n.T(ctx, "auth.unauthorized")))
+		return
+	}
+
+	currentUserID, ok := userID.(uint)
+	if !ok {
+		c.logger.WarnContext(ctx, "Invalid user ID type in context")
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed, c.i18n.T(ctx, "auth.unauthorized")))
+		return
+	}
+
+	settings, err := c.profileService.GetNotificationSettings(ctx, currentUserID)
+	if err != nil {
+		c.logger.ErrorContext(ctx, "Failed to get notification settings", logger.Uint("user_id", currentUserID), logger.ErrorField(err))
+		errors.HandleError(ctx, err)
+		return
+	}
+
+	c.logger.InfoContext(ctx, "Notification settings retrieved successfully", logger.Uint("user_id", currentUserID))
+	pkg_response.Success(ctx, c.i18n.T(ctx, "user_profile.notification_settings_get_success"), settings)
+}
+
+// UpdateNotificationSettings 更新通知设置
+// @Summary 更新通知设置
+// @Description 更新当前用户的通知设置
+// @Tags 个人中心
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body request.NotificationSettingsRequest true "通知设置请求"
+// @Success 200 {object} response.APIResponse
+// @Failure 400 {object} response.APIResponse
+// @Failure 401 {object} response.APIResponse
+// @Failure 500 {object} response.APIResponse
+// @Router /api/v1/profile/notification-settings [put]
+func (c *UserProfileController) UpdateNotificationSettings(ctx *gin.Context) {
+	// 解析请求参数
+	var req request.NotificationSettingsRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		c.logger.WarnContext(ctx, "Invalid request parameters", logger.ErrorField(err))
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed, c.i18n.T(ctx, "common.validation_failed")))
+		return
+	}
+
+	// 获取当前用户ID
+	userID, exists := ctx.Get("user_id")
+	if !exists {
+		c.logger.WarnContext(ctx, "User ID not found in context")
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed, c.i18n.T(ctx, "auth.unauthorized")))
+		return
+	}
+
+	currentUserID, ok := userID.(uint)
+	if !ok {
+		c.logger.WarnContext(ctx, "Invalid user ID type in context")
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed, c.i18n.T(ctx, "auth.unauthorized")))
+		return
+	}
+
+	err := c.profileService.UpdateNotificationSettings(ctx, currentUserID, &req)
+	if err != nil {
+		c.logger.ErrorContext(ctx, "Failed to update notification settings", logger.Uint("user_id", currentUserID), logger.ErrorField(err))
+		errors.HandleError(ctx, err)
+		return
+	}
+
+	c.logger.InfoContext(ctx, "Notification settings updated successfully", logger.Uint("user_id", currentUserID))
+	pkg_response.Success(ctx, c.i18n.T(ctx, "user_profile.notification_settings_update_success"), nil)
+}
+
+// GetSecuritySettings 获取安全设置
+// @Summary 获取安全设置
+// @Description 获取当前用户的安全设置
+// @Tags 个人中心
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} response.APIResponse{data=response.SecuritySettingsResponse}
+// @Failure 401 {object} response.APIResponse
+// @Failure 500 {object} response.APIResponse
+// @Router /api/v1/profile/security-settings [get]
+func (c *UserProfileController) GetSecuritySettings(ctx *gin.Context) {
+	// 获取当前用户ID
+	userID, exists := ctx.Get("user_id")
+	if !exists {
+		c.logger.WarnContext(ctx, "User ID not found in context")
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed, c.i18n.T(ctx, "auth.unauthorized")))
+		return
+	}
+
+	currentUserID, ok := userID.(uint)
+	if !ok {
+		c.logger.WarnContext(ctx, "Invalid user ID type in context")
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed, c.i18n.T(ctx, "auth.unauthorized")))
+		return
+	}
+
+	settings, err := c.profileService.GetSecuritySettings(ctx, currentUserID)
+	if err != nil {
+		c.logger.ErrorContext(ctx, "Failed to get security settings", logger.Uint("user_id", currentUserID), logger.ErrorField(err))
+		errors.HandleError(ctx, err)
+		return
+	}
+
+	c.logger.InfoContext(ctx, "Security settings retrieved successfully", logger.Uint("user_id", currentUserID))
+	pkg_response.Success(ctx, c.i18n.T(ctx, "user_profile.security_settings_get_success"), settings)
+}
+
+// UpdateSecuritySettings 更新安全设置
+// @Summary 更新安全设置
+// @Description 更新当前用户的安全设置
+// @Tags 个人中心
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body request.SecuritySettingsRequest true "安全设置请求"
+// @Success 200 {object} response.APIResponse
+// @Failure 400 {object} response.APIResponse
+// @Failure 401 {object} response.APIResponse
+// @Failure 500 {object} response.APIResponse
+// @Router /api/v1/profile/security-settings [put]
+func (c *UserProfileController) UpdateSecuritySettings(ctx *gin.Context) {
+	// 解析请求参数
+	var req request.SecuritySettingsRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		c.logger.WarnContext(ctx, "Invalid request parameters", logger.ErrorField(err))
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed, c.i18n.T(ctx, "common.validation_failed")))
+		return
+	}
+
+	// 获取当前用户ID
+	userID, exists := ctx.Get("user_id")
+	if !exists {
+		c.logger.WarnContext(ctx, "User ID not found in context")
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed, c.i18n.T(ctx, "auth.unauthorized")))
+		return
+	}
+
+	currentUserID, ok := userID.(uint)
+	if !ok {
+		c.logger.WarnContext(ctx, "Invalid user ID type in context")
+		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed, c.i18n.T(ctx, "auth.unauthorized")))
+		return
+	}
+
+	err := c.profileService.UpdateSecuritySettings(ctx, currentUserID, &req)
+	if err != nil {
+		c.logger.ErrorContext(ctx, "Failed to update security settings", logger.Uint("user_id", currentUserID), logger.ErrorField(err))
+		errors.HandleError(ctx, err)
+		return
+	}
+
+	c.logger.InfoContext(ctx, "Security settings updated successfully", logger.Uint("user_id", currentUserID))
+	pkg_response.Success(ctx, c.i18n.T(ctx, "user_profile.security_settings_update_success"), nil)
 }

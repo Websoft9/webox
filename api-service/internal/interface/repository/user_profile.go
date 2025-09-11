@@ -21,4 +21,13 @@ type UserProfileRepository interface {
 
 	// GetLoginHistories 获取用户登录历史记录
 	GetLoginHistories(ctx context.Context, userID uint, page, pageSize int) ([]model.UserLoginHistory, int64, error)
+
+	// 获取用户配置
+	GetUserConfig(ctx context.Context, userID uint, category, configKey string) (*model.UserProfile, error)
+
+	// 获取用户分类下的所有配置
+	GetUserConfigsByCategory(ctx context.Context, userID uint, category string) ([]*model.UserProfile, error)
+
+	// 保存用户配置（不存在则创建，存在则更新）
+	SaveUserConfig(ctx context.Context, userProfile *model.UserProfile) error
 }

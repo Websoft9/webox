@@ -32,7 +32,13 @@ user_profile:
   update_success: "User profile updated successfully"
   update_failed: "Failed to update user profile"
   not_found: "User profile not found"
-
+  password_change_success: "Password changed successfully"
+  login_history_get_success: "Login history retrieved successfully"
+  notification_settings_get_success: "Get notification settings success"
+  notification_settings_update_success: "Update notification settings success"
+  security_settings_get_success: "Get security settings success"
+  security_settings_update_success: "Update security settings success"
+  
 # Role module messages
 role:
   not_found: "Role not found"

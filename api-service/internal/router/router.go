@@ -292,5 +292,9 @@ func setupUserProfileRoutes(protected *gin.RouterGroup, userProfileController *c
 	protected.PUT("/api/v1/profile", userProfileController.UpdateProfile)
 	protected.PUT("/api/v1/profile/password", userProfileController.ChangePassword)
 	protected.GET("/api/v1/profile/login-history", userProfileController.GetLoginHistories)
+	protected.GET("/notification-settings", userProfileController.GetNotificationSettings)
+	protected.PUT("/notification-settings", userProfileController.UpdateNotificationSettings)
+	protected.GET("/security-settings", userProfileController.GetSecuritySettings)
+	protected.PUT("/security-settings", userProfileController.UpdateSecuritySettings)
 
 }

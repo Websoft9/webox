@@ -23,6 +23,27 @@ type UserLoginHistory struct {
 	User *User `json:"user,omitempty" gorm:"foreignKey:UserID"`
 }
 
+// UserProfile 用户个人中心配置表
+type UserProfile struct {
+	ID           uint      `gorm:"primaryKey;column:id" json:"id"`
+	UserID       uint      `gorm:"column:user_id;not null" json:"user_id"`
+	Category     string    `gorm:"column:category;default:general" json:"category"`
+	ConfigKey    string    `gorm:"column:config_key;not null;uniqueIndex" json:"config_key"`
+	ConfigValue  string    `gorm:"column:config_value;type:text" json:"config_value"`
+	Description  string    `gorm:"column:description;type:text" json:"description"`
+	IsReadonly   bool      `gorm:"column:is_readonly;default:0" json:"is_readonly"`
+	IsEncrypted  bool      `gorm:"column:is_encrypted;default:0" json:"is_encrypted"`
+	DefaultValue string    `gorm:"column:default_value;type:text" json:"default_value"`
+	SortOrder    int       `gorm:"column:sort_order;default:0" json:"sort_order"`
+	CreatedAt    time.Time `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	UpdatedAt    time.Time `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
+}
+
+// TableName 指定表名
+func (UserProfile) TableName() string {
+	return "user_profile"
+}
+
 // TableName 指定表名
 func (UserLoginHistory) TableName() string {
 	return "user_login_history"

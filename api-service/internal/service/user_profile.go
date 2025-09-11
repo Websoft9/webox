@@ -4,11 +4,13 @@ import (
 	"api-service/internal/dto/request"
 	"api-service/internal/dto/response"
 	"api-service/internal/interface/repository"
+	"api-service/internal/model"
 	"api-service/pkg/errors"
 	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
 	"api-service/pkg/utils"
 	"context"
+	"encoding/json"
 
 	"gorm.io/gorm"
 )
@@ -44,7 +46,7 @@ func (s *userProfileService) GetUserProfile(ctx context.Context, userID uint) (*
 		s.logger.ErrorContext(ctx, "Failed to get user profile from repository",
 			logger.Uint("userID", userID),
 			logger.ErrorField(err))
-		return nil, errors.NewAppError(errors.CodeNotFound, s.i18n.T(ctx, "user_profile.not_found"))
+		return nil, errors.NewAppError(errors.CodeRecordNotFound, s.i18n.T(ctx, "user_profile.not_found"))
 	}
 
 	// 构建响应DTO
@@ -131,7 +133,7 @@ func (s *userProfileService) UpdateUserProfile(ctx context.Context, userID uint,
 			logger.ErrorField(err))
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.NewAppError(errors.CodeNotFound, s.i18n.T(ctx, "user_profile.not_found"))
+			return nil, errors.NewAppError(errors.CodeRecordNotFound, s.i18n.T(ctx, "user_profile.not_found"))
 		}
 
 		return nil, errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "user_profile.update_failed"))
@@ -149,7 +151,7 @@ func (s *userProfileService) ChangeProfilePassword(ctx context.Context, userID u
 	user, err := s.profileRepo.GetUserProfileByID(ctx, userID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.NewAppError(errors.CodeNotFound, s.i18n.T(ctx, "user_profile.not_found"))
+			return errors.NewAppError(errors.CodeRecordNotFound, s.i18n.T(ctx, "user_profile.not_found"))
 		}
 		return errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "user_profile.get_failed"))
 	}
@@ -163,7 +165,7 @@ func (s *userProfileService) ChangeProfilePassword(ctx context.Context, userID u
 	// 3. 确认新密码与确认密码一致
 	if req.NewPassword != req.ConfirmPassword {
 		s.logger.WarnContext(ctx, "Password confirmation mismatch", logger.Uint("userID", userID))
-		return errors.NewAppError(errors.CodeValidationError, s.i18n.T(ctx, "user_profile.password_mismatch"))
+		return errors.NewAppError(errors.CodeValidationFailed, s.i18n.T(ctx, "user_profile.password_mismatch"))
 	}
 
 	// 4. 加密新密码
@@ -223,4 +225,176 @@ func (s *userProfileService) GetLoginHistories(ctx context.Context, userID uint,
 	}
 
 	return result, nil
+}
+
+// GetNotificationSettings 获取通知设置
+func (s *userProfileService) GetNotificationSettings(ctx context.Context, userID uint) (*response.NotificationSettingsResponse, error) {
+	s.logger.InfoContext(ctx, "Getting notification settings", logger.Uint("userID", userID))
+
+	configs, err := s.profileRepo.GetUserConfigsByCategory(ctx, userID, "notification")
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		s.logger.ErrorContext(ctx, "Failed to get notification settings",
+			logger.Uint("userID", userID),
+			logger.ErrorField(err))
+		return nil, errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "user_profile.notification_settings_get_failed"))
+	}
+
+	// 设置默认值
+	settings := &response.NotificationSettingsResponse{
+		EmailNotifications: true,  // 默认开启邮件通知
+		SmsNotifications:   false, // 默认关闭短信通知
+		PushNotifications:  true,  // 默认开启推送通知
+		MarketingEmails:    false, // 默认关闭营销邮件
+	}
+
+	// 如果找到配置，则使用配置值
+	for _, config := range configs {
+		switch config.ConfigKey {
+		case "email_notifications":
+			settings.EmailNotifications = config.ConfigValue == "true"
+		case "sms_notifications":
+			settings.SmsNotifications = config.ConfigValue == "true"
+		case "push_notifications":
+			settings.PushNotifications = config.ConfigValue == "true"
+		case "marketing_emails":
+			settings.MarketingEmails = config.ConfigValue == "true"
+		}
+	}
+
+	s.logger.InfoContext(ctx, "Notification settings retrieved successfully", logger.Uint("userID", userID))
+	return settings, nil
+}
+
+// UpdateNotificationSettings 更新通知设置
+func (s *userProfileService) UpdateNotificationSettings(ctx context.Context, userID uint, req *request.NotificationSettingsRequest) error {
+	s.logger.InfoContext(ctx, "Updating notification settings", logger.Uint("userID", userID))
+
+	// 更新邮件通知设置
+	if err := s.saveUserConfig(ctx, userID, "notification", "email_notifications", boolToString(req.EmailNotifications), "Email notifications setting"); err != nil {
+		s.logger.ErrorContext(ctx, "Failed to save email notification setting",
+			logger.Uint("userID", userID),
+			logger.Bool("value", req.EmailNotifications),
+			logger.ErrorField(err))
+		return errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "user_profile.notification_settings_update_failed"))
+	}
+
+	// 更新短信通知设置
+	if err := s.saveUserConfig(ctx, userID, "notification", "sms_notifications", boolToString(req.SmsNotifications), "SMS notifications setting"); err != nil {
+		s.logger.ErrorContext(ctx, "Failed to save SMS notification setting",
+			logger.Uint("userID", userID),
+			logger.Bool("value", req.SmsNotifications),
+			logger.ErrorField(err))
+		return errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "user_profile.notification_settings_update_failed"))
+	}
+
+	// 更新推送通知设置
+	if err := s.saveUserConfig(ctx, userID, "notification", "push_notifications", boolToString(req.PushNotifications), "Push notifications setting"); err != nil {
+		s.logger.ErrorContext(ctx, "Failed to save push notification setting",
+			logger.Uint("userID", userID),
+			logger.Bool("value", req.PushNotifications),
+			logger.ErrorField(err))
+		return errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "user_profile.notification_settings_update_failed"))
+	}
+
+	// 更新营销邮件设置
+	if err := s.saveUserConfig(ctx, userID, "notification", "marketing_emails", boolToString(req.MarketingEmails), "Marketing emails setting"); err != nil {
+		s.logger.ErrorContext(ctx, "Failed to save marketing emails setting",
+			logger.Uint("userID", userID),
+			logger.Bool("value", req.MarketingEmails),
+			logger.ErrorField(err))
+		return errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "user_profile.notification_settings_update_failed"))
+	}
+
+	s.logger.InfoContext(ctx, "Notification settings updated successfully", logger.Uint("userID", userID))
+	return nil
+}
+
+// GetSecuritySettings 获取安全设置
+func (s *userProfileService) GetSecuritySettings(ctx context.Context, userID uint) (*response.SecuritySettingsResponse, error) {
+	s.logger.InfoContext(ctx, "Getting security settings", logger.Uint("userID", userID))
+
+	configs, err := s.profileRepo.GetUserConfigsByCategory(ctx, userID, "security")
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		s.logger.ErrorContext(ctx, "Failed to get security settings",
+			logger.Uint("userID", userID),
+			logger.ErrorField(err))
+		return nil, errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "user_profile.security_settings_get_failed"))
+	}
+
+	// 设置默认值
+	settings := &response.SecuritySettingsResponse{
+		LoginAlerts:    true, // 默认开启登录提醒
+		SessionTimeout: 1800, // 默认会话超时时间30分钟
+	}
+
+	// 如果找到配置，则使用配置值
+	for _, config := range configs {
+		switch config.ConfigKey {
+		case "login_alerts":
+			settings.LoginAlerts = config.ConfigValue == "true"
+		case "session_timeout":
+			var timeout int
+			if err := json.Unmarshal([]byte(config.ConfigValue), &timeout); err == nil && timeout > 0 {
+				settings.SessionTimeout = timeout
+			}
+		}
+	}
+
+	s.logger.InfoContext(ctx, "Security settings retrieved successfully", logger.Uint("userID", userID))
+	return settings, nil
+}
+
+// UpdateSecuritySettings 更新安全设置
+func (s *userProfileService) UpdateSecuritySettings(ctx context.Context, userID uint, req *request.SecuritySettingsRequest) error {
+	s.logger.InfoContext(ctx, "Updating security settings",
+		logger.Uint("userID", userID),
+		logger.Bool("loginAlerts", req.LoginAlerts),
+		logger.Int("sessionTimeout", req.SessionTimeout))
+
+	// 更新登录提醒设置
+	if err := s.saveUserConfig(ctx, userID, "security", "login_alerts", boolToString(req.LoginAlerts), "Login alerts setting"); err != nil {
+		s.logger.ErrorContext(ctx, "Failed to save login alerts setting",
+			logger.Uint("userID", userID),
+			logger.Bool("value", req.LoginAlerts),
+			logger.ErrorField(err))
+		return errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "user_profile.security_settings_update_failed"))
+	}
+
+	// 更新会话超时设置
+	timeoutStr, _ := json.Marshal(req.SessionTimeout)
+	if err := s.saveUserConfig(ctx, userID, "security", "session_timeout", string(timeoutStr), "Session timeout setting"); err != nil {
+		s.logger.ErrorContext(ctx, "Failed to save session timeout setting",
+			logger.Uint("userID", userID),
+			logger.Int("value", req.SessionTimeout),
+			logger.ErrorField(err))
+		return errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "user_profile.security_settings_update_failed"))
+	}
+
+	s.logger.InfoContext(ctx, "Security settings updated successfully", logger.Uint("userID", userID))
+	return nil
+}
+
+// 保存用户配置的辅助方法
+func (s *userProfileService) saveUserConfig(ctx context.Context, userID uint, category, configKey, configValue, description string) error {
+	config := &model.UserProfile{
+		UserID:      userID,
+		Category:    category,
+		ConfigKey:   configKey,
+		ConfigValue: configValue,
+		Description: description,
+	}
+
+	if err := s.profileRepo.SaveUserConfig(ctx, config); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// 将bool转换为字符串的辅助方法
+func boolToString(b bool) string {
+	if b {
+		return "true"
+	}
+	return "false"
 }

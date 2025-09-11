@@ -670,6 +670,7 @@ CREATE TABLE IF NOT EXISTS user_two_factor (
 CREATE TABLE IF NOT EXISTS user_profile (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL REFERENCES users(id),
+    category VARCHAR(64) DEFAULT 'general',
     config_key VARCHAR(64) NOT NULL,
     config_value TEXT,
     description TEXT,

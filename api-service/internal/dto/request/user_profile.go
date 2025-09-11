@@ -22,3 +22,17 @@ type LoginHistoryRequest struct {
 	Page     int `form:"page" binding:"min=0"`      // 页码
 	PageSize int `form:"page_size" binding:"min=0"` // 每页记录数
 }
+
+// NotificationSettingsRequest 通知设置请求
+type NotificationSettingsRequest struct {
+	EmailNotifications bool `json:"email_notifications" binding:"omitempty"`
+	SmsNotifications   bool `json:"sms_notifications" binding:"omitempty"`
+	PushNotifications  bool `json:"push_notifications" binding:"omitempty"`
+	MarketingEmails    bool `json:"marketing_emails" binding:"omitempty"`
+}
+
+// SecuritySettingsRequest 安全设置请求
+type SecuritySettingsRequest struct {
+	LoginAlerts    bool `json:"login_alerts" binding:"omitempty"`
+	SessionTimeout int  `json:"session_timeout" binding:"omitempty,min=0"`
+}

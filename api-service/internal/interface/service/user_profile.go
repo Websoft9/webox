@@ -19,4 +19,16 @@ type UserProfileService interface {
 
 	// GetLoginHistories 获取用户登录历史
 	GetLoginHistories(ctx context.Context, userID uint, req *request.LoginHistoryRequest) (*response.LoginHistoryResponse, error)
+
+	// 获取通知设置
+	GetNotificationSettings(ctx context.Context, userID uint) (*response.NotificationSettingsResponse, error)
+
+	// 更新通知设置
+	UpdateNotificationSettings(ctx context.Context, userID uint, req *request.NotificationSettingsRequest) error
+
+	// 获取安全设置
+	GetSecuritySettings(ctx context.Context, userID uint) (*response.SecuritySettingsResponse, error)
+
+	// 更新安全设置
+	UpdateSecuritySettings(ctx context.Context, userID uint, req *request.SecuritySettingsRequest) error
 }

@@ -42,3 +42,17 @@ type LoginHistoryItem struct {
 type LoginHistoryResponse struct {
 	Items []LoginHistoryItem `json:"items"`
 }
+
+// NotificationSettingsResponse 通知设置响应
+type NotificationSettingsResponse struct {
+	EmailNotifications bool `json:"email_notifications"`
+	SmsNotifications   bool `json:"sms_notifications"`
+	PushNotifications  bool `json:"push_notifications"`
+	MarketingEmails    bool `json:"marketing_emails"`
+}
+
+// SecuritySettingsResponse 安全设置响应
+type SecuritySettingsResponse struct {
+	LoginAlerts    bool `json:"login_alerts"`
+	SessionTimeout int  `json:"session_timeout"`
+}
