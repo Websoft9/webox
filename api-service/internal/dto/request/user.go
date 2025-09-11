@@ -10,7 +10,7 @@ type UserRegisterRequest struct {
 
 // UserLoginRequest 用户登录请求
 type UserLoginRequest struct {
-	Username string `json:"username" binding:"required,email" example:"john@example.com"`
+	Username string `json:"username" binding:"required" example:"john@example.com or johndoe"`
 	Password string `json:"password" binding:"required" example:"123456"`
 }
 

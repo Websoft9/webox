@@ -1,6 +1,7 @@
 package service
 
 import (
+	"api-service/internal/constants"
 	"api-service/internal/dto/response"
 	"api-service/internal/interface/repository"
 	"api-service/internal/interface/service"
@@ -339,11 +340,11 @@ func (s *twoFactorService) VerifyTwoFactor(ctx context.Context, userID uint, cod
 		logger.String("method", method))
 
 	switch method {
-	case "totp":
+	case constants.TwoFactorMethodTOTP:
 		return s.verifyTOTP(ctx, userID, code)
-	case "email":
+	case constants.TwoFactorMethodEmail:
 		return s.verifyEmail(ctx, userID, code)
-	case "backup":
+	case constants.TwoFactorMethodBackup:
 		return s.verifyBackupCode(ctx, userID, code)
 	default:
 		return nil, errors.NewAppErrorWithMessage(errors.CodeInvalidParameterFormat, "unsupported 2FA method")

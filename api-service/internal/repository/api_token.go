@@ -1,9 +1,9 @@
 package repository
 
 import (
-	"api-service/internal/dto/request"
 	"api-service/internal/interface/repository"
 	"api-service/internal/model"
+	"api-service/pkg/errors"
 	"context"
 	"time"
 
@@ -32,7 +32,10 @@ func (r *apiTokenRepository) GetByID(ctx context.Context, id uint) (*model.APITo
 		Preload("User").
 		First(&token, id).Error
 	if err != nil {
-		return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.NewAppErrorWithMessage(errors.CodeRecordNotFound, "token not found")
+		}
+		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to get token by ID")
 	}
 	// Set username
 	if token.User.ID != 0 {
@@ -60,46 +63,26 @@ func (r *apiTokenRepository) GetByToken(ctx context.Context, tokenHash string) (
 
 // Update update API token
 func (r *apiTokenRepository) Update(ctx context.Context, token *model.APIToken) error {
-	return r.db.WithContext(ctx).Save(token).Error
+	result := r.db.WithContext(ctx).Save(token)
+	if result.Error != nil {
+		return errors.WrapError(result.Error, errors.CodeRecordUpdateFailed, "failed to update token")
+	}
+	if result.RowsAffected == 0 {
+		return errors.NewAppErrorWithMessage(errors.CodeRecordNoAffected, "no rows affected")
+	}
+	return nil
 }
 
 // Delete delete API token
 func (r *apiTokenRepository) Delete(ctx context.Context, id uint) error {
-	return r.db.WithContext(ctx).Delete(&model.APIToken{}, id).Error
-}
-
-// List get API token list
-func (r *apiTokenRepository) List(ctx context.Context, req *request.ListAPITokensRequest) ([]*model.APIToken, int64, error) {
-	var tokens []*model.APIToken
-	var total int64
-
-	query := r.db.WithContext(ctx).Model(&model.APIToken{})
-
-	// Apply filters
-	query = r.applyFilters(query, req)
-
-	// Get total count
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, err
+	result := r.db.WithContext(ctx).Delete(&model.APIToken{}, id)
+	if result.Error != nil {
+		return errors.WrapError(result.Error, errors.CodeRecordDeleteFailed, "failed to delete token")
 	}
-
-	// Get data
-	offset := (req.GetPage() - 1) * req.GetPageSize()
-	err := query.
-		Preload("User").
-		Offset(offset).
-		Limit(req.GetPageSize()).
-		Order("created_at desc").
-		Find(&tokens).Error
-
-	// Set username
-	for _, token := range tokens {
-		if token.User.ID != 0 {
-			token.Username = token.User.Username
-		}
+	if result.RowsAffected == 0 {
+		return errors.NewAppErrorWithMessage(errors.CodeRecordNoAffected, "no rows affected")
 	}
-
-	return tokens, total, err
+	return nil
 }
 
 // GetByUserID get API token list by user ID
@@ -153,28 +136,4 @@ func (r *apiTokenRepository) CreateWithTx(ctx context.Context, tx *gorm.DB, toke
 // UpdateWithTx update API token with transaction
 func (r *apiTokenRepository) UpdateWithTx(ctx context.Context, tx *gorm.DB, token *model.APIToken) error {
 	return tx.WithContext(ctx).Save(token).Error
-}
-
-// applyFilters apply query filters
-func (r *apiTokenRepository) applyFilters(query *gorm.DB, req *request.ListAPITokensRequest) *gorm.DB {
-	// User ID filter
-	if req.UserID != nil {
-		query = query.Where("user_id = ?", *req.UserID)
-	}
-
-	// Name search
-	if req.Search != "" {
-		query = query.Where("name LIKE ?", "%"+req.Search+"%")
-	}
-
-	// Expiration status filter
-	if req.Expired != nil {
-		if *req.Expired {
-			query = query.Where("expires_at IS NOT NULL AND expires_at < ?", time.Now())
-		} else {
-			query = query.Where("expires_at IS NULL OR expires_at > ?", time.Now())
-		}
-	}
-
-	return query
 }

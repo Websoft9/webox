@@ -7,7 +7,6 @@ import (
 	serviceImpl "api-service/internal/service"
 	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
-	"net/http"
 	"strconv"
 	"time"
 
@@ -92,57 +91,32 @@ func (c *SecurityController) CreateAPIToken(ctx *gin.Context) {
 	// Bind request parameters
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(err))
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"code":    http.StatusBadRequest,
-			"message": c.i18n.T(ctx, "validation.invalid_request_format"),
-			"error":   err.Error(),
-		})
+		ResponseBadRequest(ctx, err, "validation.invalid_request_format", c.i18n)
 		return
 	}
 
 	// Validate request parameters
 	if err := c.validator.Struct(&req); err != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(err))
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"code":    http.StatusBadRequest,
-			"message": c.i18n.T(ctx, "validation.request_validation_failed"),
-			"error":   err.Error(),
-		})
+		ResponseBadRequest(ctx, err, "validation.request_validation_failed", c.i18n)
 		return
 	}
 
 	// Get current user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{
-			"success": false,
-			"code":    http.StatusUnauthorized,
-			"message": c.i18n.T(ctx, "auth.user_not_authenticated"),
-		})
+		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
 		return
 	}
 
 	// Create API token
 	token, err := c.apiTokenService.CreateAPIToken(ctx.Request.Context(), &req, userID.(uint))
 	if err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Failed to create API token", logger.ErrorField(err))
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"code":    http.StatusInternalServerError,
-			"message": c.i18n.T(ctx, "api_token.create_failed"),
-			"error":   err.Error(),
-		})
+		ResponseWithError(ctx, err, c.logger, c.i18n)
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, gin.H{
-		"success": true,
-		"code":    http.StatusCreated,
-		"message": c.i18n.T(ctx, "api_token.created_success"),
-		"data":    token,
-	})
+	ResponseOKWithData(ctx, token, "api_token.created_success", c.i18n)
 }
 
 // GetAPIToken gets API token details
@@ -161,22 +135,14 @@ func (c *SecurityController) GetAPIToken(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"code":    http.StatusBadRequest,
-			"message": c.i18n.T(ctx, "validation.invalid_token_id"),
-		})
+		ResponseBadRequest(ctx, err, "validation.invalid_token_id", c.i18n)
 		return
 	}
 
 	// Get current user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{
-			"success": false,
-			"code":    http.StatusUnauthorized,
-			"message": c.i18n.T(ctx, "auth.user_not_authenticated"),
-		})
+		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
 		return
 	}
 
@@ -207,11 +173,7 @@ func (c *SecurityController) UpdateAPIToken(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"code":    http.StatusBadRequest,
-			"message": c.i18n.T(ctx, "validation.invalid_token_id"),
-		})
+		ResponseBadRequest(ctx, err, "validation.invalid_token_id", c.i18n)
 		return
 	}
 
@@ -220,35 +182,21 @@ func (c *SecurityController) UpdateAPIToken(ctx *gin.Context) {
 	// Bind request parameters
 	if bindErr := ctx.ShouldBindJSON(&req); bindErr != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(bindErr))
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"code":    http.StatusBadRequest,
-			"message": c.i18n.T(ctx, "validation.invalid_request_format"),
-			"error":   bindErr.Error(),
-		})
+		ResponseBadRequest(ctx, bindErr, "validation.invalid_request_format", c.i18n)
 		return
 	}
 
 	// Validate request parameters
 	if validateErr := c.validator.Struct(&req); validateErr != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(validateErr))
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"code":    http.StatusBadRequest,
-			"message": c.i18n.T(ctx, "validation.request_validation_failed"),
-			"error":   validateErr.Error(),
-		})
+		ResponseBadRequest(ctx, validateErr, "validation.request_validation_failed", c.i18n)
 		return
 	}
 
 	// Get current user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{
-			"success": false,
-			"code":    http.StatusUnauthorized,
-			"message": c.i18n.T(ctx, "auth.user_not_authenticated"),
-		})
+		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
 		return
 	}
 
@@ -278,22 +226,14 @@ func (c *SecurityController) RevokeAPIToken(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"code":    http.StatusBadRequest,
-			"message": c.i18n.T(ctx, "validation.invalid_token_id"),
-		})
+		ResponseBadRequest(ctx, err, "validation.invalid_token_id", c.i18n)
 		return
 	}
 
 	// Get current user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{
-			"success": false,
-			"code":    http.StatusUnauthorized,
-			"message": c.i18n.T(ctx, "auth.user_not_authenticated"),
-		})
+		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
 		return
 	}
 
@@ -322,22 +262,14 @@ func (c *SecurityController) RefreshAPIToken(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"code":    http.StatusBadRequest,
-			"message": c.i18n.T(ctx, "validation.invalid_token_id"),
-		})
+		ResponseBadRequest(ctx, err, "validation.invalid_token_id", c.i18n)
 		return
 	}
 
 	// Get current user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{
-			"success": false,
-			"code":    http.StatusUnauthorized,
-			"message": c.i18n.T(ctx, "auth.user_not_authenticated"),
-		})
+		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
 		return
 	}
 
@@ -348,67 +280,6 @@ func (c *SecurityController) RefreshAPIToken(ctx *gin.Context) {
 		return
 	}
 	ResponseOKWithData(ctx, token, "api_token.refresh_success", c.i18n)
-}
-
-// ListAPITokens gets API token list
-// @Summary Get API token list
-// @Description Get paginated API token list
-// @Tags API Token Management
-// @Accept json
-// @Produce json
-// @Param page query int false "Page number" default(1)
-// @Param page_size query int false "Page size" default(20)
-// @Param search query string false "Search keyword"
-// @Param start_time query string false "Start time" format(datetime)
-// @Param end_time query string false "End time" format(datetime)
-// @Success 200 {object} response.APIResponse{data=response.APITokenListResponse}
-// @Failure 400 {object} response.APIResponse
-// @Router /api/v1/api-tokens [get]
-func (c *SecurityController) ListAPITokens(ctx *gin.Context) {
-	var req request.ListAPITokensRequest
-
-	// Bind query parameters
-	if err := ctx.ShouldBindQuery(&req); err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Invalid query parameters", logger.ErrorField(err))
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"code":    http.StatusBadRequest,
-			"message": c.i18n.T(ctx, "validation.invalid_query_parameters"),
-			"error":   err.Error(),
-		})
-		return
-	}
-
-	// Validate request parameters
-	if err := c.validator.Struct(&req); err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Query validation failed", logger.ErrorField(err))
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"code":    http.StatusBadRequest,
-			"message": c.i18n.T(ctx, "validation.query_validation_failed"),
-			"error":   err.Error(),
-		})
-		return
-	}
-
-	// Get current user ID
-	userID, exists := ctx.Get("user_id")
-	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{
-			"success": false,
-			"code":    http.StatusUnauthorized,
-			"message": c.i18n.T(ctx, "auth.user_not_authenticated"),
-		})
-		return
-	}
-
-	// Get API token list
-	tokens, err := c.apiTokenService.ListAPITokens(ctx.Request.Context(), &req, userID.(uint))
-	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
-		return
-	}
-	ResponseOKWithData(ctx, tokens, "common.success", c.i18n)
 }
 
 // ValidateAPIToken validates API token
@@ -428,24 +299,14 @@ func (c *SecurityController) ValidateAPIToken(ctx *gin.Context) {
 	// Bind request parameters
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(err))
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"code":    http.StatusBadRequest,
-			"message": c.i18n.T(ctx, "validation.invalid_request_format"),
-			"error":   err.Error(),
-		})
+		ResponseBadRequest(ctx, err, "validation.invalid_request_format", c.i18n)
 		return
 	}
 
 	// Validate request parameters
 	if err := c.validator.Struct(&req); err != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(err))
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"code":    http.StatusBadRequest,
-			"message": c.i18n.T(ctx, "validation.request_validation_failed"),
-			"error":   err.Error(),
-		})
+		ResponseBadRequest(ctx, err, "validation.request_validation_failed", c.i18n)
 		return
 	}
 
@@ -453,11 +314,7 @@ func (c *SecurityController) ValidateAPIToken(ctx *gin.Context) {
 	validation, err := c.apiTokenService.ValidateAPIToken(ctx.Request.Context(), req.Token)
 	if err != nil {
 		if err.Error() == "invalid token" || err.Error() == "token expired" || err.Error() == "token revoked" {
-			ctx.JSON(http.StatusUnauthorized, gin.H{
-				"success": false,
-				"code":    http.StatusUnauthorized,
-				"message": c.i18n.T(ctx, "api_token.invalid_token"),
-			})
+			ResponseUnauthorized(ctx, "api_token.invalid_token", c.i18n)
 			return
 		}
 		ResponseWithError(ctx, err, c.logger, c.i18n)
@@ -483,35 +340,21 @@ func (c *SecurityController) BatchRevokeAPITokens(ctx *gin.Context) {
 	// Bind request parameters
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(err))
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"code":    http.StatusBadRequest,
-			"message": c.i18n.T(ctx, "validation.invalid_request_format"),
-			"error":   err.Error(),
-		})
+		ResponseBadRequest(ctx, err, "validation.invalid_request_format", c.i18n)
 		return
 	}
 
 	// Validate request parameters
 	if err := c.validator.Struct(&req); err != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(err))
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"code":    http.StatusBadRequest,
-			"message": c.i18n.T(ctx, "validation.request_validation_failed"),
-			"error":   err.Error(),
-		})
+		ResponseBadRequest(ctx, err, "validation.request_validation_failed", c.i18n)
 		return
 	}
 
 	// Get current user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{
-			"success": false,
-			"code":    http.StatusUnauthorized,
-			"message": c.i18n.T(ctx, "auth.user_not_authenticated"),
-		})
+		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
 		return
 	}
 
@@ -604,11 +447,7 @@ func (c *SecurityController) EnableTOTP(ctx *gin.Context) {
 	// Get current user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{
-			"success": false,
-			"code":    http.StatusUnauthorized,
-			"message": c.i18n.T(ctx, "auth.user_not_authenticated"),
-		})
+		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
 		return
 	}
 
@@ -638,35 +477,21 @@ func (c *SecurityController) ConfirmTOTP(ctx *gin.Context) {
 	// Bind request parameters
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(err))
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"code":    http.StatusBadRequest,
-			"message": c.i18n.T(ctx, "validation.invalid_request_format"),
-			"error":   err.Error(),
-		})
+		ResponseBadRequest(ctx, err, "validation.invalid_request_format", c.i18n)
 		return
 	}
 
 	// Validate request parameters
 	if err := c.validator.Struct(&req); err != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(err))
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"code":    http.StatusBadRequest,
-			"message": c.i18n.T(ctx, "validation.request_validation_failed"),
-			"error":   err.Error(),
-		})
+		ResponseBadRequest(ctx, err, "validation.request_validation_failed", c.i18n)
 		return
 	}
 
 	// Get current user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{
-			"success": false,
-			"code":    http.StatusUnauthorized,
-			"message": c.i18n.T(ctx, "auth.user_not_authenticated"),
-		})
+		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
 		return
 	}
 
@@ -696,35 +521,21 @@ func (c *SecurityController) DisableTOTP(ctx *gin.Context) {
 	// Bind request parameters
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(err))
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"code":    http.StatusBadRequest,
-			"message": c.i18n.T(ctx, "validation.invalid_request_format"),
-			"error":   err.Error(),
-		})
+		ResponseBadRequest(ctx, err, "validation.invalid_request_format", c.i18n)
 		return
 	}
 
 	// Validate request parameters
 	if err := c.validator.Struct(&req); err != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(err))
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"code":    http.StatusBadRequest,
-			"message": c.i18n.T(ctx, "validation.request_validation_failed"),
-			"error":   err.Error(),
-		})
+		ResponseBadRequest(ctx, err, "validation.request_validation_failed", c.i18n)
 		return
 	}
 
 	// Get current user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{
-			"success": false,
-			"code":    http.StatusUnauthorized,
-			"message": c.i18n.T(ctx, "auth.user_not_authenticated"),
-		})
+		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
 		return
 	}
 
@@ -754,35 +565,21 @@ func (c *SecurityController) EnableEmailTwoFactor(ctx *gin.Context) {
 	// Bind request parameters
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(err))
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"code":    http.StatusBadRequest,
-			"message": c.i18n.T(ctx, "validation.invalid_request_format"),
-			"error":   err.Error(),
-		})
+		ResponseBadRequest(ctx, err, "validation.invalid_request_format", c.i18n)
 		return
 	}
 
 	// Validate request parameters
 	if err := c.validator.Struct(&req); err != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(err))
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"code":    http.StatusBadRequest,
-			"message": c.i18n.T(ctx, "validation.request_validation_failed"),
-			"error":   err.Error(),
-		})
+		ResponseBadRequest(ctx, err, "validation.request_validation_failed", c.i18n)
 		return
 	}
 
 	// Get current user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{
-			"success": false,
-			"code":    http.StatusUnauthorized,
-			"message": c.i18n.T(ctx, "auth.user_not_authenticated"),
-		})
+		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
 		return
 	}
 
@@ -809,11 +606,7 @@ func (c *SecurityController) DisableEmailTwoFactor(ctx *gin.Context) {
 	// Get current user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{
-			"success": false,
-			"code":    http.StatusUnauthorized,
-			"message": c.i18n.T(ctx, "auth.user_not_authenticated"),
-		})
+		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
 		return
 	}
 
@@ -840,11 +633,7 @@ func (c *SecurityController) SendEmailCode(ctx *gin.Context) {
 	// Get current user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{
-			"success": false,
-			"code":    http.StatusUnauthorized,
-			"message": c.i18n.T(ctx, "auth.user_not_authenticated"),
-		})
+		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
 		return
 	}
 
@@ -874,24 +663,14 @@ func (c *SecurityController) VerifyTwoFactor(ctx *gin.Context) {
 	// Bind request parameters
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(err))
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"code":    http.StatusBadRequest,
-			"message": c.i18n.T(ctx, "validation.invalid_request_format"),
-			"error":   err.Error(),
-		})
+		ResponseBadRequest(ctx, err, "validation.invalid_request_format", c.i18n)
 		return
 	}
 
 	// Validate request parameters
 	if err := c.validator.Struct(&req); err != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(err))
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"code":    http.StatusBadRequest,
-			"message": c.i18n.T(ctx, "validation.request_validation_failed"),
-			"error":   err.Error(),
-		})
+		ResponseBadRequest(ctx, err, "validation.request_validation_failed", c.i18n)
 		return
 	}
 
@@ -899,11 +678,7 @@ func (c *SecurityController) VerifyTwoFactor(ctx *gin.Context) {
 	result, err := c.twoFactorService.VerifyTwoFactor(ctx.Request.Context(), req.UserID, req.Code, req.Method)
 	if err != nil {
 		if err.Error() == "invalid code" || err.Error() == "code expired" {
-			ctx.JSON(http.StatusUnauthorized, gin.H{
-				"success": false,
-				"code":    http.StatusUnauthorized,
-				"message": c.i18n.T(ctx, "two_factor.invalid_code"),
-			})
+			ResponseUnauthorized(ctx, "two_factor.invalid_code", c.i18n)
 			return
 		}
 		ResponseWithError(ctx, err, c.logger, c.i18n)
@@ -925,11 +700,7 @@ func (c *SecurityController) GetTwoFactorStatus(ctx *gin.Context) {
 	// Get current user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{
-			"success": false,
-			"code":    http.StatusUnauthorized,
-			"message": c.i18n.T(ctx, "auth.user_not_authenticated"),
-		})
+		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
 		return
 	}
 
@@ -956,11 +727,7 @@ func (c *SecurityController) GenerateBackupCodes(ctx *gin.Context) {
 	// Get current user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{
-			"success": false,
-			"code":    http.StatusUnauthorized,
-			"message": c.i18n.T(ctx, "auth.user_not_authenticated"),
-		})
+		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
 		return
 	}
 

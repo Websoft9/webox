@@ -106,13 +106,14 @@ const (
 
 // OAuth2 constants
 const (
-	OAuth2StateLength  = 16
-	OAuth2CookieMaxAge = 600 // 10 minutes
-	HTTPClientTimeout  = 30  // seconds
-	ProviderGoogle     = "google"
-	ProviderGitHub     = "github"
-	ProviderAzureAD    = "azure_ad"
-	UserMappingEmail   = "email"
+	OAuth2StateLength   = 16
+	OAuth2CookieMaxAge  = 600 // 10 minutes
+	HTTPClientTimeout   = 30  // seconds
+	ProviderGoogle      = "google"
+	ProviderGitHub      = "github"
+	ProviderAzureAD     = "azure_ad"
+	UserMappingEmail    = "email"
+	UserMappingUsername = "username"
 )
 
 // Auth config constants
@@ -135,6 +136,11 @@ const (
 	RefreshTokenMultiplier       = 24
 	PasswordMinLengthCheck       = 8
 	TimeRangePartsCount          = 2
+
+	// 2FA method constants
+	TwoFactorMethodTOTP   = "totp"
+	TwoFactorMethodEmail  = "email"
+	TwoFactorMethodBackup = "backup"
 )
 
 // Redis token storage constants
