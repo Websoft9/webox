@@ -31,7 +31,6 @@
       - [4.2.2 任务看板](#422-任务看板)
       - [4.2.3 资源看板](#423-资源看板)
       - [4.2.4 文件夹](#424-文件夹)
-        - [通用文件上传下载接口](#通用文件上传下载接口)
       - [4.2.5 应用](#425-应用)
       - [4.2.6 工作流](#426-工作流)
         - [工作流执行](#工作流执行)
@@ -1457,41 +1456,6 @@ POST /api/v1/my-space/files/copy
 | ----------- | -------- | -------- | ------------ |
 | source_path | string   | 否       | 源文件路径   |
 | target_path | string   | 否       | 目标文件路径 |
-
-##### 通用文件上传下载接口
-
-**通用文件上传**
-
-```text
-POST /api/v1/upload
-```
-
-请求体（multipart/form-data）：
-
-```text
-file: [文件内容]
-type: avatar|document|image|other
-max_size: 10485760
-allowed_types: jpg,png,gif,pdf,doc,docx
-```
-
-响应：
-
-```json
-{
-  "code": 200,
-  "message": "文件上传成功",
-  "data": {
-    "file_id": "file_123456789",
-    "filename": "document.pdf",
-    "original_name": "项目文档.pdf",
-    "size": 2048576,
-    "mime_type": "application/pdf",
-    "url": "https://cdn.websoft9.com/files/file_123456789.pdf",
-    "thumbnail_url": "https://cdn.websoft9.com/thumbnails/file_123456789.jpg"
-  }
-}
-```
 
 **获取文件信息**
 
@@ -4936,17 +4900,6 @@ POST /api/v1/system-configs/smtp/test
 | ---------- | -------- | -------- | -------- |
 | test_email | string   | 否       | 测试邮箱 |
 
-**测试短信配置**
-
-```text
-POST /api/v1/system-configs/sms/test
-```
-
-请求体参数：
-
-| 参数名     | 数据类型 | 是否可空 | 描述       |
-| ---------- | -------- | -------- | ---------- |
-| test_phone | string   | 否       | 测试手机号 |
 
 **获取License信息**
 
@@ -5377,6 +5330,89 @@ POST /api/v1/system-maintenance/updates
 GET /api/v1/roles
 ```
 
+查询参数：
+
+| 参数名     | 数据类型 | 是否可空 | 描述                                        |
+| ---------- | -------- | -------- | ------------------------------------------- |
+| page       | integer  | 是       | 页码，默认1                                 |
+| page_size  | integer  | 是       | 每页数量，默认20                            |
+| search     | string   | 是       | 搜索关键词，支持角色名称的精确或模糊查询    |
+| status     | integer  | 是       | 角色状态筛选（0-禁用，1-启用）              |
+| start_time | string   | 是       | 更新时间范围开始，格式：2025-01-01 00:00:00 |
+| end_time   | string   | 是       | 更新时间范围结束，格式：2025-01-01 23:59:59 |
+
+响应示例：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "items": [
+      {
+        "id": 1,
+        "name": "管理员",
+        "code": "admin",
+        "description": "系统管理员，拥有所有功能的完整权限",
+        "is_system": true,
+        "sort_order": 1,
+        "status": 1,
+        "permission_count": 50,
+        "user_count": 2,
+        "created_at": "2025-01-01 10:00:00",
+        "updated_at": "2025-01-01 10:00:00",
+        "created_by": "system"
+      }
+    ],
+    "total": 4,
+    "page": 1,
+    "page_size": 20,
+    "total_pages": 1
+  }
+}
+```
+
+**获取角色详情**
+
+```text
+GET /api/v1/roles/{id}
+```
+
+响应示例：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 1,
+    "name": "管理员",
+    "code": "admin",
+    "description": "系统管理员，拥有所有功能的完整权限",
+    "is_system": true,
+    "sort_order": 1,
+    "status": 1,
+    "permissions": [
+      {
+        "id": 1,
+        "name": "用户管理",
+        "code": "user:manage",
+        "module": "user"
+      }
+    ],
+    "users": [
+      {
+        "id": 1,
+        "username": "admin",
+        "email": "admin@websoft9.com"
+      }
+    ],
+    "created_at": "2025-01-01 10:00:00",
+    "updated_at": "2025-01-01 10:00:00"
+  }
+}
+```
+
 **创建角色**
 
 ```text
@@ -5385,15 +5421,25 @@ POST /api/v1/roles
 
 请求体参数：
 
-| 参数名         | 数据类型 | 是否可空 | 描述                          |
-| -------------- | -------- | -------- | ----------------------------- |
-| name           | string   | 否       | 角色名称                      |
-| code           | string   | 否       | 角色代码，唯一标识            |
-| description    | string   | 是       | 角色描述                      |
-| permission_ids | array    | 是       | 权限ID数组                    |
-| is_system      | boolean  | 是       | 是否系统角色                  |
-| sort_order     | integer  | 是       | 排序顺序，默认0               |
-| status         | integer  | 是       | 状态（0-禁用，1-启用），默认1 |
+| 参数名         | 数据类型 | 是否可空 | 描述                             |
+| -------------- | -------- | -------- | -------------------------------- |
+| name           | string   | 否       | 角色名称，长度2-64字符           |
+| code           | string   | 否       | 角色代码，唯一标识，长度2-32字符 |
+| description    | string   | 是       | 角色描述，最大500字符            |
+| permission_ids | array    | 是       | 权限ID数组                       |
+| sort_order     | integer  | 是       | 排序顺序，默认0                  |
+
+请求示例：
+
+```json
+{
+  "name": "项目管理员",
+  "code": "project_admin",
+  "description": "项目管理员，拥有项目完全管理权限",
+  "permission_ids": [1, 2, 3, 4],
+  "sort_order": 10
+}
+```
 
 **更新角色**
 
@@ -5401,11 +5447,67 @@ POST /api/v1/roles
 PUT /api/v1/roles/{id}
 ```
 
+请求体参数：
+
+| 参数名         | 数据类型 | 是否可空 | 描述                   |
+| -------------- | -------- | -------- | ---------------------- |
+| name           | string   | 是       | 角色名称，长度2-64字符 |
+| description    | string   | 是       | 角色描述，最大500字符  |
+| permission_ids | array    | 是       | 权限ID数组             |
+| sort_order     | integer  | 是       | 排序顺序               |
+| status         | integer  | 是       | 状态（0-禁用，1-启用） |
+
 **删除角色**
 
 ```text
 DELETE /api/v1/roles/{id}
 ```
+
+响应示例：
+
+```json
+{
+  "code": 200,
+  "message": "角色删除成功"
+}
+```
+
+**角色权限分配**
+
+```text
+POST /api/v1/roles/{id}/permissions
+```
+
+请求体参数：
+
+| 参数名         | 数据类型 | 是否可空 | 描述       |
+| -------------- | -------- | -------- | ---------- |
+| permission_ids | array    | 否       | 权限ID数组 |
+
+**角色权限移除**
+
+```text
+DELETE /api/v1/roles/{id}/permissions
+```
+
+请求体参数：
+
+| 参数名         | 数据类型 | 是否可空 | 描述       |
+| -------------- | -------- | -------- | ---------- |
+| permission_ids | array    | 否       | 权限ID数组 |
+
+**获取角色用户列表**
+
+```text
+GET /api/v1/roles/{id}/users
+```
+
+查询参数：
+
+| 参数名    | 数据类型 | 是否可空 | 描述             |
+| --------- | -------- | -------- | ---------------- |
+| page      | integer  | 是       | 页码，默认1      |
+| page_size | integer  | 是       | 每页数量，默认20 |
 
 ##### 权限管理
 
@@ -5415,11 +5517,64 @@ DELETE /api/v1/roles/{id}
 GET /api/v1/permissions
 ```
 
+查询参数：
+
+| 参数名     | 数据类型 | 是否可空 | 描述                                          |
+| ---------- | -------- | -------- | --------------------------------------------- |
+| page       | integer  | 是       | 页码，默认1                                   |
+| page_size  | integer  | 是       | 每页数量，默认20                              |
+| search     | string   | 是       | 搜索关键词，支持权限名称的精确或模糊查询      |
+| module     | string   | 是       | 权限模块筛选                                  |
+| scope      | string   | 是       | 权限域筛选（platform-平台级，project-项目级） |
+| status     | integer  | 是       | 权限状态筛选（0-禁用，1-启用）                |
+| start_time | string   | 是       | 更新时间范围开始，格式：2025-01-01 00:00:00   |
+| end_time   | string   | 是       | 更新时间范围结束，格式：2025-01-01 23:59:59   |
+
+响应示例：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "items": [
+      {
+        "id": 1,
+        "scope": "platform",
+        "name": "用户管理",
+        "code": "user:manage",
+        "module": "user",
+        "action": "manage",
+        "resource": "user",
+        "description": "用户管理权限",
+        "is_system": true,
+        "sort_order": 1,
+        "status": 1,
+        "role_count": 2,
+        "created_at": "2025-01-01 10:00:00",
+        "updated_at": "2025-01-01 10:00:00"
+      }
+    ],
+    "total": 50,
+    "page": 1,
+    "page_size": 20,
+    "total_pages": 3
+  }
+}
+```
+
 **获取权限树**
 
 ```text
 GET /api/v1/permissions/tree
 ```
+
+查询参数：
+
+| 参数名 | 数据类型 | 是否可空 | 描述                                           |
+| ------ | -------- | -------- | ---------------------------------------------- |
+| scope  | string   | 是       | 权限域筛选（platform-平台级，project-项目级）  |
+| status | integer  | 是       | 权限状态筛选（0-禁用，1-启用），默认仅显示启用 |
 
 响应示例：
 
@@ -5430,29 +5585,182 @@ GET /api/v1/permissions/tree
   "data": [
     {
       "id": 1,
-      "name": "用户管理",
-      "code": "user",
-      "module": "user",
+      "scope": "platform",
+      "name": "平台管理",
+      "code": "platform",
+      "module": "platform",
+      "description": "平台管理模块",
       "children": [
         {
           "id": 2,
-          "name": "查看用户",
-          "code": "user:read",
+          "scope": "platform",
+          "name": "用户管理",
+          "code": "user",
           "module": "user",
-          "action": "read"
-        },
+          "description": "用户管理模块",
+          "children": [
+            {
+              "id": 3,
+              "scope": "platform",
+              "name": "查看用户",
+              "code": "user:read",
+              "module": "user",
+              "action": "read",
+              "resource": "user",
+              "description": "查看用户列表和详情"
+            },
+            {
+              "id": 4,
+              "scope": "platform",
+              "name": "创建用户",
+              "code": "user:create",
+              "module": "user",
+              "action": "create",
+              "resource": "user",
+              "description": "创建新用户"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "scope": "project",
+      "name": "项目管理",
+      "code": "project",
+      "module": "project",
+      "description": "项目管理模块",
+      "children": [
         {
-          "id": 3,
-          "name": "创建用户",
-          "code": "user:create",
-          "module": "user",
-          "action": "create"
+          "id": 21,
+          "scope": "project",
+          "name": "应用管理",
+          "code": "application",
+          "module": "application",
+          "description": "应用管理模块",
+          "children": [
+            {
+              "id": 22,
+              "scope": "project",
+              "name": "部署应用",
+              "code": "application:deploy",
+              "module": "application",
+              "action": "deploy",
+              "resource": "application",
+              "description": "部署新应用"
+            }
+          ]
         }
       ]
     }
   ]
 }
 ```
+
+**获取权限详情**
+
+```text
+GET /api/v1/permissions/{id}
+```
+
+响应示例：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 1,
+    "scope": "platform",
+    "name": "用户管理",
+    "code": "user:manage",
+    "module": "user",
+    "action": "manage",
+    "resource": "user",
+    "description": "用户管理权限",
+    "is_system": true,
+    "sort_order": 1,
+    "status": 1,
+    "roles": [
+      {
+        "id": 1,
+        "name": "管理员",
+        "code": "admin"
+      }
+    ],
+    "created_at": "2025-01-01 10:00:00",
+    "updated_at": "2025-01-01 10:00:00"
+  }
+}
+```
+
+**创建权限**
+
+```text
+POST /api/v1/permissions
+```
+
+请求体参数：
+
+| 参数名      | 数据类型 | 是否可空 | 描述                                      |
+| ----------- | -------- | -------- | ----------------------------------------- |
+| scope       | string   | 否       | 权限域（platform-平台级，project-项目级） |
+| name        | string   | 否       | 权限名称，长度2-64字符                    |
+| code        | string   | 否       | 权限编码，唯一标识，长度2-64字符          |
+| module      | string   | 否       | 模块名称，长度2-32字符                    |
+| action      | string   | 否       | 操作名称，长度2-32字符                    |
+| resource    | string   | 是       | 资源标识，长度2-64字符                    |
+| description | string   | 是       | 权限描述，最大500字符                     |
+| sort_order  | integer  | 是       | 排序顺序，默认0                           |
+
+请求示例：
+
+```json
+{
+  "scope": "project",
+  "name": "应用部署",
+  "code": "application:deploy",
+  "module": "application",
+  "action": "deploy",
+  "resource": "application",
+  "description": "部署应用权限",
+  "sort_order": 10
+}
+```
+
+**更新权限**
+
+```text
+PUT /api/v1/permissions/{id}
+```
+
+请求体参数：
+
+| 参数名      | 数据类型 | 是否可空 | 描述                   |
+| ----------- | -------- | -------- | ---------------------- |
+| name        | string   | 是       | 权限名称，长度2-64字符 |
+| description | string   | 是       | 权限描述，最大500字符  |
+| sort_order  | integer  | 是       | 排序顺序               |
+| status      | integer  | 是       | 状态（0-禁用，1-启用） |
+
+**删除权限**
+
+```text
+DELETE /api/v1/permissions/{id}
+```
+
+**获取权限关联的角色列表**
+
+```text
+GET /api/v1/permissions/{id}/roles
+```
+
+查询参数：
+
+| 参数名    | 数据类型 | 是否可空 | 描述             |
+| --------- | -------- | -------- | ---------------- |
+| page      | integer  | 是       | 页码，默认1      |
+| page_size | integer  | 是       | 每页数量，默认20 |
 
 ##### 认证管理
 
@@ -5469,26 +5777,61 @@ GET /api/v1/auth-config
   "code": 200,
   "message": "success",
   "data": {
-    "oauth2_enabled": true,
-    "oauth2_providers": [
-      {
-        "name": "Google",
-        "client_id": "***",
-        "enabled": true
+    "api_auth": {
+      "token_auth_enabled": true,
+      "oauth2_enabled": true,
+      "jwt_config": {
+        "algorithm": "HS256",
+        "expires_in": 3600,
+        "refresh_expires_in": 86400,
+        "auto_refresh": true
       }
-    ],
-    "two_factor_enabled": true,
-    "two_factor_methods": ["TOTP", "EMAIL", "SMS"],
-    "password_policy": {
-      "min_length": 8,
-      "require_uppercase": true,
-      "require_lowercase": true,
-      "require_numbers": true,
-      "require_symbols": false
+    },
+    "user_auth": {
+      "oauth2_enabled": true,
+      "oauth2_providers": [
+        {
+          "name": "Google",
+          "provider": "google",
+          "client_id": "***",
+          "enabled": true,
+          "auto_register": false
+        },
+        {
+          "name": "企业微信",
+          "provider": "wechat_work",
+          "client_id": "***",
+          "enabled": true,
+          "auto_register": true
+        }
+      ],
+      "two_factor_enabled": true,
+      "two_factor_methods": ["TOTP", "EMAIL"],
+      "two_factor_required_roles": ["admin"],
+      "password_policy": {
+        "min_length": 8,
+        "max_length": 128,
+        "require_uppercase": true,
+        "require_lowercase": true,
+        "require_numbers": true,
+        "require_symbols": false,
+        "password_history": 5,
+        "password_expires_days": 90
+      },
+      "login_security": {
+        "max_login_attempts": 5,
+        "lockout_duration": 1800,
+        "ip_whitelist_enabled": false,
+        "ip_whitelist": [],
+        "login_time_restriction": false,
+        "allowed_login_hours": "09:00-18:00"
+      }
     },
     "session_config": {
       "timeout": 3600,
-      "max_concurrent_sessions": 5
+      "max_concurrent_sessions": 5,
+      "remember_me_enabled": true,
+      "remember_me_duration": 2592000
     }
   }
 }
@@ -5502,20 +5845,99 @@ PUT /api/v1/auth-config
 
 请求体参数：
 
-| 参数名                  | 数据类型 | 是否可空 | 描述               |
-| ----------------------- | -------- | -------- | ------------------ |
-| oauth2_enabled          | boolean  | 是       | 是否启用OAuth2     |
-| oauth2_providers        | object[] | 是       | OAuth2提供商配置   |
-| two_factor_enabled      | boolean  | 是       | 是否启用双因子认证 |
-| two_factor_methods      | string[] | 是       | 双因子认证方法     |
-| password_policy         | object   | 是       | 密码策略配置       |
-| session_timeout         | integer  | 是       | 会话超时时间（秒） |
-| max_concurrent_sessions | integer  | 是       | 最大并发会话数     |
+| 参数名                       | 数据类型 | 是否可空 | 描述               |
+| ---------------------------- | -------- | -------- | ------------------ |
+| api_auth                     | object   | 是       | API认证配置        |
+| api_auth.token_auth_enabled  | boolean  | 是       | 是否启用Token认证  |
+| api_auth.oauth2_enabled      | boolean  | 是       | 是否启用OAuth2认证 |
+| api_auth.jwt_config          | object   | 是       | JWT配置            |
+| user_auth                    | object   | 是       | 用户认证配置       |
+| user_auth.oauth2_enabled     | boolean  | 是       | 是否启用OAuth2登录 |
+| user_auth.oauth2_providers   | array    | 是       | OAuth2提供商配置   |
+| user_auth.two_factor_enabled | boolean  | 是       | 是否启用双因子认证 |
+| user_auth.two_factor_methods | array    | 是       | 双因子认证方法     |
+| user_auth.password_policy    | object   | 是       | 密码策略配置       |
+| user_auth.login_security     | object   | 是       | 登录安全配置       |
+| session_config               | object   | 是       | 会话配置           |
+
+**获取OAuth2提供商配置**
+
+```text
+GET /api/v1/auth-config/oauth2-providers
+```
+
+响应示例：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": [
+    {
+      "id": 1,
+      "name": "Google",
+      "provider": "google",
+      "client_id": "***",
+      "client_secret": "***",
+      "redirect_uri": "https://websoft9.com/auth/callback/google",
+      "scopes": ["openid", "profile", "email"],
+      "enabled": true,
+      "auto_register": false,
+      "user_mapping": {
+        "username": "email",
+        "email": "email",
+        "name": "name"
+      },
+      "created_at": "2025-01-01 10:00:00",
+      "updated_at": "2025-01-01 10:00:00"
+    }
+  ]
+}
+```
 
 **获取API访问令牌列表**
 
 ```text
 GET /api/v1/api-tokens
+```
+
+查询参数：
+
+| 参数名    | 数据类型 | 是否可空 | 描述                                     |
+| --------- | -------- | -------- | ---------------------------------------- |
+| page      | integer  | 是       | 页码，默认1                              |
+| page_size | integer  | 是       | 每页数量，默认20                         |
+| search    | string   | 是       | 搜索关键词，支持令牌名称的精确或模糊查询 |
+| user_id   | integer  | 是       | 用户ID筛选                               |
+| expired   | boolean  | 是       | 是否过期筛选                             |
+
+响应示例：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "items": [
+      {
+        "id": 1,
+        "name": "API访问令牌",
+        "token": "ws9_***",
+        "user_id": 1,
+        "username": "admin",
+        "scopes": ["user:read", "project:manage"],
+        "description": "用于第三方系统集成",
+        "last_used_at": "2025-01-01 15:30:00",
+        "expires_at": "2025-12-31 23:59:59",
+        "created_at": "2025-01-01 10:00:00"
+      }
+    ],
+    "total": 5,
+    "page": 1,
+    "page_size": 20,
+    "total_pages": 1
+  }
+}
 ```
 
 **创建API访问令牌**
@@ -5526,17 +5948,166 @@ POST /api/v1/api-tokens
 
 请求体参数：
 
+| 参数名      | 数据类型 | 是否可空 | 描述                                              |
+| ----------- | -------- | -------- | ------------------------------------------------- |
+| name        | string   | 否       | 令牌名称，长度2-64字符                            |
+| description | string   | 是       | 令牌描述，最大500字符                             |
+| scopes      | array    | 否       | 权限范围，权限编码数组                            |
+| expires_at  | string   | 是       | 过期时间，格式：2025-12-31 23:59:59，null表示永久 |
+
+请求示例：
+
+```json
+{
+  "name": "第三方集成令牌",
+  "description": "用于第三方系统集成访问",
+  "scopes": ["user:read", "project:read", "application:deploy"],
+  "expires_at": "2025-12-31 23:59:59"
+}
+```
+
+响应示例：
+
+```json
+{
+  "code": 200,
+  "message": "令牌创建成功",
+  "data": {
+    "id": 1,
+    "name": "第三方集成令牌",
+    "token": "ws9_1234567890abcdef1234567890abcdef",
+    "scopes": ["user:read", "project:read", "application:deploy"],
+    "expires_at": "2025-12-31 23:59:59",
+    "created_at": "2025-01-01 10:00:00"
+  }
+}
+```
+
+**更新API访问令牌**
+
+```text
+PUT /api/v1/api-tokens/{id}
+```
+
+请求体参数：
+
 | 参数名      | 数据类型 | 是否可空 | 描述                   |
 | ----------- | -------- | -------- | ---------------------- |
-| name        | string   | 否       | 令牌名称               |
-| description | string   | 是       | 令牌描述               |
-| scopes      | string[] | 否       | 权限范围               |
-| expires_at  | string   | 是       | 过期时间，null表示永久 |
+| name        | string   | 是       | 令牌名称，长度2-64字符 |
+| description | string   | 是       | 令牌描述，最大500字符  |
+| scopes      | array    | 是       | 权限范围，权限编码数组 |
+| expires_at  | string   | 是       | 过期时间               |
 
 **撤销API访问令牌**
 
 ```text
 DELETE /api/v1/api-tokens/{id}
+```
+
+**批量撤销API访问令牌**
+
+```text
+DELETE /api/v1/api-tokens
+```
+
+请求体参数：
+
+| 参数名 | 数据类型 | 是否可空 | 描述       |
+| ------ | -------- | -------- | ---------- |
+| ids    | array    | 否       | 令牌ID数组 |
+
+**刷新API访问令牌**
+
+```text
+POST /api/v1/api-tokens/{id}/refresh
+```
+
+响应示例：
+
+```json
+{
+  "code": 200,
+  "message": "令牌刷新成功",
+  "data": {
+    "id": 1,
+    "token": "ws9_new1234567890abcdef1234567890abcdef",
+    "expires_at": "2025-12-31 23:59:59"
+  }
+}
+```
+
+**用户双因子认证设置**
+
+```text
+GET /api/v1/users/{user_id}/two-factor
+```
+
+响应示例：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "enabled": true,
+    "methods": [
+      {
+        "type": "TOTP",
+        "enabled": true,
+        "configured": true
+      },
+      {
+        "type": "EMAIL",
+        "enabled": true,
+        "configured": true,
+        "email": "user@example.com"
+      }
+    ],
+    "backup_codes": 8
+  }
+}
+```
+
+**启用用户双因子认证**
+
+```text
+POST /api/v1/users/{user_id}/two-factor/enable
+```
+
+请求体参数：
+
+| 参数名 | 数据类型 | 是否可空 | 描述                    |
+| ------ | -------- | -------- | ----------------------- |
+| method | string   | 否       | 认证方法（TOTP、EMAIL） |
+| code   | string   | 否       | 验证码                  |
+
+**禁用用户双因子认证**
+
+```text
+POST /api/v1/users/{user_id}/two-factor/disable
+```
+
+**生成TOTP密钥**
+
+```text
+POST /api/v1/users/{user_id}/two-factor/totp/generate
+```
+
+响应示例：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "secret": "JBSWY3DPEHPK3PXP",
+    "qr_code": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...",
+    "backup_codes": [
+      "12345678",
+      "87654321"
+    ]
+  }
+}
 ```
 
 #### 4.4.4 用户管理
