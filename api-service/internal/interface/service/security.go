@@ -50,20 +50,12 @@ type PermissionService interface {
 
 // APITokenService API token service interface
 type APITokenService interface {
-	// Basic CRUD operations
-	CreateAPIToken(ctx context.Context, req *request.CreateAPITokenRequest, userID uint) (*response.APITokenResponse, error)
-	GetAPIToken(ctx context.Context, id uint, userID uint) (*response.APITokenResponse, error)
-	UpdateAPIToken(ctx context.Context, id uint, req *request.UpdateAPITokenRequest, userID uint) (*response.APITokenResponse, error)
-	RevokeAPIToken(ctx context.Context, id uint, userID uint) error
-
 	// Token management
-	RefreshAPIToken(ctx context.Context, id uint, userID uint) (*response.APITokenResponse, error)
-	ValidateAPIToken(ctx context.Context, token string) (*response.APITokenValidationResponse, error)
-	BatchRevokeAPITokens(ctx context.Context, ids []uint, userID uint) error
+	RefreshUserAPIToken(ctx context.Context, userID uint) (*response.APITokenResponse, error)
+	RevokeAPITokenByToken(ctx context.Context, token string, userID uint) error
 
 	// Maintenance operations
 	CleanExpiredTokens(ctx context.Context) error
-
 	CheckTokenIsExists(ctx context.Context, token string) bool
 }
 
@@ -75,13 +67,6 @@ type AuthConfigService interface {
 
 	// OAuth2 provider management
 	GetOAuth2Providers(ctx context.Context) ([]*response.OAuth2ProviderResponse, error)
-
-	// Password policy validation
-	ValidatePassword(password string) error
-
-	// Login security check
-	CheckLoginSecurity(ctx context.Context, userID uint, ip string) error
-	RecordLoginAttempt(ctx context.Context, userID uint, success bool, ip string) error
 }
 
 // TwoFactorService two-factor authentication service interface

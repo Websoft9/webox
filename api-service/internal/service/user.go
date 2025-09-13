@@ -6,9 +6,9 @@ import (
 	"api-service/internal/interface/repository"
 	"api-service/internal/interface/service"
 	"api-service/internal/model"
+	"api-service/pkg/auth"
 	"api-service/pkg/errors"
 	"api-service/pkg/logger"
-	"api-service/pkg/utils"
 	"context"
 
 	"gorm.io/gorm"
@@ -46,13 +46,13 @@ func (s *userService) ChangePassword(ctx context.Context, userID uint, req *requ
 	}
 
 	// 2. 验证旧密码
-	if user.PasswordHash != utils.SHA256Hash(req.OldPassword) {
+	if user.PasswordHash != auth.HashToken(req.OldPassword) {
 		s.logger.WarnContext(ctx, "Old password verification failed", logger.Uint("user_id", userID))
 		return errors.ErrInvalidCredentials
 	}
 
 	// 3. 加密新密码
-	hashedPassword := utils.SHA256Hash(req.NewPassword)
+	hashedPassword := auth.HashToken(req.NewPassword)
 
 	// 4. 更新密码
 	user.PasswordHash = hashedPassword
@@ -245,7 +245,7 @@ func (s *userService) UpdateUserPassword(
 	}
 
 	// 2. 加密新密码
-	hashedPassword := utils.SHA256Hash(req.NewPassword)
+	hashedPassword := auth.HashToken(req.NewPassword)
 
 	// 3. 更新密码
 	user.PasswordHash = hashedPassword
@@ -313,7 +313,7 @@ func (s *userService) createUserFromRequest(req *request.UserCreateRequest) *mod
 	user := &model.User{
 		Username:     req.Username,
 		Email:        req.Email,
-		PasswordHash: utils.SHA256Hash(req.Password),
+		PasswordHash: auth.HashToken(req.Password),
 		Status:       1, // 默认激活
 	}
 

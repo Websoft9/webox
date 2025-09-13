@@ -17,6 +17,7 @@ import (
 	"api-service/pkg/logger"
 	"api-service/pkg/redis"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -86,7 +87,8 @@ func main() {
 	if err != nil {
 		zapLogger.Fatal("Failed to initialize auth config manager", logger.String("error", err.Error()))
 	}
-	zapLogger.Info("Authentication configuration manager initialized successfully")
+	authConfigJson, _ := json.Marshal(authConfigManager.GetConfig())
+	zapLogger.Info("Authentication configuration manager initialized successfully", logger.String("auth_config", string(authConfigJson)))
 
 	// 4. Initialize internationalization system
 	i18nInstance, err := initI18n(cfg)
@@ -102,7 +104,7 @@ func main() {
 	}
 
 	// 6. Initialize Redis, InfluxDB and JWT authentication services
-	serviceConns, err := initServices(cfg, zapLogger)
+	serviceConns, err := initServices(cfg, authConfigManager.GetConfig(), zapLogger)
 	if err != nil {
 		zapLogger.Fatal("Failed to initialize services", logger.String("error", err.Error()))
 	}
@@ -184,7 +186,7 @@ type ServiceConnections struct {
 
 // initServices initializes external service connections (Redis, InfluxDB) and JWT authentication
 // Returns ServiceConnections struct containing clients that need graceful shutdown
-func initServices(cfg *config.Config, zapLogger logger.Logger) (*ServiceConnections, error) {
+func initServices(cfg *config.Config, authConfig *config.AuthConfig, zapLogger logger.Logger) (*ServiceConnections, error) {
 	// Initialize Redis connection pool for caching and session storage
 	err := redis.Init(cfg)
 	if err != nil {
@@ -200,7 +202,7 @@ func initServices(cfg *config.Config, zapLogger logger.Logger) (*ServiceConnecti
 	zapLogger.Info("InfluxDB connection successful")
 
 	// Initialize JWT authentication with secret key and expiration time
-	auth.InitJWT(cfg.JWT.Secret, cfg.JWT.ExpireTime)
+	auth.InitJWT(authConfig)
 
 	return &ServiceConnections{
 		InfluxDBClient: influxDBClient,
@@ -369,7 +371,7 @@ func initBusinessServices(
 		userAuthService:   serviceImpl.NewUserAuthService(repos.userRepo, repos.apiTokenRepo, oauth2Service, zapLogger, cfg, authConfigManager, i18nInstance),
 		roleService:       serviceImpl.NewRoleService(repos.roleRepo, repos.permissionRepo, db, zapLogger, i18nInstance),
 		permissionService: serviceImpl.NewPermissionService(repos.permissionRepo, db, zapLogger, i18nInstance),
-		apiTokenService:   serviceImpl.NewAPITokenService(repos.apiTokenRepo, db, zapLogger, i18nInstance),
+		apiTokenService:   serviceImpl.NewAPITokenService(repos.apiTokenRepo, authConfigManager, db, zapLogger, i18nInstance),
 		authConfigService: serviceImpl.NewAuthConfigService(authConfigManager, zapLogger),
 		twoFactorService:  serviceImpl.NewTwoFactorService(repos.twoFactorRepo, db, zapLogger, i18nInstance),
 		auditLogService:   serviceImpl.NewAuditLogService(repos.auditLogRepo, userService, db, zapLogger, i18nInstance, cfg),

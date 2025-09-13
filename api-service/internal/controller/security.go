@@ -5,9 +5,9 @@ import (
 	"api-service/internal/dto/response"
 	securityInterface "api-service/internal/interface/service"
 	serviceImpl "api-service/internal/service"
+	"api-service/pkg/errors"
 	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -74,159 +74,23 @@ func NewSecurityController(
 	}
 }
 
-// CreateAPIToken creates a new API token
-// @Summary Create API token
-// @Description Create a new API token
-// @Tags API Token Management
-// @Accept json
-// @Produce json
-// @Param request body request.CreateAPITokenRequest true "Create API token request"
-// @Success 201 {object} response.APIResponse{data=response.APITokenResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
-// @Router /api/v1/api-tokens [post]
-func (c *SecurityController) CreateAPIToken(ctx *gin.Context) {
-	var req request.CreateAPITokenRequest
-
-	// Bind request parameters
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(err))
-		ResponseBadRequest(ctx, err, "validation.invalid_request_format", c.i18n)
-		return
-	}
-
-	// Validate request parameters
-	if err := c.validator.Struct(&req); err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(err))
-		ResponseBadRequest(ctx, err, "validation.request_validation_failed", c.i18n)
-		return
-	}
-
-	// Get current user ID
-	userID, exists := ctx.Get("user_id")
-	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
-		return
-	}
-
-	// Create API token
-	token, err := c.apiTokenService.CreateAPIToken(ctx.Request.Context(), &req, userID.(uint))
-	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
-		return
-	}
-
-	ResponseOKWithData(ctx, token, "api_token.created_success", c.i18n)
-}
-
-// GetAPIToken gets API token details
-// @Summary Get API token details
-// @Description Get API token details by ID
-// @Tags API Token Management
-// @Accept json
-// @Produce json
-// @Param id path int true "API Token ID"
-// @Success 200 {object} response.APIResponse{data=response.APITokenResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
-// @Router /api/v1/api-tokens/{id} [get]
-func (c *SecurityController) GetAPIToken(ctx *gin.Context) {
-	// Get token ID
-	idStr := ctx.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		ResponseBadRequest(ctx, err, "validation.invalid_token_id", c.i18n)
-		return
-	}
-
-	// Get current user ID
-	userID, exists := ctx.Get("user_id")
-	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
-		return
-	}
-
-	// Get API token
-	token, err := c.apiTokenService.GetAPIToken(ctx.Request.Context(), uint(id), userID.(uint))
-	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
-		return
-	}
-
-	ResponseOKWithData(ctx, token, "common.success", c.i18n)
-}
-
-// UpdateAPIToken updates API token
-// @Summary Update API token
-// @Description Update API token information
-// @Tags API Token Management
-// @Accept json
-// @Produce json
-// @Param id path int true "API Token ID"
-// @Param request body request.UpdateAPITokenRequest true "Update API token request"
-// @Success 200 {object} response.APIResponse{data=response.APITokenResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
-// @Router /api/v1/api-tokens/{id} [put]
-func (c *SecurityController) UpdateAPIToken(ctx *gin.Context) {
-	// Get token ID
-	idStr := ctx.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		ResponseBadRequest(ctx, err, "validation.invalid_token_id", c.i18n)
-		return
-	}
-
-	var req request.UpdateAPITokenRequest
-
-	// Bind request parameters
-	if bindErr := ctx.ShouldBindJSON(&req); bindErr != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(bindErr))
-		ResponseBadRequest(ctx, bindErr, "validation.invalid_request_format", c.i18n)
-		return
-	}
-
-	// Validate request parameters
-	if validateErr := c.validator.Struct(&req); validateErr != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(validateErr))
-		ResponseBadRequest(ctx, validateErr, "validation.request_validation_failed", c.i18n)
-		return
-	}
-
-	// Get current user ID
-	userID, exists := ctx.Get("user_id")
-	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
-		return
-	}
-
-	// Update API token
-	token, err := c.apiTokenService.UpdateAPIToken(ctx.Request.Context(), uint(id), &req, userID.(uint))
-	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
-		return
-	}
-
-	ResponseOKWithData(ctx, token, "api_token.update_success", c.i18n)
-}
-
 // RevokeAPIToken revokes API token
 // @Summary Revoke API token
 // @Description Revoke specified API token
 // @Tags API Token Management
+// @Security BearerAuth
 // @Accept json
 // @Produce json
-// @Param id path int true "API Token ID"
+// @Param request body request.RevokeAPITokenRequest true "Revoke API token request"
 // @Success 200 {object} response.APIResponse
 // @Failure 400 {object} response.APIResponse
 // @Failure 404 {object} response.APIResponse
-// @Router /api/v1/api-tokens/{id}/revoke [post]
+// @Router /api/v1/api-tokens/revoke [post]
 func (c *SecurityController) RevokeAPIToken(ctx *gin.Context) {
-	// Get token ID
-	idStr := ctx.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		ResponseBadRequest(ctx, err, "validation.invalid_token_id", c.i18n)
+	var req request.RevokeAPITokenRequest
+
+	// Bind and validate request
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger, c.i18n) {
 		return
 	}
 
@@ -237,10 +101,14 @@ func (c *SecurityController) RevokeAPIToken(ctx *gin.Context) {
 		return
 	}
 
-	// Revoke API token
-	err = c.apiTokenService.RevokeAPIToken(ctx.Request.Context(), uint(id), userID.(uint))
+	// Revoke API token by token string
+	err := c.apiTokenService.RevokeAPITokenByToken(ctx.Request.Context(), req.Token, userID.(uint))
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		if errors.Is(err, errors.ErrRecordNotFound) {
+			ResponseBadRequest(ctx, err, "api_token.invalid_token", c.i18n)
+		} else {
+			ResponseWithError(ctx, err, c.logger, c.i18n)
+		}
 		return
 	}
 	ResponseOK(ctx, "api_token.revoke_success", c.i18n)
@@ -250,22 +118,14 @@ func (c *SecurityController) RevokeAPIToken(ctx *gin.Context) {
 // @Summary Refresh API token
 // @Description Refresh API token to extend expiration
 // @Tags API Token Management
+// @Security BearerAuth
 // @Accept json
 // @Produce json
-// @Param id path int true "API Token ID"
 // @Success 200 {object} response.APIResponse{data=response.APITokenResponse}
 // @Failure 400 {object} response.APIResponse
 // @Failure 404 {object} response.APIResponse
-// @Router /api/v1/api-tokens/{id}/refresh [post]
+// @Router /api/v1/api-tokens/refresh [get]
 func (c *SecurityController) RefreshAPIToken(ctx *gin.Context) {
-	// Get token ID
-	idStr := ctx.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		ResponseBadRequest(ctx, err, "validation.invalid_token_id", c.i18n)
-		return
-	}
-
 	// Get current user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
@@ -273,8 +133,8 @@ func (c *SecurityController) RefreshAPIToken(ctx *gin.Context) {
 		return
 	}
 
-	// Refresh API token
-	token, err := c.apiTokenService.RefreshAPIToken(ctx.Request.Context(), uint(id), userID.(uint))
+	// Refresh API token for current user
+	token, err := c.apiTokenService.RefreshUserAPIToken(ctx.Request.Context(), userID.(uint))
 	if err != nil {
 		ResponseWithError(ctx, err, c.logger, c.i18n)
 		return
@@ -282,95 +142,11 @@ func (c *SecurityController) RefreshAPIToken(ctx *gin.Context) {
 	ResponseOKWithData(ctx, token, "api_token.refresh_success", c.i18n)
 }
 
-// ValidateAPIToken validates API token
-// @Summary Validate API token
-// @Description Validate API token and return token information
-// @Tags API Token Management
-// @Accept json
-// @Produce json
-// @Param request body request.ValidateAPITokenRequest true "Validate API token request"
-// @Success 200 {object} response.APIResponse{data=response.APITokenValidationResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Router /api/v1/api-tokens/validate [post]
-func (c *SecurityController) ValidateAPIToken(ctx *gin.Context) {
-	var req request.ValidateAPITokenRequest
-
-	// Bind request parameters
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(err))
-		ResponseBadRequest(ctx, err, "validation.invalid_request_format", c.i18n)
-		return
-	}
-
-	// Validate request parameters
-	if err := c.validator.Struct(&req); err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(err))
-		ResponseBadRequest(ctx, err, "validation.request_validation_failed", c.i18n)
-		return
-	}
-
-	// Validate API token
-	validation, err := c.apiTokenService.ValidateAPIToken(ctx.Request.Context(), req.Token)
-	if err != nil {
-		if err.Error() == "invalid token" || err.Error() == "token expired" || err.Error() == "token revoked" {
-			ResponseUnauthorized(ctx, "api_token.invalid_token", c.i18n)
-			return
-		}
-		ResponseWithError(ctx, err, c.logger, c.i18n)
-		return
-	}
-	ResponseOKWithData(ctx, validation, "api_token.validate_success", c.i18n)
-}
-
-// BatchRevokeAPITokens batch revokes API tokens
-// @Summary Batch revoke API tokens
-// @Description Batch revoke multiple API tokens
-// @Tags API Token Management
-// @Accept json
-// @Produce json
-// @Param request body request.BatchRevokeAPITokensRequest true "Batch revoke API tokens request"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
-// @Router /api/v1/api-tokens [delete]
-func (c *SecurityController) BatchRevokeAPITokens(ctx *gin.Context) {
-	var req request.BatchRevokeAPITokensRequest
-
-	// Bind request parameters
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(err))
-		ResponseBadRequest(ctx, err, "validation.invalid_request_format", c.i18n)
-		return
-	}
-
-	// Validate request parameters
-	if err := c.validator.Struct(&req); err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(err))
-		ResponseBadRequest(ctx, err, "validation.request_validation_failed", c.i18n)
-		return
-	}
-
-	// Get current user ID
-	userID, exists := ctx.Get("user_id")
-	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
-		return
-	}
-
-	// Batch revoke API tokens
-	err := c.apiTokenService.BatchRevokeAPITokens(ctx.Request.Context(), req.IDs, userID.(uint))
-	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
-		return
-	}
-	ResponseOK(ctx, "api_token.batch_revoke_success", c.i18n)
-}
-
 // GetAuthConfig gets authentication config
 // @Summary Get authentication config
 // @Description Get current authentication configuration
 // @Tags Authentication Config
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Success 200 {object} response.APIResponse{data=response.AuthConfigResponse}
@@ -390,6 +166,7 @@ func (c *SecurityController) GetAuthConfig(ctx *gin.Context) {
 // @Summary Update authentication config
 // @Description Update authentication configuration
 // @Tags Authentication Config
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param request body request.UpdateAuthConfigRequest true "Update auth config request"
@@ -418,6 +195,7 @@ func (c *SecurityController) UpdateAuthConfig(ctx *gin.Context) {
 // @Summary Get OAuth2 providers
 // @Description Get OAuth2 provider configurations
 // @Tags Authentication Config
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Success 200 {object} response.APIResponse{data=[]response.OAuth2ProviderResponse}
@@ -437,6 +215,7 @@ func (c *SecurityController) GetOAuth2Providers(ctx *gin.Context) {
 // @Summary Enable TOTP 2FA
 // @Description Enable TOTP two-factor authentication for user
 // @Tags Two-Factor Authentication
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Success 200 {object} response.APIResponse{data=response.TOTPSetupResponse}
@@ -464,6 +243,7 @@ func (c *SecurityController) EnableTOTP(ctx *gin.Context) {
 // @Summary Confirm TOTP setup
 // @Description Confirm TOTP setup with verification code
 // @Tags Two-Factor Authentication
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param request body request.ConfirmTOTPRequest true "Confirm TOTP request"
@@ -508,6 +288,7 @@ func (c *SecurityController) ConfirmTOTP(ctx *gin.Context) {
 // @Summary Disable TOTP 2FA
 // @Description Disable TOTP two-factor authentication for user
 // @Tags Two-Factor Authentication
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param request body request.DisableTOTPRequest true "Disable TOTP request"
@@ -552,6 +333,7 @@ func (c *SecurityController) DisableTOTP(ctx *gin.Context) {
 // @Summary Enable Email 2FA
 // @Description Enable email two-factor authentication for user
 // @Tags Two-Factor Authentication
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param request body request.EnableEmailTwoFactorRequest true "Enable email 2FA request"
@@ -596,6 +378,7 @@ func (c *SecurityController) EnableEmailTwoFactor(ctx *gin.Context) {
 // @Summary Disable Email 2FA
 // @Description Disable email two-factor authentication for user
 // @Tags Two-Factor Authentication
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Success 200 {object} response.APIResponse
@@ -623,6 +406,7 @@ func (c *SecurityController) DisableEmailTwoFactor(ctx *gin.Context) {
 // @Summary Send email verification code
 // @Description Send verification code to user's email for 2FA
 // @Tags Two-Factor Authentication
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Success 200 {object} response.APIResponse
@@ -650,6 +434,7 @@ func (c *SecurityController) SendEmailCode(ctx *gin.Context) {
 // @Summary Verify 2FA code
 // @Description Verify two-factor authentication code
 // @Tags Two-Factor Authentication
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param request body request.VerifyTwoFactorRequest true "Verify 2FA request"
@@ -691,6 +476,7 @@ func (c *SecurityController) VerifyTwoFactor(ctx *gin.Context) {
 // @Summary Get 2FA status
 // @Description Get user's two-factor authentication status
 // @Tags Two-Factor Authentication
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Success 200 {object} response.APIResponse{data=response.TwoFactorStatusResponse}
@@ -717,6 +503,7 @@ func (c *SecurityController) GetTwoFactorStatus(ctx *gin.Context) {
 // @Summary Generate backup codes
 // @Description Generate backup codes for two-factor authentication recovery
 // @Tags Two-Factor Authentication
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Success 200 {object} response.APIResponse{data=response.BackupCodesResponse}
@@ -744,6 +531,7 @@ func (c *SecurityController) GenerateBackupCodes(ctx *gin.Context) {
 // @Summary Disable two-factor authentication
 // @Description Disable two-factor authentication for user
 // @Tags Two-Factor Authentication
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Success 200 {object} response.APIResponse
@@ -784,6 +572,7 @@ func (c *SecurityController) DisableTwoFactor(ctx *gin.Context) {
 // @Summary Generate TOTP secret
 // @Description Generate TOTP secret for user
 // @Tags Two-Factor Authentication
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Success 200 {object} response.APIResponse{data=response.TOTPSecretResponse}

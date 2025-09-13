@@ -213,29 +213,85 @@ func (j JSON) Value() (driver.Value, error) {
 	return json.Marshal(j)
 }
 
-// AuthConfig authentication configuration
+// AuthConfig authentication configuration - matches configs/auth.yaml structure
 type AuthConfig struct {
+	Version string `json:"version"`
+
+	// API authentication configuration
 	APIAuth struct {
-		TokenAuthEnabled bool `json:"token_auth_enabled"`
-		OAuth2Enabled    bool `json:"oauth2_enabled"`
-		JWTConfig        struct {
+		// Token authentication configuration
+		TokenAuth struct {
 			Algorithm        string `json:"algorithm"`
+			Secret           string `json:"secret"`
 			ExpiresIn        int    `json:"expires_in"`
 			RefreshExpiresIn int    `json:"refresh_expires_in"`
 			AutoRefresh      bool   `json:"auto_refresh"`
-		} `json:"jwt_config"`
+		} `json:"token_auth"`
+
+		// OAuth2 API authentication configuration
+		OAuth2 struct {
+			Enabled           bool     `json:"enabled"`
+			DefaultScopes     []string `json:"default_scopes"`
+			TokenEndpoint     string   `json:"token_endpoint"`
+			AuthorizeEndpoint string   `json:"authorize_endpoint"`
+		} `json:"oauth2"`
 	} `json:"api_auth"`
 
+	// User authentication configuration
 	UserAuth struct {
-		OAuth2Enabled          bool             `json:"oauth2_enabled"`
-		OAuth2Providers        []OAuth2Provider `json:"oauth2_providers"`
-		TwoFactorEnabled       bool             `json:"two_factor_enabled"`
-		TwoFactorMethods       []string         `json:"two_factor_methods"`
-		TwoFactorRequiredRoles []string         `json:"two_factor_required_roles"`
-		PasswordPolicy         PasswordPolicy   `json:"password_policy"`
-		LoginSecurity          LoginSecurity    `json:"login_security"`
+		// Basic authentication configuration
+		BasicAuth struct {
+			LoginMethods []string `json:"login_methods"`
+		} `json:"basic_auth"`
+
+		// Email authentication configuration
+		EmailAuth struct {
+			Enabled   bool `json:"enabled"`
+			ExpiresIn int  `json:"expires_in"`
+		} `json:"email_auth"`
+
+		// Password policy configuration
+		PasswordPolicy PasswordPolicy `json:"password_policy"`
+
+		// Login security configuration
+		LoginSecurity LoginSecurity `json:"login_security"`
+
+		// OAuth2 login configuration
+		OAuth2 struct {
+			Enabled      bool                            `json:"enabled"`
+			AutoRegister bool                            `json:"auto_register"`
+			DefaultRole  string                          `json:"default_role"`
+			Providers    map[string]OAuth2ProviderConfig `json:"providers"`
+		} `json:"oauth2"`
+
+		// Two-factor authentication configuration
+		TwoFactor struct {
+			Enabled       bool     `json:"enabled"`
+			RequiredRoles []string `json:"required_roles"`
+			Methods       struct {
+				// TOTP authentication configuration
+				TOTP struct {
+					Enabled          bool   `json:"enabled"`
+					Issuer           string `json:"issuer"`
+					Algorithm        string `json:"algorithm"`
+					Digits           int    `json:"digits"`
+					Period           int    `json:"period"`
+					BackupCodesCount int    `json:"backup_codes_count"`
+				} `json:"totp"`
+
+				// Email verification code configuration
+				Email struct {
+					Enabled    bool   `json:"enabled"`
+					CodeLength int    `json:"code_length"`
+					ExpiresIn  int    `json:"expires_in"`
+					RateLimit  int    `json:"rate_limit"`
+					Template   string `json:"template"`
+				} `json:"email"`
+			} `json:"methods"`
+		} `json:"two_factor"`
 	} `json:"user_auth"`
 
+	// Session configuration
 	SessionConfig struct {
 		Timeout               int  `json:"timeout"`
 		MaxConcurrentSessions int  `json:"max_concurrent_sessions"`
@@ -244,23 +300,23 @@ type AuthConfig struct {
 	} `json:"session_config"`
 }
 
-// OAuth2Provider OAuth2 provider configuration
-type OAuth2Provider struct {
-	ID           uint              `json:"id"`
+// OAuth2ProviderConfig OAuth2 provider configuration - matches configs/auth.yaml structure
+type OAuth2ProviderConfig struct {
 	Name         string            `json:"name"`
-	Provider     string            `json:"provider"`
+	Enabled      bool              `json:"enabled"`
 	ClientID     string            `json:"client_id"`
 	ClientSecret string            `json:"client_secret"`
 	RedirectURI  string            `json:"redirect_uri"`
 	Scopes       []string          `json:"scopes"`
-	Enabled      bool              `json:"enabled"`
+	AuthorizeURL string            `json:"authorize_url"`
+	TokenURL     string            `json:"token_url"`
+	UserInfoURL  string            `json:"user_info_url"`
 	AutoRegister bool              `json:"auto_register"`
 	UserMapping  map[string]string `json:"user_mapping"`
-	CreatedAt    time.Time         `json:"created_at"`
-	UpdatedAt    time.Time         `json:"updated_at"`
+	SortOrder    int               `json:"sort_order"`
 }
 
-// PasswordPolicy password policy
+// PasswordPolicy password policy - matches configs/auth.yaml structure
 type PasswordPolicy struct {
 	MinLength           int  `json:"min_length"`
 	MaxLength           int  `json:"max_length"`
@@ -268,11 +324,10 @@ type PasswordPolicy struct {
 	RequireLowercase    bool `json:"require_lowercase"`
 	RequireNumbers      bool `json:"require_numbers"`
 	RequireSymbols      bool `json:"require_symbols"`
-	PasswordHistory     int  `json:"password_history"`
 	PasswordExpiresDays int  `json:"password_expires_days"`
 }
 
-// LoginSecurity login security configuration
+// LoginSecurity login security configuration - matches configs/auth.yaml structure
 type LoginSecurity struct {
 	MaxLoginAttempts     int      `json:"max_login_attempts"`
 	LockoutDuration      int      `json:"lockout_duration"`

@@ -70,7 +70,7 @@ func (r *userRepository) GetByEmail(ctx context.Context, email string) (*model.U
 // GetByUsernameOrEmail 根据用户名或邮箱获取用户
 func (r *userRepository) GetByUsernameOrEmail(ctx context.Context, usernameOrEmail string) (*model.User, error) {
 	var user model.User
-	err := r.db.WithContext(ctx).
+	err := r.db.WithContext(ctx).Preload("Roles").
 		Where("(username = ? OR email = ?) AND status != ?", usernameOrEmail, usernameOrEmail, -1).
 		First(&user).Error
 	if err != nil {

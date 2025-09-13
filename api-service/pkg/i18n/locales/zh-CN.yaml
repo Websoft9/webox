@@ -145,6 +145,8 @@ auth:
   permission_denied: "权限不足"
   unauthorized: "未授权访问"
   user_not_authenticated: "用户未认证"
+  username_supported: "仅支持用户名登录"
+  email_supported: "仅支持邮箱登录"
 
 # 通用消息
 common:
@@ -177,7 +179,7 @@ email:
             </div>
             <p>或者复制以下链接到浏览器地址栏：</p>
             <p style="word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 3px;">${VerifyURL}</p>
-            <p style="color: #7f8c8d; font-size: 14px;">此链接将在30分钟后过期。</p>
+            <p style="color: #7f8c8d; font-size: 14px;">此链接将在 ${Expires} 分钟后过期。</p>
             <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
             <p style="color: #7f8c8d; font-size: 12px;">
                 如果您没有注册 Websoft9 账户，请忽略此邮件。<br>
@@ -203,7 +205,7 @@ email:
             </div>
             <p>或者复制以下链接到浏览器地址栏：</p>
             <p style="word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 3px;">${ResetURL}</p>
-            <p style="color: #7f8c8d; font-size: 14px;">此链接将在30分钟后过期。</p>
+            <p style="color: #7f8c8d; font-size: 14px;">此链接将在 ${Expires} 分钟后过期。</p>
             <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
             <p style="color: #7f8c8d; font-size: 12px;">
                 如果您没有请求密码重置，请忽略此邮件，您的密码不会被更改。<br>

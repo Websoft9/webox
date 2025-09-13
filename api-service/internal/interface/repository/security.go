@@ -87,9 +87,7 @@ type APITokenRepository interface {
 
 	// Query operations
 	GetByUserID(ctx context.Context, userID uint) ([]*model.APIToken, error)
-
-	// Batch operations
-	BatchDelete(ctx context.Context, ids []uint) error
+	GetActiveTokenByUserID(ctx context.Context, userID uint) (*model.APIToken, error)
 
 	// Token management
 	UpdateLastUsed(ctx context.Context, id uint, ip string) error

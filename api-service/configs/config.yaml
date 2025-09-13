@@ -61,10 +61,6 @@ influxdb:
   org: "websoft9"
   bucket: "metrics"
 
-jwt:
-  secret: "websoft9-jwt-secret-key"
-  expire_time: 3600
-
 # Email configuration
 email:
   smtp:
@@ -91,23 +87,23 @@ i18n:
 audit_log:
   # Paths to skip audit recording
   skip_paths:
-  
+
   # Sensitive GET paths that should be audited
   sensitive_get_paths:
-    - "/api/v1/users/profile"        # Profile access
-    - "/api/v1/api-tokens"           # API token listing
-    - "/api/v1/roles"                # Role listing
-    - "/api/v1/permissions"          # Permission listing
+    - "/api/v1/users/profile" # Profile access
+    - "/api/v1/api-tokens" # API token listing
+    - "/api/v1/roles" # Role listing
+    - "/api/v1/permissions" # Permission listing
     - "/api/v1/users/:id/two-factor" # 2FA status queries
-    - "/api/v1/audit-logs/export"    # Audit log export
-  
+    - "/api/v1/audit-logs/export" # Audit log export
+
   # HTTP methods that should always be audited (modification operations)
   audit_methods:
     - "POST"
     - "PUT"
     - "DELETE"
     - "PATCH"
-  
+
   # HTTP methods that should be skipped (non-audit operations)
   skip_methods:
     - "OPTIONS"

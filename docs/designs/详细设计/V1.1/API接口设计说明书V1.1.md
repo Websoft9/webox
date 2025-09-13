@@ -5777,7 +5777,6 @@ GET /api/v1/auth-config
   "message": "success",
   "data": {
     "api_auth": {
-      "token_auth_enabled": true,
       "oauth2_enabled": true,
       "jwt_config": {
         "algorithm": "HS256",
@@ -5814,7 +5813,6 @@ GET /api/v1/auth-config
         "require_lowercase": true,
         "require_numbers": true,
         "require_symbols": false,
-        "password_history": 5,
         "password_expires_days": 90
       },
       "login_security": {
@@ -6600,6 +6598,9 @@ Content-Disposition: attachment; filename="audit-logs-20250122.csv"
 | 1008   | 登录失败次数过多 |
 | 1009   | 邮箱已存在       |
 | 1010   | Token已使用      |
+| 1011   | 仅支持用户名登录 |
+| 1012   | 仅支持邮箱登录   |
+| 1013   | 限制登录         |
 
 #### 5.2.2 权限相关错误（2000-2999）
 
