@@ -317,12 +317,13 @@ const (
 )
 
 const (
-	// StringTrue 表示字符串形式的 "true"
+	// StringTrue represents the string "true"
 	StringTrue = "true"
 
-	// StringFalse 表示字符串形式的 "false"
+	// StringFalse represents the string "false"
 	StringFalse = "false"
 
+	// Session timeout in seconds (30 minutes)
 	DefaultSessionTimeoutSeconds = 1800
 )
 

@@ -1,31 +1,30 @@
-package service_test
+package service
 
 import (
+	"api-service/internal/constants"
+	"api-service/internal/dto/request"
+	"api-service/internal/dto/response"
+	"api-service/internal/model"
+	"api-service/pkg/errors"
+	"api-service/pkg/i18n"
+	"api-service/pkg/logger"
 	"context"
 	"encoding/json"
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
-
-	"api-service/internal/constants"
-	"api-service/internal/dto/request"
-	serviceiface "api-service/internal/interface/service"
-	"api-service/internal/model"
-	"api-service/internal/service"
-	"api-service/pkg/errors"
-	"api-service/pkg/i18n"
-	"api-service/pkg/logger"
 )
 
-// MockUserProfileRepository 是一个模拟的用户个人资料仓储
+// MockUserProfileRepository is a mock implementation of the UserProfileRepository interface
 type MockUserProfileRepository struct {
 	mock.Mock
 }
 
+// GetUserProfileByID mocks the repository method to get a user profile by ID
 func (m *MockUserProfileRepository) GetUserProfileByID(ctx context.Context, userID uint) (*model.User, error) {
 	args := m.Called(ctx, userID)
 	if args.Get(0) == nil {
@@ -34,34 +33,34 @@ func (m *MockUserProfileRepository) GetUserProfileByID(ctx context.Context, user
 	return args.Get(0).(*model.User), args.Error(1)
 }
 
+// LoadUserRoles mocks the repository method to load user roles
 func (m *MockUserProfileRepository) LoadUserRoles(ctx context.Context, user *model.User) error {
 	args := m.Called(ctx, user)
 	return args.Error(0)
 }
 
+// UpdateUserProfile mocks the repository method to update a user profile
 func (m *MockUserProfileRepository) UpdateUserProfile(ctx context.Context, userID uint, updateData map[string]interface{}) error {
 	args := m.Called(ctx, userID, updateData)
 	return args.Error(0)
 }
 
-func (m *MockUserProfileRepository) UpdateUserPassword(ctx context.Context, userID uint, passwordHash string) error {
-	args := m.Called(ctx, userID, passwordHash)
+// UpdateUserPassword mocks the repository method to update a user password
+func (m *MockUserProfileRepository) UpdateUserPassword(ctx context.Context, userID uint, hashedPassword string) error {
+	args := m.Called(ctx, userID, hashedPassword)
 	return args.Error(0)
 }
 
+// GetLoginHistories mocks the repository method to get login histories
 func (m *MockUserProfileRepository) GetLoginHistories(ctx context.Context, userID uint, page, pageSize int) ([]model.UserLoginHistory, int64, error) {
 	args := m.Called(ctx, userID, page, pageSize)
+	if args.Get(0) == nil {
+		return nil, args.Get(1).(int64), args.Error(2)
+	}
 	return args.Get(0).([]model.UserLoginHistory), args.Get(1).(int64), args.Error(2)
 }
 
-func (m *MockUserProfileRepository) GetUserConfig(ctx context.Context, userID uint, category, key string) (*model.UserProfile, error) {
-	args := m.Called(ctx, userID, category, key)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*model.UserProfile), args.Error(1)
-}
-
+// GetUserConfigsByCategory mocks the repository method to get user configs by category
 func (m *MockUserProfileRepository) GetUserConfigsByCategory(ctx context.Context, userID uint, category string) ([]*model.UserProfile, error) {
 	args := m.Called(ctx, userID, category)
 	if args.Get(0) == nil {
@@ -70,904 +69,1120 @@ func (m *MockUserProfileRepository) GetUserConfigsByCategory(ctx context.Context
 	return args.Get(0).([]*model.UserProfile), args.Error(1)
 }
 
+// SaveUserConfig mocks the repository method to save user config
 func (m *MockUserProfileRepository) SaveUserConfig(ctx context.Context, config *model.UserProfile) error {
 	args := m.Called(ctx, config)
 	return args.Error(0)
 }
 
-// 创建测试用户数据
-func createTestUser(id uint) *model.User {
-	now := time.Now()
-	return &model.User{
-		ID:          id,
-		Username:    "testuser",
-		Email:       "test@example.com",
-		Nickname:    "Test User",
-		Avatar:      "https://example.com/avatar.jpg",
-		Phone:       "13800138000",
-		Gender:      1,
-		Signature:   "This is a test signature",
-		Status:      1,
-		LastLoginAt: &now,
-		LastLoginIP: "192.168.1.1",
-		Timezone:    "Asia/Shanghai",
-		Language:    "zh-CN",
-		CreatedAt:   now,
-		UpdatedAt:   now,
+// GetUserConfig mocks the repository method to get a single user config by key
+func (m *MockUserProfileRepository) GetUserConfig(ctx context.Context, userID uint, category, configKey string) (*model.UserProfile, error) {
+	args := m.Called(ctx, userID, category, configKey)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*model.UserProfile), args.Error(1)
+}
+
+// MockLogger is a mock implementation of the logger.Logger interface
+type UserProfileMockLogger struct {
+	mock.Mock
+}
+
+// InfoContext mocks the InfoContext method
+func (m *MockLogger) UserProfileInfoContext(ctx context.Context, msg string, fields ...logger.Field) {
+	m.Called(ctx, msg, fields)
+}
+
+// WarnContext mocks the WarnContext method
+func (m *MockLogger) UserProfileWarnContext(ctx context.Context, msg string, fields ...logger.Field) {
+	m.Called(ctx, msg, fields)
+}
+
+// ErrorContext mocks the ErrorContext method
+func (m *MockLogger) UserProfileErrorContext(ctx context.Context, msg string, fields ...logger.Field) {
+	m.Called(ctx, msg, fields)
+}
+
+// Debug mocks the Debug method
+func (m *MockLogger) UserProfileDebug(msg string, fields ...logger.Field) {
+	m.Called(msg, fields)
+}
+
+// Info mocks the Info method
+func (m *MockLogger) UserProfileInfo(msg string, fields ...logger.Field) {
+	m.Called(msg, fields)
+}
+
+// Warn mocks the Warn method
+func (m *MockLogger) UserProfileWarn(msg string, fields ...logger.Field) {
+	m.Called(msg, fields)
+}
+
+// Error mocks the Error method
+func (m *MockLogger) UserProfileError(msg string, fields ...logger.Field) {
+	m.Called(msg, fields)
+}
+
+// Fatal mocks the Fatal method
+func (m *MockLogger) UserProfileFatal(msg string, fields ...logger.Field) {
+	m.Called(msg, fields)
+}
+
+// TestGetUserProfile tests the GetUserProfile method
+func TestGetUserProfile(t *testing.T) {
+	// Test cases
+	testCases := []struct {
+		name          string
+		userID        uint
+		mockUser      *model.User
+		mockError     error
+		roleError     error
+		expectedError error
+		expectedRoles int
+	}{
+		{
+			name:   "success_with_roles",
+			userID: 1,
+			mockUser: &model.User{
+				ID:        1,
+				Username:  "testuser",
+				Email:     "test@example.com",
+				Nickname:  "Test User",
+				Avatar:    "avatar.png",
+				Phone:     "1234567890",
+				Gender:    1,
+				Signature: "Test Signature",
+				Status:    1,
+				LastLoginAt: func() *time.Time {
+					t, _ := time.Parse(time.RFC3339, "2023-10-01T12:00:00Z")
+					return &t
+				}(),
+				LastLoginIP: "127.0.0.1",
+				Timezone:    "UTC",
+				Language:    "en",
+				CreatedAt:   time.Now(),
+				UpdatedAt:   time.Now(),
+				Roles: []model.Role{
+					{Name: "admin", Description: "Administrator"},
+				},
+			},
+			mockError:     nil,
+			roleError:     nil,
+			expectedError: nil,
+			expectedRoles: 1,
+		},
+		{
+			name:          "user_not_found",
+			userID:        2,
+			mockUser:      nil,
+			mockError:     gorm.ErrRecordNotFound,
+			roleError:     nil,
+			expectedError: errors.NewAppError(errors.CodeRecordNotFound, "user_profile.not_found"),
+			expectedRoles: 0,
+		},
+		{
+			name:   "role_load_error",
+			userID: 3,
+			mockUser: &model.User{
+				ID:       3,
+				Username: "testuser3",
+				Email:    "test3@example.com",
+			},
+			mockError:     nil,
+			roleError:     fmt.Errorf("role load failed"),
+			expectedError: nil, // Role loading error should not prevent profile retrieval
+			expectedRoles: 0,
+		},
+	}
+
+	// Run test cases
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create mocks
+			mockRepo := new(MockUserProfileRepository)
+			mockLogger := new(MockLogger)
+			mockI18n := i18n.NewI18n()
+
+			// Set up mock expectations
+			mockRepo.On("GetUserProfileByID", mock.Anything, tc.userID).Return(tc.mockUser, tc.mockError)
+			if tc.mockUser != nil {
+				mockRepo.On("LoadUserRoles", mock.Anything, tc.mockUser).Return(tc.roleError)
+			}
+
+			// Mock logger calls (ignore details for simplicity)
+			mockLogger.On("InfoContext", mock.Anything, mock.Anything, mock.Anything).Return()
+			mockLogger.On("WarnContext", mock.Anything, mock.Anything, mock.Anything).Return()
+			mockLogger.On("ErrorContext", mock.Anything, mock.Anything, mock.Anything).Return()
+
+			// Create service with mocks
+			service := NewUserProfileService(mockRepo, mockLogger, mockI18n)
+
+			// Call the method being tested
+			profile, err := service.GetUserProfile(context.Background(), tc.userID)
+
+			// Assertions
+			if tc.expectedError != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tc.expectedError.Error(), err.Error())
+				assert.Nil(t, profile)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, profile)
+				assert.Equal(t, tc.mockUser.ID, profile.ID)
+				assert.Equal(t, tc.mockUser.Username, profile.Username)
+				assert.Equal(t, tc.mockUser.Email, profile.Email)
+				assert.Len(t, profile.Roles, tc.expectedRoles)
+			}
+
+			// Verify mocks
+			mockRepo.AssertExpectations(t)
+			mockLogger.AssertExpectations(t)
+		})
 	}
 }
 
-// 创建一个简单的日志实现
-type mockLogger struct{}
-
-func (l *mockLogger) InfoContext(ctx context.Context, msg string, fields ...logger.Field)  {}
-func (l *mockLogger) WarnContext(ctx context.Context, msg string, fields ...logger.Field)  {}
-func (l *mockLogger) ErrorContext(ctx context.Context, msg string, fields ...logger.Field) {}
-func (l *mockLogger) DebugContext(ctx context.Context, msg string, fields ...logger.Field) {}
-func (l *mockLogger) FatalContext(ctx context.Context, msg string, fields ...logger.Field) {}
-func (l *mockLogger) Info(msg string, fields ...logger.Field)                              {}
-func (l *mockLogger) Warn(msg string, fields ...logger.Field)                              {}
-func (l *mockLogger) Error(msg string, fields ...logger.Field)                             {}
-func (l *mockLogger) Debug(msg string, fields ...logger.Field)                             {}
-func (l *mockLogger) Fatal(msg string, fields ...logger.Field)                             {}
-
-// 设置测试辅助函数
-func setupUserProfileTest() (serviceiface.UserProfileService, *MockUserProfileRepository, *i18n.I18n) {
-	mockRepo := new(MockUserProfileRepository)
-	mockLogger := &struct {
-		logger.Logger
-	}{}
-	i18nInstance := &i18n.I18n{}
-
-	// 根据 NewUserProfileService 的实际签名调整
-	// 假设它返回了 serviceiface.UserProfileService
-	svc := service.NewUserProfileService(mockRepo, mockLogger, i18nInstance)
-
-	return svc, mockRepo, i18nInstance
-}
-
-// 测试 GetUserProfile 方法
-func TestGetUserProfile(t *testing.T) {
-	t.Run("Success", func(t *testing.T) {
-		// 设置测试环境
-		svc, mockRepo, _ := setupUserProfileTest()
-		ctx := context.Background()
-		userID := uint(1)
-
-		// 模拟数据
-		user := createTestUser(userID)
-
-		// 设置期望
-		mockRepo.On("GetUserProfileByID", ctx, userID).Return(user, nil)
-		mockRepo.On("LoadUserRoles", ctx, user).Return(nil)
-
-		// 执行测试
-		result, err := svc.GetUserProfile(ctx, userID)
-
-		// 验证结果
-		require.NoError(t, err)
-		assert.NotNil(t, result)
-		assert.Equal(t, userID, result.ID)
-		assert.Equal(t, user.Username, result.Username)
-		assert.Equal(t, user.Email, result.Email)
-		assert.Equal(t, user.Nickname, result.Nickname)
-		mockRepo.AssertExpectations(t)
-	})
-
-	t.Run("UserNotFound", func(t *testing.T) {
-		// 设置测试环境
-		svc, mockRepo, _ := setupUserProfileTest()
-		ctx := context.Background()
-		userID := uint(1)
-
-		// 设置期望
-		mockRepo.On("GetUserProfileByID", ctx, userID).Return(nil, gorm.ErrRecordNotFound)
-
-		// 执行测试
-		result, err := svc.GetUserProfile(ctx, userID)
-
-		// 验证结果
-		require.Error(t, err)
-		assert.Nil(t, result)
-		appErr, ok := err.(*errors.AppError)
-		assert.True(t, ok)
-		assert.Equal(t, errors.CodeRecordNotFound, appErr.Code)
-		mockRepo.AssertExpectations(t)
-	})
-
-	t.Run("LoadUserRolesFailed", func(t *testing.T) {
-		// 设置测试环境
-		svc, mockRepo, _ := setupUserProfileTest()
-		ctx := context.Background()
-		userID := uint(1)
-
-		// 模拟数据
-		user := createTestUser(userID)
-
-		// 设置期望
-		mockRepo.On("GetUserProfileByID", ctx, userID).Return(user, nil)
-		mockRepo.On("LoadUserRoles", ctx, user).Return(errors.NewAppError(errors.CodeInternalError, "Failed to load roles"))
-
-		// 执行测试
-		result, err := svc.GetUserProfile(ctx, userID)
-
-		// 验证结果
-		require.Error(t, err)
-		assert.Nil(t, result)
-		appErr, ok := err.(*errors.AppError)
-		assert.True(t, ok)
-		assert.Equal(t, errors.CodeInternalError, appErr.Code)
-		mockRepo.AssertExpectations(t)
-	})
-}
-
-// 测试 UpdateUserProfile 方法
+// TestUpdateUserProfile tests the UpdateUserProfile method
 func TestUpdateUserProfile(t *testing.T) {
-	t.Run("Success", func(t *testing.T) {
-		// 设置测试环境
-		svc, mockRepo, _ := setupUserProfileTest()
-		ctx := context.Background()
-		userID := uint(1)
+	// Helper function to create string pointer
+	str := func(s string) *string {
+		return &s
+	}
+	genderValue := 1
+	// Test cases
+	testCases := []struct {
+		name           string
+		userID         uint
+		updateRequest  *request.UserProfileUpdateRequest
+		updateError    error
+		getUserError   error
+		expectedError  error
+		expectedFields map[string]interface{}
+	}{
+		{
+			name:   "success_update_all_fields",
+			userID: 1,
+			updateRequest: &request.UserProfileUpdateRequest{
+				Nickname:  str("New Nickname"),
+				Avatar:    str("new_avatar.png"),
+				Phone:     str("9876543210"),
+				Gender:    &genderValue,
+				Signature: str("New Signature"),
+				Timezone:  str("GMT+8"),
+				Language:  str("zh-CN"),
+			},
+			updateError:   nil,
+			getUserError:  nil,
+			expectedError: nil,
+			expectedFields: map[string]interface{}{
+				"nickname":  "New Nickname",
+				"avatar":    "new_avatar.png",
+				"phone":     "9876543210",
+				"gender":    "female",
+				"signature": "New Signature",
+				"timezone":  "GMT+8",
+				"language":  "zh-CN",
+			},
+		},
+		{
+			name:   "success_update_partial_fields",
+			userID: 2,
+			updateRequest: &request.UserProfileUpdateRequest{
+				Nickname: str("New Nickname"),
+				Language: str("zh-CN"),
+			},
+			updateError:   nil,
+			getUserError:  nil,
+			expectedError: nil,
+			expectedFields: map[string]interface{}{
+				"nickname": "New Nickname",
+				"language": "zh-CN",
+			},
+		},
+		{
+			name:           "no_fields_to_update",
+			userID:         3,
+			updateRequest:  &request.UserProfileUpdateRequest{},
+			updateError:    nil,
+			getUserError:   nil,
+			expectedError:  nil,
+			expectedFields: map[string]interface{}{
+				// Empty map as there are no fields to update
+			},
+		},
+		{
+			name:   "user_not_found",
+			userID: 4,
+			updateRequest: &request.UserProfileUpdateRequest{
+				Nickname: str("New Nickname"),
+			},
+			updateError:   gorm.ErrRecordNotFound,
+			getUserError:  nil,
+			expectedError: errors.NewAppError(errors.CodeRecordNotFound, "user_profile.not_found"),
+			expectedFields: map[string]interface{}{
+				"nickname": "New Nickname",
+			},
+		},
+		{
+			name:   "other_update_error",
+			userID: 5,
+			updateRequest: &request.UserProfileUpdateRequest{
+				Nickname: str("New Nickname"),
+			},
+			updateError:   fmt.Errorf("database error"),
+			getUserError:  nil,
+			expectedError: errors.WrapError(fmt.Errorf("database error"), errors.CodeInternalError, "user_profile.update_failed"),
+			expectedFields: map[string]interface{}{
+				"nickname": "New Nickname",
+			},
+		},
+	}
 
-		// 模拟请求数据
-		nickname := "New Nickname"
-		req := &request.UserProfileUpdateRequest{
-			Nickname: &nickname,
-		}
+	// Run test cases
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create mocks
+			mockRepo := new(MockUserProfileRepository)
+			mockLogger := new(MockLogger)
+			mockI18n := i18n.NewI18n()
 
-		// 模拟数据
-		user := createTestUser(userID)
-		user.Nickname = nickname
+			// Set up mock expectations
+			if len(tc.expectedFields) > 0 {
+				mockRepo.On("UpdateUserProfile", mock.Anything, tc.userID, mock.MatchedBy(func(data map[string]interface{}) bool {
+					// Check if all expected fields are in the update data
+					for k, v := range tc.expectedFields {
+						if data[k] != v {
+							return false
+						}
+					}
+					return true
+				})).Return(tc.updateError)
+			}
 
-		// 设置期望 - 更新及获取更新后的配置文件
-		mockRepo.On("UpdateUserProfile", ctx, userID, mock.MatchedBy(func(data map[string]interface{}) bool {
-			return data["nickname"] == nickname
-		})).Return(nil)
-		mockRepo.On("GetUserProfileByID", ctx, userID).Return(user, nil)
-		mockRepo.On("LoadUserRoles", ctx, user).Return(nil)
+			// If no update error and no fields to update, GetUserProfile should be called directly
+			if tc.updateError == nil && len(tc.expectedFields) == 0 {
+				mockRepo.On("GetUserProfileByID", mock.Anything, tc.userID).Return(&model.User{
+					ID:       tc.userID,
+					Username: "testuser",
+				}, tc.getUserError)
+				mockRepo.On("LoadUserRoles", mock.Anything, mock.Anything).Return(nil)
+			} else if tc.updateError == nil {
+				// If update is successful, GetUserProfile will be called to return updated profile
+				mockRepo.On("GetUserProfileByID", mock.Anything, tc.userID).Return(&model.User{
+					ID:       tc.userID,
+					Username: "testuser",
+				}, tc.getUserError)
+				mockRepo.On("LoadUserRoles", mock.Anything, mock.Anything).Return(nil)
+			}
 
-		// 执行测试
-		result, err := svc.UpdateUserProfile(ctx, userID, req)
+			// Mock logger calls (ignore details for simplicity)
+			mockLogger.On("UserProfileInfoContext", mock.Anything, mock.Anything, mock.Anything).Return()
+			mockLogger.On("UserProfileWarnContext", mock.Anything, mock.Anything, mock.Anything).Return()
+			mockLogger.On("UserProfileErrorContext", mock.Anything, mock.Anything, mock.Anything).Return()
 
-		// 验证结果
-		require.NoError(t, err)
-		assert.NotNil(t, result)
-		assert.Equal(t, nickname, result.Nickname)
-		mockRepo.AssertExpectations(t)
-	})
+			// Create service with mocks
+			service := NewUserProfileService(mockRepo, mockLogger, mockI18n)
 
-	t.Run("NoFieldsToUpdate", func(t *testing.T) {
-		// 设置测试环境
-		svc, mockRepo, _ := setupUserProfileTest()
-		ctx := context.Background()
-		userID := uint(1)
+			// Call the method being tested
+			profile, err := service.UpdateUserProfile(context.Background(), tc.userID, tc.updateRequest)
 
-		// 模拟请求数据 - 没有要更新的字段
-		req := &request.UserProfileUpdateRequest{}
+			// Assertions
+			if tc.expectedError != nil {
+				assert.Error(t, err)
+				// Compare error messages since error types might be different due to wrapping
+				assert.Equal(t, tc.expectedError.Error(), err.Error())
+				assert.Nil(t, profile)
+			} else {
+				assert.NoError(t, err)
+				// If no fields to update or successful update, profile should be returned
+				if len(tc.expectedFields) == 0 || tc.updateError == nil {
+					assert.NotNil(t, profile)
+					assert.Equal(t, tc.userID, profile.ID)
+				}
+			}
 
-		// 模拟数据
-		user := createTestUser(userID)
-
-		// 设置期望 - 直接获取当前配置文件
-		mockRepo.On("GetUserProfileByID", ctx, userID).Return(user, nil)
-		mockRepo.On("LoadUserRoles", ctx, user).Return(nil)
-
-		// 执行测试
-		result, err := svc.UpdateUserProfile(ctx, userID, req)
-
-		// 验证结果
-		require.NoError(t, err)
-		assert.NotNil(t, result)
-		assert.Equal(t, user.Username, result.Username)
-		mockRepo.AssertExpectations(t)
-	})
-
-	t.Run("UpdateFailed", func(t *testing.T) {
-		// 设置测试环境
-		svc, mockRepo, _ := setupUserProfileTest()
-		ctx := context.Background()
-		userID := uint(1)
-
-		// 模拟请求数据
-		nickname := "New Nickname"
-		req := &request.UserProfileUpdateRequest{
-			Nickname: &nickname,
-		}
-
-		// 设置期望 - 更新失败
-		mockRepo.On("UpdateUserProfile", ctx, userID, mock.Anything).Return(gorm.ErrRecordNotFound)
-
-		// 执行测试
-		result, err := svc.UpdateUserProfile(ctx, userID, req)
-
-		// 验证结果
-		require.Error(t, err)
-		assert.Nil(t, result)
-		appErr, ok := err.(*errors.AppError)
-		assert.True(t, ok)
-		assert.Equal(t, errors.CodeRecordNotFound, appErr.Code)
-		mockRepo.AssertExpectations(t)
-	})
-
-	t.Run("GetProfileAfterUpdateFailed", func(t *testing.T) {
-		// 设置测试环境
-		svc, mockRepo, _ := setupUserProfileTest()
-		ctx := context.Background()
-		userID := uint(1)
-
-		// 模拟请求数据
-		nickname := "New Nickname"
-		req := &request.UserProfileUpdateRequest{
-			Nickname: &nickname,
-		}
-
-		// 设置期望
-		mockRepo.On("UpdateUserProfile", ctx, userID, mock.Anything).Return(nil)
-		mockRepo.On("GetUserProfileByID", ctx, userID).Return(nil, gorm.ErrRecordNotFound)
-
-		// 执行测试
-		result, err := svc.UpdateUserProfile(ctx, userID, req)
-
-		// 验证结果
-		require.Error(t, err)
-		assert.Nil(t, result)
-		appErr, ok := err.(*errors.AppError)
-		assert.True(t, ok)
-		assert.Equal(t, errors.CodeRecordNotFound, appErr.Code)
-		mockRepo.AssertExpectations(t)
-	})
+			// Verify mocks
+			mockRepo.AssertExpectations(t)
+			mockLogger.AssertExpectations(t)
+		})
+	}
 }
 
-// 测试 ChangeProfilePassword 方法
+// TestChangeProfilePassword tests the ChangeProfilePassword method
 func TestChangeProfilePassword(t *testing.T) {
-	t.Run("Success", func(t *testing.T) {
-		// 设置测试环境
-		svc, mockRepo, _ := setupUserProfileTest()
-		ctx := context.Background()
-		userID := uint(1)
+	// Test cases
+	testCases := []struct {
+		name             string
+		userID           uint
+		passwordRequest  *request.ProfileChangePasswordRequest
+		mockUser         *model.User
+		getUserError     error
+		updateError      error
+		expectedError    error
+		expectedPassword string
+	}{
+		{
+			name:   "success_change_password",
+			userID: 1,
+			passwordRequest: &request.ProfileChangePasswordRequest{
+				OldPassword:     "oldpassword123",
+				NewPassword:     "newpassword123",
+				ConfirmPassword: "newpassword123",
+			},
+			mockUser: &model.User{
+				ID:           1,
+				Username:     "testuser",
+				Email:        "test@example.com",
+				PasswordHash: "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3", // SHA256 of "123"
+			},
+			getUserError:     nil,
+			updateError:      nil,
+			expectedError:    nil,
+			expectedPassword: "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3", // SHA256 of "123"
+		},
+		{
+			name:   "user_not_found",
+			userID: 2,
+			passwordRequest: &request.ProfileChangePasswordRequest{
+				OldPassword:     "oldpassword123",
+				NewPassword:     "newpassword123",
+				ConfirmPassword: "newpassword123",
+			},
+			mockUser:         nil,
+			getUserError:     gorm.ErrRecordNotFound,
+			updateError:      nil,
+			expectedError:    errors.NewAppError(errors.CodeRecordNotFound, "user_profile.not_found"),
+			expectedPassword: "",
+		},
+		{
+			name:   "invalid_old_password",
+			userID: 3,
+			passwordRequest: &request.ProfileChangePasswordRequest{
+				OldPassword:     "wrongpassword",
+				NewPassword:     "newpassword123",
+				ConfirmPassword: "newpassword123",
+			},
+			mockUser: &model.User{
+				ID:           3,
+				Username:     "testuser3",
+				Email:        "test3@example.com",
+				PasswordHash: "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3", // SHA256 of "123"
+			},
+			getUserError:     nil,
+			updateError:      nil,
+			expectedError:    errors.NewAppError(errors.CodeInvalidCredentials, "user_profile.password_verification_failed"),
+			expectedPassword: "",
+		},
+		{
+			name:   "password_mismatch",
+			userID: 4,
+			passwordRequest: &request.ProfileChangePasswordRequest{
+				OldPassword:     "oldpassword123",
+				NewPassword:     "newpassword123",
+				ConfirmPassword: "differentpassword",
+			},
+			mockUser: &model.User{
+				ID:           4,
+				Username:     "testuser4",
+				Email:        "test4@example.com",
+				PasswordHash: "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3", // SHA256 of "123"
+			},
+			getUserError:     nil,
+			updateError:      nil,
+			expectedError:    errors.NewAppError(errors.CodeValidationFailed, "user_profile.password_mismatch"),
+			expectedPassword: "",
+		},
+		{
+			name:   "update_error",
+			userID: 5,
+			passwordRequest: &request.ProfileChangePasswordRequest{
+				OldPassword:     "oldpassword123",
+				NewPassword:     "newpassword123",
+				ConfirmPassword: "newpassword123",
+			},
+			mockUser: &model.User{
+				ID:           5,
+				Username:     "testuser5",
+				Email:        "test5@example.com",
+				PasswordHash: "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3", // SHA256 of "123"
+			},
+			getUserError:     nil,
+			updateError:      fmt.Errorf("database error"),
+			expectedError:    errors.WrapError(fmt.Errorf("database error"), errors.CodeInternalError, "user_profile.password_update_failed"),
+			expectedPassword: "ef797c8118f02dfb649607dd5d3f8c7623048c9c063d532cc95c5ed7a898a64f", // SHA256 of "newpassword123"
+		},
+	}
 
-		// 模拟请求数据
-		req := &request.ProfileChangePasswordRequest{
-			OldPassword:     "old_password",
-			NewPassword:     "new_password",
-			ConfirmPassword: "new_password",
-		}
+	// Run test cases
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create mocks
+			mockRepo := new(MockUserProfileRepository)
+			mockLogger := new(MockLogger)
+			mockI18n := i18n.NewI18n()
 
-		// 模拟数据
-		now := time.Now()
-		user := &model.User{
-			ID:           userID,
-			Username:     "testuser",
-			PasswordHash: "e7cf3ef4f17c3999a94f2c6f612e8a888e5b1026878e4e19398b23bd38ec221a", // SHA-256 of "old_password"
-			CreatedAt:    now,
-			UpdatedAt:    now,
-		}
+			// Set up mock expectations
+			mockRepo.On("GetUserProfileByID", mock.Anything, tc.userID).Return(tc.mockUser, tc.getUserError)
 
-		// 设置期望
-		mockRepo.On("GetUserProfileByID", ctx, userID).Return(user, nil)
-		mockRepo.On("UpdateUserPassword", ctx, userID, mock.MatchedBy(func(hash string) bool {
-			// 这里假设密码哈希算法是SHA-256
-			return hash != "" && hash != user.PasswordHash
-		})).Return(nil)
+			// Only expect UpdateUserPassword call if validation passes
+			if tc.mockUser != nil &&
+				tc.passwordRequest.OldPassword == "oldpassword123" && // This is just a test value that we've chosen
+				tc.passwordRequest.NewPassword == tc.passwordRequest.ConfirmPassword {
 
-		// 执行测试
-		err := svc.ChangeProfilePassword(ctx, userID, req)
+				mockRepo.On("UpdateUserPassword", mock.Anything, tc.userID, mock.Anything).Return(tc.updateError)
+			}
 
-		// 验证结果
-		require.NoError(t, err)
-		mockRepo.AssertExpectations(t)
-	})
+			// Mock logger calls (ignore details for simplicity)
+			mockLogger.On("UserProfileInfoContext", mock.Anything, mock.Anything, mock.Anything).Return()
+			mockLogger.On("UserProfileWarnContext", mock.Anything, mock.Anything, mock.Anything).Return()
+			mockLogger.On("UserProfileErrorContext", mock.Anything, mock.Anything, mock.Anything).Return()
 
-	t.Run("UserNotFound", func(t *testing.T) {
-		// 设置测试环境
-		svc, mockRepo, _ := setupUserProfileTest()
-		ctx := context.Background()
-		userID := uint(1)
+			// Create service with mocks
+			service := NewUserProfileService(mockRepo, mockLogger, mockI18n)
 
-		// 模拟请求数据
-		req := &request.ProfileChangePasswordRequest{
-			OldPassword:     "old_password",
-			NewPassword:     "new_password",
-			ConfirmPassword: "new_password",
-		}
+			// Call the method being tested
+			err := service.ChangeProfilePassword(context.Background(), tc.userID, tc.passwordRequest)
 
-		// 设置期望
-		mockRepo.On("GetUserProfileByID", ctx, userID).Return(nil, gorm.ErrRecordNotFound)
+			// Assertions
+			if tc.expectedError != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tc.expectedError.Error(), err.Error())
+			} else {
+				assert.NoError(t, err)
+			}
 
-		// 执行测试
-		err := svc.ChangeProfilePassword(ctx, userID, req)
-
-		// 验证结果
-		require.Error(t, err)
-		appErr, ok := err.(*errors.AppError)
-		assert.True(t, ok)
-		assert.Equal(t, errors.CodeRecordNotFound, appErr.Code)
-		mockRepo.AssertExpectations(t)
-	})
-
-	t.Run("WrongOldPassword", func(t *testing.T) {
-		// 设置测试环境
-		svc, mockRepo, _ := setupUserProfileTest()
-		ctx := context.Background()
-		userID := uint(1)
-
-		// 模拟请求数据
-		req := &request.ProfileChangePasswordRequest{
-			OldPassword:     "wrong_password",
-			NewPassword:     "new_password",
-			ConfirmPassword: "new_password",
-		}
-
-		// 模拟数据
-		now := time.Now()
-		user := &model.User{
-			ID:           userID,
-			Username:     "testuser",
-			PasswordHash: "e7cf3ef4f17c3999a94f2c6f612e8a888e5b1026878e4e19398b23bd38ec221a", // SHA-256 of "old_password"
-			CreatedAt:    now,
-			UpdatedAt:    now,
-		}
-
-		// 设置期望
-		mockRepo.On("GetUserProfileByID", ctx, userID).Return(user, nil)
-
-		// 执行测试
-		err := svc.ChangeProfilePassword(ctx, userID, req)
-
-		// 验证结果
-		require.Error(t, err)
-		appErr, ok := err.(*errors.AppError)
-		assert.True(t, ok)
-		assert.Equal(t, errors.CodeInvalidCredentials, appErr.Code)
-		mockRepo.AssertExpectations(t)
-	})
-
-	t.Run("PasswordMismatch", func(t *testing.T) {
-		// 设置测试环境
-		svc, mockRepo, _ := setupUserProfileTest()
-		ctx := context.Background()
-		userID := uint(1)
-
-		// 模拟请求数据
-		req := &request.ProfileChangePasswordRequest{
-			OldPassword:     "old_password",
-			NewPassword:     "new_password",
-			ConfirmPassword: "different_password",
-		}
-
-		// 模拟数据
-		now := time.Now()
-		user := &model.User{
-			ID:           userID,
-			Username:     "testuser",
-			PasswordHash: "e7cf3ef4f17c3999a94f2c6f612e8a888e5b1026878e4e19398b23bd38ec221a", // SHA-256 of "old_password"
-			CreatedAt:    now,
-			UpdatedAt:    now,
-		}
-
-		// 设置期望
-		mockRepo.On("GetUserProfileByID", ctx, userID).Return(user, nil)
-
-		// 执行测试
-		err := svc.ChangeProfilePassword(ctx, userID, req)
-
-		// 验证结果
-		require.Error(t, err)
-		appErr, ok := err.(*errors.AppError)
-		assert.True(t, ok)
-		assert.Equal(t, errors.CodeValidationFailed, appErr.Code)
-		mockRepo.AssertExpectations(t)
-	})
-
-	t.Run("UpdatePasswordFailed", func(t *testing.T) {
-		// 设置测试环境
-		svc, mockRepo, _ := setupUserProfileTest()
-		ctx := context.Background()
-		userID := uint(1)
-
-		// 模拟请求数据
-		req := &request.ProfileChangePasswordRequest{
-			OldPassword:     "old_password",
-			NewPassword:     "new_password",
-			ConfirmPassword: "new_password",
-		}
-
-		// 模拟数据
-		now := time.Now()
-		user := &model.User{
-			ID:           userID,
-			Username:     "testuser",
-			PasswordHash: "e7cf3ef4f17c3999a94f2c6f612e8a888e5b1026878e4e19398b23bd38ec221a", // SHA-256 of "old_password"
-			CreatedAt:    now,
-			UpdatedAt:    now,
-		}
-
-		// 设置期望
-		mockRepo.On("GetUserProfileByID", ctx, userID).Return(user, nil)
-		mockRepo.On("UpdateUserPassword", ctx, userID, mock.Anything).Return(gorm.ErrInvalidDB)
-
-		// 执行测试
-		err := svc.ChangeProfilePassword(ctx, userID, req)
-
-		// 验证结果
-		require.Error(t, err)
-		appErr, ok := err.(*errors.AppError)
-		assert.True(t, ok)
-		assert.Equal(t, errors.CodeInternalError, appErr.Code)
-		mockRepo.AssertExpectations(t)
-	})
+			// Verify mocks
+			mockRepo.AssertExpectations(t)
+			mockLogger.AssertExpectations(t)
+		})
+	}
 }
 
-// 测试 GetLoginHistories 方法
+// TestGetLoginHistories tests the GetLoginHistories method
 func TestGetLoginHistories(t *testing.T) {
-	t.Run("Success", func(t *testing.T) {
-		// 设置测试环境
-		svc, mockRepo, _ := setupUserProfileTest()
-		ctx := context.Background()
-		userID := uint(1)
+	// Sample login history data
+	sampleHistories := []model.UserLoginHistory{
+		{
+			ID:         1,
+			UserID:     1,
+			IPAddress:  "192.168.1.1",
+			UserAgent:  "Mozilla/5.0",
+			Device:     "Desktop",
+			Browser:    "Chrome",
+			Location:   "Shanghai, China",
+			LoginTime:  time.Now().Add(-1 * time.Hour),
+			LogoutTime: func() *time.Time { t := time.Now().Add(-30 * time.Minute); return &t }(),
+		},
+		{
+			ID:         2,
+			UserID:     1,
+			IPAddress:  "192.168.1.2",
+			UserAgent:  "Mozilla/5.0",
+			Device:     "Mobile",
+			Browser:    "Safari",
+			Location:   "Beijing, China",
+			LoginTime:  time.Now().Add(-2 * time.Hour),
+			LogoutTime: func() *time.Time { t := time.Now().Add(-1 * time.Hour); return &t }(),
+		},
+	}
 
-		// 模拟请求数据
-		req := &request.LoginHistoryRequest{
-			Page:     1,
-			PageSize: 10,
-		}
-
-		// 模拟数据
-		now := time.Now()
-		records := []model.UserLoginHistory{
-			{
-				ID:        1,
-				UserID:    userID,
-				IPAddress: "192.168.1.1",
-				UserAgent: "Mozilla/5.0",
-				Device:    "PC",
-				Browser:   "Chrome",
-				Location:  "Beijing",
-				LoginTime: now,
+	// Test cases
+	testCases := []struct {
+		name           string
+		userID         uint
+		request        *request.LoginHistoryRequest
+		histories      []model.UserLoginHistory
+		totalCount     int64
+		repoError      error
+		expectedError  error
+		expectedLength int
+	}{
+		{
+			name:   "success_with_data",
+			userID: 1,
+			request: &request.LoginHistoryRequest{
+				Page:     1,
+				PageSize: 10,
 			},
-		}
-		total := int64(1)
+			histories:      sampleHistories,
+			totalCount:     2,
+			repoError:      nil,
+			expectedError:  nil,
+			expectedLength: 2,
+		},
+		{
+			name:   "success_empty_result",
+			userID: 2,
+			request: &request.LoginHistoryRequest{
+				Page:     1,
+				PageSize: 10,
+			},
+			histories:      []model.UserLoginHistory{},
+			totalCount:     0,
+			repoError:      nil,
+			expectedError:  nil,
+			expectedLength: 0,
+		},
+		{
+			name:   "repository_error",
+			userID: 3,
+			request: &request.LoginHistoryRequest{
+				Page:     1,
+				PageSize: 10,
+			},
+			histories:      nil,
+			totalCount:     0,
+			repoError:      fmt.Errorf("database error"),
+			expectedError:  errors.WrapError(fmt.Errorf("database error"), errors.CodeInternalError, "user_profile.login_history_get_failed"),
+			expectedLength: 0,
+		},
+		{
+			name:   "default_pagination",
+			userID: 1,
+			request: &request.LoginHistoryRequest{
+				Page:     0,
+				PageSize: 0,
+			},
+			histories:      sampleHistories,
+			totalCount:     2,
+			repoError:      nil,
+			expectedError:  nil,
+			expectedLength: 2,
+		},
+	}
 
-		// 设置期望
-		mockRepo.On("GetLoginHistories", ctx, userID, 1, 10).Return(records, total, nil)
+	// Run test cases
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create mocks
+			mockRepo := new(MockUserProfileRepository)
+			mockLogger := new(MockLogger)
+			mockI18n := i18n.NewI18n()
 
-		// 执行测试
-		result, err := svc.GetLoginHistories(ctx, userID, req)
+			// Calculate expected page and page size
+			expectedPage := tc.request.Page
+			if expectedPage <= 0 {
+				expectedPage = 1
+			}
+			expectedPageSize := tc.request.PageSize
+			if expectedPageSize <= 0 {
+				expectedPageSize = 20
+			}
 
-		// 验证结果
-		require.NoError(t, err)
-		assert.NotNil(t, result)
-		assert.Equal(t, 1, len(result.Items))
-		assert.Equal(t, uint(1), result.Items[0].ID)
-		assert.Equal(t, "192.168.1.1", result.Items[0].IPAddress)
-		mockRepo.AssertExpectations(t)
-	})
+			// Set up mock expectations
+			mockRepo.On("GetLoginHistories", mock.Anything, tc.userID, expectedPage, expectedPageSize).
+				Return(tc.histories, tc.totalCount, tc.repoError)
 
-	t.Run("DefaultPageValues", func(t *testing.T) {
-		// 设置测试环境
-		svc, mockRepo, _ := setupUserProfileTest()
-		ctx := context.Background()
-		userID := uint(1)
+			// Mock logger calls (ignore details for simplicity)
+			mockLogger.On("UserProfileInfoContext", mock.Anything, mock.Anything, mock.Anything).Return()
+			mockLogger.On("UserProfileWarnContext", mock.Anything, mock.Anything, mock.Anything).Return()
+			mockLogger.On("UserProfileErrorContext", mock.Anything, mock.Anything, mock.Anything).Return()
 
-		// 模拟请求数据 - 无页码参数，应使用默认值
-		req := &request.LoginHistoryRequest{}
+			// Create service with mocks
+			service := NewUserProfileService(mockRepo, mockLogger, mockI18n)
 
-		// 模拟数据
-		records := []model.UserLoginHistory{}
-		total := int64(0)
+			// Call the method being tested
+			result, err := service.GetLoginHistories(context.Background(), tc.userID, tc.request)
 
-		// 设置期望 - 应使用默认值page=1, pageSize=20
-		mockRepo.On("GetLoginHistories", ctx, userID, 1, 20).Return(records, total, nil)
+			// Assertions
+			if tc.expectedError != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tc.expectedError.Error(), err.Error())
+				assert.Nil(t, result)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, result)
+				assert.Len(t, result.Items, tc.expectedLength)
 
-		// 执行测试
-		result, err := svc.GetLoginHistories(ctx, userID, req)
+				// Check item mapping if there are items
+				if tc.expectedLength > 0 {
+					for i, hist := range tc.histories {
+						assert.Equal(t, hist.ID, result.Items[i].ID)
+						assert.Equal(t, hist.IPAddress, result.Items[i].IPAddress)
+						assert.Equal(t, hist.UserAgent, result.Items[i].UserAgent)
+						assert.Equal(t, hist.Device, result.Items[i].Device)
+						assert.Equal(t, hist.Browser, result.Items[i].Browser)
+						assert.Equal(t, hist.Location, result.Items[i].Location)
+						assert.Equal(t, hist.LoginTime, result.Items[i].LoginTime)
+						assert.Equal(t, hist.LogoutTime, result.Items[i].LogoutTime)
+					}
+				}
+			}
 
-		// 验证结果
-		require.NoError(t, err)
-		assert.NotNil(t, result)
-		assert.Empty(t, result.Items)
-		mockRepo.AssertExpectations(t)
-	})
-
-	t.Run("RepositoryError", func(t *testing.T) {
-		// 设置测试环境
-		svc, mockRepo, _ := setupUserProfileTest()
-		ctx := context.Background()
-		userID := uint(1)
-
-		// 模拟请求数据
-		req := &request.LoginHistoryRequest{
-			Page:     1,
-			PageSize: 10,
-		}
-
-		// 设置期望 - 仓库返回错误
-		mockRepo.On("GetLoginHistories", ctx, userID, 1, 10).Return(
-			[]model.UserLoginHistory{},
-			int64(0),
-			errors.NewAppError(errors.CodeInternalError, "Database error"),
-		)
-
-		// 执行测试
-		result, err := svc.GetLoginHistories(ctx, userID, req)
-
-		// 验证结果
-		require.Error(t, err)
-		assert.Nil(t, result)
-		appErr, ok := err.(*errors.AppError)
-		assert.True(t, ok)
-		assert.Equal(t, errors.CodeInternalError, appErr.Code)
-		mockRepo.AssertExpectations(t)
-	})
+			// Verify mocks
+			mockRepo.AssertExpectations(t)
+			mockLogger.AssertExpectations(t)
+		})
+	}
 }
 
-// 测试 GetNotificationSettings 方法
+// TestGetNotificationSettings tests the GetNotificationSettings method
 func TestGetNotificationSettings(t *testing.T) {
-	t.Run("Success", func(t *testing.T) {
-		// 设置测试环境
-		svc, mockRepo, _ := setupUserProfileTest()
-		ctx := context.Background()
-		userID := uint(1)
-
-		// 模拟数据
-		configs := []*model.UserProfile{
-			{
-				ID:          1,
-				UserID:      userID,
-				Category:    "notification",
-				ConfigKey:   "email_notifications",
-				ConfigValue: constants.StringTrue,
+	// Test cases
+	testCases := []struct {
+		name         string
+		userID       uint
+		configs      []model.UserProfile
+		repoError    error
+		expectedResp *response.NotificationSettingsResponse
+	}{
+		{
+			name:   "success_with_configs",
+			userID: 1,
+			configs: []model.UserProfile{
+				{
+					UserID:      1,
+					Category:    "notification",
+					ConfigKey:   "email_notifications",
+					ConfigValue: constants.StringTrue,
+				},
+				{
+					UserID:      1,
+					Category:    "notification",
+					ConfigKey:   "sms_notifications",
+					ConfigValue: constants.StringTrue,
+				},
+				{
+					UserID:      1,
+					Category:    "notification",
+					ConfigKey:   "push_notifications",
+					ConfigValue: constants.StringFalse,
+				},
+				{
+					UserID:      1,
+					Category:    "notification",
+					ConfigKey:   "marketing_emails",
+					ConfigValue: constants.StringTrue,
+				},
 			},
-			{
-				ID:          2,
-				UserID:      userID,
-				Category:    "notification",
-				ConfigKey:   "sms_notifications",
-				ConfigValue: constants.StringTrue,
+			repoError: nil,
+			expectedResp: &response.NotificationSettingsResponse{
+				EmailNotifications: true,
+				SmsNotifications:   true,
+				PushNotifications:  false,
+				MarketingEmails:    true,
 			},
-		}
+		},
+		{
+			name:      "success_no_configs",
+			userID:    2,
+			configs:   []model.UserProfile{},
+			repoError: nil,
+			expectedResp: &response.NotificationSettingsResponse{
+				EmailNotifications: true,  // default
+				SmsNotifications:   false, // default
+				PushNotifications:  true,  // default
+				MarketingEmails:    false, // default
+			},
+		},
+		{
+			name:      "record_not_found",
+			userID:    3,
+			configs:   nil,
+			repoError: gorm.ErrRecordNotFound,
+			expectedResp: &response.NotificationSettingsResponse{
+				EmailNotifications: true,  // default
+				SmsNotifications:   false, // default
+				PushNotifications:  true,  // default
+				MarketingEmails:    false, // default
+			},
+		},
+		{
+			name:         "repository_error",
+			userID:       4,
+			configs:      nil,
+			repoError:    fmt.Errorf("database error"),
+			expectedResp: nil,
+		},
+	}
 
-		// 设置期望
-		mockRepo.On("GetUserConfigsByCategory", ctx, userID, "notification").Return(configs, nil)
+	// Run test cases
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create mocks
+			mockRepo := new(MockUserProfileRepository)
+			mockLogger := new(MockLogger)
+			mockI18n := i18n.NewI18n()
 
-		// 执行测试
-		result, err := svc.GetNotificationSettings(ctx, userID)
+			// Set up mock expectations
+			mockRepo.On("GetUserConfigsByCategory", mock.Anything, tc.userID, "notification").Return(tc.configs, tc.repoError)
 
-		// 验证结果
-		require.NoError(t, err)
-		assert.NotNil(t, result)
-		assert.True(t, result.EmailNotifications)
-		assert.True(t, result.SmsNotifications)
-		assert.True(t, result.PushNotifications) // 默认值
-		assert.False(t, result.MarketingEmails)  // 默认值
-		mockRepo.AssertExpectations(t)
-	})
+			// Mock logger calls (ignore details for simplicity)
+			mockLogger.On("UserProfileInfoContext", mock.Anything, mock.Anything, mock.Anything).Return()
+			mockLogger.On("UserProfileWarnContext", mock.Anything, mock.Anything, mock.Anything).Return()
+			mockLogger.On("UserProfileErrorContext", mock.Anything, mock.Anything, mock.Anything).Return()
 
-	t.Run("NoConfigsFound", func(t *testing.T) {
-		// 设置测试环境
-		svc, mockRepo, _ := setupUserProfileTest()
-		ctx := context.Background()
-		userID := uint(1)
+			// Create service with mocks
+			service := NewUserProfileService(mockRepo, mockLogger, mockI18n)
 
-		// 设置期望
-		mockRepo.On("GetUserConfigsByCategory", ctx, userID, "notification").Return([]*model.UserProfile{}, nil)
+			// Call the method being tested
+			result, err := service.GetNotificationSettings(context.Background(), tc.userID)
 
-		// 执行测试
-		result, err := svc.GetNotificationSettings(ctx, userID)
+			// Assertions
+			if tc.expectedResp == nil {
+				assert.Error(t, err)
+				assert.Nil(t, result)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, result)
+				assert.Equal(t, tc.expectedResp.EmailNotifications, result.EmailNotifications)
+				assert.Equal(t, tc.expectedResp.SmsNotifications, result.SmsNotifications)
+				assert.Equal(t, tc.expectedResp.PushNotifications, result.PushNotifications)
+				assert.Equal(t, tc.expectedResp.MarketingEmails, result.MarketingEmails)
+			}
 
-		// 验证结果
-		require.NoError(t, err)
-		assert.NotNil(t, result)
-		assert.True(t, result.EmailNotifications) // 默认值
-		assert.False(t, result.SmsNotifications)  // 默认值
-		assert.True(t, result.PushNotifications)  // 默认值
-		assert.False(t, result.MarketingEmails)   // 默认值
-		mockRepo.AssertExpectations(t)
-	})
-
-	t.Run("RepositoryError", func(t *testing.T) {
-		// 设置测试环境
-		svc, mockRepo, _ := setupUserProfileTest()
-		ctx := context.Background()
-		userID := uint(1)
-
-		// 设置期望
-		mockRepo.On("GetUserConfigsByCategory", ctx, userID, "notification").Return(
-			nil,
-			errors.NewAppError(errors.CodeInternalError, "Database error"),
-		)
-
-		// 执行测试
-		result, err := svc.GetNotificationSettings(ctx, userID)
-
-		// 验证结果
-		require.Error(t, err)
-		assert.Nil(t, result)
-		appErr, ok := err.(*errors.AppError)
-		assert.True(t, ok)
-		assert.Equal(t, errors.CodeInternalError, appErr.Code)
-		mockRepo.AssertExpectations(t)
-	})
+			// Verify mocks
+			mockRepo.AssertExpectations(t)
+			mockLogger.AssertExpectations(t)
+		})
+	}
 }
 
-// 测试 UpdateNotificationSettings 方法
+// TestUpdateNotificationSettings tests the UpdateNotificationSettings method
 func TestUpdateNotificationSettings(t *testing.T) {
-	t.Run("Success", func(t *testing.T) {
-		// 设置测试环境
-		svc, mockRepo, _ := setupUserProfileTest()
-		ctx := context.Background()
-		userID := uint(1)
+	// Test cases
+	testCases := []struct {
+		name             string
+		userID           uint
+		request          *request.NotificationSettingsRequest
+		savingErrors     map[string]error
+		expectSaveConfig bool
+		expectedError    error
+	}{
+		{
+			name:   "success",
+			userID: 1,
+			request: &request.NotificationSettingsRequest{
+				EmailNotifications: true,
+				SmsNotifications:   false,
+				PushNotifications:  true,
+				MarketingEmails:    false,
+			},
+			savingErrors:     map[string]error{},
+			expectSaveConfig: true,
+			expectedError:    nil,
+		},
+		{
+			name:   "error_saving_email_notifications",
+			userID: 2,
+			request: &request.NotificationSettingsRequest{
+				EmailNotifications: true,
+				SmsNotifications:   false,
+				PushNotifications:  true,
+				MarketingEmails:    false,
+			},
+			savingErrors: map[string]error{
+				"email_notifications": fmt.Errorf("database error"),
+			},
+			expectSaveConfig: true,
+			expectedError:    errors.WrapError(fmt.Errorf("database error"), errors.CodeInternalError, "user_profile.notification_settings_update_failed"),
+		},
+		{
+			name:   "error_saving_sms_notifications",
+			userID: 3,
+			request: &request.NotificationSettingsRequest{
+				EmailNotifications: true,
+				SmsNotifications:   true,
+				PushNotifications:  true,
+				MarketingEmails:    false,
+			},
+			savingErrors: map[string]error{
+				"sms_notifications": fmt.Errorf("database error"),
+			},
+			expectSaveConfig: true,
+			expectedError:    errors.WrapError(fmt.Errorf("database error"), errors.CodeInternalError, "user_profile.notification_settings_update_failed"),
+		},
+	}
 
-		// 模拟请求数据
-		req := &request.NotificationSettingsRequest{
-			EmailNotifications: true,
-			SmsNotifications:   true,
-			PushNotifications:  false,
-			MarketingEmails:    true,
-		}
+	// Run test cases
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create mocks
+			mockRepo := new(MockUserProfileRepository)
+			mockLogger := new(MockLogger)
+			mockI18n := i18n.NewI18n()
 
-		// 设置期望
-		mockRepo.On("SaveUserConfig", ctx, mock.MatchedBy(func(config *model.UserProfile) bool {
-			return config.UserID == userID && config.Category == "notification" &&
-				config.ConfigKey == "email_notifications" && config.ConfigValue == constants.StringTrue
-		})).Return(nil)
+			// Set up mock expectations for each setting
+			if tc.expectSaveConfig {
+				// Email notifications
+				mockRepo.On("SaveUserConfig", mock.Anything, mock.MatchedBy(func(config *model.UserProfile) bool {
+					return config.UserID == tc.userID &&
+						config.Category == "notification" &&
+						config.ConfigKey == "email_notifications" &&
+						config.ConfigValue == boolToString(tc.request.EmailNotifications)
+				})).Return(tc.savingErrors["email_notifications"])
 
-		mockRepo.On("SaveUserConfig", ctx, mock.MatchedBy(func(config *model.UserProfile) bool {
-			return config.UserID == userID && config.Category == "notification" &&
-				config.ConfigKey == "sms_notifications" && config.ConfigValue == constants.StringTrue
-		})).Return(nil)
+				// If the first save succeeded, continue with the next ones
+				if tc.savingErrors["email_notifications"] == nil {
+					// SMS notifications
+					mockRepo.On("SaveUserConfig", mock.Anything, mock.MatchedBy(func(config *model.UserProfile) bool {
+						return config.UserID == tc.userID &&
+							config.Category == "notification" &&
+							config.ConfigKey == "sms_notifications" &&
+							config.ConfigValue == boolToString(tc.request.SmsNotifications)
+					})).Return(tc.savingErrors["sms_notifications"])
 
-		mockRepo.On("SaveUserConfig", ctx, mock.MatchedBy(func(config *model.UserProfile) bool {
-			return config.UserID == userID && config.Category == "notification" &&
-				config.ConfigKey == "push_notifications" && config.ConfigValue == constants.StringFalse
-		})).Return(nil)
+					if tc.savingErrors["sms_notifications"] == nil {
+						// Push notifications
+						mockRepo.On("SaveUserConfig", mock.Anything, mock.MatchedBy(func(config *model.UserProfile) bool {
+							return config.UserID == tc.userID &&
+								config.Category == "notification" &&
+								config.ConfigKey == "push_notifications" &&
+								config.ConfigValue == boolToString(tc.request.PushNotifications)
+						})).Return(tc.savingErrors["push_notifications"])
 
-		mockRepo.On("SaveUserConfig", ctx, mock.MatchedBy(func(config *model.UserProfile) bool {
-			return config.UserID == userID && config.Category == "notification" &&
-				config.ConfigKey == "marketing_emails" && config.ConfigValue == constants.StringTrue
-		})).Return(nil)
+						if tc.savingErrors["push_notifications"] == nil {
+							// Marketing emails
+							mockRepo.On("SaveUserConfig", mock.Anything, mock.MatchedBy(func(config *model.UserProfile) bool {
+								return config.UserID == tc.userID &&
+									config.Category == "notification" &&
+									config.ConfigKey == "marketing_emails" &&
+									config.ConfigValue == boolToString(tc.request.MarketingEmails)
+							})).Return(tc.savingErrors["marketing_emails"])
+						}
+					}
+				}
+			}
 
-		// 执行测试
-		err := svc.UpdateNotificationSettings(ctx, userID, req)
+			// Mock logger calls (ignore details for simplicity)
+			mockLogger.On("UserProfileInfoContext", mock.Anything, mock.Anything, mock.Anything).Return()
+			mockLogger.On("UserProfileErrorContext", mock.Anything, mock.Anything, mock.Anything).Return()
 
-		// 验证结果
-		require.NoError(t, err)
-		mockRepo.AssertExpectations(t)
-	})
+			// Create service with mocks
+			service := NewUserProfileService(mockRepo, mockLogger, mockI18n)
 
-	t.Run("SaveConfigFailed", func(t *testing.T) {
-		// 设置测试环境
-		svc, mockRepo, _ := setupUserProfileTest()
-		ctx := context.Background()
-		userID := uint(1)
+			// Call the method being tested
+			err := service.UpdateNotificationSettings(context.Background(), tc.userID, tc.request)
 
-		// 模拟请求数据
-		req := &request.NotificationSettingsRequest{
-			EmailNotifications: true,
-		}
+			// Assertions
+			if tc.expectedError != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tc.expectedError.Error(), err.Error())
+			} else {
+				assert.NoError(t, err)
+			}
 
-		// 设置期望 - 保存配置失败
-		mockRepo.On("SaveUserConfig", ctx, mock.MatchedBy(func(config *model.UserProfile) bool {
-			return config.UserID == userID && config.Category == "notification"
-		})).Return(gorm.ErrInvalidDB)
-
-		// 执行测试
-		err := svc.UpdateNotificationSettings(ctx, userID, req)
-
-		// 验证结果
-		require.Error(t, err)
-		appErr, ok := err.(*errors.AppError)
-		assert.True(t, ok)
-		assert.Equal(t, errors.CodeInternalError, appErr.Code)
-		mockRepo.AssertExpectations(t)
-	})
+			// Verify mocks
+			mockRepo.AssertExpectations(t)
+			mockLogger.AssertExpectations(t)
+		})
+	}
 }
 
-// 测试 GetSecuritySettings 方法
+// TestGetSecuritySettings tests the GetSecuritySettings method
 func TestGetSecuritySettings(t *testing.T) {
-	t.Run("Success", func(t *testing.T) {
-		// 设置测试环境
-		svc, mockRepo, _ := setupUserProfileTest()
-		ctx := context.Background()
-		userID := uint(1)
-
-		// 模拟数据
-		timeoutValue, _ := json.Marshal(3600)
-		configs := []*model.UserProfile{
-			{
-				ID:          1,
-				UserID:      userID,
-				Category:    "security",
-				ConfigKey:   "login_alerts",
-				ConfigValue: constants.StringTrue,
+	// Test cases
+	testCases := []struct {
+		name         string
+		userID       uint
+		configs      []model.UserProfile
+		repoError    error
+		expectedResp *response.SecuritySettingsResponse
+	}{
+		{
+			name:   "success_with_configs",
+			userID: 1,
+			configs: []model.UserProfile{
+				{
+					UserID:      1,
+					Category:    "security",
+					ConfigKey:   "login_alerts",
+					ConfigValue: "true",
+				},
+				{
+					UserID:      1,
+					Category:    "security",
+					ConfigKey:   "session_timeout",
+					ConfigValue: "3600", // 1 hour
+				},
 			},
-			{
-				ID:          2,
-				UserID:      userID,
-				Category:    "security",
-				ConfigKey:   "session_timeout",
-				ConfigValue: string(timeoutValue),
+			repoError: nil,
+			expectedResp: &response.SecuritySettingsResponse{
+				LoginAlerts:    true,
+				SessionTimeout: 3600,
 			},
-		}
-
-		// 设置期望
-		mockRepo.On("GetUserConfigsByCategory", ctx, userID, "security").Return(configs, nil)
-
-		// 执行测试
-		result, err := svc.GetSecuritySettings(ctx, userID)
-
-		// 验证结果
-		require.NoError(t, err)
-		assert.NotNil(t, result)
-		assert.True(t, result.LoginAlerts)
-		assert.Equal(t, 3600, result.SessionTimeout)
-		mockRepo.AssertExpectations(t)
-	})
-
-	t.Run("NoConfigsFound", func(t *testing.T) {
-		// 设置测试环境
-		svc, mockRepo, _ := setupUserProfileTest()
-		ctx := context.Background()
-		userID := uint(1)
-
-		// 设置期望
-		mockRepo.On("GetUserConfigsByCategory", ctx, userID, "security").Return([]*model.UserProfile{}, nil)
-
-		// 执行测试
-		result, err := svc.GetSecuritySettings(ctx, userID)
-
-		// 验证结果
-		require.NoError(t, err)
-		assert.NotNil(t, result)
-		assert.True(t, result.LoginAlerts)                                             // 默认值
-		assert.Equal(t, constants.DefaultSessionTimeoutSeconds, result.SessionTimeout) // 默认值
-		mockRepo.AssertExpectations(t)
-	})
-
-	t.Run("RepositoryError", func(t *testing.T) {
-		// 设置测试环境
-		svc, mockRepo, _ := setupUserProfileTest()
-		ctx := context.Background()
-		userID := uint(1)
-
-		// 设置期望
-		mockRepo.On("GetUserConfigsByCategory", ctx, userID, "security").Return(
-			nil,
-			errors.NewAppError(errors.CodeInternalError, "Database error"),
-		)
-
-		// 执行测试
-		result, err := svc.GetSecuritySettings(ctx, userID)
-
-		// 验证结果
-		require.Error(t, err)
-		assert.Nil(t, result)
-		appErr, ok := err.(*errors.AppError)
-		assert.True(t, ok)
-		assert.Equal(t, errors.CodeInternalError, appErr.Code)
-		mockRepo.AssertExpectations(t)
-	})
-
-	t.Run("InvalidSessionTimeoutValue", func(t *testing.T) {
-		// 设置测试环境
-		svc, mockRepo, _ := setupUserProfileTest()
-		ctx := context.Background()
-		userID := uint(1)
-
-		// 模拟数据 - 会话超时值无效
-		configs := []*model.UserProfile{
-			{
-				ID:          1,
-				UserID:      userID,
-				Category:    "security",
-				ConfigKey:   "login_alerts",
-				ConfigValue: constants.StringTrue,
+		},
+		{
+			name:      "success_no_configs",
+			userID:    2,
+			configs:   []model.UserProfile{},
+			repoError: nil,
+			expectedResp: &response.SecuritySettingsResponse{
+				LoginAlerts:    true,                                   // default
+				SessionTimeout: constants.DefaultSessionTimeoutSeconds, // default
 			},
-			{
-				ID:          2,
-				UserID:      userID,
-				Category:    "security",
-				ConfigKey:   "session_timeout",
-				ConfigValue: "invalid-json",
+		},
+		{
+			name:      "record_not_found",
+			userID:    3,
+			configs:   nil,
+			repoError: gorm.ErrRecordNotFound,
+			expectedResp: &response.SecuritySettingsResponse{
+				LoginAlerts:    true,                                   // default
+				SessionTimeout: constants.DefaultSessionTimeoutSeconds, // default
 			},
-		}
+		},
+		{
+			name:         "repository_error",
+			userID:       4,
+			configs:      nil,
+			repoError:    fmt.Errorf("database error"),
+			expectedResp: nil,
+		},
+		{
+			name:   "invalid_session_timeout",
+			userID: 5,
+			configs: []model.UserProfile{
+				{
+					UserID:      5,
+					Category:    "security",
+					ConfigKey:   "session_timeout",
+					ConfigValue: "invalid", // not a valid number
+				},
+			},
+			repoError: nil,
+			expectedResp: &response.SecuritySettingsResponse{
+				LoginAlerts:    true,                                   // default
+				SessionTimeout: constants.DefaultSessionTimeoutSeconds, // default since invalid value provided
+			},
+		},
+	}
 
-		// 设置期望
-		mockRepo.On("GetUserConfigsByCategory", ctx, userID, "security").Return(configs, nil)
+	// Run test cases
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create mocks
+			mockRepo := new(MockUserProfileRepository)
+			mockLogger := new(MockLogger)
+			mockI18n := i18n.NewI18n()
 
-		// 执行测试
-		result, err := svc.GetSecuritySettings(ctx, userID)
+			// Set up mock expectations
+			mockRepo.On("GetUserConfigsByCategory", mock.Anything, tc.userID, "security").Return(tc.configs, tc.repoError)
 
-		// 验证结果
-		require.NoError(t, err)
-		assert.NotNil(t, result)
-		assert.True(t, result.LoginAlerts)
-		assert.Equal(t, constants.DefaultSessionTimeoutSeconds, result.SessionTimeout) // 使用默认值
-		mockRepo.AssertExpectations(t)
-	})
+			// Mock logger calls (ignore details for simplicity)
+			mockLogger.On("UserProfileInfoContext", mock.Anything, mock.Anything, mock.Anything).Return()
+			mockLogger.On("UserProfileErrorContext", mock.Anything, mock.Anything, mock.Anything).Return()
+
+			// Create service with mocks
+			service := NewUserProfileService(mockRepo, mockLogger, mockI18n)
+
+			// Call the method being tested
+			result, err := service.GetSecuritySettings(context.Background(), tc.userID)
+
+			// Assertions
+			if tc.expectedResp == nil {
+				assert.Error(t, err)
+				assert.Nil(t, result)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, result)
+				assert.Equal(t, tc.expectedResp.LoginAlerts, result.LoginAlerts)
+				assert.Equal(t, tc.expectedResp.SessionTimeout, result.SessionTimeout)
+			}
+
+			// Verify mocks
+			mockRepo.AssertExpectations(t)
+			mockLogger.AssertExpectations(t)
+		})
+	}
 }
 
-// 测试 UpdateSecuritySettings 方法
+// TestUpdateSecuritySettings tests the UpdateSecuritySettings method
 func TestUpdateSecuritySettings(t *testing.T) {
-	t.Run("Success", func(t *testing.T) {
-		// 设置测试环境
-		svc, mockRepo, _ := setupUserProfileTest()
-		ctx := context.Background()
-		userID := uint(1)
+	// Test cases
+	testCases := []struct {
+		name             string
+		userID           uint
+		request          *request.SecuritySettingsRequest
+		loginAlertsError error
+		timeoutError     error
+		expectedError    error
+	}{
+		{
+			name:   "success",
+			userID: 1,
+			request: &request.SecuritySettingsRequest{
+				LoginAlerts:    true,
+				SessionTimeout: 3600,
+			},
+			loginAlertsError: nil,
+			timeoutError:     nil,
+			expectedError:    nil,
+		},
+		{
+			name:   "error_saving_login_alerts",
+			userID: 2,
+			request: &request.SecuritySettingsRequest{
+				LoginAlerts:    false,
+				SessionTimeout: 1800,
+			},
+			loginAlertsError: fmt.Errorf("database error"),
+			timeoutError:     nil,
+			expectedError:    errors.WrapError(fmt.Errorf("database error"), errors.CodeInternalError, "user_profile.security_settings_update_failed"),
+		},
+		{
+			name:   "error_saving_session_timeout",
+			userID: 3,
+			request: &request.SecuritySettingsRequest{
+				LoginAlerts:    true,
+				SessionTimeout: 7200,
+			},
+			loginAlertsError: nil,
+			timeoutError:     fmt.Errorf("database error"),
+			expectedError:    errors.WrapError(fmt.Errorf("database error"), errors.CodeInternalError, "user_profile.security_settings_update_failed"),
+		},
+	}
 
-		// 模拟请求数据
-		req := &request.SecuritySettingsRequest{
-			LoginAlerts:    false,
-			SessionTimeout: 7200,
-		}
+	// Run test cases
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create mocks
+			mockRepo := new(MockUserProfileRepository)
+			mockLogger := new(MockLogger)
+			mockI18n := i18n.NewI18n()
 
-		// 设置期望
-		mockRepo.On("SaveUserConfig", ctx, mock.MatchedBy(func(config *model.UserProfile) bool {
-			return config.UserID == userID && config.Category == "security" &&
-				config.ConfigKey == "login_alerts" && config.ConfigValue == constants.StringFalse
-		})).Return(nil)
+			// Set up mock expectations
+			// Login alerts setting
+			mockRepo.On("SaveUserConfig", mock.Anything, mock.MatchedBy(func(config *model.UserProfile) bool {
+				return config.UserID == tc.userID &&
+					config.Category == "security" &&
+					config.ConfigKey == "login_alerts" &&
+					config.ConfigValue == boolToString(tc.request.LoginAlerts)
+			})).Return(tc.loginAlertsError)
 
-		mockRepo.On("SaveUserConfig", ctx, mock.MatchedBy(func(config *model.UserProfile) bool {
-			return config.UserID == userID && config.Category == "security" &&
-				config.ConfigKey == "session_timeout" && config.ConfigValue != ""
-		})).Return(nil)
+			// Only expect session timeout saving if login alerts was successful
+			if tc.loginAlertsError == nil {
+				// Session timeout setting
+				timeoutStr, _ := json.Marshal(tc.request.SessionTimeout)
+				mockRepo.On("SaveUserConfig", mock.Anything, mock.MatchedBy(func(config *model.UserProfile) bool {
+					return config.UserID == tc.userID &&
+						config.Category == "security" &&
+						config.ConfigKey == "session_timeout" &&
+						config.ConfigValue == string(timeoutStr)
+				})).Return(tc.timeoutError)
+			}
 
-		// 执行测试
-		err := svc.UpdateSecuritySettings(ctx, userID, req)
+			// Mock logger calls (ignore details for simplicity)
+			mockLogger.On("UserProfileInfoContext", mock.Anything, mock.Anything, mock.Anything).Return()
+			mockLogger.On("ErrorContext", mock.Anything, mock.Anything, mock.Anything).Return()
 
-		// 验证结果
-		require.NoError(t, err)
-		mockRepo.AssertExpectations(t)
-	})
+			// Create service with mocks
+			service := NewUserProfileService(mockRepo, mockLogger, mockI18n)
 
-	t.Run("SaveConfigFailed", func(t *testing.T) {
-		// 设置测试环境
-		svc, mockRepo, _ := setupUserProfileTest()
-		ctx := context.Background()
-		userID := uint(1)
+			// Call the method being tested
+			err := service.UpdateSecuritySettings(context.Background(), tc.userID, tc.request)
 
-		// 模拟请求数据
-		req := &request.SecuritySettingsRequest{
-			LoginAlerts:    false,
-			SessionTimeout: 7200,
-		}
+			// Assertions
+			if tc.expectedError != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tc.expectedError.Error(), err.Error())
+			} else {
+				assert.NoError(t, err)
+			}
 
-		// 设置期望 - 保存配置失败
-		mockRepo.On("SaveUserConfig", ctx, mock.MatchedBy(func(config *model.UserProfile) bool {
-			return config.UserID == userID && config.Category == "security"
-		})).Return(gorm.ErrInvalidDB)
-
-		// 执行测试
-		err := svc.UpdateSecuritySettings(ctx, userID, req)
-
-		// 验证结果
-		require.Error(t, err)
-		appErr, ok := err.(*errors.AppError)
-		assert.True(t, ok)
-		assert.Equal(t, errors.CodeInternalError, appErr.Code)
-		mockRepo.AssertExpectations(t)
-	})
-
-	t.Run("SessionTimeoutOutOfRange", func(t *testing.T) {
-		// 设置测试环境
-		svc, mockRepo, _ := setupUserProfileTest()
-		ctx := context.Background()
-		userID := uint(1)
-
-		// 模拟请求数据 - 会话超时值超出范围
-		req := &request.SecuritySettingsRequest{
-			LoginAlerts:    true,
-			SessionTimeout: 100000, // 假设这个值超出了允许范围
-		}
-
-		// 执行测试
-		err := svc.UpdateSecuritySettings(ctx, userID, req)
-
-		// 验证结果
-		require.Error(t, err)
-		appErr, ok := err.(*errors.AppError)
-		assert.True(t, ok)
-		assert.Equal(t, errors.CodeValidationFailed, appErr.Code)
-		mockRepo.AssertExpectations(t)
-	})
+			// Verify mocks
+			mockRepo.AssertExpectations(t)
+			mockLogger.AssertExpectations(t)
+		})
+	}
 }

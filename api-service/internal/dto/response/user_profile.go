@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// UserProfileResponse 定义用户个人资料的响应结构
+// UserProfileResponse defines the response structure for user profile
 type UserProfileResponse struct {
 	ID          uint       `json:"id" example:"1"`
 	Username    string     `json:"username" example:"john_doe"`
@@ -21,11 +21,11 @@ type UserProfileResponse struct {
 	Language    string     `json:"language" example:"zh-CN"`
 	CreatedAt   time.Time  `json:"created_at" example:"2023-01-01T00:00:00Z"`
 	UpdatedAt   time.Time  `json:"updated_at" example:"2023-01-01T00:00:00Z"`
-	// 关联数据
+
 	Roles []RoleResponse `json:"roles,omitempty"`
 }
 
-// LoginHistoryItem 登录历史记录项
+// LoginHistoryItem represents a single login history record
 type LoginHistoryItem struct {
 	ID         uint       `json:"id"`
 	IPAddress  string     `json:"ip_address"`
@@ -38,12 +38,12 @@ type LoginHistoryItem struct {
 	Status     string     `json:"status"`
 }
 
-// LoginHistoryResponse 登录历史记录列表响应
+// LoginHistoryResponse represents the response structure for login history
 type LoginHistoryResponse struct {
 	Items []LoginHistoryItem `json:"items"`
 }
 
-// NotificationSettingsResponse 通知设置响应
+// NotificationSettingsResponse represents the response structure for notification settings
 type NotificationSettingsResponse struct {
 	EmailNotifications bool `json:"email_notifications"`
 	SmsNotifications   bool `json:"sms_notifications"`
@@ -51,7 +51,7 @@ type NotificationSettingsResponse struct {
 	MarketingEmails    bool `json:"marketing_emails"`
 }
 
-// SecuritySettingsResponse 安全设置响应
+// SecuritySettingsResponse represents the response structure for security settings
 type SecuritySettingsResponse struct {
 	LoginAlerts    bool `json:"login_alerts"`
 	SessionTimeout int  `json:"session_timeout"`

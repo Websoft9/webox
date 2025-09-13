@@ -11,14 +11,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// UserProfileController 处理用户个人资料相关的请求
+// UserProfileController handles requests related to user profile
 type UserProfileController struct {
 	profileService service.UserProfileService
 	logger         logger.Logger
 	i18n           *i18n.I18n
 }
 
-// NewUserProfileController 创建用户个人资料控制器
+// NewUserProfileController creates a new user profile controller
 func NewUserProfileController(
 	profileService service.UserProfileService,
 	logger logger.Logger,
@@ -31,7 +31,7 @@ func NewUserProfileController(
 	}
 }
 
-// GetProfile 处理获取用户个人资料的请求
+// GetProfile handles requests to get user profile information
 // @Summary Get user profile
 // @Description Get user profile information by user ID
 // @Tags Profile
@@ -45,7 +45,7 @@ func NewUserProfileController(
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/profile [get]
 func (c *UserProfileController) GetProfile(ctx *gin.Context) {
-	// 解析请求参数
+	// Parse request parameters
 	currentUserID, exists := ctx.Get("user_id")
 	if !exists || currentUserID == nil {
 		c.logger.WarnContext(ctx, "Missing user ID in context")
@@ -62,7 +62,7 @@ func (c *UserProfileController) GetProfile(ctx *gin.Context) {
 
 	c.logger.InfoContext(ctx, "Handling get profile request", logger.Uint("userID", userID))
 
-	// 调用服务层获取用户资料
+	// Call service layer to get user profile
 	profile, err := c.profileService.GetUserProfile(ctx, userID)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Failed to get user profile", logger.ErrorField(err))
@@ -74,7 +74,7 @@ func (c *UserProfileController) GetProfile(ctx *gin.Context) {
 	pkg_response.Success(ctx, c.i18n.T(ctx, "user_profile.get_success"), profile)
 }
 
-// UpdateProfile 处理更新用户个人资料的请求
+// UpdateProfile handles requests to update user profile information
 // @Summary Update user profile
 // @Description Update current user's profile information
 // @Tags Profile
@@ -89,7 +89,7 @@ func (c *UserProfileController) GetProfile(ctx *gin.Context) {
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/profile [put]
 func (c *UserProfileController) UpdateProfile(ctx *gin.Context) {
-	// 解析请求参数
+	// Parse request parameters
 	var req request.UserProfileUpdateRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		c.logger.WarnContext(ctx, "Invalid request parameters", logger.ErrorField(err))
@@ -97,7 +97,7 @@ func (c *UserProfileController) UpdateProfile(ctx *gin.Context) {
 		return
 	}
 
-	// 获取当前登录的用户ID
+	// Get current logged in user ID
 	currentUserID, exists := ctx.Get("user_id")
 	if !exists || currentUserID == nil {
 		c.logger.WarnContext(ctx, "Missing user ID in context")
@@ -114,7 +114,7 @@ func (c *UserProfileController) UpdateProfile(ctx *gin.Context) {
 
 	c.logger.InfoContext(ctx, "Handling update profile request", logger.Uint("userID", userID))
 
-	// 调用服务层更新用户资料
+	// Call service layer to update user profile
 	profile, err := c.profileService.UpdateUserProfile(ctx, userID, &req)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Failed to update user profile", logger.ErrorField(err))
@@ -126,7 +126,7 @@ func (c *UserProfileController) UpdateProfile(ctx *gin.Context) {
 	pkg_response.Success(ctx, c.i18n.T(ctx, "user_profile.update_success"), profile)
 }
 
-// ChangePassword 处理修改用户个人密码的请求
+// ChangePassword handles requests to change user password
 // @Summary Change user password
 // @Description Change user's password by user ID
 // @Tags Profile
@@ -140,7 +140,7 @@ func (c *UserProfileController) UpdateProfile(ctx *gin.Context) {
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/profile/password [put]
 func (c *UserProfileController) ChangePassword(ctx *gin.Context) {
-	// 解析请求参数
+	// Parse request parameters
 	var req request.ProfileChangePasswordRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		c.logger.WarnContext(ctx, "Invalid request parameters", logger.ErrorField(err))
@@ -148,7 +148,7 @@ func (c *UserProfileController) ChangePassword(ctx *gin.Context) {
 		return
 	}
 
-	// 获取当前登录的用户ID
+	// Get current logged in user ID
 	currentUserID, exists := ctx.Get("user_id")
 	if !exists || currentUserID == nil {
 		c.logger.WarnContext(ctx, "Missing user ID in context")
@@ -165,7 +165,7 @@ func (c *UserProfileController) ChangePassword(ctx *gin.Context) {
 
 	c.logger.InfoContext(ctx, "Handling update profile request", logger.Uint("userID", userID))
 
-	// 调用服务层修改密码
+	// Call service layer to change password
 	err := c.profileService.ChangeProfilePassword(ctx, userID, &req)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Failed to change user password", logger.ErrorField(err))
@@ -177,22 +177,22 @@ func (c *UserProfileController) ChangePassword(ctx *gin.Context) {
 	pkg_response.Success(ctx, c.i18n.T(ctx, "user_profile.password_change_success"), nil)
 }
 
-// GetLoginHistories 获取登录历史记录
-// @Summary 获取登录历史记录
-// @Description 获取当前用户的登录历史记录
-// @Tags 用户配置文件
+// GetLoginHistories gets login history records
+// @Summary Get login history records
+// @Description Get login history records for the current user
+// @Tags Profile
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param page query int false "页码" default(1)
-// @Param page_size query int false "每页数量" default(20)
+// @Param page query int false "Page number" default(1)
+// @Param page_size query int false "Items per page" default(20)
 // @Success 200 {object} response.APIResponse{data=response.LoginHistoryResponse}
 // @Failure 400 {object} response.APIResponse
 // @Failure 401 {object} response.APIResponse
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/profile/login-history [get]
 func (c *UserProfileController) GetLoginHistories(ctx *gin.Context) {
-	// 获取当前用户ID
+	// Get current user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
 		c.logger.WarnContext(ctx, "User ID not found in context")
@@ -207,7 +207,7 @@ func (c *UserProfileController) GetLoginHistories(ctx *gin.Context) {
 		return
 	}
 
-	// 绑定请求参数
+	// Bind request parameters
 	var req request.LoginHistoryRequest
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		c.logger.WarnContext(ctx, "Login history request parameter binding failed", logger.ErrorField(err))
@@ -215,7 +215,7 @@ func (c *UserProfileController) GetLoginHistories(ctx *gin.Context) {
 		return
 	}
 
-	// 获取登录历史
+	// Get login history
 	result, err := c.profileService.GetLoginHistories(ctx, currentUserID, &req)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Failed to get login histories", logger.Uint("user_id", currentUserID), logger.ErrorField(err))
@@ -227,10 +227,10 @@ func (c *UserProfileController) GetLoginHistories(ctx *gin.Context) {
 	pkg_response.Success(ctx, c.i18n.T(ctx, "user_profile.login_history_get_success"), result)
 }
 
-// GetNotificationSettings 获取通知设置
-// @Summary 获取通知设置
-// @Description 获取当前用户的通知设置
-// @Tags 个人中心
+// GetNotificationSettings gets notification settings
+// @Summary Get notification settings
+// @Description Get notification settings for the current user
+// @Tags Profile
 // @Accept json
 // @Produce json
 // @Security BearerAuth
@@ -239,7 +239,7 @@ func (c *UserProfileController) GetLoginHistories(ctx *gin.Context) {
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/profile/notification-settings [get]
 func (c *UserProfileController) GetNotificationSettings(ctx *gin.Context) {
-	// 获取当前用户ID
+	// Get current user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
 		c.logger.WarnContext(ctx, "User ID not found in context")
@@ -265,21 +265,21 @@ func (c *UserProfileController) GetNotificationSettings(ctx *gin.Context) {
 	pkg_response.Success(ctx, c.i18n.T(ctx, "user_profile.notification_settings_get_success"), settings)
 }
 
-// UpdateNotificationSettings 更新通知设置
-// @Summary 更新通知设置
-// @Description 更新当前用户的通知设置
-// @Tags 个人中心
+// UpdateNotificationSettings updates notification settings
+// @Summary Update notification settings
+// @Description Update notification settings for the current user
+// @Tags Profile
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param request body request.NotificationSettingsRequest true "通知设置请求"
+// @Param request body request.NotificationSettingsRequest true "Notification settings request"
 // @Success 200 {object} response.APIResponse
 // @Failure 400 {object} response.APIResponse
 // @Failure 401 {object} response.APIResponse
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/profile/notification-settings [put]
 func (c *UserProfileController) UpdateNotificationSettings(ctx *gin.Context) {
-	// 解析请求参数
+	// Parse request parameters
 	var req request.NotificationSettingsRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		c.logger.WarnContext(ctx, "Invalid request parameters", logger.ErrorField(err))
@@ -287,7 +287,7 @@ func (c *UserProfileController) UpdateNotificationSettings(ctx *gin.Context) {
 		return
 	}
 
-	// 获取当前用户ID
+	// Get current user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
 		c.logger.WarnContext(ctx, "User ID not found in context")
@@ -313,10 +313,10 @@ func (c *UserProfileController) UpdateNotificationSettings(ctx *gin.Context) {
 	pkg_response.Success(ctx, c.i18n.T(ctx, "user_profile.notification_settings_update_success"), nil)
 }
 
-// GetSecuritySettings 获取安全设置
-// @Summary 获取安全设置
-// @Description 获取当前用户的安全设置
-// @Tags 个人中心
+// GetSecuritySettings gets security settings
+// @Summary Get security settings
+// @Description Get security settings for the current user
+// @Tags Profile
 // @Accept json
 // @Produce json
 // @Security BearerAuth
@@ -325,7 +325,7 @@ func (c *UserProfileController) UpdateNotificationSettings(ctx *gin.Context) {
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/profile/security-settings [get]
 func (c *UserProfileController) GetSecuritySettings(ctx *gin.Context) {
-	// 获取当前用户ID
+	// Get current user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
 		c.logger.WarnContext(ctx, "User ID not found in context")
@@ -351,21 +351,21 @@ func (c *UserProfileController) GetSecuritySettings(ctx *gin.Context) {
 	pkg_response.Success(ctx, c.i18n.T(ctx, "user_profile.security_settings_get_success"), settings)
 }
 
-// UpdateSecuritySettings 更新安全设置
-// @Summary 更新安全设置
-// @Description 更新当前用户的安全设置
-// @Tags 个人中心
+// UpdateSecuritySettings updates security settings
+// @Summary Update security settings
+// @Description Update security settings for the current user
+// @Tags Profile
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param request body request.SecuritySettingsRequest true "安全设置请求"
+// @Param request body request.SecuritySettingsRequest true "Security settings request"
 // @Success 200 {object} response.APIResponse
 // @Failure 400 {object} response.APIResponse
 // @Failure 401 {object} response.APIResponse
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/profile/security-settings [put]
 func (c *UserProfileController) UpdateSecuritySettings(ctx *gin.Context) {
-	// 解析请求参数
+	// Parse request parameters
 	var req request.SecuritySettingsRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		c.logger.WarnContext(ctx, "Invalid request parameters", logger.ErrorField(err))
@@ -373,7 +373,7 @@ func (c *UserProfileController) UpdateSecuritySettings(ctx *gin.Context) {
 		return
 	}
 
-	// 获取当前用户ID
+	// Get current user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
 		c.logger.WarnContext(ctx, "User ID not found in context")

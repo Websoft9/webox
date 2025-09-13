@@ -5,29 +5,29 @@ import (
 	"context"
 )
 
-// UserProfileRepository 用户资料仓储接口
+// UserProfileRepository is the interface for user profile repository
 type UserProfileRepository interface {
-	// GetUserProfileByID 根据用户ID获取用户资料
+	// GetUserProfileByID retrieves user profile by user ID
 	GetUserProfileByID(ctx context.Context, userID uint) (*model.User, error)
 
-	// LoadUserRoles 加载用户的角色信息
+	// LoadUserRoles loads the roles associated with the user
 	LoadUserRoles(ctx context.Context, user *model.User) error
 
-	// UpdateUserProfile 更新用户资料
+	// UpdateUserProfile update profile information
 	UpdateUserProfile(ctx context.Context, userID uint, updateData map[string]interface{}) error
 
-	// UpdateUserPassword 更新用户密码
+	// UpdateUserPassword updates the user's password
 	UpdateUserPassword(ctx context.Context, userID uint, passwordHash string) error
 
-	// GetLoginHistories 获取用户登录历史记录
+	// GetLoginHistories gets the login history for a user with pagination
 	GetLoginHistories(ctx context.Context, userID uint, page, pageSize int) ([]model.UserLoginHistory, int64, error)
 
-	// 获取用户配置
+	// get user configuration by user ID, category, and config key
 	GetUserConfig(ctx context.Context, userID uint, category, configKey string) (*model.UserProfile, error)
 
-	// 获取用户分类下的所有配置
+	// get all user configurations by user ID and category
 	GetUserConfigsByCategory(ctx context.Context, userID uint, category string) ([]*model.UserProfile, error)
 
-	// 保存用户配置（不存在则创建，存在则更新）
+	// save or update user configuration
 	SaveUserConfig(ctx context.Context, userProfile *model.UserProfile) error
 }

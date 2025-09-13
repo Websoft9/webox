@@ -39,6 +39,8 @@ user_profile:
   security_settings_get_success: "获取安全设置成功"
   security_settings_update_success: "更新安全设置成功"
   password_mismatch: "两次输入的密码不一致"
+  password_verification_failed: "旧密码验证失败"
+  password_update_failed: "密码更新失败"
 
 # 角色模块消息
 role:

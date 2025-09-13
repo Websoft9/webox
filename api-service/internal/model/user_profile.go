@@ -1,12 +1,10 @@
-// /opt/webox/api-service/internal/model/user_login_history.go
-
 package model
 
 import (
 	"time"
 )
 
-// UserLoginHistory 用户登录历史记录模型
+// UserLoginHistory User login history model
 type UserLoginHistory struct {
 	ID         uint       `json:"id" gorm:"primarykey"`
 	UserID     uint       `json:"user_id" gorm:"column:user_id;not null;index"`
@@ -19,11 +17,11 @@ type UserLoginHistory struct {
 	LogoutTime *time.Time `json:"logout_time" gorm:"column:logout_time"`
 	CreatedAt  time.Time  `json:"created_at" gorm:"column:created_at;autoCreateTime"`
 
-	// 关联关系
+	// Association
 	User *User `json:"user,omitempty" gorm:"foreignKey:UserID"`
 }
 
-// UserProfile 用户个人中心配置表
+// UserProfile User profile settings table
 type UserProfile struct {
 	ID           uint      `gorm:"primaryKey;column:id" json:"id"`
 	UserID       uint      `gorm:"column:user_id;not null" json:"user_id"`
@@ -39,12 +37,12 @@ type UserProfile struct {
 	UpdatedAt    time.Time `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 }
 
-// TableName 指定表名
+// TableName specifies the table name
 func (UserProfile) TableName() string {
 	return "user_profile"
 }
 
-// TableName 指定表名
+// TableName specifies the table name
 func (UserLoginHistory) TableName() string {
 	return "user_login_history"
 }

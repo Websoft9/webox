@@ -16,14 +16,14 @@ import (
 	"gorm.io/gorm"
 )
 
-// userProfileService 是用户个人资料服务的实现
+// userProfileService is the implementation of the user profile service
 type userProfileService struct {
 	profileRepo repository.UserProfileRepository
 	logger      logger.Logger
 	i18n        *i18n.I18n
 }
 
-// NewUserProfileService 创建用户个人资料服务的实例
+// NewUserProfileService creates an instance of the user profile service
 func NewUserProfileService(
 	profileRepo repository.UserProfileRepository,
 	logger logger.Logger,
@@ -36,12 +36,12 @@ func NewUserProfileService(
 	}
 }
 
-// GetUserProfile 获取指定用户的个人资料
+// GetUserProfile retrieves the profile of the specified user
 func (s *userProfileService) GetUserProfile(ctx context.Context, userID uint) (*response.UserProfileResponse, error) {
 	s.logger.InfoContext(ctx, "Getting user profile data",
 		logger.Uint("userID", userID))
 
-	// 从仓储层获取用户信息
+	// Fetch user information from the repository layer
 	user, err := s.profileRepo.GetUserProfileByID(ctx, userID)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to get user profile from repository",
@@ -50,7 +50,7 @@ func (s *userProfileService) GetUserProfile(ctx context.Context, userID uint) (*
 		return nil, errors.NewAppError(errors.CodeRecordNotFound, s.i18n.T(ctx, "user_profile.not_found"))
 	}
 
-	// 构建响应DTO
+	// Build response DTO
 	profileResp := &response.UserProfileResponse{
 		ID:          user.ID,
 		Username:    user.Username,
@@ -69,15 +69,15 @@ func (s *userProfileService) GetUserProfile(ctx context.Context, userID uint) (*
 		UpdatedAt:   user.UpdatedAt,
 	}
 
-	// 加载用户角色信息
+	// Load user role information
 	err = s.profileRepo.LoadUserRoles(ctx, user)
 	if err != nil {
 		s.logger.WarnContext(ctx, "Failed to load user roles",
 			logger.Uint("userID", userID),
 			logger.ErrorField(err))
-		// 角色加载失败不影响主体数据返回
+		// Role loading failure does not affect returning main profile data
 	} else {
-		// 添加角色信息
+		// Add role information
 		for i := range user.Roles {
 			profileResp.Roles = append(profileResp.Roles, response.RoleResponse{
 				ID:   user.Roles[i].ID,
@@ -91,11 +91,11 @@ func (s *userProfileService) GetUserProfile(ctx context.Context, userID uint) (*
 	return profileResp, nil
 }
 
-// UpdateUserProfile 更新用户个人资料
+// UpdateUserProfile updates the user's profile
 func (s *userProfileService) UpdateUserProfile(ctx context.Context, userID uint, req *request.UserProfileUpdateRequest) (*response.UserProfileResponse, error) {
 	s.logger.InfoContext(ctx, "Updating user profile", logger.Uint("userID", userID))
 
-	// 构建更新数据
+	// Build update data
 	updateData := make(map[string]interface{})
 
 	if req.Nickname != nil {
@@ -120,13 +120,13 @@ func (s *userProfileService) UpdateUserProfile(ctx context.Context, userID uint,
 		updateData["language"] = *req.Language
 	}
 
-	// 如果没有需要更新的字段，直接返回当前资料
+	// If there are no fields to update, return the current profile directly
 	if len(updateData) == 0 {
 		s.logger.WarnContext(ctx, "No fields to update for user profile", logger.Uint("userID", userID))
 		return s.GetUserProfile(ctx, userID)
 	}
 
-	// 更新资料
+	// Update profile
 	err := s.profileRepo.UpdateUserProfile(ctx, userID, updateData)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to update user profile",
@@ -140,15 +140,15 @@ func (s *userProfileService) UpdateUserProfile(ctx context.Context, userID uint,
 		return nil, errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "user_profile.update_failed"))
 	}
 
-	// 返回更新后的资料
+	// Return the updated profile
 	return s.GetUserProfile(ctx, userID)
 }
 
-// ChangeProfilePassword 修改用户个人密码
+// ChangeProfilePassword changes the user's personal password
 func (s *userProfileService) ChangeProfilePassword(ctx context.Context, userID uint, req *request.ProfileChangePasswordRequest) error {
 	s.logger.InfoContext(ctx, "Changing user profile password", logger.Uint("userID", userID))
 
-	// 1. 获取用户信息
+	// 1. Retrieve user information
 	user, err := s.profileRepo.GetUserProfileByID(ctx, userID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -157,22 +157,22 @@ func (s *userProfileService) ChangeProfilePassword(ctx context.Context, userID u
 		return errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "user_profile.get_failed"))
 	}
 
-	// 2. 验证旧密码
+	// 2. Verify old password
 	if user.PasswordHash != utils.SHA256Hash(req.OldPassword) {
 		s.logger.WarnContext(ctx, "Old password verification failed", logger.Uint("userID", userID))
 		return errors.NewAppError(errors.CodeInvalidCredentials, s.i18n.T(ctx, "user_profile.password_verification_failed"))
 	}
 
-	// 3. 确认新密码与确认密码一致
+	// 3. Confirm new password and confirmation match
 	if req.NewPassword != req.ConfirmPassword {
 		s.logger.WarnContext(ctx, "Password confirmation mismatch", logger.Uint("userID", userID))
 		return errors.NewAppError(errors.CodeValidationFailed, s.i18n.T(ctx, "user_profile.password_mismatch"))
 	}
 
-	// 4. 加密新密码
+	// 4. Hash the new password
 	hashedPassword := utils.SHA256Hash(req.NewPassword)
 
-	// 5. 更新密码 - 使用专门的密码更新方法
+	// 5. Update the password - use a dedicated password update method
 	err = s.profileRepo.UpdateUserPassword(ctx, userID, hashedPassword)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to update password",
@@ -185,31 +185,31 @@ func (s *userProfileService) ChangeProfilePassword(ctx context.Context, userID u
 	return nil
 }
 
-// GetLoginHistories 获取用户登录历史
+// GetLoginHistories retrieves the user's login history
 func (s *userProfileService) GetLoginHistories(ctx context.Context, userID uint, req *request.LoginHistoryRequest) (*response.LoginHistoryResponse, error) {
-	// 设置默认值
+	// Set default values
 	page := req.Page
 	if page <= 0 {
-		page = 1 // 默认第1页
+		page = 1 // default to page 1
 	}
 
 	pageSize := req.PageSize
 	if pageSize <= 0 {
-		pageSize = 20 // 默认每页20条
+		pageSize = 20 // default 20 items per page
 	}
 
-	// 获取数据
+	// Fetch data
 	records, _, err := s.profileRepo.GetLoginHistories(ctx, userID, page, pageSize)
 	if err != nil {
 		return nil, errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "user_profile.login_history_get_failed"))
 	}
 
-	// 构建响应
+	// Build response
 	result := &response.LoginHistoryResponse{
 		Items: make([]response.LoginHistoryItem, 0, len(records)),
 	}
 
-	// 转换记录格式
+	// Convert record format
 	for i := range records {
 		item := response.LoginHistoryItem{
 			ID:         records[i].ID,
@@ -228,7 +228,7 @@ func (s *userProfileService) GetLoginHistories(ctx context.Context, userID uint,
 	return result, nil
 }
 
-// GetNotificationSettings 获取通知设置
+// GetNotificationSettings retrieves notification settings
 func (s *userProfileService) GetNotificationSettings(ctx context.Context, userID uint) (*response.NotificationSettingsResponse, error) {
 	s.logger.InfoContext(ctx, "Getting notification settings", logger.Uint("userID", userID))
 
@@ -240,15 +240,15 @@ func (s *userProfileService) GetNotificationSettings(ctx context.Context, userID
 		return nil, errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "user_profile.notification_settings_get_failed"))
 	}
 
-	// 设置默认值
+	// Set default values
 	settings := &response.NotificationSettingsResponse{
-		EmailNotifications: true,  // 默认开启邮件通知
-		SmsNotifications:   false, // 默认关闭短信通知
-		PushNotifications:  true,  // 默认开启推送通知
-		MarketingEmails:    false, // 默认关闭营销邮件
+		EmailNotifications: true,  // default enable email notifications
+		SmsNotifications:   false, // default disable SMS notifications
+		PushNotifications:  true,  // default enable push notifications
+		MarketingEmails:    false, // default disable marketing emails
 	}
 
-	// 如果找到配置，则使用配置值
+	// If configurations are found, use their values
 	for _, config := range configs {
 		switch config.ConfigKey {
 		case "email_notifications":
@@ -266,11 +266,11 @@ func (s *userProfileService) GetNotificationSettings(ctx context.Context, userID
 	return settings, nil
 }
 
-// UpdateNotificationSettings 更新通知设置
+// UpdateNotificationSettings updates notification settings
 func (s *userProfileService) UpdateNotificationSettings(ctx context.Context, userID uint, req *request.NotificationSettingsRequest) error {
 	s.logger.InfoContext(ctx, "Updating notification settings", logger.Uint("userID", userID))
 
-	// 更新邮件通知设置
+	// Update email notification setting
 	if err := s.saveUserConfig(ctx, userID, "notification", "email_notifications", boolToString(req.EmailNotifications), "Email notifications setting"); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to save email notification setting",
 			logger.Uint("userID", userID),
@@ -279,7 +279,7 @@ func (s *userProfileService) UpdateNotificationSettings(ctx context.Context, use
 		return errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "user_profile.notification_settings_update_failed"))
 	}
 
-	// 更新短信通知设置
+	// Update SMS notification setting
 	if err := s.saveUserConfig(ctx, userID, "notification", "sms_notifications", boolToString(req.SmsNotifications), "SMS notifications setting"); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to save SMS notification setting",
 			logger.Uint("userID", userID),
@@ -288,7 +288,7 @@ func (s *userProfileService) UpdateNotificationSettings(ctx context.Context, use
 		return errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "user_profile.notification_settings_update_failed"))
 	}
 
-	// 更新推送通知设置
+	// Update push notification setting
 	if err := s.saveUserConfig(ctx, userID, "notification", "push_notifications", boolToString(req.PushNotifications), "Push notifications setting"); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to save push notification setting",
 			logger.Uint("userID", userID),
@@ -297,7 +297,7 @@ func (s *userProfileService) UpdateNotificationSettings(ctx context.Context, use
 		return errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "user_profile.notification_settings_update_failed"))
 	}
 
-	// 更新营销邮件设置
+	// Update marketing emails setting
 	if err := s.saveUserConfig(ctx, userID, "notification", "marketing_emails", boolToString(req.MarketingEmails), "Marketing emails setting"); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to save marketing emails setting",
 			logger.Uint("userID", userID),
@@ -310,7 +310,7 @@ func (s *userProfileService) UpdateNotificationSettings(ctx context.Context, use
 	return nil
 }
 
-// GetSecuritySettings 获取安全设置
+// GetSecuritySettings retrieves security settings
 func (s *userProfileService) GetSecuritySettings(ctx context.Context, userID uint) (*response.SecuritySettingsResponse, error) {
 	s.logger.InfoContext(ctx, "Getting security settings", logger.Uint("userID", userID))
 
@@ -322,13 +322,13 @@ func (s *userProfileService) GetSecuritySettings(ctx context.Context, userID uin
 		return nil, errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "user_profile.security_settings_get_failed"))
 	}
 
-	// 设置默认值
+	// Set default values
 	settings := &response.SecuritySettingsResponse{
-		LoginAlerts:    true,                                   // 默认开启登录提醒
-		SessionTimeout: constants.DefaultSessionTimeoutSeconds, // 默认会话超时时间30分钟
+		LoginAlerts:    true,                                   // default enable login alerts
+		SessionTimeout: constants.DefaultSessionTimeoutSeconds, // default session timeout 30 minutes
 	}
 
-	// 如果找到配置，则使用配置值
+	// If configurations are found, use their values
 	for _, config := range configs {
 		switch config.ConfigKey {
 		case "login_alerts":
@@ -345,14 +345,14 @@ func (s *userProfileService) GetSecuritySettings(ctx context.Context, userID uin
 	return settings, nil
 }
 
-// UpdateSecuritySettings 更新安全设置
+// UpdateSecuritySettings updates security settings
 func (s *userProfileService) UpdateSecuritySettings(ctx context.Context, userID uint, req *request.SecuritySettingsRequest) error {
 	s.logger.InfoContext(ctx, "Updating security settings",
 		logger.Uint("userID", userID),
 		logger.Bool("loginAlerts", req.LoginAlerts),
 		logger.Int("sessionTimeout", req.SessionTimeout))
 
-	// 更新登录提醒设置
+	// Update login alerts setting
 	if err := s.saveUserConfig(ctx, userID, "security", "login_alerts", boolToString(req.LoginAlerts), "Login alerts setting"); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to save login alerts setting",
 			logger.Uint("userID", userID),
@@ -361,7 +361,7 @@ func (s *userProfileService) UpdateSecuritySettings(ctx context.Context, userID 
 		return errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "user_profile.security_settings_update_failed"))
 	}
 
-	// 更新会话超时设置
+	// Update session timeout setting
 	timeoutStr, _ := json.Marshal(req.SessionTimeout)
 	if err := s.saveUserConfig(ctx, userID, "security", "session_timeout", string(timeoutStr), "Session timeout setting"); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to save session timeout setting",
@@ -375,7 +375,7 @@ func (s *userProfileService) UpdateSecuritySettings(ctx context.Context, userID 
 	return nil
 }
 
-// 保存用户配置的辅助方法
+// saveUserConfig is a helper method to persist user configuration
 func (s *userProfileService) saveUserConfig(ctx context.Context, userID uint, category, configKey, configValue, description string) error {
 	config := &model.UserProfile{
 		UserID:      userID,
@@ -392,7 +392,7 @@ func (s *userProfileService) saveUserConfig(ctx context.Context, userID uint, ca
 	return nil
 }
 
-// 将bool转换为字符串的辅助方法
+// boolToString converts a bool to its string representation
 func boolToString(b bool) string {
 	if b {
 		return constants.StringTrue
