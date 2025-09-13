@@ -19,15 +19,16 @@ type EmailService interface {
 	// SendVerificationEmail sends an email verification message to the user
 	// Parameters:
 	//   - ctx: context for request tracing and cancellation
+	//   - expires: Expiry time in minutes
 	//   - to: recipient email address
 	//   - token: verification token to be included in the email
 	//   - baseURL: base URL for constructing verification links
 	//   - lang: language code for internationalization
-	SendVerificationEmail(ctx context.Context, to, token, baseURL, lang string) error
+	SendVerificationEmail(ctx context.Context, expires int, to, token, baseURL, lang string) error
 
 	// SendPasswordResetEmail sends a password reset email to the user
 	// Parameters are similar to SendVerificationEmail but for password reset functionality
-	SendPasswordResetEmail(ctx context.Context, to, token, baseURL, lang string) error
+	SendPasswordResetEmail(ctx context.Context, expires int, to, token, baseURL, lang string) error
 
 	// SendEmail sends a generic email with custom subject and body
 	// This is the core method used by other specialized email methods
@@ -39,6 +40,7 @@ type EmailService interface {
 type EmailTemplateData struct {
 	VerifyURL string // URL for email verification
 	ResetURL  string // URL for password reset
+	Expires   int    // Expiry time in minutes
 }
 
 // emailService implements the EmailService interface
@@ -63,7 +65,7 @@ func NewEmailService(cfg *config.Config, logger logger.Logger, i18nInstance *i18
 // SendVerificationEmail sends an email verification message to the specified recipient
 // It constructs a verification URL using the provided token and base URL,
 // then renders the email template with internationalized content
-func (s *emailService) SendVerificationEmail(ctx context.Context, to, token, baseURL, lang string) error {
+func (s *emailService) SendVerificationEmail(ctx context.Context, expires int, to, token, baseURL, lang string) error {
 	// Construct the verification URL with the token parameter for API endpoint
 	verifyURL := fmt.Sprintf("%s/api/v1/auth/verify-email?token=%s", baseURL, token)
 
@@ -71,11 +73,10 @@ func (s *emailService) SendVerificationEmail(ctx context.Context, to, token, bas
 	subject := i18n.T("email.verification_subject", lang)
 	templateContent := i18n.T("email.verification_template", lang)
 
-	logger.Info(templateContent)
-
 	// Prepare template data with the verification URL
 	templateData := EmailTemplateData{
 		VerifyURL: verifyURL,
+		Expires:   expires,
 	}
 
 	// Render the email template with the provided data
@@ -88,7 +89,7 @@ func (s *emailService) SendVerificationEmail(ctx context.Context, to, token, bas
 // SendPasswordResetEmail sends a password reset email to the specified recipient
 // It constructs a reset URL using the provided token and base URL,
 // then renders the email template with internationalized content
-func (s *emailService) SendPasswordResetEmail(ctx context.Context, to, token, baseURL, lang string) error {
+func (s *emailService) SendPasswordResetEmail(ctx context.Context, expires int, to, token, baseURL, lang string) error {
 	// Construct the password reset URL with the token parameter for API endpoint
 	resetURL := fmt.Sprintf("%s/api/v1/auth/reset-password?token=%s", baseURL, token)
 
@@ -99,6 +100,7 @@ func (s *emailService) SendPasswordResetEmail(ctx context.Context, to, token, ba
 	// Prepare template data with the reset URL
 	templateData := EmailTemplateData{
 		ResetURL: resetURL,
+		Expires:  expires,
 	}
 
 	// Render the email template with the provided data
@@ -140,6 +142,9 @@ func (s *emailService) getFieldValue(data EmailTemplateData, fieldName string) s
 	v := reflect.ValueOf(data)
 	t := reflect.TypeOf(data)
 
+	// Clean up field name by trimming spaces and other whitespace characters
+	fieldName = strings.TrimSpace(fieldName)
+
 	// Iterate through struct fields to find matching field name
 	for i := 0; i < v.NumField(); i++ {
 		field := t.Field(i)
@@ -148,9 +153,21 @@ func (s *emailService) getFieldValue(data EmailTemplateData, fieldName string) s
 		if strings.EqualFold(field.Name, fieldName) {
 			fieldValue := v.Field(i)
 
-			// Convert field value to string
-			if fieldValue.Kind() == reflect.String {
+			// Convert field value to string based on its type
+			switch fieldValue.Kind() {
+			case reflect.String:
 				return fieldValue.String()
+			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+				return fmt.Sprintf("%d", fieldValue.Int())
+			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+				return fmt.Sprintf("%d", fieldValue.Uint())
+			case reflect.Float32, reflect.Float64:
+				return fmt.Sprintf("%g", fieldValue.Float())
+			case reflect.Bool:
+				return fmt.Sprintf("%t", fieldValue.Bool())
+			default:
+				// For other types, use the default string representation
+				return fmt.Sprintf("%v", fieldValue.Interface())
 			}
 		}
 	}

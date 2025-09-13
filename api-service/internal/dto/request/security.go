@@ -1,7 +1,5 @@
 package request
 
-import "time"
-
 // CreateRoleRequest creates role request
 type CreateRoleRequest struct {
 	Name          string `json:"name" validate:"required,min=2,max=64"`
@@ -73,27 +71,6 @@ type PermissionTreeRequest struct {
 	Status *int   `form:"status" validate:"omitempty,oneof=-1 0 1"`
 }
 
-// CreateAPITokenRequest creates API token request
-type CreateAPITokenRequest struct {
-	Name        string     `json:"name" validate:"required,min=2,max=64"`
-	Description string     `json:"description" validate:"max=500"`
-	Scopes      []string   `json:"scopes" validate:"required,min=1"`
-	ExpiresAt   *time.Time `json:"expires_at"`
-}
-
-// UpdateAPITokenRequest updates API token request
-type UpdateAPITokenRequest struct {
-	Name        string     `json:"name" validate:"omitempty,min=2,max=64"`
-	Description string     `json:"description" validate:"max=500"`
-	Scopes      []string   `json:"scopes"`
-	ExpiresAt   *time.Time `json:"expires_at"`
-}
-
-// BatchRevokeAPITokensRequest batch revoke API tokens request
-type BatchRevokeAPITokensRequest struct {
-	IDs []uint `json:"ids" validate:"required,min=1"`
-}
-
 // UpdateAuthConfigRequest updates authentication config request
 type UpdateAuthConfigRequest struct {
 	APIAuth       *APIAuthRequest       `json:"api_auth,omitempty"`
@@ -103,28 +80,41 @@ type UpdateAuthConfigRequest struct {
 
 // APIAuthRequest API authentication request
 type APIAuthRequest struct {
-	TokenAuthEnabled *bool             `json:"token_auth_enabled,omitempty"`
-	OAuth2Enabled    *bool             `json:"oauth2_enabled,omitempty"`
-	JWTConfig        *JWTConfigRequest `json:"jwt_config,omitempty"`
+	OAuth2    OAuth2Request     `json:"oauth2,omitempty"`
+	TokenAuth *TokenAuthRequest `json:"token_auth,omitempty"`
 }
 
-// JWTConfigRequest JWT configuration request
-type JWTConfigRequest struct {
+// TokenAuthRequest Token configuration request
+type TokenAuthRequest struct {
 	Algorithm        *string `json:"algorithm,omitempty"`
+	Secret           *string `json:"secret,omitempty"`
 	ExpiresIn        *int    `json:"expires_in,omitempty"`
 	RefreshExpiresIn *int    `json:"refresh_expires_in,omitempty"`
 	AutoRefresh      *bool   `json:"auto_refresh,omitempty"`
 }
 
+// OAuth2Request OAuth2 API authentication configuration request
+type OAuth2Request struct {
+	Enabled           *bool     `json:"enabled,omitempty"`
+	DefaultScopes     *[]string `json:"default_scopes,omitempty"`
+	TokenEndpoint     *string   `json:"token_endpoint,omitempty"`
+	AuthorizeEndpoint *string   `json:"authorize_endpoint,omitempty"`
+}
+
 // UserAuthRequest user authentication request
 type UserAuthRequest struct {
-	OAuth2Enabled          *bool                    `json:"oauth2_enabled,omitempty"`
-	OAuth2Providers        *[]OAuth2ProviderRequest `json:"oauth2_providers,omitempty"`
-	TwoFactorEnabled       *bool                    `json:"two_factor_enabled,omitempty"`
-	TwoFactorMethods       *[]string                `json:"two_factor_methods,omitempty"`
-	TwoFactorRequiredRoles *[]string                `json:"two_factor_required_roles,omitempty"`
-	PasswordPolicy         *PasswordPolicyRequest   `json:"password_policy,omitempty"`
-	LoginSecurity          *LoginSecurityRequest    `json:"login_security,omitempty"`
+	// Basic authentication configuration
+	BasicAuth *BasicAuthRequest `json:"basic_auth,omitempty"`
+	// Email authentication configuration
+	EmailAuth *EmailAuthRequest `json:"email_auth,omitempty"`
+	// OAuth2 configuration
+	OAuth2 *OAuth2LoginConfigRequest `json:"oauth2,omitempty"`
+	// Two-factor authentication configuration
+	TwoFactor *TwoFactorRequest `json:"two_factor,omitempty"`
+	// Password policy configuration
+	PasswordPolicy *PasswordPolicyRequest `json:"password_policy,omitempty"`
+	// Login security configuration
+	LoginSecurity *LoginSecurityRequest `json:"login_security,omitempty"`
 }
 
 // SessionConfigRequest session configuration request
@@ -135,17 +125,71 @@ type SessionConfigRequest struct {
 	RememberMeDuration    *int  `json:"remember_me_duration,omitempty"`
 }
 
+// BasicAuthRequest basic authentication request
+type BasicAuthRequest struct {
+	LoginMethods *[]string `json:"login_methods,omitempty"`
+}
+
+// EmailAuthRequest email authentication request
+type EmailAuthRequest struct {
+	Enabled   *bool `json:"enabled,omitempty"`
+	ExpiresIn *int  `json:"expires_in,omitempty"`
+}
+
+// OAuth2LoginConfigRequest OAuth2 login configuration request
+type OAuth2LoginConfigRequest struct {
+	Enabled      *bool                    `json:"enabled,omitempty"`
+	AutoRegister *bool                    `json:"auto_register,omitempty"`
+	DefaultRole  *string                  `json:"default_role,omitempty"`
+	Providers    *[]OAuth2ProviderRequest `json:"providers,omitempty"`
+}
+
+// TwoFactorRequest two-factor authentication request
+type TwoFactorRequest struct {
+	Enabled       *bool                    `json:"enabled,omitempty"`
+	RequiredRoles *[]string                `json:"required_roles,omitempty"`
+	Methods       *TwoFactorMethodsRequest `json:"methods,omitempty"`
+}
+
+// TwoFactorMethodsRequest two-factor methods request
+type TwoFactorMethodsRequest struct {
+	TOTP  *TOTPMethodRequest  `json:"totp,omitempty"`
+	Email *EmailMethodRequest `json:"email,omitempty"`
+}
+
+// TOTPMethodRequest TOTP method configuration request
+type TOTPMethodRequest struct {
+	Enabled          *bool   `json:"enabled,omitempty"`
+	Issuer           *string `json:"issuer,omitempty"`
+	Algorithm        *string `json:"algorithm,omitempty"`
+	Digits           *int    `json:"digits,omitempty"`
+	Period           *int    `json:"period,omitempty"`
+	BackupCodesCount *int    `json:"backup_codes_count,omitempty"`
+}
+
+// EmailMethodRequest email method configuration request
+type EmailMethodRequest struct {
+	Enabled    *bool   `json:"enabled,omitempty"`
+	CodeLength *int    `json:"code_length,omitempty"`
+	ExpiresIn  *int    `json:"expires_in,omitempty"`
+	RateLimit  *int    `json:"rate_limit,omitempty"`
+	Template   *string `json:"template,omitempty"`
+}
+
 // OAuth2ProviderRequest OAuth2 provider request
 type OAuth2ProviderRequest struct {
-	Name         string            `json:"name"`
-	Provider     string            `json:"provider"`
-	ClientID     string            `json:"client_id"`
-	ClientSecret string            `json:"client_secret"`
-	RedirectURI  string            `json:"redirect_uri"`
-	Scopes       []string          `json:"scopes"`
-	Enabled      bool              `json:"enabled"`
-	AutoRegister bool              `json:"auto_register"`
-	UserMapping  map[string]string `json:"user_mapping"`
+	Name         *string            `json:"name,omitempty"`
+	Enabled      *bool              `json:"enabled,omitempty"`
+	ClientID     *string            `json:"client_id,omitempty"`
+	ClientSecret *string            `json:"client_secret,omitempty"`
+	RedirectURI  *string            `json:"redirect_uri,omitempty"`
+	Scopes       *[]string          `json:"scopes,omitempty"`
+	AuthorizeURL *string            `json:"authorize_url,omitempty"`
+	TokenURL     *string            `json:"token_url,omitempty"`
+	UserInfoURL  *string            `json:"user_info_url,omitempty"`
+	AutoRegister *bool              `json:"auto_register,omitempty"`
+	UserMapping  *map[string]string `json:"user_mapping,omitempty"`
+	SortOrder    *int               `json:"sort_order,omitempty"`
 }
 
 // PasswordPolicyRequest password policy request
@@ -156,7 +200,6 @@ type PasswordPolicyRequest struct {
 	RequireLowercase    *bool `json:"require_lowercase,omitempty"`
 	RequireNumbers      *bool `json:"require_numbers,omitempty"`
 	RequireSymbols      *bool `json:"require_symbols,omitempty"`
-	PasswordHistory     *int  `json:"password_history,omitempty" validate:"omitempty,min=0,max=20"`
 	PasswordExpiresDays *int  `json:"password_expires_days,omitempty" validate:"omitempty,min=0,max=365"`
 }
 
@@ -211,8 +254,8 @@ func (p *PaginationRequest) GetOffset() int {
 	return (p.GetPage() - 1) * p.GetPageSize()
 }
 
-// ValidateAPITokenRequest API token validation request
-type ValidateAPITokenRequest struct {
+// RevokeAPITokenRequest API token revoke request
+type RevokeAPITokenRequest struct {
 	Token string `json:"token" validate:"required"`
 }
 

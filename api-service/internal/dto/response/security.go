@@ -80,15 +80,6 @@ type APITokenResponse struct {
 	CreatedAt   time.Time  `json:"created_at"`
 }
 
-// APITokenListResponse API token list response
-type APITokenListResponse struct {
-	Items      []APITokenResponse `json:"items"`
-	Total      int64              `json:"total"`
-	Page       int                `json:"page"`
-	PageSize   int                `json:"page_size"`
-	TotalPages int                `json:"total_pages"`
-}
-
 // AuthConfigResponse authentication config response
 type AuthConfigResponse struct {
 	APIAuth       APIAuthResponse       `json:"api_auth"`
@@ -98,52 +89,69 @@ type AuthConfigResponse struct {
 
 // APIAuthResponse API authentication response
 type APIAuthResponse struct {
-	TokenAuthEnabled bool              `json:"token_auth_enabled"`
-	OAuth2Enabled    bool              `json:"oauth2_enabled"`
-	JWTConfig        JWTConfigResponse `json:"jwt_config"`
+	OAuth2    OAuth2Response    `json:"oauth2"`
+	TokenAuth TokenAuthResponse `json:"token_auth"`
 }
 
-// JWTConfigResponse JWT configuration response
-type JWTConfigResponse struct {
+// TokenAuthResponse Token authentication configuration response
+type TokenAuthResponse struct {
 	Algorithm        string `json:"algorithm"`
+	Secret           string `json:"secret,omitempty"`
 	ExpiresIn        int    `json:"expires_in"`
 	RefreshExpiresIn int    `json:"refresh_expires_in"`
 	AutoRefresh      bool   `json:"auto_refresh"`
 }
 
-// UserAuthResponse user authentication response
-type UserAuthResponse struct {
-	OAuth2Enabled          bool                      `json:"oauth2_enabled"`
-	OAuth2Providers        []*OAuth2ProviderResponse `json:"oauth2_providers"`
-	TwoFactorEnabled       bool                      `json:"two_factor_enabled"`
-	TwoFactorMethods       []string                  `json:"two_factor_methods"`
-	TwoFactorRequiredRoles []string                  `json:"two_factor_required_roles"`
-	PasswordPolicy         PasswordPolicyResponse    `json:"password_policy"`
-	LoginSecurity          LoginSecurityResponse     `json:"login_security"`
+// OAuth2Response OAuth2 API authentication configuration response
+type OAuth2Response struct {
+	Enabled           bool     `json:"enabled"`
+	DefaultScopes     []string `json:"default_scopes"`
+	TokenEndpoint     string   `json:"token_endpoint"`
+	AuthorizeEndpoint string   `json:"authorize_endpoint"`
 }
 
-// SessionConfigResponse session configuration response
-type SessionConfigResponse struct {
-	Timeout               int  `json:"timeout"`
-	MaxConcurrentSessions int  `json:"max_concurrent_sessions"`
-	RememberMeEnabled     bool `json:"remember_me_enabled"`
-	RememberMeDuration    int  `json:"remember_me_duration"`
+// UserAuthResponse user authentication response
+type UserAuthResponse struct {
+	BasicAuth      BasicAuthResponse      `json:"basic_auth"`
+	EmailAuth      EmailAuthResponse      `json:"email_auth"`
+	PasswordPolicy PasswordPolicyResponse `json:"password_policy"`
+	LoginSecurity  LoginSecurityResponse  `json:"login_security"`
+	OAuth2         OAuth2LoginResponse    `json:"oauth2"`
+	TwoFactor      TwoFactorAuthResponse  `json:"two_factor"`
+}
+
+type OAuth2LoginResponse struct {
+	Enabled      bool                      `json:"enabled"`
+	AutoRegister bool                      `json:"auto_register"`
+	DefaultRole  string                    `json:"default_role"`
+	Providers    []*OAuth2ProviderResponse `json:"providers"`
+}
+
+// BasicAuthResponse basic authentication response
+type BasicAuthResponse struct {
+	LoginMethods []string `json:"login_methods"`
+}
+
+// EmailAuthResponse email authentication response
+type EmailAuthResponse struct {
+	Enabled   bool `json:"enabled"`
+	ExpiresIn int  `json:"expires_in"`
 }
 
 // OAuth2ProviderResponse OAuth2 provider response
 type OAuth2ProviderResponse struct {
-	ID           uint              `json:"id"`
 	Name         string            `json:"name"`
-	Provider     string            `json:"provider"`
+	Enabled      bool              `json:"enabled"`
 	ClientID     string            `json:"client_id"`
 	ClientSecret string            `json:"client_secret,omitempty"` // sensitive information replaced with ***
 	RedirectURI  string            `json:"redirect_uri"`
 	Scopes       []string          `json:"scopes"`
-	Enabled      bool              `json:"enabled"`
+	AuthorizeURL string            `json:"authorize_url"`
+	TokenURL     string            `json:"token_url"`
+	UserInfoURL  string            `json:"user_info_url"`
 	AutoRegister bool              `json:"auto_register"`
 	UserMapping  map[string]string `json:"user_mapping"`
-	CreatedAt    time.Time         `json:"created_at"`
-	UpdatedAt    time.Time         `json:"updated_at"`
+	SortOrder    int               `json:"sort_order"`
 }
 
 // PasswordPolicyResponse password policy response
@@ -154,7 +162,6 @@ type PasswordPolicyResponse struct {
 	RequireLowercase    bool `json:"require_lowercase"`
 	RequireNumbers      bool `json:"require_numbers"`
 	RequireSymbols      bool `json:"require_symbols"`
-	PasswordHistory     int  `json:"password_history"`
 	PasswordExpiresDays int  `json:"password_expires_days"`
 }
 
@@ -166,6 +173,46 @@ type LoginSecurityResponse struct {
 	IPWhitelist          []string `json:"ip_whitelist"`
 	LoginTimeRestriction bool     `json:"login_time_restriction"`
 	AllowedLoginHours    string   `json:"allowed_login_hours"`
+}
+
+// TwoFactorAuthResponse two-factor authentication configuration response
+type TwoFactorAuthResponse struct {
+	Enabled       bool                     `json:"enabled"`
+	RequiredRoles []string                 `json:"required_roles"`
+	Methods       TwoFactorMethodsResponse `json:"methods"`
+}
+
+// TwoFactorMethodsResponse two-factor methods response
+type TwoFactorMethodsResponse struct {
+	TOTP  TOTPMethodResponse  `json:"totp"`
+	Email EmailMethodResponse `json:"email"`
+}
+
+// TOTPMethodResponse TOTP method configuration response
+type TOTPMethodResponse struct {
+	Enabled          bool   `json:"enabled"`
+	Issuer           string `json:"issuer"`
+	Algorithm        string `json:"algorithm"`
+	Digits           int    `json:"digits"`
+	Period           int    `json:"period"`
+	BackupCodesCount int    `json:"backup_codes_count"`
+}
+
+// EmailMethodResponse email method configuration response
+type EmailMethodResponse struct {
+	Enabled    bool   `json:"enabled"`
+	CodeLength int    `json:"code_length"`
+	ExpiresIn  int    `json:"expires_in"`
+	RateLimit  int    `json:"rate_limit"`
+	Template   string `json:"template"`
+}
+
+// SessionConfigResponse session configuration response
+type SessionConfigResponse struct {
+	Timeout               int  `json:"timeout"`
+	MaxConcurrentSessions int  `json:"max_concurrent_sessions"`
+	RememberMeEnabled     bool `json:"remember_me_enabled"`
+	RememberMeDuration    int  `json:"remember_me_duration"`
 }
 
 // TwoFactorStatusResponse represents two-factor authentication status

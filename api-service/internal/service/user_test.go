@@ -4,8 +4,8 @@ import (
 	"api-service/internal/dto/request"
 	"api-service/internal/interface/repository"
 	"api-service/internal/model"
+	"api-service/pkg/auth"
 	"api-service/pkg/logger"
-	"api-service/pkg/utils"
 	"context"
 	"testing"
 	"time"
@@ -153,7 +153,7 @@ func setupUserServiceTestFixed() (*userService, *MockUserRepository) {
 func createTestUserFixed() *model.User {
 	now := time.Now()
 	// 使用 bcrypt 生成正确的密码哈希
-	passwordHash := utils.SHA256Hash("password123")
+	passwordHash := auth.HashToken("password123")
 	return &model.User{
 		ID:           1,
 		Username:     "testuser",

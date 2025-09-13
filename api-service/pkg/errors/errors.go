@@ -101,6 +101,8 @@ var codeToHTTPStatus = map[int]int{
 	CodeLoginAttemptsExceeded:   http.StatusTooManyRequests,
 	CodeEmailAlreadyExists:      http.StatusBadRequest,
 	CodeTokenAlreadyUsed:        http.StatusUnauthorized,
+	CodeUsernameSuported:        http.StatusBadRequest,
+	CodeEmailSuported:           http.StatusBadRequest,
 
 	// Permission related errors (2000-2999)
 	CodeInsufficientPermissions:       http.StatusForbidden,
@@ -214,6 +216,8 @@ var (
 	ErrLoginAttemptsExceeded   = NewAppErrorWithI18n(CodeLoginAttemptsExceeded, CodeMessages[CodeLoginAttemptsExceeded], CodeToI18nKey[CodeLoginAttemptsExceeded])
 	ErrEmailAlreadyExists      = NewAppErrorWithI18n(CodeEmailAlreadyExists, CodeMessages[CodeEmailAlreadyExists], CodeToI18nKey[CodeEmailAlreadyExists])
 	ErrTokenAlreadyUsed        = NewAppErrorWithI18n(CodeTokenAlreadyUsed, CodeMessages[CodeTokenAlreadyUsed], CodeToI18nKey[CodeTokenAlreadyUsed])
+	ErrUsernameSuported        = NewAppErrorWithI18n(CodeUsernameSuported, CodeMessages[CodeUsernameSuported], CodeToI18nKey[CodeUsernameSuported])
+	ErrEmailSuported           = NewAppErrorWithI18n(CodeEmailSuported, CodeMessages[CodeEmailSuported], CodeToI18nKey[CodeEmailSuported])
 
 	// Permission related errors (2000-2999)
 	ErrInsufficientPermissions       = NewAppErrorWithI18n(CodeInsufficientPermissions, CodeMessages[CodeInsufficientPermissions], CodeToI18nKey[CodeInsufficientPermissions])

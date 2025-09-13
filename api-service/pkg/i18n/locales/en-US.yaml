@@ -145,6 +145,8 @@ auth:
   permission_denied: "Permission denied"
   unauthorized: "Unauthorized access"
   user_not_authenticated: "User not authenticated"
+  username_supported: "Only username login is supported"
+  email_supported: "Only email login is supported"
 
 # Common messages
 common:
@@ -177,7 +179,7 @@ email:
             </div>
             <p>Or copy and paste this link into your browser:</p>
             <p style="word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 3px;">${VerifyURL}</p>
-            <p style="color: #7f8c8d; font-size: 14px;">This link will expire in 30 minutes.</p>
+            <p style="color: #7f8c8d; font-size: 14px;">This link will expire in ${Expires} minutes.</p>
             <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
             <p style="color: #7f8c8d; font-size: 12px;">
                 If you did not create a Websoft9 account, please ignore this email.<br>
@@ -203,7 +205,7 @@ email:
             </div>
             <p>Or copy and paste this link into your browser:</p>
             <p style="word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 3px;">${ResetURL}</p>
-            <p style="color: #7f8c8d; font-size: 14px;">This link will expire in 30 minutes.</p>
+            <p style="color: #7f8c8d; font-size: 14px;">This link will expire in ${Expires} minutes.</p>
             <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
             <p style="color: #7f8c8d; font-size: 12px;">
                 If you did not request a password reset, please ignore this email and your password will not be changed.<br>

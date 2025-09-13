@@ -47,12 +47,12 @@ func (r *apiTokenRepository) GetByID(ctx context.Context, id uint) (*model.APITo
 // GetByToken get API token by token hash
 func (r *apiTokenRepository) GetByToken(ctx context.Context, tokenHash string) (*model.APIToken, error) {
 	var token model.APIToken
-	err := r.db.WithContext(ctx).
-		Preload("User").
-		Where("token_hash = ?", tokenHash).
-		First(&token).Error
+	err := r.db.WithContext(ctx).Preload("User").Where("token_hash = ?", tokenHash).First(&token).Error
 	if err != nil {
-		return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.NewAppErrorWithMessage(errors.CodeRecordNotFound, "token not found")
+		}
+		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to get token by ID")
 	}
 	// Set username
 	if token.User.ID != 0 {
@@ -104,9 +104,29 @@ func (r *apiTokenRepository) GetByUserID(ctx context.Context, userID uint) ([]*m
 	return tokens, err
 }
 
-// BatchDelete batch delete API tokens
-func (r *apiTokenRepository) BatchDelete(ctx context.Context, ids []uint) error {
-	return r.db.WithContext(ctx).Where("id IN ?", ids).Delete(&model.APIToken{}).Error
+// GetActiveTokenByUserID get most recent active API token by user ID
+func (r *apiTokenRepository) GetActiveTokenByUserID(ctx context.Context, userID uint) (*model.APIToken, error) {
+	var token model.APIToken
+	err := r.db.WithContext(ctx).
+		Preload("User").
+		Where("user_id = ?", userID).
+		Where("expires_at IS NULL OR expires_at > ?", time.Now()).
+		Order("created_at desc").
+		First(&token).Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.NewAppErrorWithMessage(errors.CodeRecordNotFound, "no active token found for user")
+		}
+		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to get active token by user ID")
+	}
+
+	// Set username
+	if token.User.ID != 0 {
+		token.Username = token.User.Username
+	}
+
+	return &token, nil
 }
 
 // UpdateLastUsed update token last used time

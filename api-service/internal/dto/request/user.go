@@ -5,7 +5,7 @@ import "api-service/internal/dto"
 // UserRegisterRequest 用户注册请求
 type UserRegisterRequest struct {
 	Username string `json:"username" binding:"required,email" example:"john@example.com"`
-	Password string `json:"password" binding:"required,min=6" example:"123456"`
+	Password string `json:"password" binding:"required" example:"123456"`
 }
 
 // UserLoginRequest 用户登录请求
@@ -17,7 +17,7 @@ type UserLoginRequest struct {
 // UserChangePasswordRequest 用户修改密码请求
 type UserChangePasswordRequest struct {
 	OldPassword string `json:"old_password" binding:"required" example:"oldpass123"`
-	NewPassword string `json:"new_password" binding:"required,min=6" example:"newpass123"`
+	NewPassword string `json:"new_password" binding:"required" example:"newpass123"`
 }
 
 // UserListRequest 用户列表请求
@@ -31,9 +31,9 @@ type UserListRequest struct {
 
 // UserCreateRequest 创建用户请求
 type UserCreateRequest struct {
-	Username  string  `json:"username" binding:"required,min=3,max=64" example:"johndoe"`
+	Username  string  `json:"username" binding:"required,max=64" example:"johndoe"`
 	Email     string  `json:"email" binding:"required,email" example:"john@example.com"`
-	Password  string  `json:"password" binding:"required,min=6" example:"password123"`
+	Password  string  `json:"password" binding:"required" example:"password123"`
 	Nickname  *string `json:"nickname,omitempty" binding:"omitempty,max=64" example:"John Doe"`
 	Phone     *string `json:"phone,omitempty" binding:"omitempty,max=20" example:"+1234567890"`
 	Avatar    *string `json:"avatar,omitempty" binding:"omitempty,url" example:"https://example.com/avatar.jpg"`
@@ -46,7 +46,7 @@ type UserCreateRequest struct {
 
 // UserUpdateRequest 更新用户请求
 type UserUpdateRequest struct {
-	Username  *string `json:"username,omitempty" binding:"omitempty,min=3,max=64" example:"johndoe"`
+	Username  *string `json:"username,omitempty" binding:"omitempty,max=64" example:"johndoe"`
 	Email     *string `json:"email,omitempty" binding:"omitempty,email" example:"newemail@example.com"`
 	Nickname  *string `json:"nickname,omitempty" binding:"omitempty,max=64" example:"John Doe"`
 	Phone     *string `json:"phone,omitempty" binding:"omitempty,max=20" example:"+1234567890"`
@@ -64,7 +64,7 @@ type UserUpdateStatusRequest struct {
 
 // UserPasswordUpdateRequest 管理员修改用户密码请求
 type UserPasswordUpdateRequest struct {
-	NewPassword string `json:"new_password" binding:"required,min=6" example:"newpassword123"`
+	NewPassword string `json:"new_password" binding:"required" example:"newpassword123"`
 }
 
 // ForgotPasswordRequest 忘记密码请求
@@ -75,7 +75,7 @@ type ForgotPasswordRequest struct {
 // ResetPasswordRequest 重置密码请求
 type ResetPasswordRequest struct {
 	Token       string `json:"token" binding:"required" example:"abc123def456"`
-	NewPassword string `json:"new_password" binding:"required,min=6" example:"newpassword123"`
+	NewPassword string `json:"new_password" binding:"required" example:"newpassword123"`
 }
 
 // VerifyEmailRequest 验证邮箱请求

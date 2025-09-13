@@ -8,9 +8,9 @@ version: "1.1"
 api_auth:
   # Token authentication configuration
   token_auth:
-    enabled: true
     algorithm: "HS256"
-    expires_in: 3600 # Token validity period (seconds)
+    secret: "websoft9-jwt-secret-key"
+    expires_in: 1800 # Token validity period (seconds)
     refresh_expires_in: 86400 # Refresh token validity period (seconds)
     auto_refresh: true # Whether to automatically refresh tokens
 
@@ -25,18 +25,19 @@ api_auth:
 user_auth:
   # Basic authentication configuration
   basic_auth:
-    enabled: true
     login_methods: ["username", "email"] # Supported login methods
+  email_auth:
+    enabled: true
+    expires_in: 600 # Token validity period (seconds)
 
   # Password policy configuration
   password_policy:
     min_length: 8
-    max_length: 128
+    max_length: 30
     require_uppercase: true
     require_lowercase: true
     require_numbers: true
-    require_symbols: false
-    password_history: 5 # Number of password history records
+    require_symbols: true
     password_expires_days: 90 # Password expiration days
 
   # Login security configuration
@@ -46,7 +47,7 @@ user_auth:
     ip_whitelist_enabled: false
     ip_whitelist: []
     login_time_restriction: false
-    allowed_login_hours: "09:00-18:00"
+    allowed_login_hours: "08:00-19:00"
 
   # OAuth2 login configuration
   oauth2:
