@@ -137,7 +137,7 @@ func (s *userProfileService) UpdateUserProfile(ctx context.Context, userID uint,
 			return nil, errors.NewAppError(errors.CodeRecordNotFound, s.i18n.T(ctx, "user_profile.not_found"))
 		}
 
-		return nil, errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "user_profile.update_failed"))
+		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, s.i18n.T(ctx, "user_profile.update_failed"))
 	}
 
 	// Return the updated profile
@@ -154,7 +154,7 @@ func (s *userProfileService) ChangeProfilePassword(ctx context.Context, userID u
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return errors.NewAppError(errors.CodeRecordNotFound, s.i18n.T(ctx, "user_profile.not_found"))
 		}
-		return errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "user_profile.get_failed"))
+		return errors.WrapError(err, errors.CodeRecordQueryFailed, s.i18n.T(ctx, "user_profile.get_failed"))
 	}
 
 	// 2. Verify old password
@@ -178,7 +178,7 @@ func (s *userProfileService) ChangeProfilePassword(ctx context.Context, userID u
 		s.logger.ErrorContext(ctx, "Failed to update password",
 			logger.Uint("userID", userID),
 			logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "user_profile.password_update_failed"))
+		return errors.WrapError(err, errors.CodeRecordUpdateFailed, s.i18n.T(ctx, "user_profile.password_update_failed"))
 	}
 
 	s.logger.InfoContext(ctx, "User password changed successfully", logger.Uint("userID", userID))
@@ -201,7 +201,7 @@ func (s *userProfileService) GetLoginHistories(ctx context.Context, userID uint,
 	// Fetch data
 	records, _, err := s.profileRepo.GetLoginHistories(ctx, userID, page, pageSize)
 	if err != nil {
-		return nil, errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "user_profile.login_history_get_failed"))
+		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, s.i18n.T(ctx, "user_profile.login_history_get_failed"))
 	}
 
 	// Build response
@@ -237,7 +237,7 @@ func (s *userProfileService) GetNotificationSettings(ctx context.Context, userID
 		s.logger.ErrorContext(ctx, "Failed to get notification settings",
 			logger.Uint("userID", userID),
 			logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "user_profile.notification_settings_get_failed"))
+		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, s.i18n.T(ctx, "user_profile.notification_settings_get_failed"))
 	}
 
 	// Set default values
@@ -276,7 +276,7 @@ func (s *userProfileService) UpdateNotificationSettings(ctx context.Context, use
 			logger.Uint("userID", userID),
 			logger.Bool("value", req.EmailNotifications),
 			logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "user_profile.notification_settings_update_failed"))
+		return errors.WrapError(err, errors.CodeRecordUpdateFailed, s.i18n.T(ctx, "user_profile.notification_settings_update_failed"))
 	}
 
 	// Update SMS notification setting
@@ -285,7 +285,7 @@ func (s *userProfileService) UpdateNotificationSettings(ctx context.Context, use
 			logger.Uint("userID", userID),
 			logger.Bool("value", req.SmsNotifications),
 			logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "user_profile.notification_settings_update_failed"))
+		return errors.WrapError(err, errors.CodeRecordUpdateFailed, s.i18n.T(ctx, "user_profile.notification_settings_update_failed"))
 	}
 
 	// Update push notification setting
@@ -294,7 +294,7 @@ func (s *userProfileService) UpdateNotificationSettings(ctx context.Context, use
 			logger.Uint("userID", userID),
 			logger.Bool("value", req.PushNotifications),
 			logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "user_profile.notification_settings_update_failed"))
+		return errors.WrapError(err, errors.CodeRecordUpdateFailed, s.i18n.T(ctx, "user_profile.notification_settings_update_failed"))
 	}
 
 	// Update marketing emails setting
@@ -303,7 +303,7 @@ func (s *userProfileService) UpdateNotificationSettings(ctx context.Context, use
 			logger.Uint("userID", userID),
 			logger.Bool("value", req.MarketingEmails),
 			logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "user_profile.notification_settings_update_failed"))
+		return errors.WrapError(err, errors.CodeRecordUpdateFailed, s.i18n.T(ctx, "user_profile.notification_settings_update_failed"))
 	}
 
 	s.logger.InfoContext(ctx, "Notification settings updated successfully", logger.Uint("userID", userID))
@@ -319,7 +319,7 @@ func (s *userProfileService) GetSecuritySettings(ctx context.Context, userID uin
 		s.logger.ErrorContext(ctx, "Failed to get security settings",
 			logger.Uint("userID", userID),
 			logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "user_profile.security_settings_get_failed"))
+		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, s.i18n.T(ctx, "user_profile.security_settings_get_failed"))
 	}
 
 	// Set default values
@@ -358,7 +358,7 @@ func (s *userProfileService) UpdateSecuritySettings(ctx context.Context, userID 
 			logger.Uint("userID", userID),
 			logger.Bool("value", req.LoginAlerts),
 			logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "user_profile.security_settings_update_failed"))
+		return errors.WrapError(err, errors.CodeRecordUpdateFailed, s.i18n.T(ctx, "user_profile.security_settings_update_failed"))
 	}
 
 	// Update session timeout setting
@@ -368,7 +368,7 @@ func (s *userProfileService) UpdateSecuritySettings(ctx context.Context, userID 
 			logger.Uint("userID", userID),
 			logger.Int("value", req.SessionTimeout),
 			logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "user_profile.security_settings_update_failed"))
+		return errors.WrapError(err, errors.CodeRecordUpdateFailed, s.i18n.T(ctx, "user_profile.security_settings_update_failed"))
 	}
 
 	s.logger.InfoContext(ctx, "Security settings updated successfully", logger.Uint("userID", userID))
