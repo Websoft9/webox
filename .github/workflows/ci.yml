@@ -92,17 +92,6 @@ jobs:
 
           echo "所有服务已就绪"
 
-      - name: Initialize test database
-        working-directory: webox
-        run: |
-          echo "初始化测试数据库..."
-          if [ -f "./scripts/init-test-db.sh" ]; then
-            chmod +x ./scripts/init-test-db.sh
-            ./scripts/init-test-db.sh --type sqlite --database ./test.db --seed
-          else
-            echo "测试数据库初始化脚本不存在，跳过初始化"
-          fi
-
       - name: Run unit tests
         working-directory: ${{ matrix.service }}
         env:
