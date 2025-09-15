@@ -24,362 +24,13 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/v1/api-tokens": {
+        "/api/v1/api-tokens/refresh": {
             "get": {
-                "description": "Get paginated API token list",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "API Token Management"
-                ],
-                "summary": "Get API token list",
-                "parameters": [
+                "security": [
                     {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "Page number",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 20,
-                        "description": "Page size",
-                        "name": "page_size",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Search keyword",
-                        "name": "search",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "format": "datetime",
-                        "description": "Start time",
-                        "name": "start_time",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "format": "datetime",
-                        "description": "End time",
-                        "name": "end_time",
-                        "in": "query"
+                        "BearerAuth": []
                     }
                 ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/response.APITokenListResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "Create a new API token",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "API Token Management"
-                ],
-                "summary": "Create API token",
-                "parameters": [
-                    {
-                        "description": "Create API token request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/request.CreateAPITokenRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/response.APITokenResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "description": "Batch revoke multiple API tokens",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "API Token Management"
-                ],
-                "summary": "Batch revoke API tokens",
-                "parameters": [
-                    {
-                        "description": "Batch revoke API tokens request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/request.BatchRevokeAPITokensRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/api-tokens/validate": {
-            "post": {
-                "description": "Validate API token and return token information",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "API Token Management"
-                ],
-                "summary": "Validate API token",
-                "parameters": [
-                    {
-                        "description": "Validate API token request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/request.ValidateAPITokenRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/response.APITokenValidationResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/api-tokens/{id}": {
-            "get": {
-                "description": "Get API token details by ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "API Token Management"
-                ],
-                "summary": "Get API token details",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "API Token ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/response.APITokenResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "description": "Update API token information",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "API Token Management"
-                ],
-                "summary": "Update API token",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "API Token ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Update API token request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/request.UpdateAPITokenRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/response.APITokenResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/api-tokens/{id}/refresh": {
-            "post": {
                 "description": "Refresh API token to extend expiration",
                 "consumes": [
                     "application/json"
@@ -391,15 +42,6 @@ const docTemplate = `{
                     "API Token Management"
                 ],
                 "summary": "Refresh API token",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "API Token ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -434,8 +76,13 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/api-tokens/{id}/revoke": {
+        "/api/v1/api-tokens/revoke": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Revoke specified API token",
                 "consumes": [
                     "application/json"
@@ -449,11 +96,13 @@ const docTemplate = `{
                 "summary": "Revoke API token",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "API Token ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
+                        "description": "Revoke API token request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.RevokeAPITokenRequest"
+                        }
                     }
                 ],
                 "responses": {
@@ -754,6 +403,11 @@ const docTemplate = `{
         },
         "/api/v1/auth-config": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Get current authentication configuration",
                 "consumes": [
                     "application/json"
@@ -793,6 +447,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Update authentication configuration",
                 "consumes": [
                     "application/json"
@@ -839,6 +498,11 @@ const docTemplate = `{
         },
         "/api/v1/auth-config/oauth2-providers": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Get OAuth2 provider configurations",
                 "consumes": [
                     "application/json"
@@ -2462,6 +2126,11 @@ const docTemplate = `{
         },
         "/api/v1/two-factor": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Get user's two-factor authentication status",
                 "consumes": [
                     "application/json"
@@ -2503,6 +2172,11 @@ const docTemplate = `{
         },
         "/api/v1/two-factor/backup-codes": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Generate backup codes for two-factor authentication recovery",
                 "consumes": [
                     "application/json"
@@ -2550,6 +2224,11 @@ const docTemplate = `{
         },
         "/api/v1/two-factor/confirm": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Confirm TOTP setup with verification code",
                 "consumes": [
                     "application/json"
@@ -2608,6 +2287,11 @@ const docTemplate = `{
         },
         "/api/v1/two-factor/disable": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Disable two-factor authentication for user",
                 "consumes": [
                     "application/json"
@@ -2643,6 +2327,11 @@ const docTemplate = `{
         },
         "/api/v1/two-factor/email/disable": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Disable email two-factor authentication for user",
                 "consumes": [
                     "application/json"
@@ -2678,6 +2367,11 @@ const docTemplate = `{
         },
         "/api/v1/two-factor/email/enable": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Enable email two-factor authentication for user",
                 "consumes": [
                     "application/json"
@@ -2724,6 +2418,11 @@ const docTemplate = `{
         },
         "/api/v1/two-factor/email/send-code": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Send verification code to user's email for 2FA",
                 "consumes": [
                     "application/json"
@@ -2759,6 +2458,11 @@ const docTemplate = `{
         },
         "/api/v1/two-factor/enable": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Enable TOTP two-factor authentication for user",
                 "consumes": [
                     "application/json"
@@ -2806,6 +2510,11 @@ const docTemplate = `{
         },
         "/api/v1/two-factor/totp/disable": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Disable TOTP two-factor authentication for user",
                 "consumes": [
                     "application/json"
@@ -2852,6 +2561,11 @@ const docTemplate = `{
         },
         "/api/v1/two-factor/totp/generate": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Generate TOTP secret for user",
                 "consumes": [
                     "application/json"
@@ -2899,6 +2613,11 @@ const docTemplate = `{
         },
         "/api/v1/two-factor/verify": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Verify two-factor authentication code",
                 "consumes": [
                     "application/json"
@@ -3785,28 +3504,21 @@ const docTemplate = `{
         "request.APIAuthRequest": {
             "type": "object",
             "properties": {
-                "jwt_config": {
-                    "$ref": "#/definitions/request.JWTConfigRequest"
+                "oauth2": {
+                    "$ref": "#/definitions/request.OAuth2Request"
                 },
-                "oauth2_enabled": {
-                    "type": "boolean"
-                },
-                "token_auth_enabled": {
-                    "type": "boolean"
+                "token_auth": {
+                    "$ref": "#/definitions/request.TokenAuthRequest"
                 }
             }
         },
-        "request.BatchRevokeAPITokensRequest": {
+        "request.BasicAuthRequest": {
             "type": "object",
-            "required": [
-                "ids"
-            ],
             "properties": {
-                "ids": {
+                "login_methods": {
                     "type": "array",
-                    "minItems": 1,
                     "items": {
-                        "type": "integer"
+                        "type": "string"
                     }
                 }
             }
@@ -3819,34 +3531,6 @@ const docTemplate = `{
             "properties": {
                 "code": {
                     "type": "string"
-                }
-            }
-        },
-        "request.CreateAPITokenRequest": {
-            "type": "object",
-            "required": [
-                "name",
-                "scopes"
-            ],
-            "properties": {
-                "description": {
-                    "type": "string",
-                    "maxLength": 500
-                },
-                "expires_at": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string",
-                    "maxLength": 64,
-                    "minLength": 2
-                },
-                "scopes": {
-                    "type": "array",
-                    "minItems": 1,
-                    "items": {
-                        "type": "string"
-                    }
                 }
             }
         },
@@ -3949,6 +3633,37 @@ const docTemplate = `{
                 }
             }
         },
+        "request.EmailAuthRequest": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "expires_in": {
+                    "type": "integer"
+                }
+            }
+        },
+        "request.EmailMethodRequest": {
+            "type": "object",
+            "properties": {
+                "code_length": {
+                    "type": "integer"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "expires_in": {
+                    "type": "integer"
+                },
+                "rate_limit": {
+                    "type": "integer"
+                },
+                "template": {
+                    "type": "string"
+                }
+            }
+        },
         "request.EnableEmailTwoFactorRequest": {
             "type": "object",
             "required": [
@@ -3969,23 +3684,6 @@ const docTemplate = `{
                 "username": {
                     "type": "string",
                     "example": "john@example.com"
-                }
-            }
-        },
-        "request.JWTConfigRequest": {
-            "type": "object",
-            "properties": {
-                "algorithm": {
-                    "type": "string"
-                },
-                "auto_refresh": {
-                    "type": "boolean"
-                },
-                "expires_in": {
-                    "type": "integer"
-                },
-                "refresh_expires_in": {
-                    "type": "integer"
                 }
             }
         },
@@ -4019,6 +3717,26 @@ const docTemplate = `{
                 }
             }
         },
+        "request.OAuth2LoginConfigRequest": {
+            "type": "object",
+            "properties": {
+                "auto_register": {
+                    "type": "boolean"
+                },
+                "default_role": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "providers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/request.OAuth2ProviderRequest"
+                    }
+                }
+            }
+        },
         "request.OAuth2LoginRequest": {
             "type": "object",
             "required": [
@@ -4044,6 +3762,9 @@ const docTemplate = `{
         "request.OAuth2ProviderRequest": {
             "type": "object",
             "properties": {
+                "authorize_url": {
+                    "type": "string"
+                },
                 "auto_register": {
                     "type": "boolean"
                 },
@@ -4059,9 +3780,6 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
-                "provider": {
-                    "type": "string"
-                },
                 "redirect_uri": {
                     "type": "string"
                 },
@@ -4071,11 +3789,40 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
+                "sort_order": {
+                    "type": "integer"
+                },
+                "token_url": {
+                    "type": "string"
+                },
+                "user_info_url": {
+                    "type": "string"
+                },
                 "user_mapping": {
                     "type": "object",
                     "additionalProperties": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "request.OAuth2Request": {
+            "type": "object",
+            "properties": {
+                "authorize_endpoint": {
+                    "type": "string"
+                },
+                "default_scopes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "token_endpoint": {
+                    "type": "string"
                 }
             }
         },
@@ -4095,11 +3842,6 @@ const docTemplate = `{
                 "password_expires_days": {
                     "type": "integer",
                     "maximum": 365,
-                    "minimum": 0
-                },
-                "password_history": {
-                    "type": "integer",
-                    "maximum": 20,
                     "minimum": 0
                 },
                 "require_lowercase": {
@@ -4137,12 +3879,22 @@ const docTemplate = `{
             "properties": {
                 "new_password": {
                     "type": "string",
-                    "minLength": 6,
                     "example": "newpassword123"
                 },
                 "token": {
                     "type": "string",
                     "example": "abc123def456"
+                }
+            }
+        },
+        "request.RevokeAPITokenRequest": {
+            "type": "object",
+            "required": [
+                "token"
+            ],
+            "properties": {
+                "token": {
+                    "type": "string"
                 }
             }
         },
@@ -4178,22 +3930,70 @@ const docTemplate = `{
                 }
             }
         },
-        "request.UpdateAPITokenRequest": {
+        "request.TOTPMethodRequest": {
             "type": "object",
             "properties": {
-                "description": {
-                    "type": "string",
-                    "maxLength": 500
-                },
-                "expires_at": {
+                "algorithm": {
                     "type": "string"
                 },
-                "name": {
-                    "type": "string",
-                    "maxLength": 64,
-                    "minLength": 2
+                "backup_codes_count": {
+                    "type": "integer"
                 },
-                "scopes": {
+                "digits": {
+                    "type": "integer"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "issuer": {
+                    "type": "string"
+                },
+                "period": {
+                    "type": "integer"
+                }
+            }
+        },
+        "request.TokenAuthRequest": {
+            "type": "object",
+            "properties": {
+                "algorithm": {
+                    "type": "string"
+                },
+                "auto_refresh": {
+                    "type": "boolean"
+                },
+                "expires_in": {
+                    "type": "integer"
+                },
+                "refresh_expires_in": {
+                    "type": "integer"
+                },
+                "secret": {
+                    "type": "string"
+                }
+            }
+        },
+        "request.TwoFactorMethodsRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "$ref": "#/definitions/request.EmailMethodRequest"
+                },
+                "totp": {
+                    "$ref": "#/definitions/request.TOTPMethodRequest"
+                }
+            }
+        },
+        "request.TwoFactorRequest": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "methods": {
+                    "$ref": "#/definitions/request.TwoFactorMethodsRequest"
+                },
+                "required_roles": {
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -4274,35 +4074,53 @@ const docTemplate = `{
         "request.UserAuthRequest": {
             "type": "object",
             "properties": {
+                "basic_auth": {
+                    "description": "Basic authentication configuration",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/request.BasicAuthRequest"
+                        }
+                    ]
+                },
+                "email_auth": {
+                    "description": "Email authentication configuration",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/request.EmailAuthRequest"
+                        }
+                    ]
+                },
                 "login_security": {
-                    "$ref": "#/definitions/request.LoginSecurityRequest"
+                    "description": "Login security configuration",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/request.LoginSecurityRequest"
+                        }
+                    ]
                 },
-                "oauth2_enabled": {
-                    "type": "boolean"
-                },
-                "oauth2_providers": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/request.OAuth2ProviderRequest"
-                    }
+                "oauth2": {
+                    "description": "OAuth2 configuration",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/request.OAuth2LoginConfigRequest"
+                        }
+                    ]
                 },
                 "password_policy": {
-                    "$ref": "#/definitions/request.PasswordPolicyRequest"
+                    "description": "Password policy configuration",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/request.PasswordPolicyRequest"
+                        }
+                    ]
                 },
-                "two_factor_enabled": {
-                    "type": "boolean"
-                },
-                "two_factor_methods": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "two_factor_required_roles": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                "two_factor": {
+                    "description": "Two-factor authentication configuration",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/request.TwoFactorRequest"
+                        }
+                    ]
                 }
             }
         },
@@ -4315,7 +4133,6 @@ const docTemplate = `{
             "properties": {
                 "new_password": {
                     "type": "string",
-                    "minLength": 6,
                     "example": "newpass123"
                 },
                 "old_password": {
@@ -4358,7 +4175,6 @@ const docTemplate = `{
                 },
                 "password": {
                     "type": "string",
-                    "minLength": 6,
                     "example": "password123"
                 },
                 "phone": {
@@ -4385,7 +4201,6 @@ const docTemplate = `{
                 "username": {
                     "type": "string",
                     "maxLength": 64,
-                    "minLength": 3,
                     "example": "johndoe"
                 }
             }
@@ -4403,7 +4218,7 @@ const docTemplate = `{
                 },
                 "username": {
                     "type": "string",
-                    "example": "john@example.com"
+                    "example": "john@example.com or johndoe"
                 }
             }
         },
@@ -4415,7 +4230,6 @@ const docTemplate = `{
             "properties": {
                 "new_password": {
                     "type": "string",
-                    "minLength": 6,
                     "example": "newpassword123"
                 }
             }
@@ -4429,7 +4243,6 @@ const docTemplate = `{
             "properties": {
                 "password": {
                     "type": "string",
-                    "minLength": 6,
                     "example": "123456"
                 },
                 "username": {
@@ -4483,7 +4296,6 @@ const docTemplate = `{
                 "username": {
                     "type": "string",
                     "maxLength": 64,
-                    "minLength": 3,
                     "example": "johndoe"
                 }
             }
@@ -4499,17 +4311,6 @@ const docTemplate = `{
                     "maximum": 1,
                     "minimum": 0,
                     "example": 1
-                }
-            }
-        },
-        "request.ValidateAPITokenRequest": {
-            "type": "object",
-            "required": [
-                "token"
-            ],
-            "properties": {
-                "token": {
-                    "type": "string"
                 }
             }
         },
@@ -4540,14 +4341,11 @@ const docTemplate = `{
         "response.APIAuthResponse": {
             "type": "object",
             "properties": {
-                "jwt_config": {
-                    "$ref": "#/definitions/response.JWTConfigResponse"
+                "oauth2": {
+                    "$ref": "#/definitions/response.OAuth2Response"
                 },
-                "oauth2_enabled": {
-                    "type": "boolean"
-                },
-                "token_auth_enabled": {
-                    "type": "boolean"
+                "token_auth": {
+                    "$ref": "#/definitions/response.TokenAuthResponse"
                 }
             }
         },
@@ -4566,29 +4364,6 @@ const docTemplate = `{
                 "message": {
                     "type": "string",
                     "example": "Success"
-                }
-            }
-        },
-        "response.APITokenListResponse": {
-            "type": "object",
-            "properties": {
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/response.APITokenResponse"
-                    }
-                },
-                "page": {
-                    "type": "integer"
-                },
-                "page_size": {
-                    "type": "integer"
-                },
-                "total": {
-                    "type": "integer"
-                },
-                "total_pages": {
-                    "type": "integer"
                 }
             }
         },
@@ -4628,29 +4403,6 @@ const docTemplate = `{
                 },
                 "username": {
                     "type": "string"
-                }
-            }
-        },
-        "response.APITokenValidationResponse": {
-            "type": "object",
-            "properties": {
-                "expires_at": {
-                    "type": "string"
-                },
-                "scopes": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "user_id": {
-                    "type": "integer"
-                },
-                "username": {
-                    "type": "string"
-                },
-                "valid": {
-                    "type": "boolean"
                 }
             }
         },
@@ -4848,20 +4600,45 @@ const docTemplate = `{
                 }
             }
         },
-        "response.JWTConfigResponse": {
+        "response.BasicAuthResponse": {
             "type": "object",
             "properties": {
-                "algorithm": {
-                    "type": "string"
+                "login_methods": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "response.EmailAuthResponse": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
                 },
-                "auto_refresh": {
+                "expires_in": {
+                    "type": "integer"
+                }
+            }
+        },
+        "response.EmailMethodResponse": {
+            "type": "object",
+            "properties": {
+                "code_length": {
+                    "type": "integer"
+                },
+                "enabled": {
                     "type": "boolean"
                 },
                 "expires_in": {
                     "type": "integer"
                 },
-                "refresh_expires_in": {
+                "rate_limit": {
                     "type": "integer"
+                },
+                "template": {
+                    "type": "string"
                 }
             }
         },
@@ -4891,9 +4668,32 @@ const docTemplate = `{
                 }
             }
         },
+        "response.OAuth2LoginResponse": {
+            "type": "object",
+            "properties": {
+                "auto_register": {
+                    "type": "boolean"
+                },
+                "default_role": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "providers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.OAuth2ProviderResponse"
+                    }
+                }
+            }
+        },
         "response.OAuth2ProviderResponse": {
             "type": "object",
             "properties": {
+                "authorize_url": {
+                    "type": "string"
+                },
                 "auto_register": {
                     "type": "boolean"
                 },
@@ -4904,19 +4704,10 @@ const docTemplate = `{
                     "description": "sensitive information replaced with ***",
                     "type": "string"
                 },
-                "created_at": {
-                    "type": "string"
-                },
                 "enabled": {
                     "type": "boolean"
                 },
-                "id": {
-                    "type": "integer"
-                },
                 "name": {
-                    "type": "string"
-                },
-                "provider": {
                     "type": "string"
                 },
                 "redirect_uri": {
@@ -4928,7 +4719,13 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
-                "updated_at": {
+                "sort_order": {
+                    "type": "integer"
+                },
+                "token_url": {
+                    "type": "string"
+                },
+                "user_info_url": {
                     "type": "string"
                 },
                 "user_mapping": {
@@ -4936,6 +4733,26 @@ const docTemplate = `{
                     "additionalProperties": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "response.OAuth2Response": {
+            "type": "object",
+            "properties": {
+                "authorize_endpoint": {
+                    "type": "string"
+                },
+                "default_scopes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "token_endpoint": {
+                    "type": "string"
                 }
             }
         },
@@ -4949,9 +4766,6 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "password_expires_days": {
-                    "type": "integer"
-                },
-                "password_history": {
                     "type": "integer"
                 },
                 "require_lowercase": {
@@ -5263,6 +5077,29 @@ const docTemplate = `{
                 }
             }
         },
+        "response.TOTPMethodResponse": {
+            "type": "object",
+            "properties": {
+                "algorithm": {
+                    "type": "string"
+                },
+                "backup_codes_count": {
+                    "type": "integer"
+                },
+                "digits": {
+                    "type": "integer"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "issuer": {
+                    "type": "string"
+                },
+                "period": {
+                    "type": "integer"
+                }
+            }
+        },
         "response.TOTPSecretResponse": {
             "type": "object",
             "properties": {
@@ -5310,6 +5147,43 @@ const docTemplate = `{
                 }
             }
         },
+        "response.TokenAuthResponse": {
+            "type": "object",
+            "properties": {
+                "algorithm": {
+                    "type": "string"
+                },
+                "auto_refresh": {
+                    "type": "boolean"
+                },
+                "expires_in": {
+                    "type": "integer"
+                },
+                "refresh_expires_in": {
+                    "type": "integer"
+                },
+                "secret": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.TwoFactorAuthResponse": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "methods": {
+                    "$ref": "#/definitions/response.TwoFactorMethodsResponse"
+                },
+                "required_roles": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "response.TwoFactorMethodResponse": {
             "type": "object",
             "properties": {
@@ -5324,6 +5198,17 @@ const docTemplate = `{
                 },
                 "type": {
                     "type": "string"
+                }
+            }
+        },
+        "response.TwoFactorMethodsResponse": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "$ref": "#/definitions/response.EmailMethodResponse"
+                },
+                "totp": {
+                    "$ref": "#/definitions/response.TOTPMethodResponse"
                 }
             }
         },
@@ -5361,35 +5246,23 @@ const docTemplate = `{
         "response.UserAuthResponse": {
             "type": "object",
             "properties": {
+                "basic_auth": {
+                    "$ref": "#/definitions/response.BasicAuthResponse"
+                },
+                "email_auth": {
+                    "$ref": "#/definitions/response.EmailAuthResponse"
+                },
                 "login_security": {
                     "$ref": "#/definitions/response.LoginSecurityResponse"
                 },
-                "oauth2_enabled": {
-                    "type": "boolean"
-                },
-                "oauth2_providers": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/response.OAuth2ProviderResponse"
-                    }
+                "oauth2": {
+                    "$ref": "#/definitions/response.OAuth2LoginResponse"
                 },
                 "password_policy": {
                     "$ref": "#/definitions/response.PasswordPolicyResponse"
                 },
-                "two_factor_enabled": {
-                    "type": "boolean"
-                },
-                "two_factor_methods": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "two_factor_required_roles": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                "two_factor": {
+                    "$ref": "#/definitions/response.TwoFactorAuthResponse"
                 }
             }
         },

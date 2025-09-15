@@ -6,10 +6,10 @@ import (
 	"api-service/internal/interface/repository"
 	"api-service/internal/interface/service"
 	"api-service/internal/model"
+	"api-service/pkg/auth"
 	"api-service/pkg/errors"
 	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
-	"api-service/pkg/security"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
@@ -85,14 +85,14 @@ func (s *twoFactorService) EnableTOTP(ctx context.Context, userID uint) (*respon
 	}
 
 	// Generate TOTP secret
-	secret, err := security.GenerateSimpleTOTPSecret()
+	secret, err := auth.GenerateSimpleTOTPSecret()
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to generate TOTP secret", logger.ErrorField(err))
 		return nil, errors.WrapError(err, errors.CodeRecordCreateFailed, "failed to generate TOTP secret")
 	}
 
 	// Generate QR code URL
-	qrCodeURL := security.GenerateTOTPQRCode(secret, fmt.Sprintf("user_%d", userID), "Websoft9")
+	qrCodeURL := auth.GenerateTOTPQRCode(secret, fmt.Sprintf("user_%d", userID), "Websoft9")
 
 	// Generate backup codes
 	backupCodes, err := s.generateBackupCodes()
@@ -148,7 +148,7 @@ func (s *twoFactorService) ConfirmTOTP(ctx context.Context, userID uint, code st
 	}
 
 	// Verify TOTP code
-	valid, err := security.ValidateSimpleTOTP(twoFactor.Secret, code)
+	valid, err := auth.ValidateSimpleTOTP(twoFactor.Secret, code)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to validate TOTP code", logger.ErrorField(err))
 		return nil, errors.WrapError(err, errors.CodeValidationFailed, "failed to validate TOTP code")
@@ -206,7 +206,7 @@ func (s *twoFactorService) DisableTOTP(ctx context.Context, userID uint, code st
 	}
 
 	// Verify TOTP code
-	valid, err := security.ValidateSimpleTOTP(twoFactor.Secret, code)
+	valid, err := auth.ValidateSimpleTOTP(twoFactor.Secret, code)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to validate TOTP code", logger.ErrorField(err))
 		return errors.WrapError(err, errors.CodeValidationFailed, "failed to validate TOTP code")
@@ -396,7 +396,7 @@ func (s *twoFactorService) verifyTOTP(ctx context.Context, userID uint, code str
 		return &response.TwoFactorVerificationResponse{Valid: false}, nil
 	}
 
-	valid, err := security.ValidateSimpleTOTP(twoFactor.Secret, code)
+	valid, err := auth.ValidateSimpleTOTP(twoFactor.Secret, code)
 	if err != nil || !valid {
 		return &response.TwoFactorVerificationResponse{Valid: false}, nil
 	}

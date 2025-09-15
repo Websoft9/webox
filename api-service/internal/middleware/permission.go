@@ -4,8 +4,8 @@ import (
 	"api-service/internal/config"
 	"api-service/internal/interface/service"
 	"api-service/pkg/auth"
+	"api-service/pkg/errors"
 	"api-service/pkg/logger"
-	"errors"
 	"net/http"
 	"strings"
 
@@ -50,10 +50,28 @@ var publicRoutes = []string{
 	"/swagger/",                        // API documentation
 }
 
+// whiteListRoutes defines routes that require authentication but bypass permission checks
+// These routes are accessible to any authenticated user regardless of their specific permissions
+var whiteListRoutes = []string{
+	"/api/v1/api-tokens/refresh", // API token refresh
+	"/api/v1/api-tokens/revoke",  // API token revocation
+}
+
 // isPublicRoute checks if a given path is a public route that doesn't require authentication
 // It uses prefix matching to allow for dynamic path parameters
 func isPublicRoute(path string) bool {
 	for _, route := range publicRoutes {
+		if strings.HasPrefix(path, route) {
+			return true
+		}
+	}
+	return false
+}
+
+// isWhiteListRoutes checks if a given path is a whitelisted route that requires authentication
+// but bypasses permission validation. These routes are accessible to any authenticated user.
+func isWhiteListRoutes(path string) bool {
+	for _, route := range whiteListRoutes {
 		if strings.HasPrefix(path, route) {
 			return true
 		}
@@ -95,11 +113,12 @@ func PermissionMiddleware(permissionService service.PermissionService, apiTokenS
 		c.Set("role", claims.Role)
 		c.Set("claims", claims)
 
-		// Check if user has permission for the requested resource and action
-		if !checkUserPermission(c, permissionService, claims.UserID, log) {
-			return
+		if !isWhiteListRoutes(c.Request.URL.Path) {
+			// Check if user has permission for the requested resource and action
+			if !checkUserPermission(c, permissionService, claims.UserID, log) {
+				return
+			}
 		}
-
 		// Continue to the next handler
 		c.Next()
 	}
@@ -109,29 +128,20 @@ func PermissionMiddleware(permissionService service.PermissionService, apiTokenS
 func authenticateRequest(c *gin.Context) (*auth.Claims, string, error) {
 	authHeader := c.GetHeader("Authorization")
 	if authHeader == "" {
-		return nil, "", errors.New("authorization header missing")
+		return nil, "", errors.NewAppErrorWithMessage(errors.CodeRequiredParameterMissing, "authorization header is empty")
 	}
 
-	token, err := extractBearerToken(authHeader)
+	token, err := auth.ExtractTokenFromHeader(authHeader)
 	if err != nil {
 		return nil, "", err
 	}
 
-	claims, err := auth.ValidateToken(token)
+	claims, err := auth.GetGlobalJWT().ValidateToken(token)
 	if err != nil {
-		return nil, "", errors.New("invalid token signature")
+		return nil, "", err
 	}
 
 	return claims, token, nil
-}
-
-// extractBearerToken extracts token from Bearer authorization header
-func extractBearerToken(authHeader string) (string, error) {
-	const bearerPrefix = "Bearer "
-	if len(authHeader) < len(bearerPrefix) || authHeader[:len(bearerPrefix)] != bearerPrefix {
-		return "", errors.New("invalid authorization header format")
-	}
-	return authHeader[len(bearerPrefix):], nil
 }
 
 // handleAuthError handles authentication errors

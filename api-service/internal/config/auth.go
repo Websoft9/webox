@@ -12,134 +12,138 @@ import (
 
 // AuthConfig represents the complete authentication configuration structure
 type AuthConfig struct {
-	Version       string         `yaml:"version" json:"version"`
-	APIAuth       APIAuthConfig  `yaml:"api_auth" json:"api_auth"`
-	UserAuth      UserAuthConfig `yaml:"user_auth" json:"user_auth"`
-	SessionConfig SessionConfig  `yaml:"session_config" json:"session_config"`
+	Version       string         `yaml:"version" json:"version" mapstructure:"version"`
+	APIAuth       APIAuthConfig  `yaml:"api_auth" json:"api_auth" mapstructure:"api_auth"`
+	UserAuth      UserAuthConfig `yaml:"user_auth" json:"user_auth" mapstructure:"user_auth"`
+	SessionConfig SessionConfig  `yaml:"session_config" json:"session_config" mapstructure:"session_config"`
 }
 
 // APIAuthConfig represents API authentication configuration
 type APIAuthConfig struct {
-	TokenAuth TokenAuthConfig `yaml:"token_auth" json:"token_auth"`
-	OAuth2    OAuth2Config    `yaml:"oauth2" json:"oauth2"`
+	TokenAuth TokenAuthConfig `yaml:"token_auth" json:"token_auth" mapstructure:"token_auth"`
+	OAuth2    OAuth2Config    `yaml:"oauth2" json:"oauth2" mapstructure:"oauth2"`
 }
 
 // TokenAuthConfig represents JWT token authentication configuration
 type TokenAuthConfig struct {
-	Enabled          bool   `yaml:"enabled" json:"enabled"`
-	Algorithm        string `yaml:"algorithm" json:"algorithm"`
-	ExpiresIn        int    `yaml:"expires_in" json:"expires_in"`
-	RefreshExpiresIn int    `yaml:"refresh_expires_in" json:"refresh_expires_in"`
-	AutoRefresh      bool   `yaml:"auto_refresh" json:"auto_refresh"`
+	Algorithm        string `yaml:"algorithm" json:"algorithm" mapstructure:"algorithm"`
+	Secret           string `yaml:"secret" json:"secret" mapstructure:"secret"`
+	ExpiresIn        int    `yaml:"expires_in" json:"expires_in" mapstructure:"expires_in"`
+	RefreshExpiresIn int    `yaml:"refresh_expires_in" json:"refresh_expires_in" mapstructure:"refresh_expires_in"`
+	AutoRefresh      bool   `yaml:"auto_refresh" json:"auto_refresh" mapstructure:"auto_refresh"`
 }
 
 // OAuth2Config represents OAuth2 API authentication configuration
 type OAuth2Config struct {
-	Enabled           bool     `yaml:"enabled" json:"enabled"`
-	DefaultScopes     []string `yaml:"default_scopes" json:"default_scopes"`
-	TokenEndpoint     string   `yaml:"token_endpoint" json:"token_endpoint"`
-	AuthorizeEndpoint string   `yaml:"authorize_endpoint" json:"authorize_endpoint"`
+	Enabled           bool     `yaml:"enabled" json:"enabled" mapstructure:"enabled"`
+	DefaultScopes     []string `yaml:"default_scopes" json:"default_scopes" mapstructure:"default_scopes"`
+	TokenEndpoint     string   `yaml:"token_endpoint" json:"token_endpoint" mapstructure:"token_endpoint"`
+	AuthorizeEndpoint string   `yaml:"authorize_endpoint" json:"authorize_endpoint" mapstructure:"authorize_endpoint"`
 }
 
 // UserAuthConfig represents user authentication configuration
 type UserAuthConfig struct {
-	BasicAuth      BasicAuthConfig      `yaml:"basic_auth" json:"basic_auth"`
-	PasswordPolicy PasswordPolicyConfig `yaml:"password_policy" json:"password_policy"`
-	LoginSecurity  LoginSecurityConfig  `yaml:"login_security" json:"login_security"`
-	OAuth2         UserOAuth2Config     `yaml:"oauth2" json:"oauth2"`
-	TwoFactor      TwoFactorConfig      `yaml:"two_factor" json:"two_factor"`
+	BasicAuth      BasicAuthConfig      `yaml:"basic_auth" json:"basic_auth" mapstructure:"basic_auth"`
+	EmailAuth      EmailAuthConfig      `yaml:"email_auth" json:"email_auth" mapstructure:"email_auth"`
+	PasswordPolicy PasswordPolicyConfig `yaml:"password_policy" json:"password_policy" mapstructure:"password_policy"`
+	LoginSecurity  LoginSecurityConfig  `yaml:"login_security" json:"login_security" mapstructure:"login_security"`
+	OAuth2         UserOAuth2Config     `yaml:"oauth2" json:"oauth2" mapstructure:"oauth2"`
+	TwoFactor      TwoFactorConfig      `yaml:"two_factor" json:"two_factor" mapstructure:"two_factor"`
 }
 
 // BasicAuthConfig represents basic authentication configuration
 type BasicAuthConfig struct {
-	Enabled      bool     `yaml:"enabled" json:"enabled"`
-	LoginMethods []string `yaml:"login_methods" json:"login_methods"`
+	LoginMethods []string `yaml:"login_methods" json:"login_methods" mapstructure:"login_methods"`
+}
+
+type EmailAuthConfig struct {
+	Enabled   bool `yaml:"enabled" json:"enabled" mapstructure:"enabled"`
+	ExpiresIn int  `yaml:"expires_in" json:"expires_in" mapstructure:"expires_in"`
 }
 
 // PasswordPolicyConfig represents password policy configuration
 type PasswordPolicyConfig struct {
-	MinLength           int  `yaml:"min_length" json:"min_length"`
-	MaxLength           int  `yaml:"max_length" json:"max_length"`
-	RequireUppercase    bool `yaml:"require_uppercase" json:"require_uppercase"`
-	RequireLowercase    bool `yaml:"require_lowercase" json:"require_lowercase"`
-	RequireNumbers      bool `yaml:"require_numbers" json:"require_numbers"`
-	RequireSymbols      bool `yaml:"require_symbols" json:"require_symbols"`
-	PasswordHistory     int  `yaml:"password_history" json:"password_history"`
-	PasswordExpiresDays int  `yaml:"password_expires_days" json:"password_expires_days"`
+	MinLength           int  `yaml:"min_length" json:"min_length" mapstructure:"min_length"`
+	MaxLength           int  `yaml:"max_length" json:"max_length" mapstructure:"max_length"`
+	RequireUppercase    bool `yaml:"require_uppercase" json:"require_uppercase" mapstructure:"require_uppercase"`
+	RequireLowercase    bool `yaml:"require_lowercase" json:"require_lowercase" mapstructure:"require_lowercase"`
+	RequireNumbers      bool `yaml:"require_numbers" json:"require_numbers" mapstructure:"require_numbers"`
+	RequireSymbols      bool `yaml:"require_symbols" json:"require_symbols" mapstructure:"require_symbols"`
+	PasswordExpiresDays int  `yaml:"password_expires_days" json:"password_expires_days" mapstructure:"password_expires_days"`
 }
 
 // LoginSecurityConfig represents login security configuration
 type LoginSecurityConfig struct {
-	MaxLoginAttempts     int      `yaml:"max_login_attempts" json:"max_login_attempts"`
-	LockoutDuration      int      `yaml:"lockout_duration" json:"lockout_duration"`
-	IPWhitelistEnabled   bool     `yaml:"ip_whitelist_enabled" json:"ip_whitelist_enabled"`
-	IPWhitelist          []string `yaml:"ip_whitelist" json:"ip_whitelist"`
-	LoginTimeRestriction bool     `yaml:"login_time_restriction" json:"login_time_restriction"`
-	AllowedLoginHours    string   `yaml:"allowed_login_hours" json:"allowed_login_hours"`
+	MaxLoginAttempts     int      `yaml:"max_login_attempts" json:"max_login_attempts" mapstructure:"max_login_attempts"`
+	LockoutDuration      int      `yaml:"lockout_duration" json:"lockout_duration" mapstructure:"lockout_duration"`
+	IPWhitelistEnabled   bool     `yaml:"ip_whitelist_enabled" json:"ip_whitelist_enabled" mapstructure:"ip_whitelist_enabled"`
+	IPWhitelist          []string `yaml:"ip_whitelist" json:"ip_whitelist" mapstructure:"ip_whitelist"`
+	LoginTimeRestriction bool     `yaml:"login_time_restriction" json:"login_time_restriction" mapstructure:"login_time_restriction"`
+	AllowedLoginHours    string   `yaml:"allowed_login_hours" json:"allowed_login_hours" mapstructure:"allowed_login_hours"`
 }
 
 // UserOAuth2Config represents user OAuth2 login configuration
 type UserOAuth2Config struct {
-	Enabled      bool                            `yaml:"enabled" json:"enabled"`
-	AutoRegister bool                            `yaml:"auto_register" json:"auto_register"`
-	DefaultRole  string                          `yaml:"default_role" json:"default_role"`
-	Providers    map[string]OAuth2ProviderConfig `yaml:"providers" json:"providers"`
+	Enabled      bool                            `yaml:"enabled" json:"enabled" mapstructure:"enabled"`
+	AutoRegister bool                            `yaml:"auto_register" json:"auto_register" mapstructure:"auto_register"`
+	DefaultRole  string                          `yaml:"default_role" json:"default_role" mapstructure:"default_role"`
+	Providers    map[string]OAuth2ProviderConfig `yaml:"providers" json:"providers" mapstructure:"providers"`
 }
 
 // OAuth2ProviderConfig represents OAuth2 provider configuration
 type OAuth2ProviderConfig struct {
-	Name         string            `yaml:"name" json:"name"`
-	Enabled      bool              `yaml:"enabled" json:"enabled"`
-	ClientID     string            `yaml:"client_id" json:"client_id"`
-	ClientSecret string            `yaml:"client_secret" json:"client_secret"`
-	RedirectURI  string            `yaml:"redirect_uri" json:"redirect_uri"`
-	Scopes       []string          `yaml:"scopes" json:"scopes"`
-	AuthorizeURL string            `yaml:"authorize_url" json:"authorize_url"`
-	TokenURL     string            `yaml:"token_url" json:"token_url"`
-	UserInfoURL  string            `yaml:"user_info_url" json:"user_info_url"`
-	AutoRegister bool              `yaml:"auto_register" json:"auto_register"`
-	UserMapping  map[string]string `yaml:"user_mapping" json:"user_mapping"`
-	SortOrder    int               `yaml:"sort_order" json:"sort_order"`
+	Name         string            `yaml:"name" json:"name" mapstructure:"name"`
+	Enabled      bool              `yaml:"enabled" json:"enabled" mapstructure:"enabled"`
+	ClientID     string            `yaml:"client_id" json:"client_id" mapstructure:"client_id"`
+	ClientSecret string            `yaml:"client_secret" json:"client_secret" mapstructure:"client_secret"`
+	RedirectURI  string            `yaml:"redirect_uri" json:"redirect_uri" mapstructure:"redirect_uri"`
+	Scopes       []string          `yaml:"scopes" json:"scopes" mapstructure:"scopes"`
+	AuthorizeURL string            `yaml:"authorize_url" json:"authorize_url" mapstructure:"authorize_url"`
+	TokenURL     string            `yaml:"token_url" json:"token_url" mapstructure:"token_url"`
+	UserInfoURL  string            `yaml:"user_info_url" json:"user_info_url" mapstructure:"user_info_url"`
+	AutoRegister bool              `yaml:"auto_register" json:"auto_register" mapstructure:"auto_register"`
+	UserMapping  map[string]string `yaml:"user_mapping" json:"user_mapping" mapstructure:"user_mapping"`
+	SortOrder    int               `yaml:"sort_order" json:"sort_order" mapstructure:"sort_order"`
 }
 
 // TwoFactorConfig represents two-factor authentication configuration
 type TwoFactorConfig struct {
-	Enabled       bool                   `yaml:"enabled" json:"enabled"`
-	RequiredRoles []string               `yaml:"required_roles" json:"required_roles"`
-	Methods       TwoFactorMethodsConfig `yaml:"methods" json:"methods"`
+	Enabled       bool                   `yaml:"enabled" json:"enabled" mapstructure:"enabled"`
+	RequiredRoles []string               `yaml:"required_roles" json:"required_roles" mapstructure:"required_roles"`
+	Methods       TwoFactorMethodsConfig `yaml:"methods" json:"methods" mapstructure:"methods"`
 }
 
 // TwoFactorMethodsConfig represents two-factor authentication methods configuration
 type TwoFactorMethodsConfig struct {
-	TOTP  TOTPConfig  `yaml:"totp" json:"totp"`
-	Email EmailConfig `yaml:"email" json:"email"`
+	TOTP  TOTPConfig  `yaml:"totp" json:"totp" mapstructure:"totp"`
+	Email EmailConfig `yaml:"email" json:"email" mapstructure:"email"`
 }
 
 // TOTPConfig represents TOTP authentication configuration
 type TOTPConfig struct {
-	Enabled          bool   `yaml:"enabled" json:"enabled"`
-	Issuer           string `yaml:"issuer" json:"issuer"`
-	Algorithm        string `yaml:"algorithm" json:"algorithm"`
-	Digits           int    `yaml:"digits" json:"digits"`
-	Period           int    `yaml:"period" json:"period"`
-	BackupCodesCount int    `yaml:"backup_codes_count" json:"backup_codes_count"`
+	Enabled          bool   `yaml:"enabled" json:"enabled" mapstructure:"enabled"`
+	Issuer           string `yaml:"issuer" json:"issuer" mapstructure:"issuer"`
+	Algorithm        string `yaml:"algorithm" json:"algorithm" mapstructure:"algorithm"`
+	Digits           int    `yaml:"digits" json:"digits" mapstructure:"digits"`
+	Period           int    `yaml:"period" json:"period" mapstructure:"period"`
+	BackupCodesCount int    `yaml:"backup_codes_count" json:"backup_codes_count" mapstructure:"backup_codes_count"`
 }
 
 // EmailConfig represents email verification code configuration
 type EmailConfig struct {
-	Enabled    bool   `yaml:"enabled" json:"enabled"`
-	CodeLength int    `yaml:"code_length" json:"code_length"`
-	ExpiresIn  int    `yaml:"expires_in" json:"expires_in"`
-	RateLimit  int    `yaml:"rate_limit" json:"rate_limit"`
-	Template   string `yaml:"template" json:"template"`
+	Enabled    bool   `yaml:"enabled" json:"enabled" mapstructure:"enabled"`
+	CodeLength int    `yaml:"code_length" json:"code_length" mapstructure:"code_length"`
+	ExpiresIn  int    `yaml:"expires_in" json:"expires_in" mapstructure:"expires_in"`
+	RateLimit  int    `yaml:"rate_limit" json:"rate_limit" mapstructure:"rate_limit"`
+	Template   string `yaml:"template" json:"template" mapstructure:"template"`
 }
 
 // SessionConfig represents session configuration
 type SessionConfig struct {
-	Timeout               int  `yaml:"timeout" json:"timeout"`
-	MaxConcurrentSessions int  `yaml:"max_concurrent_sessions" json:"max_concurrent_sessions"`
-	RememberMeEnabled     bool `yaml:"remember_me_enabled" json:"remember_me_enabled"`
-	RememberMeDuration    int  `yaml:"remember_me_duration" json:"remember_me_duration"`
+	Timeout               int  `yaml:"timeout" json:"timeout" mapstructure:"timeout"`
+	MaxConcurrentSessions int  `yaml:"max_concurrent_sessions" json:"max_concurrent_sessions" mapstructure:"max_concurrent_sessions"`
+	RememberMeEnabled     bool `yaml:"remember_me_enabled" json:"remember_me_enabled" mapstructure:"remember_me_enabled"`
+	RememberMeDuration    int  `yaml:"remember_me_duration" json:"remember_me_duration" mapstructure:"remember_me_duration"`
 }
 
 // AuthConfigManager manages authentication configuration loading and access
@@ -205,15 +209,16 @@ func (m *AuthConfigManager) loadConfig() error {
 // setDefaults sets default configuration values
 func (m *AuthConfigManager) setDefaults() {
 	// API authentication defaults
-	m.viper.SetDefault("api_auth.token_auth.enabled", true)
 	m.viper.SetDefault("api_auth.token_auth.algorithm", "HS256")
+	m.viper.SetDefault("api_auth.token_auth.secret", "Websoft9")
 	m.viper.SetDefault("api_auth.token_auth.expires_in", constants.DefaultTokenExpiresIn)
 	m.viper.SetDefault("api_auth.token_auth.refresh_expires_in", constants.DefaultRefreshTokenExpiresIn)
 	m.viper.SetDefault("api_auth.token_auth.auto_refresh", true)
 
 	// User authentication defaults
-	m.viper.SetDefault("user_auth.basic_auth.enabled", true)
 	m.viper.SetDefault("user_auth.basic_auth.login_methods", []string{"username", "email"})
+	m.viper.SetDefault("user_auth.email_auth.enabled", true)
+	m.viper.SetDefault("user_auth.email_auth.expires_in", constants.DefaultTokenExpiresIn)
 
 	// Password policy defaults
 	m.viper.SetDefault("user_auth.password_policy.min_length", constants.PasswordMinLength)
@@ -222,7 +227,6 @@ func (m *AuthConfigManager) setDefaults() {
 	m.viper.SetDefault("user_auth.password_policy.require_lowercase", true)
 	m.viper.SetDefault("user_auth.password_policy.require_numbers", true)
 	m.viper.SetDefault("user_auth.password_policy.require_symbols", false)
-	m.viper.SetDefault("user_auth.password_policy.password_history", constants.PasswordHistoryCount)
 	m.viper.SetDefault("user_auth.password_policy.password_expires_days", constants.PasswordExpiresDays)
 
 	// Login security defaults

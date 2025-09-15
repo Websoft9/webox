@@ -9,9 +9,6 @@ import (
 	"api-service/pkg/logger"
 	"context"
 	"fmt"
-	"regexp"
-	"strings"
-	"unicode"
 )
 
 // AuthConfigServiceImpl implements the AuthConfigService interface
@@ -41,21 +38,28 @@ func (s *AuthConfigServiceImpl) GetAuthConfig(ctx context.Context) (*response.Au
 	// Convert internal config to response format
 	resp := &response.AuthConfigResponse{
 		APIAuth: response.APIAuthResponse{
-			TokenAuthEnabled: authConfig.APIAuth.TokenAuth.Enabled,
-			OAuth2Enabled:    authConfig.APIAuth.OAuth2.Enabled,
-			JWTConfig: response.JWTConfigResponse{
+			OAuth2: response.OAuth2Response{
+				Enabled:           authConfig.APIAuth.OAuth2.Enabled,
+				DefaultScopes:     authConfig.APIAuth.OAuth2.DefaultScopes,
+				TokenEndpoint:     authConfig.APIAuth.OAuth2.TokenEndpoint,
+				AuthorizeEndpoint: authConfig.APIAuth.OAuth2.AuthorizeEndpoint,
+			},
+			TokenAuth: response.TokenAuthResponse{
 				Algorithm:        authConfig.APIAuth.TokenAuth.Algorithm,
+				Secret:           maskSensitiveValue(authConfig.APIAuth.TokenAuth.Secret),
 				ExpiresIn:        authConfig.APIAuth.TokenAuth.ExpiresIn,
 				RefreshExpiresIn: authConfig.APIAuth.TokenAuth.RefreshExpiresIn,
 				AutoRefresh:      authConfig.APIAuth.TokenAuth.AutoRefresh,
 			},
 		},
 		UserAuth: response.UserAuthResponse{
-			OAuth2Enabled:          authConfig.UserAuth.OAuth2.Enabled,
-			OAuth2Providers:        s.convertOAuth2ProvidersToResponse(authConfig.UserAuth.OAuth2.Providers),
-			TwoFactorEnabled:       authConfig.UserAuth.TwoFactor.Enabled,
-			TwoFactorMethods:       []string{},
-			TwoFactorRequiredRoles: authConfig.UserAuth.TwoFactor.RequiredRoles,
+			BasicAuth: response.BasicAuthResponse{
+				LoginMethods: authConfig.UserAuth.BasicAuth.LoginMethods,
+			},
+			EmailAuth: response.EmailAuthResponse{
+				Enabled:   authConfig.UserAuth.EmailAuth.Enabled,
+				ExpiresIn: authConfig.UserAuth.EmailAuth.ExpiresIn,
+			},
 			PasswordPolicy: response.PasswordPolicyResponse{
 				MinLength:           authConfig.UserAuth.PasswordPolicy.MinLength,
 				MaxLength:           authConfig.UserAuth.PasswordPolicy.MaxLength,
@@ -63,7 +67,6 @@ func (s *AuthConfigServiceImpl) GetAuthConfig(ctx context.Context) (*response.Au
 				RequireLowercase:    authConfig.UserAuth.PasswordPolicy.RequireLowercase,
 				RequireNumbers:      authConfig.UserAuth.PasswordPolicy.RequireNumbers,
 				RequireSymbols:      authConfig.UserAuth.PasswordPolicy.RequireSymbols,
-				PasswordHistory:     authConfig.UserAuth.PasswordPolicy.PasswordHistory,
 				PasswordExpiresDays: authConfig.UserAuth.PasswordPolicy.PasswordExpiresDays,
 			},
 			LoginSecurity: response.LoginSecurityResponse{
@@ -74,6 +77,33 @@ func (s *AuthConfigServiceImpl) GetAuthConfig(ctx context.Context) (*response.Au
 				LoginTimeRestriction: authConfig.UserAuth.LoginSecurity.LoginTimeRestriction,
 				AllowedLoginHours:    authConfig.UserAuth.LoginSecurity.AllowedLoginHours,
 			},
+			OAuth2: response.OAuth2LoginResponse{
+				Enabled:      authConfig.UserAuth.OAuth2.Enabled,
+				AutoRegister: authConfig.UserAuth.OAuth2.AutoRegister,
+				DefaultRole:  authConfig.UserAuth.OAuth2.DefaultRole,
+				Providers:    s.convertOAuth2ProvidersToResponse(authConfig.UserAuth.OAuth2.Providers),
+			},
+			TwoFactor: response.TwoFactorAuthResponse{
+				Enabled:       authConfig.UserAuth.TwoFactor.Enabled,
+				RequiredRoles: authConfig.UserAuth.TwoFactor.RequiredRoles,
+				Methods: response.TwoFactorMethodsResponse{
+					TOTP: response.TOTPMethodResponse{
+						Enabled:          authConfig.UserAuth.TwoFactor.Methods.TOTP.Enabled,
+						Issuer:           authConfig.UserAuth.TwoFactor.Methods.TOTP.Issuer,
+						Algorithm:        authConfig.UserAuth.TwoFactor.Methods.TOTP.Algorithm,
+						Digits:           authConfig.UserAuth.TwoFactor.Methods.TOTP.Digits,
+						Period:           authConfig.UserAuth.TwoFactor.Methods.TOTP.Period,
+						BackupCodesCount: authConfig.UserAuth.TwoFactor.Methods.TOTP.BackupCodesCount,
+					},
+					Email: response.EmailMethodResponse{
+						Enabled:    authConfig.UserAuth.TwoFactor.Methods.Email.Enabled,
+						CodeLength: authConfig.UserAuth.TwoFactor.Methods.Email.CodeLength,
+						ExpiresIn:  authConfig.UserAuth.TwoFactor.Methods.Email.ExpiresIn,
+						RateLimit:  authConfig.UserAuth.TwoFactor.Methods.Email.RateLimit,
+						Template:   authConfig.UserAuth.TwoFactor.Methods.Email.Template,
+					},
+				},
+			},
 		},
 		SessionConfig: response.SessionConfigResponse{
 			Timeout:               authConfig.SessionConfig.Timeout,
@@ -81,14 +111,6 @@ func (s *AuthConfigServiceImpl) GetAuthConfig(ctx context.Context) (*response.Au
 			RememberMeEnabled:     authConfig.SessionConfig.RememberMeEnabled,
 			RememberMeDuration:    authConfig.SessionConfig.RememberMeDuration,
 		},
-	}
-
-	// Set two-factor authentication methods
-	if authConfig.UserAuth.TwoFactor.Methods.TOTP.Enabled {
-		resp.UserAuth.TwoFactorMethods = append(resp.UserAuth.TwoFactorMethods, "TOTP")
-	}
-	if authConfig.UserAuth.TwoFactor.Methods.Email.Enabled {
-		resp.UserAuth.TwoFactorMethods = append(resp.UserAuth.TwoFactorMethods, "EMAIL")
 	}
 
 	s.logger.InfoContext(ctx, "Successfully retrieved authentication configuration")
@@ -129,33 +151,43 @@ func (s *AuthConfigServiceImpl) updateAPIAuthConfig(config *config.AuthConfig, a
 		return
 	}
 
-	if apiAuth.TokenAuthEnabled != nil {
-		config.APIAuth.TokenAuth.Enabled = *apiAuth.TokenAuthEnabled
+	// Update OAuth2 configuration
+	if apiAuth.OAuth2.Enabled != nil {
+		config.APIAuth.OAuth2.Enabled = *apiAuth.OAuth2.Enabled
 	}
-	if apiAuth.OAuth2Enabled != nil {
-		config.APIAuth.OAuth2.Enabled = *apiAuth.OAuth2Enabled
+	if apiAuth.OAuth2.DefaultScopes != nil {
+		config.APIAuth.OAuth2.DefaultScopes = *apiAuth.OAuth2.DefaultScopes
+	}
+	if apiAuth.OAuth2.TokenEndpoint != nil {
+		config.APIAuth.OAuth2.TokenEndpoint = *apiAuth.OAuth2.TokenEndpoint
+	}
+	if apiAuth.OAuth2.AuthorizeEndpoint != nil {
+		config.APIAuth.OAuth2.AuthorizeEndpoint = *apiAuth.OAuth2.AuthorizeEndpoint
 	}
 
-	s.updateJWTConfig(&config.APIAuth.TokenAuth, apiAuth.JWTConfig)
+	s.updateTokenAuthConfig(&config.APIAuth.TokenAuth, apiAuth.TokenAuth)
 }
 
-// updateJWTConfig updates JWT configuration
-func (s *AuthConfigServiceImpl) updateJWTConfig(tokenAuth *config.TokenAuthConfig, jwtConfig *request.JWTConfigRequest) {
-	if jwtConfig == nil {
+// updateTokenAuthConfig updates token authentication configuration
+func (s *AuthConfigServiceImpl) updateTokenAuthConfig(tokenAuth *config.TokenAuthConfig, tokenConfig *request.TokenAuthRequest) {
+	if tokenConfig == nil {
 		return
 	}
 
-	if jwtConfig.Algorithm != nil {
-		tokenAuth.Algorithm = *jwtConfig.Algorithm
+	if tokenConfig.Algorithm != nil {
+		tokenAuth.Algorithm = *tokenConfig.Algorithm
 	}
-	if jwtConfig.ExpiresIn != nil {
-		tokenAuth.ExpiresIn = *jwtConfig.ExpiresIn
+	if tokenConfig.Secret != nil {
+		tokenAuth.Secret = *tokenConfig.Secret
 	}
-	if jwtConfig.RefreshExpiresIn != nil {
-		tokenAuth.RefreshExpiresIn = *jwtConfig.RefreshExpiresIn
+	if tokenConfig.ExpiresIn != nil {
+		tokenAuth.ExpiresIn = *tokenConfig.ExpiresIn
 	}
-	if jwtConfig.AutoRefresh != nil {
-		tokenAuth.AutoRefresh = *jwtConfig.AutoRefresh
+	if tokenConfig.RefreshExpiresIn != nil {
+		tokenAuth.RefreshExpiresIn = *tokenConfig.RefreshExpiresIn
+	}
+	if tokenConfig.AutoRefresh != nil {
+		tokenAuth.AutoRefresh = *tokenConfig.AutoRefresh
 	}
 }
 
@@ -165,17 +197,24 @@ func (s *AuthConfigServiceImpl) updateUserAuthConfig(config *config.AuthConfig, 
 		return
 	}
 
-	if userAuth.OAuth2Enabled != nil {
-		config.UserAuth.OAuth2.Enabled = *userAuth.OAuth2Enabled
-	}
-	if userAuth.TwoFactorEnabled != nil {
-		config.UserAuth.TwoFactor.Enabled = *userAuth.TwoFactorEnabled
+	// Update basic auth configuration
+	if userAuth.BasicAuth != nil {
+		s.updateBasicAuthConfig(&config.UserAuth.BasicAuth, userAuth.BasicAuth)
 	}
 
-	s.updateTwoFactorMethods(&config.UserAuth.TwoFactor, userAuth.TwoFactorMethods)
+	// Update email auth configuration
+	if userAuth.EmailAuth != nil {
+		s.updateEmailAuthConfig(&config.UserAuth.EmailAuth, userAuth.EmailAuth)
+	}
 
-	if userAuth.TwoFactorRequiredRoles != nil {
-		config.UserAuth.TwoFactor.RequiredRoles = *userAuth.TwoFactorRequiredRoles
+	// Update OAuth2 configuration
+	if userAuth.OAuth2 != nil {
+		s.updateOAuth2LoginConfig(&config.UserAuth.OAuth2, userAuth.OAuth2)
+	}
+
+	// Update two-factor configuration
+	if userAuth.TwoFactor != nil {
+		s.updateTwoFactorConfig(&config.UserAuth.TwoFactor, userAuth.TwoFactor)
 	}
 	if userAuth.PasswordPolicy != nil {
 		s.updatePasswordPolicy(&config.UserAuth.PasswordPolicy, userAuth.PasswordPolicy)
@@ -183,17 +222,6 @@ func (s *AuthConfigServiceImpl) updateUserAuthConfig(config *config.AuthConfig, 
 	if userAuth.LoginSecurity != nil {
 		s.updateLoginSecurity(&config.UserAuth.LoginSecurity, userAuth.LoginSecurity)
 	}
-}
-
-// updateTwoFactorMethods updates two-factor authentication methods
-func (s *AuthConfigServiceImpl) updateTwoFactorMethods(twoFactor *config.TwoFactorConfig, methods *[]string) {
-	if methods == nil {
-		return
-	}
-
-	// Update two-factor methods based on request
-	twoFactor.Methods.TOTP.Enabled = contains(*methods, "TOTP")
-	twoFactor.Methods.Email.Enabled = contains(*methods, "EMAIL")
 }
 
 // updateSessionConfig updates session configuration section
@@ -216,6 +244,23 @@ func (s *AuthConfigServiceImpl) updateSessionConfig(config *config.AuthConfig, s
 	}
 }
 
+// updateBasicAuthConfig updates basic authentication configuration
+func (s *AuthConfigServiceImpl) updateBasicAuthConfig(current *config.BasicAuthConfig, req *request.BasicAuthRequest) {
+	if req.LoginMethods != nil {
+		current.LoginMethods = *req.LoginMethods
+	}
+}
+
+// updateEmailAuthConfig updates email authentication configuration
+func (s *AuthConfigServiceImpl) updateEmailAuthConfig(current *config.EmailAuthConfig, req *request.EmailAuthRequest) {
+	if req.Enabled != nil {
+		current.Enabled = *req.Enabled
+	}
+	if req.ExpiresIn != nil {
+		current.ExpiresIn = *req.ExpiresIn
+	}
+}
+
 // GetOAuth2Providers retrieves OAuth2 provider configurations
 func (s *AuthConfigServiceImpl) GetOAuth2Providers(ctx context.Context) ([]*response.OAuth2ProviderResponse, error) {
 	s.logger.InfoContext(ctx, "Getting OAuth2 providers")
@@ -227,96 +272,22 @@ func (s *AuthConfigServiceImpl) GetOAuth2Providers(ctx context.Context) ([]*resp
 		provider := &providers[i]
 		resp = append(resp, &response.OAuth2ProviderResponse{
 			Name:         provider.Name,
-			Provider:     getProviderKeyByName(s.authConfigManager.GetConfig().UserAuth.OAuth2.Providers, provider.Name),
+			Enabled:      provider.Enabled,
 			ClientID:     maskSensitiveValue(provider.ClientID),
 			ClientSecret: maskSensitiveValue(provider.ClientSecret),
 			RedirectURI:  provider.RedirectURI,
 			Scopes:       provider.Scopes,
-			Enabled:      provider.Enabled,
+			AuthorizeURL: provider.AuthorizeURL,
+			TokenURL:     provider.TokenURL,
+			UserInfoURL:  provider.UserInfoURL,
 			AutoRegister: provider.AutoRegister,
 			UserMapping:  provider.UserMapping,
+			SortOrder:    provider.SortOrder,
 		})
 	}
 
 	s.logger.InfoContext(ctx, "Successfully retrieved OAuth2 providers", logger.Int("count", len(resp)))
 	return resp, nil
-}
-
-// ValidatePassword validates a password against the configured password policy
-func (s *AuthConfigServiceImpl) ValidatePassword(password string) error {
-	policy := s.authConfigManager.GetPasswordPolicy()
-
-	// Check minimum length
-	if len(password) < policy.MinLength {
-		return fmt.Errorf("password must be at least %d characters long", policy.MinLength)
-	}
-
-	// Check maximum length
-	if len(password) > policy.MaxLength {
-		return fmt.Errorf("password must not exceed %d characters", policy.MaxLength)
-	}
-
-	// Check for uppercase letters
-	if policy.RequireUppercase && !containsUppercase(password) {
-		return fmt.Errorf("password must contain at least one uppercase letter")
-	}
-
-	// Check for lowercase letters
-	if policy.RequireLowercase && !containsLowercase(password) {
-		return fmt.Errorf("password must contain at least one lowercase letter")
-	}
-
-	// Check for numbers
-	if policy.RequireNumbers && !containsNumber(password) {
-		return fmt.Errorf("password must contain at least one number")
-	}
-
-	// Check for symbols
-	if policy.RequireSymbols && !containsSymbol(password) {
-		return fmt.Errorf("password must contain at least one special character")
-	}
-
-	return nil
-}
-
-// CheckLoginSecurity checks login security constraints
-func (s *AuthConfigServiceImpl) CheckLoginSecurity(ctx context.Context, userID uint, ip string) error {
-	security := s.authConfigManager.GetLoginSecurity()
-
-	// Check IP whitelist if enabled
-	if security.IPWhitelistEnabled && len(security.IPWhitelist) > 0 {
-		if !s.isIPInWhitelist(ip, security.IPWhitelist) {
-			s.logger.WarnContext(ctx, "Login attempt from non-whitelisted IP",
-				logger.Uint("user_id", userID),
-				logger.String("ip", ip))
-			return fmt.Errorf("login from this IP address is not allowed")
-		}
-	}
-
-	// Check login time restrictions if enabled
-	if security.LoginTimeRestriction {
-		allowed := s.isLoginTimeAllowed(security.AllowedLoginHours)
-		if !allowed {
-			s.logger.WarnContext(ctx, "Login attempt outside allowed hours",
-				logger.Uint("user_id", userID),
-				logger.String("allowed_hours", security.AllowedLoginHours))
-			return fmt.Errorf("login is not allowed at this time")
-		}
-	}
-
-	return nil
-}
-
-// RecordLoginAttempt records a login attempt for security monitoring
-func (s *AuthConfigServiceImpl) RecordLoginAttempt(ctx context.Context, userID uint, success bool, ip string) error {
-	// This is a placeholder implementation
-	// In a real implementation, you would store login attempts in a database or cache
-	s.logger.InfoContext(ctx, "Login attempt recorded",
-		logger.Uint("user_id", userID),
-		logger.Bool("success", success),
-		logger.String("ip", ip))
-
-	return nil
 }
 
 // Helper methods
@@ -329,14 +300,17 @@ func (s *AuthConfigServiceImpl) convertOAuth2ProvidersToResponse(providers map[s
 		provider := providers[key]
 		resp = append(resp, &response.OAuth2ProviderResponse{
 			Name:         provider.Name,
-			Provider:     key,
+			Enabled:      provider.Enabled,
 			ClientID:     maskSensitiveValue(provider.ClientID),
 			ClientSecret: maskSensitiveValue(provider.ClientSecret),
 			RedirectURI:  provider.RedirectURI,
 			Scopes:       provider.Scopes,
-			Enabled:      provider.Enabled,
+			AuthorizeURL: provider.AuthorizeURL,
+			TokenURL:     provider.TokenURL,
+			UserInfoURL:  provider.UserInfoURL,
 			AutoRegister: provider.AutoRegister,
 			UserMapping:  provider.UserMapping,
+			SortOrder:    provider.SortOrder,
 		})
 	}
 
@@ -362,9 +336,6 @@ func (s *AuthConfigServiceImpl) updatePasswordPolicy(current *config.PasswordPol
 	}
 	if req.RequireSymbols != nil {
 		current.RequireSymbols = *req.RequireSymbols
-	}
-	if req.PasswordHistory != nil {
-		current.PasswordHistory = *req.PasswordHistory
 	}
 	if req.PasswordExpiresDays != nil {
 		current.PasswordExpiresDays = *req.PasswordExpiresDays
@@ -395,16 +366,6 @@ func (s *AuthConfigServiceImpl) updateLoginSecurity(current *config.LoginSecurit
 
 // Utility functions
 
-// contains checks if a slice contains a specific string
-func contains(slice []string, item string) bool {
-	for _, s := range slice {
-		if s == item {
-			return true
-		}
-	}
-	return false
-}
-
 // maskSensitiveValue masks sensitive configuration values
 func maskSensitiveValue(value string) string {
 	if value == "" {
@@ -416,83 +377,80 @@ func maskSensitiveValue(value string) string {
 	return value[:4] + "***" + value[len(value)-4:]
 }
 
-// getProviderKeyByName finds provider key by name
-func getProviderKeyByName(providers map[string]config.OAuth2ProviderConfig, name string) string {
-	for key := range providers {
-		provider := providers[key]
-		if provider.Name == name {
-			return key
-		}
+// updateOAuth2LoginConfig updates OAuth2 login configuration
+func (s *AuthConfigServiceImpl) updateOAuth2LoginConfig(current *config.UserOAuth2Config, req *request.OAuth2LoginConfigRequest) {
+	if req.Enabled != nil {
+		current.Enabled = *req.Enabled
 	}
-	return ""
+	if req.AutoRegister != nil {
+		current.AutoRegister = *req.AutoRegister
+	}
+	if req.DefaultRole != nil {
+		current.DefaultRole = *req.DefaultRole
+	}
+	// TODO: Providers update would require more complex logic to handle provider-specific updates
 }
 
-// Password validation helper functions
-
-// containsUppercase checks if string contains uppercase letters
-func containsUppercase(s string) bool {
-	for _, r := range s {
-		if unicode.IsUpper(r) {
-			return true
-		}
+// updateTwoFactorConfig updates two-factor authentication configuration
+func (s *AuthConfigServiceImpl) updateTwoFactorConfig(current *config.TwoFactorConfig, req *request.TwoFactorRequest) {
+	if req.Enabled != nil {
+		current.Enabled = *req.Enabled
 	}
-	return false
+	if req.RequiredRoles != nil {
+		current.RequiredRoles = *req.RequiredRoles
+	}
+	if req.Methods != nil {
+		s.updateTwoFactorMethodsConfig(&current.Methods, req.Methods)
+	}
 }
 
-// containsLowercase checks if string contains lowercase letters
-func containsLowercase(s string) bool {
-	for _, r := range s {
-		if unicode.IsLower(r) {
-			return true
-		}
+// updateTwoFactorMethodsConfig updates two-factor methods configuration
+func (s *AuthConfigServiceImpl) updateTwoFactorMethodsConfig(current *config.TwoFactorMethodsConfig, req *request.TwoFactorMethodsRequest) {
+	if req.TOTP != nil {
+		s.updateTOTPMethodConfig(&current.TOTP, req.TOTP)
 	}
-	return false
+	if req.Email != nil {
+		s.updateEmailMethodConfig(&current.Email, req.Email)
+	}
 }
 
-// containsNumber checks if string contains numbers
-func containsNumber(s string) bool {
-	for _, r := range s {
-		if unicode.IsNumber(r) {
-			return true
-		}
+// updateTOTPMethodConfig updates TOTP method configuration
+func (s *AuthConfigServiceImpl) updateTOTPMethodConfig(current *config.TOTPConfig, req *request.TOTPMethodRequest) {
+	if req.Enabled != nil {
+		current.Enabled = *req.Enabled
 	}
-	return false
+	if req.Issuer != nil {
+		current.Issuer = *req.Issuer
+	}
+	if req.Algorithm != nil {
+		current.Algorithm = *req.Algorithm
+	}
+	if req.Digits != nil {
+		current.Digits = *req.Digits
+	}
+	if req.Period != nil {
+		current.Period = *req.Period
+	}
+	if req.BackupCodesCount != nil {
+		current.BackupCodesCount = *req.BackupCodesCount
+	}
 }
 
-// containsSymbol checks if string contains special characters
-func containsSymbol(s string) bool {
-	symbolRegex := regexp.MustCompile(`[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]`)
-	return symbolRegex.MatchString(s)
-}
-
-// isIPInWhitelist checks if IP address is in whitelist
-func (s *AuthConfigServiceImpl) isIPInWhitelist(ip string, whitelist []string) bool {
-	for _, allowedIP := range whitelist {
-		if ip == allowedIP {
-			return true
-		}
-		// Support CIDR notation matching in future implementation
-		// For now, only exact matches are supported
+// updateEmailMethodConfig updates email method configuration
+func (s *AuthConfigServiceImpl) updateEmailMethodConfig(current *config.EmailConfig, req *request.EmailMethodRequest) {
+	if req.Enabled != nil {
+		current.Enabled = *req.Enabled
 	}
-	return false
-}
-
-// isLoginTimeAllowed checks if current time is within allowed login hours
-// nolint:unparam // This is a placeholder implementation that always returns true
-func (s *AuthConfigServiceImpl) isLoginTimeAllowed(allowedHours string) bool {
-	// Parse time range format: "09:00-18:00"
-	if allowedHours == "" {
-		return true // No restriction
+	if req.CodeLength != nil {
+		current.CodeLength = *req.CodeLength
 	}
-
-	// This is a simplified implementation
-	// In production, you would parse the time range and compare with current time
-	parts := strings.Split(allowedHours, "-")
-	if len(parts) != constants.TimeRangePartsCount {
-		return true // Invalid format, allow by default
+	if req.ExpiresIn != nil {
+		current.ExpiresIn = *req.ExpiresIn
 	}
-
-	// TODO: Implement actual time range checking
-	// For now, always return true to maintain backward compatibility
-	return true
+	if req.RateLimit != nil {
+		current.RateLimit = *req.RateLimit
+	}
+	if req.Template != nil {
+		current.Template = *req.Template
+	}
 }

@@ -17,6 +17,8 @@ const (
 	CodeLoginAttemptsExceeded   = 1008 // Too many login failures
 	CodeEmailAlreadyExists      = 1009 // Email already exists
 	CodeTokenAlreadyUsed        = 1010 // Token already used
+	CodeUsernameSuported        = 1011 // Username supported
+	CodeEmailSuported           = 1012 // Email supported
 
 	// Permission related error codes (2000-2999)
 	CodeInsufficientPermissions       = 2001 // Insufficient permissions
@@ -24,6 +26,7 @@ const (
 	CodeOperationPermissionDenied     = 2003 // Operation permission insufficient
 	CodeRolePermissionDenied          = 2004 // Role permission insufficient
 	CodeResourceGroupPermissionDenied = 2005 // Resource group permission insufficient
+	CodeAccessDenied                  = 2006 // Access denied
 
 	// Parameter validation error codes (3000-3999)
 	CodeValidationFailed         = 3000 // General validation error
@@ -94,6 +97,8 @@ var CodeToI18nKey = map[int]string{
 	CodeLoginAttemptsExceeded:   "auth.login_attempts_exceeded",
 	CodeEmailAlreadyExists:      "auth.email_already_exists",
 	CodeTokenAlreadyUsed:        "auth.token_already_used",
+	CodeUsernameSuported:        "auth.username_supported",
+	CodeEmailSuported:           "auth.email_supported",
 
 	// Permission related errors (2000-2999)
 	CodeInsufficientPermissions:       "auth.permission_denied",
@@ -101,6 +106,7 @@ var CodeToI18nKey = map[int]string{
 	CodeOperationPermissionDenied:     "auth.operation_permission_denied",
 	CodeRolePermissionDenied:          "auth.role_permission_denied",
 	CodeResourceGroupPermissionDenied: "auth.resource_group_permission_denied",
+	CodeAccessDenied:                  "auth.access_denied",
 
 	// Parameter validation errors (3000-3999)
 	CodeValidationFailed:         "validation.validation_failed",
@@ -171,6 +177,8 @@ var CodeMessages = map[int]string{
 	CodeLoginAttemptsExceeded:   "Too many login failures",
 	CodeEmailAlreadyExists:      "Email already exists",
 	CodeTokenAlreadyUsed:        "Token has already been used",
+	CodeUsernameSuported:        "Only username login is supported",
+	CodeEmailSuported:           "Only email login is supported",
 
 	// Permission related errors (2000-2999)
 	CodeInsufficientPermissions:       "Insufficient permissions",
@@ -178,6 +186,7 @@ var CodeMessages = map[int]string{
 	CodeOperationPermissionDenied:     "Operation permission insufficient",
 	CodeRolePermissionDenied:          "Role permission insufficient",
 	CodeResourceGroupPermissionDenied: "Resource group permission insufficient",
+	CodeAccessDenied:                  "Access denied",
 
 	// Parameter validation errors (3000-3999)
 	CodeValidationFailed:         "Validation failed",

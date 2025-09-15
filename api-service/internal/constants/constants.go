@@ -141,20 +141,9 @@ const (
 	TwoFactorMethodTOTP   = "totp"
 	TwoFactorMethodEmail  = "email"
 	TwoFactorMethodBackup = "backup"
-)
 
-// Redis token storage constants
-const (
-	// JWTLeewaySeconds defines the leeway time in seconds for JWT validation
-	JWTLeewaySeconds = 5
 	// SMTPDefaultPort is the default SMTP port
 	SMTPDefaultPort = 587
-	// TokenBytes defines the size of random token bytes
-	TokenBytes = 32
-
-	// #nosec G101 -- This is not a credential, just a Redis key prefix
-	TokenRedisKeyPrefix    = "AUTH:TOKEN:"
-	TokenExpirationMinutes = 30 // 30 minutes for verification tokens
 )
 
 // HTTP method constants

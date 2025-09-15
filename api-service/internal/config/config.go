@@ -12,7 +12,6 @@ type Config struct {
 	Database DatabaseConfig  `mapstructure:"database"`
 	Redis    RedisConfig     `mapstructure:"redis"`
 	InfluxDB InfluxDBConfig  `mapstructure:"influxdb"`
-	JWT      JWTConfig       `mapstructure:"jwt"`
 	GRPC     GRPCConfig      `mapstructure:"grpc"`
 	I18n     I18nConfig      `mapstructure:"i18n"`
 	Email    EmailConfigMain `mapstructure:"email"`
@@ -95,11 +94,6 @@ type InfluxDBConfig struct {
 	Bucket string `mapstructure:"bucket"`
 }
 
-type JWTConfig struct {
-	Secret     string `mapstructure:"secret"`
-	ExpireTime int    `mapstructure:"expire_time"`
-}
-
 type GRPCConfig struct {
 	Port string `mapstructure:"port"`
 }
@@ -164,9 +158,6 @@ func Load() (*Config, error) {
 	_ = viper.BindEnv("redis.password", "WEBSOFT9_REDIS_PASSWORD")
 	_ = viper.BindEnv("redis.db", "WEBSOFT9_REDIS_DB")
 
-	_ = viper.BindEnv("jwt.secret", "WEBSOFT9_JWT_SECRET")
-	_ = viper.BindEnv("jwt.expire_time", "WEBSOFT9_JWT_EXPIRE_TIME")
-
 	// Set default values
 	setDefaults()
 
@@ -223,10 +214,6 @@ func setDefaults() {
 	viper.SetDefault("redis.host", "localhost")
 	viper.SetDefault("redis.port", "6379")
 	viper.SetDefault("redis.db", 0)
-
-	// JWT defaults
-	viper.SetDefault("jwt.secret", "change-this-secret-key-in-production")
-	viper.SetDefault("jwt.expire_time", constants.DefaultJWTExpireTime)
 
 	// gRPC defaults
 	viper.SetDefault("grpc.port", "9090")
