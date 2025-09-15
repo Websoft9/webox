@@ -23,6 +23,7 @@ type Controllers struct {
 	SecurityController       *controller.SecurityController
 	HealthController         *controller.HealthController
 	AuditLogController       *controller.AuditLogController
+	UserProfileController    *controller.UserProfileController
 
 	// More controllers can be added
 	// AppController  *controller.ApplicationController
@@ -140,6 +141,7 @@ func setupAPIRoutes(v1 *gin.RouterGroup, controllers *Controllers) {
 	setupTwoFactorRoutes(protected, controllers.SecurityController)
 	setupAuthConfigRoutes(protected, controllers.SecurityController)
 	setupAuditLogRoutes(protected, controllers.AuditLogController)
+	setupUserProfileRoutes(protected, controllers.UserProfileController)
 }
 
 // setupUserRoutes sets up user related routes
@@ -273,4 +275,21 @@ func setupAuditLogRoutes(protected *gin.RouterGroup, auditLogController *control
 	auditLogs.GET("/:id", auditLogController.GetAuditLog)
 	auditLogs.GET("/statistics", auditLogController.GetAuditLogStatistics)
 	auditLogs.GET("/export", auditLogController.ExportAuditLogs)
+}
+
+// setupUserProfileRoutes sets up user profile routes
+func setupUserProfileRoutes(protected *gin.RouterGroup, userProfileController *controller.UserProfileController) {
+	if userProfileController == nil {
+		return
+	}
+
+	profile := protected.Group("/profile")
+	profile.GET("", userProfileController.GetProfile)
+	profile.PUT("", userProfileController.UpdateProfile)
+	profile.PUT("/password", userProfileController.ChangePassword)
+	profile.GET("/login-history", userProfileController.GetLoginHistories)
+	profile.GET("/notification-settings", userProfileController.GetNotificationSettings)
+	profile.PUT("/notification-settings", userProfileController.UpdateNotificationSettings)
+	profile.GET("/security-settings", userProfileController.GetSecuritySettings)
+	profile.PUT("/security-settings", userProfileController.UpdateSecuritySettings)
 }

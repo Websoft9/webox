@@ -27,6 +27,21 @@ user:
   verification_email_sent: "Verification email has been sent"
   oauth2_login_success: "OAuth2 login successful"
 
+user_profile:
+  get_success: "User profile retrieved successfully"
+  update_success: "User profile updated successfully"
+  update_failed: "Failed to update user profile"
+  not_found: "User profile not found"
+  password_change_success: "Password changed successfully"
+  login_history_get_success: "Login history retrieved successfully"
+  notification_settings_get_success: "Get notification settings success"
+  notification_settings_update_success: "Update notification settings success"
+  security_settings_get_success: "Get security settings success"
+  security_settings_update_success: "Update security settings success"
+  password_mismatch: "The two passwords entered do not match"
+  password_verification_failed: "Old Password verification failed"
+  password_update_failed: "Failed to update password"
+
 # Role module messages
 role:
   not_found: "Role not found"

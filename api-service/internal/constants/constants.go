@@ -304,3 +304,14 @@ const (
 	MinPathSegments       = 3      // Minimum path segments for valid API path
 	DefaultTimeRangeHours = 7 * 24 // Default time range in hours (7 days)
 )
+
+const (
+	// StringTrue represents the string "true"
+	StringTrue = "true"
+
+	// StringFalse represents the string "false"
+	StringFalse = "false"
+
+	// Session timeout in seconds (30 minutes)
+	DefaultSessionTimeoutSeconds = 1800
+)
