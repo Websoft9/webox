@@ -920,6 +920,31 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 标签管理
+CREATE TABLE IF NOT EXISTS tags (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name VARCHAR(128) NOT NULL, -- Tag name
+    slug VARCHAR(128) NOT NULL, -- URL-friendly unique identifier
+    color VARCHAR(16), -- Tag color
+    description TEXT, -- Tag description
+    created_by INTEGER DEFAULT 0, -- Creator user ID
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    UNIQUE(name),
+    UNIQUE(slug)
+);
+
+-- 标签引用
+CREATE TABLE IF NOT EXISTS taggings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tag_id INTEGER NOT NULL, -- Tag ID
+    resource_id INTEGER NOT NULL, -- Resource ID
+    created_by INTEGER DEFAULT 0, -- Association creator
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+);
+
 -- ========================================
 -- 初始数据插入
 -- ========================================
@@ -1102,10 +1127,16 @@ INSERT OR IGNORE INTO `permissions` (`parent_code`,`scope`,`name`,`code`,`module
 	 ('ef4eab25-7246-43b2-aa11-5a5863d51de2','platform','告警通知创建','f2b881a4-a53c-49ed-a980-132854d7dfd1','notification','create',NULL,NULL,'告警通知创建权限',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
 	 ('ef4eab25-7246-43b2-aa11-5a5863d51de2','platform','告警通知修改','d92c16b0-9a5b-4052-86ca-2973708add9f','notification','update',NULL,NULL,'告警通知修改权限',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
 	 ('ef4eab25-7246-43b2-aa11-5a5863d51de2','platform','告警通知删除','51aa6a7d-66bc-4551-b04b-7a4bdf8e9b3e','notification','delete',NULL,NULL,'告警通知删除权限',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
-	 ('777614c1-7f84-4e3e-95ee-edab4f5a47bc','platform','个人中心','208ebe4c-74f3-48ea-9819-9aa9a8212158','profile','*',NULL,NULL,'个人中心全部权限',1,1,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
-	 ('208ebe4c-74f3-48ea-9819-9aa9a8212158','platform','个人中心查询','1e4b883c-1455-44a0-a61b-c98fa68238c5','profile','query',NULL,NULL,'个人中心查询权限',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
-	 ('208ebe4c-74f3-48ea-9819-9aa9a8212158','platform','个人中心修改','6bb78f8b-bbaa-48ec-b408-1d903415881b','profile','update',NULL,NULL,'个人中心修改权限',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
-	 ('777614c1-7f84-4e3e-95ee-edab4f5a47bc','platform','审计日志','556f99a8-6626-4200-9f80-6abfa68c18e2','audit_log','*','/audit-logs',NULL,'审计日志全部权限',1,1,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('777614c1-7f84-4e3e-95ee-edab4f5a47bc','platform','个人中心','208ebe4c-74f3-48ea-9819-9aa9a8212158','profile','*','/profile',NULL,'个人中心全部权限',1,1,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('208ebe4c-74f3-48ea-9819-9aa9a8212158','platform','个人中心查询','1e4b883c-1455-44a0-a61b-c98fa68238c5','profile','query','/profile',NULL,'个人中心查询权限',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('208ebe4c-74f3-48ea-9819-9aa9a8212158','platform','个人中心修改','6bb78f8b-bbaa-48ec-b408-1d903415881b','profile','update','/profile',NULL,'个人中心修改权限',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('208ebe4c-74f3-48ea-9819-9aa9a8212158','platform','密码修改','f47ac10b-58cc-4372-a567-0e02b2c3d479','profile','update','/profile/password',NULL,'密码修改权限',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('208ebe4c-74f3-48ea-9819-9aa9a8212158','platform','通知设置查询','6ba7b810-9dad-11d1-80b4-00c04fd430c8','profile','query','/profile/notification-settings',NULL,'通知设置查询权限',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('208ebe4c-74f3-48ea-9819-9aa9a8212158','platform','通知设置修改','6ba7b811-9dad-11d1-80b4-00c04fd430c8','profile','update','/profile/notification-settings',NULL,'通知设置修改权限',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('208ebe4c-74f3-48ea-9819-9aa9a8212158','platform','安全设置查询','a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11','profile','query','/profile/security-settings',NULL,'安全设置查询权限',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('208ebe4c-74f3-48ea-9819-9aa9a8212158','platform','安全设置修改','550e8400-e29b-41d4-a716-446655440000','profile','update','/profile/security-settings',NULL,'安全设置修改权限',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('208ebe4c-74f3-48ea-9819-9aa9a8212158','platform','登录历史查询','6ba7b812-9dad-11d1-80b4-00c04fd430c8','profile','query','/profile/login-history',NULL,'登录历史查询权限',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+   ('777614c1-7f84-4e3e-95ee-edab4f5a47bc','platform','审计日志','556f99a8-6626-4200-9f80-6abfa68c18e2','audit_log','*','/audit-logs',NULL,'审计日志全部权限',1,1,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
 	 ('556f99a8-6626-4200-9f80-6abfa68c18e2','platform','审计日志查询','2a65e848-d451-469d-9d8c-76c7b527cec5','audit_log','query','/audit-logs',NULL,'审计日志查询权限',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
 	 ('556f99a8-6626-4200-9f80-6abfa68c18e2','platform','审计日志导出','e706486b-32a9-4aec-be78-b9d480b571ab','audit_log','query','/audit-logs/export',NULL,'审计日志导出权限',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19');
 
@@ -1287,6 +1318,12 @@ INSERT OR IGNORE INTO `role_permissions` (`role_id`,`permission_code`,`granted_b
          (1, '208ebe4c-74f3-48ea-9819-9aa9a8212158',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
          (1, '1e4b883c-1455-44a0-a61b-c98fa68238c5',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
          (1, '6bb78f8b-bbaa-48ec-b408-1d903415881b',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, 'f47ac10b-58cc-4372-a567-0e02b2c3d479',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, '6ba7b810-9dad-11d1-80b4-00c04fd430c8',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, '6ba7b811-9dad-11d1-80b4-00c04fd430c8',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, '550e8400-e29b-41d4-a716-446655440000',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, '6ba7b812-9dad-11d1-80b4-00c04fd430c8',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
          (1, '556f99a8-6626-4200-9f80-6abfa68c18e2',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
          (1, '2a65e848-d451-469d-9d8c-76c7b527cec5',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
          (1, 'e706486b-32a9-4aec-be78-b9d480b571ab',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19');
@@ -1403,6 +1440,13 @@ CREATE INDEX IF NOT EXISTS idx_app_instances_template ON app_instances(template_
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user ON audit_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON audit_logs(created_at);
+
+-- 标签管理索引
+CREATE INDEX IF NOT EXISTS idx_tags_name ON tags(name);
+CREATE INDEX IF NOT EXISTS idx_tags_slug ON tags(slug);
+CREATE INDEX IF NOT EXISTS idx_tags_created_by ON tags(created_by);
+CREATE INDEX IF NOT EXISTS idx_taggings_tag_id ON taggings(tag_id);
+CREATE INDEX IF NOT EXISTS idx_taggings_resource_id ON taggings(resource_id);
 
 -- ========================================
 -- 创建触发器用于自动更新 updated_at 字段

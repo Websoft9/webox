@@ -1244,6 +1244,36 @@ CREATE TABLE IF NOT EXISTS `audit_logs` (
     KEY `idx_success` (`success`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='审计日志表';
 
+-- 标签管理
+CREATE TABLE tags (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(128) NOT NULL COMMENT 'Tag name',
+    slug VARCHAR(128) NOT NULL COMMENT 'URL-friendly unique identifier',
+    color VARCHAR(16) COMMENT 'Tag color',
+    description TEXT COMMENT 'Tag description',
+    created_by BIGINT DEFAULT 0 COMMENT 'Creator user ID',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    INDEX idx_name (name),
+    INDEX idx_slug (slug),
+    INDEX idx_created_by (created_by),
+    UNIQUE KEY ux_name (name),
+    UNIQUE KEY ux_slug (slug)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Tag management table';
+
+-- 标签引用
+CREATE TABLE taggings (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    tag_id BIGINT NOT NULL COMMENT 'Tag ID',
+    resource_id BIGINT NOT NULL COMMENT 'Resource ID',
+    created_by BIGINT DEFAULT 0 COMMENT 'Association creator',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    INDEX idx_tag_id (tag_id),
+    INDEX idx_resource_id (resource_id),
+    FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Tag-Resource association table';
 
 -- ========================================
 -- 初始数据插入
@@ -1427,10 +1457,16 @@ INSERT INTO `permissions` (`parent_code`,`scope`,`name`,`code`,`module`,`action`
 	 ('ef4eab25-7246-43b2-aa11-5a5863d51de2','platform','告警通知创建','f2b881a4-a53c-49ed-a980-132854d7dfd1','notification','create',NULL,NULL,'告警通知创建权限',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
 	 ('ef4eab25-7246-43b2-aa11-5a5863d51de2','platform','告警通知修改','d92c16b0-9a5b-4052-86ca-2973708add9f','notification','update',NULL,NULL,'告警通知修改权限',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
 	 ('ef4eab25-7246-43b2-aa11-5a5863d51de2','platform','告警通知删除','51aa6a7d-66bc-4551-b04b-7a4bdf8e9b3e','notification','delete',NULL,NULL,'告警通知删除权限',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
-	 ('777614c1-7f84-4e3e-95ee-edab4f5a47bc','platform','个人中心','208ebe4c-74f3-48ea-9819-9aa9a8212158','profile','*',NULL,NULL,'个人中心全部权限',1,1,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
-	 ('208ebe4c-74f3-48ea-9819-9aa9a8212158','platform','个人中心查询','1e4b883c-1455-44a0-a61b-c98fa68238c5','profile','query',NULL,NULL,'个人中心查询权限',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
-	 ('208ebe4c-74f3-48ea-9819-9aa9a8212158','platform','个人中心修改','6bb78f8b-bbaa-48ec-b408-1d903415881b','profile','update',NULL,NULL,'个人中心修改权限',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
-	 ('777614c1-7f84-4e3e-95ee-edab4f5a47bc','platform','审计日志','556f99a8-6626-4200-9f80-6abfa68c18e2','audit_log','*','/audit-logs',NULL,'审计日志全部权限',1,1,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('777614c1-7f84-4e3e-95ee-edab4f5a47bc','platform','个人中心','208ebe4c-74f3-48ea-9819-9aa9a8212158','profile','*','/profile',NULL,'个人中心全部权限',1,1,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('208ebe4c-74f3-48ea-9819-9aa9a8212158','platform','个人中心查询','1e4b883c-1455-44a0-a61b-c98fa68238c5','profile','query','/profile',NULL,'个人中心查询权限',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('208ebe4c-74f3-48ea-9819-9aa9a8212158','platform','个人中心修改','6bb78f8b-bbaa-48ec-b408-1d903415881b','profile','update','/profile',NULL,'个人中心修改权限',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('208ebe4c-74f3-48ea-9819-9aa9a8212158','platform','密码修改','f47ac10b-58cc-4372-a567-0e02b2c3d479','profile','update','/profile/password',NULL,'密码修改权限',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('208ebe4c-74f3-48ea-9819-9aa9a8212158','platform','通知设置查询','6ba7b810-9dad-11d1-80b4-00c04fd430c8','profile','query','/profile/notification-settings',NULL,'通知设置查询权限',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('208ebe4c-74f3-48ea-9819-9aa9a8212158','platform','通知设置修改','6ba7b811-9dad-11d1-80b4-00c04fd430c8','profile','update','/profile/notification-settings',NULL,'通知设置修改权限',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('208ebe4c-74f3-48ea-9819-9aa9a8212158','platform','安全设置查询','a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11','profile','query','/profile/security-settings',NULL,'安全设置查询权限',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('208ebe4c-74f3-48ea-9819-9aa9a8212158','platform','安全设置修改','550e8400-e29b-41d4-a716-446655440000','profile','update','/profile/security-settings',NULL,'安全设置修改权限',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('208ebe4c-74f3-48ea-9819-9aa9a8212158','platform','登录历史查询','6ba7b812-9dad-11d1-80b4-00c04fd430c8','profile','query','/profile/login-history',NULL,'登录历史查询权限',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+   ('777614c1-7f84-4e3e-95ee-edab4f5a47bc','platform','审计日志','556f99a8-6626-4200-9f80-6abfa68c18e2','audit_log','*','/audit-logs',NULL,'审计日志全部权限',1,1,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
 	 ('556f99a8-6626-4200-9f80-6abfa68c18e2','platform','审计日志查询','2a65e848-d451-469d-9d8c-76c7b527cec5','audit_log','query','/audit-logs',NULL,'审计日志查询权限',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
 	 ('556f99a8-6626-4200-9f80-6abfa68c18e2','platform','审计日志导出','e706486b-32a9-4aec-be78-b9d480b571ab','audit_log','query','/audit-logs/export',NULL,'审计日志导出权限',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19');
 
@@ -1612,6 +1648,12 @@ INSERT INTO `role_permissions` (`role_id`,`permission_code`,`granted_by`,`grante
          (1, '208ebe4c-74f3-48ea-9819-9aa9a8212158',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
          (1, '1e4b883c-1455-44a0-a61b-c98fa68238c5',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
          (1, '6bb78f8b-bbaa-48ec-b408-1d903415881b',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, 'f47ac10b-58cc-4372-a567-0e02b2c3d479',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, '6ba7b810-9dad-11d1-80b4-00c04fd430c8',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, '6ba7b811-9dad-11d1-80b4-00c04fd430c8',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, '550e8400-e29b-41d4-a716-446655440000',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, '6ba7b812-9dad-11d1-80b4-00c04fd430c8',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
          (1, '556f99a8-6626-4200-9f80-6abfa68c18e2',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
          (1, '2a65e848-d451-469d-9d8c-76c7b527cec5',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
          (1, 'e706486b-32a9-4aec-be78-b9d480b571ab',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19');
