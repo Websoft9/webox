@@ -160,6 +160,8 @@ func initDatabaseWrapper(cfg *config.Config, zapLogger logger.Logger) (*database
 		&model.APIToken{},
 		&model.UserTwoFactor{},
 		&model.AuditLog{},
+		&model.UserLoginHistory{},
+		&model.UserProfile{},
 	); migrateErr != nil {
 		return nil, fmt.Errorf("failed to migrate database models: %v", migrateErr)
 	}
@@ -319,38 +321,41 @@ func startServer(
 // repositories struct holds all repository instances for dependency injection
 // Provides data access layer abstractions for different entities
 type repositories struct {
-	userRepo       repoInterface.UserRepository
-	roleRepo       repoInterface.RoleRepository
-	permissionRepo repoInterface.PermissionRepository
-	apiTokenRepo   repoInterface.APITokenRepository
-	twoFactorRepo  repoInterface.UserTwoFactorRepository
-	auditLogRepo   repoInterface.AuditLogRepository
+	userRepo        repoInterface.UserRepository
+	roleRepo        repoInterface.RoleRepository
+	permissionRepo  repoInterface.PermissionRepository
+	apiTokenRepo    repoInterface.APITokenRepository
+	twoFactorRepo   repoInterface.UserTwoFactorRepository
+	auditLogRepo    repoInterface.AuditLogRepository
+	userProfileRepo repoInterface.UserProfileRepository
 }
 
 // initRepositories creates and initializes all repository instances
 // Each repository handles data access operations for its respective entity
 func initRepositories(db *gorm.DB) *repositories {
 	return &repositories{
-		userRepo:       repoImpl.NewUserRepository(db),
-		roleRepo:       repoImpl.NewRoleRepository(db),
-		permissionRepo: repoImpl.NewPermissionRepository(db),
-		apiTokenRepo:   repoImpl.NewAPITokenRepository(db),
-		twoFactorRepo:  repoImpl.NewTwoFactorRepository(db),
-		auditLogRepo:   repoImpl.NewAuditLogRepository(db),
+		userRepo:        repoImpl.NewUserRepository(db),
+		roleRepo:        repoImpl.NewRoleRepository(db),
+		permissionRepo:  repoImpl.NewPermissionRepository(db),
+		apiTokenRepo:    repoImpl.NewAPITokenRepository(db),
+		twoFactorRepo:   repoImpl.NewTwoFactorRepository(db),
+		auditLogRepo:    repoImpl.NewAuditLogRepository(db),
+		userProfileRepo: repoImpl.NewUserProfileRepository(db),
 	}
 }
 
 // businessServices struct holds all service instances for dependency injection
 // Provides business logic layer abstractions for different domains
 type businessServices struct {
-	userService       serviceInterface.UserService
-	userAuthService   serviceInterface.UserAuthService
-	roleService       serviceInterface.RoleService
-	permissionService serviceInterface.PermissionService
-	apiTokenService   serviceInterface.APITokenService
-	authConfigService serviceInterface.AuthConfigService
-	twoFactorService  serviceInterface.TwoFactorService
-	auditLogService   serviceInterface.AuditLogService
+	userService        serviceInterface.UserService
+	userAuthService    serviceInterface.UserAuthService
+	roleService        serviceInterface.RoleService
+	permissionService  serviceInterface.PermissionService
+	apiTokenService    serviceInterface.APITokenService
+	authConfigService  serviceInterface.AuthConfigService
+	twoFactorService   serviceInterface.TwoFactorService
+	auditLogService    serviceInterface.AuditLogService
+	userProfileService serviceInterface.UserProfileService
 }
 
 // initBusinessServices creates and initializes all service instances with their dependencies
@@ -367,14 +372,15 @@ func initBusinessServices(
 	oauth2Service := serviceImpl.NewOAuth2Service(authConfigManager, zapLogger)
 	userService := serviceImpl.NewUserService(repos.userRepo, zapLogger)
 	return &businessServices{
-		userService:       userService,
-		userAuthService:   serviceImpl.NewUserAuthService(repos.userRepo, repos.apiTokenRepo, oauth2Service, zapLogger, cfg, authConfigManager, i18nInstance),
-		roleService:       serviceImpl.NewRoleService(repos.roleRepo, repos.permissionRepo, db, zapLogger, i18nInstance),
-		permissionService: serviceImpl.NewPermissionService(repos.permissionRepo, db, zapLogger, i18nInstance),
-		apiTokenService:   serviceImpl.NewAPITokenService(repos.apiTokenRepo, authConfigManager, db, zapLogger, i18nInstance),
-		authConfigService: serviceImpl.NewAuthConfigService(authConfigManager, zapLogger),
-		twoFactorService:  serviceImpl.NewTwoFactorService(repos.twoFactorRepo, db, zapLogger, i18nInstance),
-		auditLogService:   serviceImpl.NewAuditLogService(repos.auditLogRepo, userService, db, zapLogger, i18nInstance, cfg),
+		userService:        userService,
+		userAuthService:    serviceImpl.NewUserAuthService(repos.userRepo, repos.apiTokenRepo, oauth2Service, zapLogger, cfg, authConfigManager, i18nInstance),
+		roleService:        serviceImpl.NewRoleService(repos.roleRepo, repos.permissionRepo, db, zapLogger, i18nInstance),
+		permissionService:  serviceImpl.NewPermissionService(repos.permissionRepo, db, zapLogger, i18nInstance),
+		apiTokenService:    serviceImpl.NewAPITokenService(repos.apiTokenRepo, authConfigManager, db, zapLogger, i18nInstance),
+		authConfigService:  serviceImpl.NewAuthConfigService(authConfigManager, zapLogger),
+		twoFactorService:   serviceImpl.NewTwoFactorService(repos.twoFactorRepo, db, zapLogger, i18nInstance),
+		auditLogService:    serviceImpl.NewAuditLogService(repos.auditLogRepo, userService, db, zapLogger, i18nInstance, cfg),
+		userProfileService: serviceImpl.NewUserProfileService(repos.userProfileRepo, zapLogger, i18nInstance),
 	}
 }
 
@@ -410,8 +416,9 @@ func initControllers(
 			zapLogger,
 			i18nInstance,
 		),
-		HealthController:   controller.NewHealthController(cfg),
-		AuditLogController: controller.NewAuditLogController(services.auditLogService, validatorInstance, zapLogger, i18nInstance),
+		HealthController:      controller.NewHealthController(cfg),
+		AuditLogController:    controller.NewAuditLogController(services.auditLogService, validatorInstance, zapLogger, i18nInstance),
+		UserProfileController: controller.NewUserProfileController(services.userProfileService, zapLogger, i18nInstance),
 	}
 }
 

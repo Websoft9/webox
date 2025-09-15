@@ -27,6 +27,21 @@ user:
   verification_email_sent: "验证邮件已发送"
   oauth2_login_success: "OAuth2登录成功"
 
+user_profile:
+  get_success: "获取用户个人资料成功"
+  update_success: "更新用户个人资料成功"
+  update_failed: "更新用户个人资料失败"
+  not_found: "未找到用户个人资料"
+  password_change_success: "密码修改成功"
+  login_history_get_success: "获取登录历史记录成功"
+  notification_settings_get_success: "获取通知设置成功"
+  notification_settings_update_success: "更新通知设置成功"
+  security_settings_get_success: "获取安全设置成功"
+  security_settings_update_success: "更新安全设置成功"
+  password_mismatch: "两次输入的密码不一致"
+  password_verification_failed: "旧密码验证失败"
+  password_update_failed: "密码更新失败"
+
 # 角色模块消息
 role:
   not_found: "角色不存在"

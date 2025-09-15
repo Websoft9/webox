@@ -1,0 +1,58 @@
+package response
+
+import (
+	"time"
+)
+
+// UserProfileResponse defines the response structure for user profile
+type UserProfileResponse struct {
+	ID          uint       `json:"id" example:"1"`
+	Username    string     `json:"username" example:"john_doe"`
+	Email       string     `json:"email" example:"john@example.com"`
+	Nickname    string     `json:"nickname" example:"John Doe"`
+	Avatar      string     `json:"avatar" example:"https://example.com/avatar.jpg"`
+	Phone       string     `json:"phone" example:"+1234567890"`
+	Gender      int        `json:"gender" example:"1"`
+	Signature   string     `json:"signature" example:"This is my signature"`
+	Status      int        `json:"status" example:"1"`
+	LastLoginAt *time.Time `json:"last_login_at,omitempty" example:"2023-01-01T12:00:00Z"`
+	LastLoginIP string     `json:"last_login_ip" example:"192.168.1.1"`
+	Timezone    string     `json:"timezone" example:"Asia/Shanghai"`
+	Language    string     `json:"language" example:"zh-CN"`
+	CreatedAt   time.Time  `json:"created_at" example:"2023-01-01T00:00:00Z"`
+	UpdatedAt   time.Time  `json:"updated_at" example:"2023-01-01T00:00:00Z"`
+
+	Roles []RoleResponse `json:"roles,omitempty"`
+}
+
+// LoginHistoryItem represents a single login history record
+type LoginHistoryItem struct {
+	ID         uint       `json:"id"`
+	IPAddress  string     `json:"ip_address"`
+	UserAgent  string     `json:"user_agent"`
+	Location   string     `json:"location"`
+	Device     string     `json:"device"`
+	Browser    string     `json:"browser"`
+	LoginTime  time.Time  `json:"login_time"`
+	LogoutTime *time.Time `json:"logout_time"`
+	Status     string     `json:"status"`
+}
+
+// LoginHistoryResponse represents the response structure for login history
+type LoginHistoryResponse struct {
+	Items []LoginHistoryItem `json:"items"`
+}
+
+// NotificationSettingsResponse represents the response structure for notification settings
+type NotificationSettingsResponse struct {
+	EmailNotifications bool `json:"email_notifications"`
+	SmsNotifications   bool `json:"sms_notifications"`
+	PushNotifications  bool `json:"push_notifications"`
+	MarketingEmails    bool `json:"marketing_emails"`
+}
+
+// SecuritySettingsResponse represents the response structure for security settings
+type SecuritySettingsResponse struct {
+	LoginAlerts    bool `json:"login_alerts"`
+	SessionTimeout int  `json:"session_timeout"`
+}
