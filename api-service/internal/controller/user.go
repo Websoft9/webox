@@ -17,7 +17,7 @@ import (
 type UserController struct {
 	userService service.UserService
 	logger      logger.Logger
-	i18n        *i18n.I18n // 添加i18n支持
+	i18n        *i18n.I18n
 }
 
 // NewUserController create new user controller
@@ -179,12 +179,17 @@ func (c *UserController) ListUsers(ctx *gin.Context) {
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/users [post]
 func (c *UserController) CreateUser(ctx *gin.Context) {
+	currentUserID, exists := ctx.Get("user_id")
+	if !exists {
+		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		return
+	}
 	var req request.UserCreateRequest
 	if !c.bindAndValidateRequest(ctx, &req, "create user") {
 		return
 	}
 
-	result, err := c.userService.CreateUser(ctx, &req)
+	result, err := c.userService.CreateUser(ctx, currentUserID.(uint), &req)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Failed to create user", logger.String("username", req.Username), logger.ErrorField(err))
 		errors.HandleError(ctx, err)
@@ -248,6 +253,11 @@ func (c *UserController) GetUser(ctx *gin.Context) {
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/users/{id} [put]
 func (c *UserController) UpdateUser(ctx *gin.Context) {
+	currentUserID, exists := ctx.Get("user_id")
+	if !exists {
+		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		return
+	}
 	userIDStr := ctx.Param("id")
 	userID, err := strconv.ParseUint(userIDStr, 10, 32)
 	if err != nil {
@@ -261,7 +271,7 @@ func (c *UserController) UpdateUser(ctx *gin.Context) {
 		return
 	}
 
-	result, err := c.userService.UpdateUser(ctx, uint(userID), &req)
+	result, err := c.userService.UpdateUser(ctx, currentUserID.(uint), uint(userID), &req)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Failed to update user", logger.Uint("user_id", uint(userID)), logger.ErrorField(err))
 		errors.HandleError(ctx, err)

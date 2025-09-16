@@ -134,6 +134,22 @@ func (m *MockUserRepository) ExistsByID(ctx context.Context, id uint) (bool, err
 	return args.Get(0).(bool), args.Error(1)
 }
 
+// Role related mock methods
+func (m *MockUserRepository) CreateUserRole(ctx context.Context, userRole *model.UserRole) error {
+	args := m.Called(ctx, userRole)
+	return args.Error(0)
+}
+
+func (m *MockUserRepository) GetRoleIDsByUserID(ctx context.Context, userID uint) ([]uint, error) {
+	args := m.Called(ctx, userID)
+	return args.Get(0).([]uint), args.Error(1)
+}
+
+func (m *MockUserRepository) DeleteUserRole(ctx context.Context, userID uint, roleID uint) error {
+	args := m.Called(ctx, userID, roleID)
+	return args.Error(0)
+}
+
 // Test setup
 func setupUserServiceTestFixed() (*userService, *MockUserRepository) {
 	mockUserRepo := &MockUserRepository{}
@@ -148,11 +164,8 @@ func setupUserServiceTestFixed() (*userService, *MockUserRepository) {
 }
 
 // Helper function to create test user
-// Helper function to create test user
-// Helper function to create test user
 func createTestUserFixed() *model.User {
 	now := time.Now()
-	// 使用 bcrypt 生成正确的密码哈希
 	passwordHash := auth.HashToken("password123")
 	return &model.User{
 		ID:           1,
@@ -183,13 +196,10 @@ func TestUserService_ListUsers_Success(t *testing.T) {
 	}
 	total := int64(2)
 
-	// Mock expectations
 	mockRepo.On("ListWithRelations", ctx, 0, 10, mock.AnythingOfType("map[string]interface {}")).Return(users, total, nil)
 
-	// Execute
 	result, totalCount, err := service.ListUsers(ctx, req)
 
-	// Assert
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, len(users), len(result.Users))
@@ -207,13 +217,10 @@ func TestUserService_GetUser_Success(t *testing.T) {
 	testUser := createTestUserFixed()
 	userID := uint(1)
 
-	// Mock expectations
 	mockRepo.On("GetByIDWithRelations", ctx, userID).Return(testUser, nil)
 
-	// Execute
 	result, err := service.GetUser(ctx, userID)
 
-	// Assert
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, testUser.ID, result.ID)
@@ -229,13 +236,10 @@ func TestUserService_GetUser_NotFound(t *testing.T) {
 
 	userID := uint(999)
 
-	// Mock user not found
 	mockRepo.On("GetByIDWithRelations", ctx, userID).Return(nil, gorm.ErrRecordNotFound)
 
-	// Execute
 	result, err := service.GetUser(ctx, userID)
 
-	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, result)
 
@@ -256,9 +260,9 @@ func TestUserService_CreateUser_Success(t *testing.T) {
 		Password: "password123",
 		Nickname: &nickname,
 		Status:   &status,
+		RoleIDs:  []uint{1, 2},
 	}
 
-	// Mock expectations
 	mockRepo.On("ExistsByUsername", ctx, req.Username).Return(false, nil)
 	mockRepo.On("ExistsByEmail", ctx, req.Email).Return(false, nil)
 	mockRepo.On("Create", ctx, mock.AnythingOfType("*model.User")).
@@ -266,11 +270,11 @@ func TestUserService_CreateUser_Success(t *testing.T) {
 			user := args.Get(1).(*model.User)
 			user.ID = 1
 		}).Return(nil)
+	mockRepo.On("CreateUserRole", ctx, mock.AnythingOfType("*model.UserRole")).Return(nil).Twice()
 
-	// Execute
-	result, err := service.CreateUser(ctx, req)
+	currentUserID := uint(100)
+	result, err := service.CreateUser(ctx, currentUserID, req)
 
-	// Assert
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, req.Username, result.Username)
@@ -287,23 +291,26 @@ func TestUserService_UpdateUser_Success(t *testing.T) {
 
 	testUser := createTestUserFixed()
 	userID := uint(1)
+	currentUserID := uint(100)
 	newEmail := "updated@example.com"
 	newNickname := "Updated User"
+	newRoleIDs := []uint{1, 3}
 
 	req := &request.UserUpdateRequest{
 		Email:    &newEmail,
 		Nickname: &newNickname,
+		RoleIDs:  newRoleIDs,
 	}
 
-	// Mock expectations
 	mockRepo.On("GetByID", ctx, userID).Return(testUser, nil)
 	mockRepo.On("ExistsByEmailExcludeID", ctx, newEmail, userID).Return(false, nil)
 	mockRepo.On("Update", ctx, mock.AnythingOfType("*model.User")).Return(nil)
+	mockRepo.On("GetRoleIDsByUserID", ctx, userID).Return([]uint{1, 2}, nil)
+	mockRepo.On("CreateUserRole", ctx, mock.AnythingOfType("*model.UserRole")).Return(nil)
+	mockRepo.On("DeleteUserRole", ctx, userID, uint(2)).Return(nil)
 
-	// Execute
-	result, err := service.UpdateUser(ctx, userID, req)
+	result, err := service.UpdateUser(ctx, currentUserID, userID, req)
 
-	// Assert
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 
@@ -323,14 +330,11 @@ func TestUserService_UpdateUserStatus_Success(t *testing.T) {
 		Status: UserStatusInactive,
 	}
 
-	// Mock expectations
 	mockRepo.On("GetByID", ctx, userID).Return(testUser, nil)
 	mockRepo.On("Update", ctx, mock.AnythingOfType("*model.User")).Return(nil)
 
-	// Execute
 	err := service.UpdateUserStatus(ctx, userID, req)
 
-	// Assert
 	assert.NoError(t, err)
 
 	mockRepo.AssertExpectations(t)
@@ -345,14 +349,11 @@ func TestUserService_DeleteUser_Success(t *testing.T) {
 	testUser := createTestUserFixed()
 	userID := uint(1)
 
-	// Mock expectations - DeleteUser 先检查用户是否存在，然后删除
 	mockRepo.On("GetByID", ctx, userID).Return(testUser, nil)
 	mockRepo.On("Delete", ctx, userID).Return(nil)
 
-	// Execute
 	err := service.DeleteUser(ctx, userID)
 
-	// Assert
 	assert.NoError(t, err)
 
 	mockRepo.AssertExpectations(t)
@@ -366,16 +367,12 @@ func TestUserService_DeleteUser_Error(t *testing.T) {
 	userID := uint(1)
 	expectedError := errors.New("database error")
 
-	// Mock expectations - DeleteUser 先检查用户是否存在，然后删除时出错
 	mockRepo.On("GetByID", ctx, userID).Return(testUser, nil)
 	mockRepo.On("Delete", ctx, userID).Return(expectedError)
 
-	// Execute
 	err := service.DeleteUser(ctx, userID)
 
-	// Assert
-	assert.Error(t, err) // 只检查错误存在，不比较具体错误对象
-	// 可选: 检查错误消息包含原始错误信息
+	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "database error")
 
 	mockRepo.AssertExpectations(t)
@@ -395,14 +392,11 @@ func TestUserService_ChangePassword_Success(t *testing.T) {
 		NewPassword: "newpassword123",
 	}
 
-	// Mock expectations
 	mockRepo.On("GetByID", ctx, userID).Return(testUser, nil)
 	mockRepo.On("Update", ctx, mock.AnythingOfType("*model.User")).Return(nil)
 
-	// Execute
 	err := service.ChangePassword(ctx, userID, req)
 
-	// Assert
 	assert.NoError(t, err)
 
 	mockRepo.AssertExpectations(t)
@@ -420,13 +414,10 @@ func TestUserService_ChangePassword_WrongOldPassword(t *testing.T) {
 		NewPassword: "newpassword123",
 	}
 
-	// Mock expectations
 	mockRepo.On("GetByID", ctx, userID).Return(testUser, nil)
 
-	// Execute
 	err := service.ChangePassword(ctx, userID, req)
 
-	// Assert
 	assert.Error(t, err)
 
 	mockRepo.AssertExpectations(t)
