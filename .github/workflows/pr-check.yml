@@ -5,9 +5,9 @@ on:
     branches: [main, develop]
     types: [opened, synchronize, reopened, edited]
 
-# 添加必要的权限
+# Add necessary permissions
 permissions:
-  contents: write # 需要写权限来删除分支
+  contents: write # Write permission needed to delete branches
   pull-requests: write
   issues: write
   checks: write
@@ -17,7 +17,7 @@ env:
   COVERAGE_THRESHOLD: 80
 
 jobs:
-  # 提交消息格式检查
+  # Commit message format check
   commit-message-check:
     name: 📝 Commit Message Check
     runs-on: ubuntu-latest
@@ -30,20 +30,20 @@ jobs:
 
       - name: Check commit messages
         run: |
-          echo "检查提交消息格式..."
+          echo "Checking commit message format..."
 
-          # 确保脚本有执行权限
+          # Ensure script has execute permission
           chmod +x ./scripts/check-commit-message.sh
 
-          # 获取 PR 中的所有提交
+          # Get all commits in PR
           commits=$(git rev-list --reverse ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }})
 
           failed_commits=()
 
           for commit in $commits; do
             message=$(git log --format=%s -n 1 $commit)
-            echo "检查提交: $commit"
-            echo "消息: $message"
+            echo "Checking commit: $commit"
+            echo "Message: $message"
 
             if ! ./scripts/check-commit-message.sh "$message"; then
               failed_commits+=("$commit: $message")
@@ -51,20 +51,20 @@ jobs:
           done
 
           if [ ${#failed_commits[@]} -gt 0 ]; then
-            echo "❌ 以下提交消息格式不正确:"
+            echo "❌ The following commit messages have incorrect format:"
             for failed in "${failed_commits[@]}"; do
               echo "  - $failed"
             done
             echo ""
-            echo "请修改提交消息以符合 Conventional Commits 规范:"
-            echo "格式: <type>[optional scope]: <description>"
-            echo "示例: feat(auth): add JWT token refresh mechanism"
+            echo "Please modify commit messages to follow Conventional Commits specification:"
+            echo "Format: <type>[optional scope]: <description>"
+            echo "Example: feat(auth): add JWT token refresh mechanism"
             exit 1
           fi
 
-          echo "✅ 所有提交消息格式正确"
+          echo "✅ All commit message formats are correct"
 
-  # 代码格式检查
+  # Code format check
   code-format-check:
     name: 🎨 Code Format Check
     runs-on: ubuntu-latest
@@ -83,27 +83,27 @@ jobs:
 
       - name: Check Go formatting
         run: |
-          echo "检查 Go 代码格式..."
+          echo "Checking Go code format..."
 
-          # 检查 api-service
+          # Check api-service
           cd api-service
           unformatted=$(gofmt -l .)
           if [ -n "$unformatted" ]; then
-            echo "❌ api-service 以下文件格式不正确:"
+            echo "❌ api-service files with incorrect format:"
             echo "$unformatted"
             exit 1
           fi
 
-          # 检查 websoft9-agent
+          # Check websoft9-agent
           cd ../websoft9-agent
           unformatted=$(gofmt -l .)
           if [ -n "$unformatted" ]; then
-            echo "❌ websoft9-agent 以下文件格式不正确:"
+            echo "❌ websoft9-agent files with incorrect format:"
             echo "$unformatted"
             exit 1
           fi
 
-          echo "✅ Go 代码格式正确"
+          echo "✅ Go code format is correct"
 
       - name: Run golangci-lint for api-service
         uses: golangci/golangci-lint-action@v6
@@ -119,7 +119,7 @@ jobs:
           working-directory: websoft9-agent
           args: --timeout=5m --out-format=github-actions
 
-  # 单元测试
+  # Unit tests
   unit-tests:
     name: 🧪 Unit Tests
     runs-on: ubuntu-latest
@@ -146,41 +146,83 @@ jobs:
       - name: Run unit tests for api-service
         working-directory: api-service
         run: |
-          echo "运行 api-service 单元测试..."
+          # Enable pipefail to ensure any command failure in pipeline causes entire command to fail
+          set -euo pipefail
+
+          echo "Running api-service unit tests..."
           mkdir -p reports
 
-          # 运行测试并生成覆盖率报告
+          # Run tests and generate coverage report (use PIPESTATUS to check test results)
+          echo "Starting unit test execution..."
           go test -v -race -coverprofile=reports/coverage.out -covermode=atomic ./... | tee reports/test-results.txt
+          test_exit_code=${PIPESTATUS[0]}
 
-          # 生成覆盖率报告
+          echo "Test execution completed, exit code: $test_exit_code"
+
+          # Check if tests passed
+          if [ $test_exit_code -ne 0 ]; then
+            echo "❌ API Service unit tests failed, exit code: $test_exit_code"
+            echo "Test output:"
+            cat reports/test-results.txt || echo "Unable to read test results file"
+            exit $test_exit_code
+          fi
+
+          echo "✅ API Service unit tests all passed"
+
+          # Generate coverage report
           if [ -f "reports/coverage.out" ]; then
+            echo "Generating coverage report..."
             go tool cover -html=reports/coverage.out -o reports/coverage.html
             go tool cover -func=reports/coverage.out > reports/coverage.txt
 
-            # 计算总覆盖率
+            # Calculate total coverage
             total_coverage=$(go tool cover -func=reports/coverage.out | grep "total:" | awk '{print $3}' | sed 's/%//' || echo "0")
-            echo "API Service 总覆盖率: ${total_coverage}%"
+            echo "API Service total coverage: ${total_coverage}%"
             echo "api_coverage=$total_coverage" >> $GITHUB_ENV
+          else
+            echo "⚠️ Coverage file not generated, setting coverage to 0%"
+            echo "api_coverage=0" >> $GITHUB_ENV
           fi
 
       - name: Run unit tests for websoft9-agent
         working-directory: websoft9-agent
         run: |
-          echo "运行 websoft9-agent 单元测试..."
+          # Enable pipefail to ensure any command failure in pipeline causes entire command to fail
+          set -euo pipefail
+
+          echo "Running websoft9-agent unit tests..."
           mkdir -p reports
 
-          # 运行测试并生成覆盖率报告
+          # Run tests and generate coverage report (use PIPESTATUS to check test results)
+          echo "Starting unit test execution..."
           go test -v -race -coverprofile=reports/coverage.out -covermode=atomic ./... | tee reports/test-results.txt
+          test_exit_code=${PIPESTATUS[0]}
 
-          # 生成覆盖率报告
+          echo "Test execution completed, exit code: $test_exit_code"
+
+          # Check if tests passed
+          if [ $test_exit_code -ne 0 ]; then
+            echo "❌ Websoft9 Agent unit tests failed, exit code: $test_exit_code"
+            echo "Test output:"
+            cat reports/test-results.txt || echo "Unable to read test results file"
+            exit $test_exit_code
+          fi
+
+          echo "✅ Websoft9 Agent unit tests all passed"
+
+          # Generate coverage report
           if [ -f "reports/coverage.out" ]; then
+            echo "Generating coverage report..."
             go tool cover -html=reports/coverage.out -o reports/coverage.html
             go tool cover -func=reports/coverage.out > reports/coverage.txt
 
-            # 计算总覆盖率
+            # Calculate total coverage
             total_coverage=$(go tool cover -func=reports/coverage.out | grep "total:" | awk '{print $3}' | sed 's/%//' || echo "0")
-            echo "Agent 总覆盖率: ${total_coverage}%"
+            echo "Agent total coverage: ${total_coverage}%"
             echo "agent_coverage=$total_coverage" >> $GITHUB_ENV
+          else
+            echo "⚠️ Coverage file not generated, setting coverage to 0%"
+            echo "agent_coverage=0" >> $GITHUB_ENV
           fi
 
       - name: Upload coverage reports
@@ -202,12 +244,12 @@ jobs:
               const fs = require('fs');
               const path = require('path');
 
-              // 获取覆盖率数据
+              // Get coverage data
               const apiCoverage = process.env.api_coverage || '0';
               const agentCoverage = process.env.agent_coverage || '0';
               const threshold = process.env.COVERAGE_THRESHOLD;
 
-              // 计算平均覆盖率
+              // Calculate average coverage
               const avgCoverage = ((parseFloat(apiCoverage) + parseFloat(agentCoverage)) / 2).toFixed(1);
               const isWarning = parseFloat(avgCoverage) < parseFloat(threshold);
 
@@ -218,7 +260,7 @@ jobs:
 
               let detailsSection = '';
 
-              // 尝试读取覆盖率详细信息
+              // Try to read coverage details
               try {
                 const apiCoverageFile = path.join('api-service', 'reports', 'coverage.txt');
                 const agentCoverageFile = path.join('websoft9-agent', 'reports', 'coverage.txt');
@@ -237,7 +279,7 @@ jobs:
                 if (apiDetails || agentDetails) {
                   detailsSection = `
               <details>
-              <summary>详细覆盖率信息</summary>
+              <summary>Detailed Coverage Information</summary>
 
               ${apiDetails ? `**API Service:**
               \`\`\`
@@ -254,24 +296,24 @@ jobs:
               </details>`;
                 }
               } catch (error) {
-                console.log('无法读取覆盖率详细信息:', error.message);
+                console.log('Unable to read coverage details:', error.message);
               }
 
-              const comment = `## ${coverageIcon} 测试覆盖率报告
+              const comment = `## ${coverageIcon} Test Coverage Report
 
-              | 组件 | 覆盖率 | 状态 |
+              | Component | Coverage | Status |
               |------|--------|------|
               | API Service | ${apiCoverage}% | ${parseFloat(apiCoverage) >= parseFloat(threshold) ? '✅' : '⚠️'} |
               | Websoft9 Agent | ${agentCoverage}% | ${parseFloat(agentCoverage) >= parseFloat(threshold) ? '✅' : '⚠️'} |
-              | **平均覆盖率** | **${avgCoverage}%** | **${isWarning ? '⚠️' : '✅'}** |
+              | **Average Coverage** | **${avgCoverage}%** | **${isWarning ? '⚠️' : '✅'}** |
 
-              **阈值:** ${threshold}%
+              **Threshold:** ${threshold}%
 
-              ${isWarning ? '⚠️ **警告:** 部分组件覆盖率低于阈值，建议增加测试用例' : '✅ 所有组件覆盖率达到要求'}
+              ${isWarning ? '⚠️ **Warning:** Some components have coverage below threshold, recommend adding test cases' : '✅ All components meet coverage requirements'}
               ${detailsSection}
               `;
 
-              // 查找现有的覆盖率评论
+              // Find existing coverage comment
               const { data: comments } = await github.rest.issues.listComments({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -279,46 +321,46 @@ jobs:
               });
 
               const existingComment = comments.find(comment =>
-                comment.body.includes('测试覆盖率报告')
+                comment.body.includes('Test Coverage Report')
               );
 
               if (existingComment) {
-                // 更新现有评论
+                // Update existing comment
                 await github.rest.issues.updateComment({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   comment_id: existingComment.id,
                   body: comment
                 });
-                console.log('✅ 覆盖率评论已更新');
+                console.log('✅ Coverage comment updated');
               } else {
-                // 创建新评论
+                // Create new comment
                 await github.rest.issues.createComment({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   issue_number: context.issue.number,
                   body: comment
                 });
-                console.log('✅ 覆盖率评论已创建');
+                console.log('✅ Coverage comment created');
               }
             } catch (error) {
-              console.log('⚠️ 无法创建或更新覆盖率评论:', error.message);
-              console.log('覆盖率数据仍会在工作流日志中显示');
+              console.log('⚠️ Unable to create or update coverage comment:', error.message);
+              console.log('Coverage data will still be displayed in workflow logs');
 
-              // 在控制台输出覆盖率信息作为备选方案
+              // Output coverage information to console as fallback
               const apiCoverage = process.env.api_coverage || '0';
               const agentCoverage = process.env.agent_coverage || '0';
               const threshold = process.env.COVERAGE_THRESHOLD;
               const avgCoverage = ((parseFloat(apiCoverage) + parseFloat(agentCoverage)) / 2).toFixed(1);
 
-              console.log('📊 测试覆盖率报告:');
+              console.log('📊 Test Coverage Report:');
               console.log(`API Service: ${apiCoverage}%`);
               console.log(`Websoft9 Agent: ${agentCoverage}%`);
-              console.log(`平均覆盖率: ${avgCoverage}%`);
-              console.log(`阈值: ${threshold}%`);
+              console.log(`Average coverage: ${avgCoverage}%`);
+              console.log(`Threshold: ${threshold}%`);
             }
 
-  # 构建验证
+  # Build verification
   build-check:
     name: 🔨 Build Check
     runs-on: ubuntu-latest
@@ -346,33 +388,33 @@ jobs:
 
       - name: Build ${{ matrix.service }}
         run: |
-          # 打印当前目录路径
-          echo "当前工作目录: $(pwd)"
-          echo "目录内容:"
+          # Print current directory path
+          echo "Current working directory: $(pwd)"
+          echo "Directory contents:"
           ls -la
 
           if [ ! -d "${{ matrix.service }}" ]; then
-            echo "⏭️ 跳过 ${{ matrix.service }}，目录不存在"
+            echo "⏭️ Skipping ${{ matrix.service }}, directory does not exist"
             exit 0
           fi
 
-          echo "构建 ${{ matrix.service }}..."
+          echo "Building ${{ matrix.service }}..."
           cd ${{ matrix.service }}
-          echo "切换到目录: $(pwd)"
+          echo "Switched to directory: $(pwd)"
 
-          # 下载依赖
+          # Download dependencies
           go mod download
 
-          # 构建
+          # Build
           if [ -f "Makefile" ]; then
             make build
           else
             go build -v ./...
           fi
 
-          echo "✅ ${{ matrix.service }} 构建成功"
+          echo "✅ ${{ matrix.service }} build successful"
 
-  # 安全扫描
+  # Security scan
   security-scan:
     name: 🔒 Security Scan
     runs-on: ubuntu-latest
@@ -391,63 +433,63 @@ jobs:
 
       - name: Install Gosec
         run: |
-          echo "安装 Gosec 安全扫描工具..."
+          echo "Installing Gosec security scanning tool..."
           go install github.com/securego/gosec/v2/cmd/gosec@latest
 
       - name: Run Gosec Security Scanner for api-service
         run: |
-          echo "运行 api-service 安全扫描..."
+          echo "Running api-service security scan..."
 
           if [ ! -d "api-service" ]; then
-            echo "⏭️ 跳过 api-service，目录不存在"
+            echo "⏭️ Skipping api-service, directory does not exist"
           else
             cd api-service
             mkdir -p reports
 
-            echo "扫描 api-service Go 代码..."
-            # 使用配置文件（如果存在）
+            echo "Scanning api-service Go code..."
+            # Use config file (if exists)
             config_flag=""
             if [ -f "../.gosec.json" ]; then
               config_flag="-conf ../.gosec.json"
             fi
 
             if gosec $config_flag -fmt sarif -out reports/gosec-results.sarif ./... 2>/dev/null; then
-              echo "✅ api-service SARIF 报告生成成功"
+              echo "✅ api-service SARIF report generated successfully"
             else
-              echo "⚠️ api-service SARIF 报告生成失败，尝试基本扫描"
-              gosec $config_flag ./... || echo "⚠️ api-service 安全扫描完成（可能有警告）"
+              echo "⚠️ api-service SARIF report generation failed, trying basic scan"
+              gosec $config_flag ./... || echo "⚠️ api-service security scan completed (may have warnings)"
             fi
 
-            # 生成 JSON 报告（用于调试）
+            # Generate JSON report (for debugging)
             gosec $config_flag -fmt json -out reports/gosec-results.json ./... 2>/dev/null || true
             cd ../..
           fi
 
       - name: Run Gosec Security Scanner for websoft9-agent
         run: |
-          echo "运行 websoft9-agent 安全扫描..."
+          echo "Running websoft9-agent security scan..."
 
           if [ ! -d "websoft9-agent" ]; then
-            echo "⏭️ 跳过 websoft9-agent，目录不存在"
+            echo "⏭️ Skipping websoft9-agent, directory does not exist"
           else
             cd websoft9-agent
             mkdir -p reports
 
-            echo "扫描 websoft9-agent Go 代码..."
-            # 使用配置文件（如果存在）
+            echo "Scanning websoft9-agent Go code..."
+            # Use config file (if exists)
             config_flag=""
             if [ -f "../.gosec.json" ]; then
               config_flag="-conf ../.gosec.json"
             fi
 
             if gosec $config_flag -fmt sarif -out reports/gosec-results.sarif ./... 2>/dev/null; then
-              echo "✅ websoft9-agent SARIF 报告生成成功"
+              echo "✅ websoft9-agent SARIF report generated successfully"
             else
-              echo "⚠️ websoft9-agent SARIF 报告生成失败，尝试基本扫描"
-              gosec $config_flag ./... || echo "⚠️ websoft9-agent 安全扫描完成（可能有警告）"
+              echo "⚠️ websoft9-agent SARIF report generation failed, trying basic scan"
+              gosec $config_flag ./... || echo "⚠️ websoft9-agent security scan completed (may have warnings)"
             fi
 
-            # 生成 JSON 报告（用于调试）
+            # Generate JSON report (for debugging)
             gosec $config_flag -fmt json -out reports/gosec-results.json ./... 2>/dev/null || true
             cd ../..
           fi
@@ -476,7 +518,7 @@ jobs:
           sarif_file: websoft9-agent/reports/gosec-results.sarif
           category: websoft9-agent-gosec
 
-  # 最终状态检查
+  # Final status check
   pr-check-summary:
     name: 📊 PR Check Summary
     runs-on: ubuntu-latest
@@ -496,43 +538,43 @@ jobs:
     steps:
       - name: Check all jobs status
         run: |
-          echo "=== PR 检查结果汇总 ==="
+          echo "=== PR Check Results Summary ==="
 
-          # 检查各个作业的状态
+          # Check status of each job
           commit_check="${{ needs.commit-message-check.result }}"
           code_format="${{ needs.code-format-check.result }}"
           unit_tests="${{ needs.unit-tests.result }}"
           build_check="${{ needs.build-check.result }}"
           security_scan="${{ needs.security-scan.result }}"
 
-          echo "提交消息检查: $commit_check"
-          echo "代码格式检查: $code_format"
-          echo "单元测试: $unit_tests"
-          echo "构建检查: $build_check"
-          echo "安全扫描: $security_scan"
+          echo "Commit message check: $commit_check"
+          echo "Code format check: $code_format"
+          echo "Unit tests: $unit_tests"
+          echo "Build check: $build_check"
+          echo "Security scan: $security_scan"
 
-          # 检查是否有失败的作业
+          # Check if there are any failed jobs
           failed_jobs=()
 
-          [ "$commit_check" = "failure" ] && failed_jobs+=("提交消息检查")
-          [ "$code_format" = "failure" ] && failed_jobs+=("代码格式检查")
-          [ "$unit_tests" = "failure" ] && failed_jobs+=("单元测试")
-          [ "$build_check" = "failure" ] && failed_jobs+=("构建检查")
-          [ "$security_scan" = "failure" ] && failed_jobs+=("安全扫描")
+          [ "$commit_check" = "failure" ] && failed_jobs+=("Commit message check")
+          [ "$code_format" = "failure" ] && failed_jobs+=("Code format check")
+          [ "$unit_tests" = "failure" ] && failed_jobs+=("Unit tests")
+          [ "$build_check" = "failure" ] && failed_jobs+=("Build check")
+          [ "$security_scan" = "failure" ] && failed_jobs+=("Security scan")
 
           if [ ${#failed_jobs[@]} -gt 0 ]; then
             echo ""
-            echo "❌ 以下检查失败:"
+            echo "❌ The following checks failed:"
             for job in "${failed_jobs[@]}"; do
               echo "  - $job"
             done
             echo ""
-            echo "请修复失败的检查项后重新提交"
+            echo "Please fix the failed checks and resubmit"
             exit 1
           fi
 
           echo ""
-          echo "✅ 所有 PR 检查通过！"
+          echo "✅ All PR checks passed!"
 
       - name: Comment PR check summary
         if: always()
@@ -543,16 +585,16 @@ jobs:
             try {
               const needs = ${{ toJSON(needs) }};
 
-              let summary = '## 📊 PR 检查结果汇总\n\n';
+              let summary = '## 📊 PR Check Results Summary\n\n';
               let allPassed = true;
               let failedJobs = [];
 
               const jobs = [
-                { name: '提交消息检查', key: 'commit-message-check' },
-                { name: '代码格式检查', key: 'code-format-check' },
-                { name: '单元测试', key: 'unit-tests' },
-                { name: '构建检查', key: 'build-check' },
-                { name: '安全扫描', key: 'security-scan' }
+                { name: 'Commit Message Check', key: 'commit-message-check' },
+                { name: 'Code Format Check', key: 'code-format-check' },
+                { name: 'Unit Tests', key: 'unit-tests' },
+                { name: 'Build Check', key: 'build-check' },
+                { name: 'Security Scan', key: 'security-scan' }
               ];
 
               for (const job of jobs) {
@@ -575,33 +617,33 @@ jobs:
               summary += '\n';
 
               if (allPassed) {
-                summary += '🎉 **所有检查通过！** 此 PR 可以合并。';
+                summary += '🎉 **All checks passed!** This PR can be merged.';
               } else {
-                summary += '⚠️ **部分检查失败** 请修复失败的检查项后重新提交。\n\n';
-                summary += '### 🔧 修复建议\n\n';
+                summary += '⚠️ **Some checks failed** Please fix the failed checks and resubmit.\n\n';
+                summary += '### 🔧 Fix Suggestions\n\n';
 
-                if (failedJobs.includes('提交消息检查')) {
-                  summary += '- **提交消息格式**: 请使用 Conventional Commits 格式，如 `feat(auth): add login functionality`\n';
+                if (failedJobs.includes('Commit Message Check')) {
+                  summary += '- **Commit Message Format**: Please use Conventional Commits format, e.g. `feat(auth): add login functionality`\n';
                 }
-                if (failedJobs.includes('代码格式检查')) {
-                  summary += '- **代码格式**: 运行 `gofmt -w .` 和 `golangci-lint run` 修复格式问题\n';
+                if (failedJobs.includes('Code Format Check')) {
+                  summary += '- **Code Format**: Run `gofmt -w .` and `golangci-lint run` to fix format issues\n';
                 }
-                if (failedJobs.includes('单元测试')) {
-                  summary += '- **单元测试**: 修复失败的测试用例，确保测试覆盖率达到要求\n';
+                if (failedJobs.includes('Unit Tests')) {
+                  summary += '- **Unit Tests**: Fix failed test cases and ensure test coverage meets requirements\n';
                 }
-                if (failedJobs.includes('构建检查')) {
-                  summary += '- **构建问题**: 检查编译错误和依赖问题\n';
+                if (failedJobs.includes('Build Check')) {
+                  summary += '- **Build Issues**: Check compilation errors and dependency problems\n';
                 }
-                if (failedJobs.includes('安全扫描')) {
-                  summary += '- **安全问题**: 修复 Gosec 扫描发现的安全漏洞\n';
+                if (failedJobs.includes('Security Scan')) {
+                  summary += '- **Security Issues**: Fix security vulnerabilities found by Gosec scan\n';
                 }
 
                 summary += '\n---\n\n';
-                summary += '💡 **提示**: 如果需要帮助，请查看 [开发规范文档](https://github.com/Websoft9/webox/blob/develop/docs/开发规范.md) 或联系团队成员。\n\n';
-                summary += '⚠️ **注意**: 连续多次检查失败可能会导致此 PR 被自动关闭，请及时修复问题。';
+                summary += '💡 **Tip**: If you need help, please check the [Development Specification Document](https://github.com/Websoft9/webox/blob/develop/docs/开发规范.md) or contact team members.\n\n';
+                summary += '⚠️ **Note**: Consecutive multiple check failures may result in this PR being automatically closed, please fix issues promptly.';
               }
 
-              // 查找现有的汇总评论
+              // Find existing summary comment
               const { data: comments } = await github.rest.issues.listComments({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -609,47 +651,47 @@ jobs:
               });
 
               const existingComment = comments.find(comment =>
-                comment.body.includes('PR 检查结果汇总')
+                comment.body.includes('PR Check Results Summary')
               );
 
               if (existingComment) {
-                // 更新现有评论
+                // Update existing comment
                 await github.rest.issues.updateComment({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   comment_id: existingComment.id,
                   body: summary
                 });
-                console.log('✅ PR 检查汇总评论已更新');
+                console.log('✅ PR check summary comment updated');
               } else {
-                // 创建新评论
+                // Create new comment
                 await github.rest.issues.createComment({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   issue_number: context.issue.number,
                   body: summary
                 });
-                console.log('✅ PR 检查汇总评论已创建');
+                console.log('✅ PR check summary comment created');
               }
 
-              // 设置输出变量供后续步骤使用
+              // Set output variables for subsequent steps
               core.setOutput('all_passed', allPassed);
               core.setOutput('failed_jobs', failedJobs.join(','));
 
             } catch (error) {
-              console.log('⚠️ 无法创建或更新 PR 检查汇总评论:', error.message);
-              console.log('检查结果仍会在工作流日志中显示');
+              console.log('⚠️ Unable to create or update PR check summary comment:', error.message);
+              console.log('Check results will still be displayed in workflow logs');
 
-              // 在控制台输出汇总信息作为备选方案
+              // Output summary information to console as fallback
               const needs = ${{ toJSON(needs) }};
-              console.log('📊 PR 检查结果汇总:');
+              console.log('📊 PR Check Results Summary:');
 
               const jobs = [
-                { name: '提交消息检查', key: 'commit-message-check' },
-                { name: '代码格式检查', key: 'code-format-check' },
-                { name: '单元测试', key: 'unit-tests' },
-                { name: '构建检查', key: 'build-check' },
-                { name: '安全扫描', key: 'security-scan' }
+                { name: 'Commit Message Check', key: 'commit-message-check' },
+                { name: 'Code Format Check', key: 'code-format-check' },
+                { name: 'Unit Tests', key: 'unit-tests' },
+                { name: 'Build Check', key: 'build-check' },
+                { name: 'Security Scan', key: 'security-scan' }
               ];
 
               let allPassed = true;
@@ -661,7 +703,7 @@ jobs:
                 }
               }
 
-              // 设置输出变量
+              // Set output variables
               core.setOutput('all_passed', allPassed);
             }
 
@@ -674,7 +716,7 @@ jobs:
             try {
               const needs = ${{ toJSON(needs) }};
 
-              // 检查是否有失败的作业
+              // Check if there are any failed jobs
               let hasFailures = false;
               const jobs = ['commit-message-check', 'code-format-check', 'unit-tests', 'build-check', 'security-scan'];
 
@@ -686,13 +728,13 @@ jobs:
               }
 
               if (!hasFailures) {
-                console.log('✅ 所有检查通过，无需处理失败情况');
+                console.log('✅ All checks passed, no need to handle failures');
                 return;
               }
 
-              console.log('⚠️ 检测到检查失败，开始处理...');
+              console.log('⚠️ Check failures detected, starting to handle...');
 
-              // 获取 PR 信息
+              // Get PR information
               const { data: pr } = await github.rest.pulls.get({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -703,53 +745,53 @@ jobs:
               const prAuthor = pr.user.login;
               const prTitle = pr.title;
 
-              // 检查是否是 fork 的 PR（不能删除 fork 仓库的分支）
+              // Check if it's a fork PR (cannot delete fork repository branches)
               const isFork = pr.head.repo.full_name !== pr.base.repo.full_name;
 
-              console.log(`PR 信息: 分支=${branchName}, 作者=${prAuthor}, 标题=${prTitle}, 是否Fork=${isFork}`);
+              console.log(`PR Info: branch=${branchName}, author=${prAuthor}, title=${prTitle}, isFork=${isFork}`);
 
-              // 获取 PR 的历史检查失败次数
+              // Get PR historical check failure count
               const { data: comments } = await github.rest.issues.listComments({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
               });
 
-              // 计算失败次数（通过查找包含"检查失败"的评论）
+              // Calculate failure count (by finding comments containing "check failed")
               const failureComments = comments.filter(comment =>
-                comment.body.includes('⚠️ **部分检查失败**') ||
-                comment.body.includes('🚨 PR 检查连续失败警告')
+                comment.body.includes('⚠️ **Some checks failed**') ||
+                comment.body.includes('🚨 PR Check Consecutive Failure Warning')
               );
 
               const failureCount = failureComments.length;
-              const maxFailures = 1; // 最大允许失败次数
+              const maxFailures = 1; // Maximum allowed failures
 
-              console.log(`当前失败次数: ${failureCount}/${maxFailures}`);
+              console.log(`Current failure count: ${failureCount}/${maxFailures}`);
 
               if (failureCount >= maxFailures) {
-                // 达到最大失败次数，发送最终警告并准备关闭 PR
-                const finalWarning = `## 🚨 PR 自动关闭通知
+                // Reached maximum failures, send final warning and prepare to close PR
+                const finalWarning = `## 🚨 PR Auto-Close Notification
 
-              @${prAuthor} 您好，
+              @${prAuthor} Hello,
 
-              此 PR 已连续 **${failureCount}** 次检查失败，根据项目规范将被自动关闭。
+              This PR has failed checks **${failureCount}** times consecutively and will be automatically closed according to project specifications.
 
-              ### 📋 失败原因汇总
-              请查看上方的检查结果，修复所有失败项后重新创建 PR。
+              ### 📋 Failure Summary
+              Please review the check results above, fix all failed items, and create a new PR.
 
-              ### 🔄 后续操作建议
-              1. 在本地修复所有检查失败的问题
-              2. 确保代码符合项目规范
-              3. 运行本地测试确保通过
-              4. 重新创建 PR
+              ### 🔄 Next Steps
+              1. Fix all check failure issues locally
+              2. Ensure code meets project specifications
+              3. Run local tests to ensure they pass
+              4. Create a new PR
 
-              ### 📚 参考资源
-              - [开发规范文档](https://github.com/Websoft9/webox/blob/develop/docs/开发规范.md)
-              - [Git 工作流规范](https://github.com/Websoft9/webox/blob/develop/docs/开发规范.md#4-版本控制规范)
+              ### 📚 Reference Resources
+              - [Development Specification Document](https://github.com/Websoft9/webox/blob/develop/docs/开发规范.md)
+              - [Git Workflow Specification](https://github.com/Websoft9/webox/blob/develop/docs/开发规范.md#4-版本控制规范)
 
               ---
 
-              **此 PR 将在 1 分钟后自动关闭。** 如有疑问，请联系项目维护者。
+              **This PR will be automatically closed in 1 minute.** If you have questions, please contact project maintainers.
               `;
 
                 await github.rest.issues.createComment({
@@ -759,7 +801,7 @@ jobs:
                   body: finalWarning
                 });
 
-                // 添加标签
+                // Add labels
                 await github.rest.issues.addLabels({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
@@ -767,11 +809,11 @@ jobs:
                   labels: ['auto-close', 'checks-failed']
                 });
 
-                // 等待 1 分钟后关闭 PR
-                console.log('⏰ 等待 1 分钟后关闭 PR...');
-                await new Promise(resolve => setTimeout(resolve, 1 * 60 * 1000)); // 1 分钟
+                // Wait 1 minute before closing PR
+                console.log('⏰ Waiting 1 minute before closing PR...');
+                await new Promise(resolve => setTimeout(resolve, 1 * 60 * 1000)); // 1 minute
 
-                // 关闭 PR
+                // Close PR
                 await github.rest.pulls.update({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
@@ -779,9 +821,9 @@ jobs:
                   state: 'closed'
                 });
 
-                console.log('🔒 PR 已自动关闭');
+                console.log('🔒 PR automatically closed');
 
-                // 如果不是 fork，尝试删除分支
+                // If not a fork, try to delete branch
                 if (!isFork && branchName !== 'main' && branchName !== 'develop') {
                   try {
                     await github.rest.git.deleteRef({
@@ -789,45 +831,45 @@ jobs:
                       repo: context.repo.repo,
                       ref: `heads/${branchName}`
                     });
-                    console.log(`🗑️ 分支 ${branchName} 已自动删除`);
+                    console.log(`🗑️ branch ${branchName} automatically deleted`);
 
-                    // 添加删除分支的评论
+                    // Add comment about branch deletion
                     await github.rest.issues.createComment({
                       owner: context.repo.owner,
                       repo: context.repo.repo,
                       issue_number: context.issue.number,
-                      body: `🗑️ **分支已删除**: \`${branchName}\` 分支已自动删除。`
+                      body: `🗑️ **Branch deleted**: \`${branchName}\` branch automatically deleted.`
                     });
                   } catch (deleteError) {
-                    console.log(`⚠️ 无法删除分支 ${branchName}:`, deleteError.message);
+                    console.log(`⚠️ Unable to delete branch ${branchName}:`, deleteError.message);
                   }
                 } else {
-                  const reason = isFork ? 'Fork 仓库分支' : '受保护的分支';
-                  console.log(`⏭️ 跳过删除分支: ${reason}`);
+                  const reason = isFork ? 'Fork repository branch' : 'Protected branch';
+                  console.log(`⏭️ Skipping branch deletion: ${reason}`);
                 }
 
               } else if (failureCount >= Math.floor(maxFailures / 2)) {
-                // 达到一半失败次数，发送警告
-                const warningMessage = `## ⚠️ PR 检查失败警告
+                // Reached half of failure limit, send warning
+                const warningMessage = `## ⚠️ PR Check Failure Warning
 
-              @${prAuthor} 您好，
+              @${prAuthor} Hello,
 
-              此 PR 已连续 **${failureCount}** 次检查失败。为了保持代码质量，请尽快修复以下问题：
+              This PR has failed checks **${failureCount}** times consecutively. To maintain code quality, please fix the following issues promptly:
 
-              ### 🔧 需要修复的问题
-              请查看上方的详细检查结果和修复建议。
+              ### 🔧 Issues to Fix
+              Please review the detailed check results and fix suggestions above.
 
-              ### ⏰ 重要提醒
-              - 最多允许连续失败 **${maxFailures}** 次
-              - 超过限制后 PR 将被自动关闭
-              - 剩余机会：**${maxFailures - failureCount}** 次
+              ### ⏰ Important Reminder
+              - Maximum consecutive failures allowed: **${maxFailures}** times
+              - PR will be automatically closed after exceeding limit
+              - Remaining chances:**${maxFailures - failureCount}** times
 
-              ### 💡 建议
-              1. 仔细阅读检查失败的详细信息
-              2. 在本地环境修复所有问题
-              3. 确保本地测试通过后再推送
+              ### 💡 Suggestions
+              1. Carefully read the detailed check failure information
+              2. Fix all issues in your local environment
+              3. Ensure local tests pass before pushing
 
-              感谢您的理解与配合！
+              Thank you for your understanding and cooperation!
               `;
 
                 await github.rest.issues.createComment({
@@ -837,7 +879,7 @@ jobs:
                   body: warningMessage
                 });
 
-                // 添加警告标签
+                // Add warning labels
                 await github.rest.issues.addLabels({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
@@ -845,12 +887,12 @@ jobs:
                   labels: ['checks-failed', 'needs-fix']
                 });
 
-                console.log(`⚠️ 已发送第 ${failureCount} 次失败警告`);
+                console.log(`⚠️ Sent failure warning # ${failureCount} `);
               } else {
-                console.log(`📝 记录第 ${failureCount} 次检查失败`);
+                console.log(`📝 Recording failure # ${failureCount} `);
               }
 
             } catch (error) {
-              console.log('⚠️ 处理失败 PR 检查时出错:', error.message);
-              console.log('错误详情:', error);
+              console.log('⚠️ Error handling failed PR checks:', error.message);
+              console.log('Error details:', error);
             }

@@ -8,7 +8,7 @@ env:
   GO_VERSION: '1.24.5'
 
 jobs:
-  # 检查是否有代码修改
+  # Check for code changes
   check-code-changes:
     name: 🔍 Check Code Changes
     runs-on: ubuntu-latest
@@ -23,46 +23,46 @@ jobs:
       - name: Check for code changes
         id: changes
         run: |
-          echo "检查是否包含代码修改..."
+          echo "Checking for code changes..."
           
-          # 获取修改的文件列表
+          # Get list of modified files
           changed_files=$(git diff --name-only HEAD^ HEAD)
-          echo "修改的文件:"
+          echo "Modified files:"
           echo "$changed_files"
           
-          # 定义代码文件扩展名
+          # Define code file extensions
           code_extensions="\.(go|js|ts|vue|jsx|tsx|py|java|c|cpp|h|hpp|rs|php|rb|swift|kt|scala|cs|sh|sql|yaml|yml|json|toml|dockerfile|Dockerfile)$"
           
-          # 检查是否有代码文件修改
+          # Check for code file modifications
           has_code_changes=false
           while IFS= read -r file; do
             if [[ -n "$file" && "$file" =~ $code_extensions ]]; then
-              echo "发现代码文件修改: $file"
+              echo "Found code file modification: $file"
               has_code_changes=true
               break
             fi
           done <<< "$changed_files"
           
-          # 检查特殊文件
+          # Check special files
           special_files="Makefile|makefile|go.mod|go.sum|package.json|package-lock.json|yarn.lock|pom.xml|build.gradle|Cargo.toml|Cargo.lock|requirements.txt|composer.json|composer.lock"
           while IFS= read -r file; do
             if [[ -n "$file" && "$file" =~ $special_files ]]; then
-              echo "发现构建配置文件修改: $file"
+              echo "Found build config file modification: $file"
               has_code_changes=true
               break
             fi
           done <<< "$changed_files"
           
           if [ "$has_code_changes" = true ]; then
-            echo "✅ 检测到代码修改，继续执行后续检查"
+            echo "✅ Code changes detected, proceeding with subsequent checks"
             echo "has-code-changes=true" >> $GITHUB_OUTPUT
           else
-            echo "ℹ️  未检测到代码修改，跳过后续检查"
-            echo "修改的文件类型: 文档、配置、其他非代码文件"
+            echo "ℹ️  No code changes detected, skipping subsequent checks"
+            echo "Modified file types: documentation, configuration, other non-code files"
             echo "has-code-changes=false" >> $GITHUB_OUTPUT
           fi
 
-  # 提交消息格式检查
+  # Commit message format check
   commit-message-check:
     name: 📝 Commit Message Check
     runs-on: ubuntu-latest
@@ -74,37 +74,37 @@ jobs:
 
       - name: Check latest commit message
         run: |
-          echo "检查最新提交消息格式..."
+          echo "Checking latest commit message format..."
 
-          # 获取最新提交消息
+          # Get latest commit message
           message=$(git log --format=%s -n 1 HEAD)
-          echo "提交消息: $message"
-          echo "消息长度: ${#message} 字符"
+          echo "Commit message: $message"
+          echo "Message length: ${#message} characters"
 
-          # 确保脚本有执行权限
+          # Ensure script has execution permissions
           chmod +x ./scripts/check-commit-message.sh
 
-          # 检查提交消息格式
-          echo "运行提交消息检查脚本..."
+          # Check commit message format
+          echo "Running commit message check script..."
           if ./scripts/check-commit-message.sh -v "$message"; then
-            echo "✅ 提交消息格式正确"
+            echo "✅ Commit message format is correct"
           else
-            echo "❌ ERROR: 提交消息格式不正确"
+            echo "❌ ERROR: Commit message format is incorrect"
             echo ""
-            echo "请修改提交消息以符合 Conventional Commits 规范:"
-            echo "格式: <type>[optional scope]: <description>"
+            echo "Please modify the commit message to comply with Conventional Commits specification:"
+            echo "Format: <type>[optional scope]: <description>"
             echo ""
-            echo "支持的类型: feat, fix, docs, style, refactor, test, chore, perf, ci"
-            echo "描述长度: 1-100 字符"
+            echo "Supported types: feat, fix, docs, style, refactor, test, chore, perf, ci"
+            echo "Description length: 1-100 characters"
             echo ""
-            echo "示例:"
+            echo "Examples:"
             echo "  feat(auth): add JWT token refresh mechanism"
             echo "  fix(api): handle null pointer in user service"
             echo "  chore: update dependencies and build scripts"
             exit 1
           fi
 
-  # 代码格式检查
+  # Code format check
   code-format-check:
     name: 🎨 Code Format Check
     runs-on: ubuntu-latest
@@ -125,33 +125,33 @@ jobs:
 
       - name: Check Go formatting
         run: |
-          echo "检查 Go 代码格式..."
+          echo "Checking Go code format..."
 
-          # 检查 api-service
+          # Check api-service
           if [ -d "api-service" ]; then
             cd api-service
             unformatted=$(gofmt -l .)
             if [ -n "$unformatted" ]; then
-              echo "❌ api-service 以下文件格式不正确:"
+              echo "❌ The following files in api-service have incorrect format:"
               echo "$unformatted"
               exit 1
             fi
             cd ../..
           fi
 
-          # 检查 websoft9-agent
+          # Check websoft9-agent
           if [ -d "websoft9-agent" ]; then
             cd websoft9-agent
             unformatted=$(gofmt -l .)
             if [ -n "$unformatted" ]; then
-              echo "❌ websoft9-agent 以下文件格式不正确:"
+              echo "❌ The following files in websoft9-agent have incorrect format:"
               echo "$unformatted"
               exit 1
             fi
             cd ../..
           fi
 
-          echo "✅ Go 代码格式正确"
+          echo "✅ Go code format is correct"
 
       - name: Run golangci-lint for api-service
         if: hashFiles('api-service/go.mod') != ''
@@ -169,7 +169,7 @@ jobs:
           working-directory: websoft9-agent
           args: --timeout=5m
 
-  # 快速构建检查
+  # Quick build check
   build-check:
     name: 🔨 Build Check
     runs-on: ubuntu-latest
@@ -199,33 +199,33 @@ jobs:
 
       - name: Build ${{ matrix.service }}
         run: |
-          # 打印当前目录路径
-          echo "当前工作目录: $(pwd)"
-          echo "目录内容:"
+          # Print current directory path
+          echo "Current working directory: $(pwd)"
+          echo "Directory contents:"
           ls -la
 
           if [ ! -d "${{ matrix.service }}" ]; then
-            echo "⏭️ 跳过 ${{ matrix.service }}，目录不存在"
+            echo "⏭️ Skipping ${{ matrix.service }}, directory does not exist"
             exit 0
           fi
 
-          echo "构建 ${{ matrix.service }}..."
+          echo "Building ${{ matrix.service }}..."
           cd ${{ matrix.service }}
-          echo "切换到目录: $(pwd)"
+          echo "Switched to directory: $(pwd)"
 
-          # 下载依赖
+          # Download dependencies
           go mod download
 
-          # 构建
+          # Build
           if [ -f "Makefile" ]; then
             make build
           else
             go build -v ./...
           fi
 
-          echo "✅ ${{ matrix.service }} 构建成功"
+          echo "✅ ${{ matrix.service }} build successful"
 
-  # 快速测试
+  # Quick test
   quick-test:
     name: ⚡ Quick Test
     runs-on: ubuntu-latest
@@ -248,17 +248,17 @@ jobs:
         if: hashFiles('api-service/go.mod') != ''
         working-directory: api-service
         run: |
-          echo "运行 api-service 快速测试..."
+          echo "Running api-service quick tests..."
           go test -short -race ./...
 
       - name: Run quick tests for websoft9-agent
         if: hashFiles('websoft9-agent/go.mod') != ''
         working-directory: websoft9-agent
         run: |
-          echo "运行 websoft9-agent 快速测试..."
+          echo "Running websoft9-agent quick tests..."
           go test -short -race ./...
 
-  # 推送检查汇总
+  # Push check summary
   push-check-summary:
     name: 📊 Push Check Summary
     runs-on: ubuntu-latest
@@ -267,44 +267,44 @@ jobs:
     steps:
       - name: Check all jobs status
         run: |
-          echo "=== 推送检查结果汇总 ==="
+          echo "=== Push Check Results Summary ==="
 
-          # 检查各个作业的状态
+          # Check the status of each job
           has_code_changes="${{ needs.check-code-changes.outputs.has-code-changes }}"
           commit_check="${{ needs.commit-message-check.result }}"
           code_format="${{ needs.code-format-check.result }}"
           build_check="${{ needs.build-check.result }}"
           quick_test="${{ needs.quick-test.result }}"
 
-          echo "代码修改检查: $has_code_changes"
-          echo "提交消息检查: $commit_check"
-          echo "代码格式检查: $code_format"
-          echo "构建检查: $build_check"
-          echo "快速测试: $quick_test"
+          echo "Code changes check: $has_code_changes"
+          echo "Commit message check: $commit_check"
+          echo "Code format check: $code_format"
+          echo "Build check: $build_check"
+          echo "Quick test: $quick_test"
 
-          # 检查是否有失败的作业
+          # Check for failed jobs
           failed_jobs=()
 
-          [ "$commit_check" = "failure" ] && failed_jobs+=("提交消息检查")
+          [ "$commit_check" = "failure" ] && failed_jobs+=("Commit message check")
 
-          # 检查是否有代码修改
+          # Check for code changes
           if [ "$has_code_changes" == "true" ]; then
-            [ "$code_format" = "failure" ] && failed_jobs+=("代码格式检查")
-            [ "$build_check" = "failure" ] && failed_jobs+=("构建检查")
-            [ "$quick_test" = "failure" ] && failed_jobs+=("快速测试")
+            [ "$code_format" = "failure" ] && failed_jobs+=("Code format check")
+            [ "$build_check" = "failure" ] && failed_jobs+=("Build check")
+            [ "$quick_test" = "failure" ] && failed_jobs+=("Quick test")
           fi
 
 
           if [ ${#failed_jobs[@]} -gt 0 ]; then
             echo ""
-            echo "❌ 以下检查失败:"
+            echo "❌ The following checks failed:"
             for job in "${failed_jobs[@]}"; do
               echo "  - $job"
             done
             echo ""
-            echo "请修复失败的检查项"
+            echo "Please fix the failed check items"
             exit 1
           fi
 
           echo ""
-          echo "✅ 所有推送检查通过！"
+          echo "✅ All push checks passed!"

@@ -23,7 +23,7 @@ env:
   REGISTRY_NAMESPACE: websoft9
 
 jobs:
-  # 部署前检查
+  # Pre-deployment check
   pre-deployment-check:
     name: 🔍 Pre-deployment Check
     runs-on: ubuntu-latest
@@ -49,18 +49,18 @@ jobs:
           environment="${{ steps.determine-env.outputs.environment }}"
           force_deploy="${{ inputs.force_deploy }}"
 
-          echo "部署环境: $environment"
-          echo "强制部署: $force_deploy"
+          echo "Deployment environment: $environment"
+          echo "Force deployment: $force_deploy"
 
-          # 检查是否应该部署
+          # Check if deployment should proceed
           should_deploy="true"
 
           if [ "$force_deploy" != "true" ]; then
-            # 检查最近的 CI 状态
-            echo "检查最近的 CI 状态..."
+            # Check recent CI status
+            echo "Checking recent CI status..."
 
-            # 这里可以添加更多的检查逻辑
-            # 例如：检查最近的测试结果、安全扫描结果等
+            # Here you can add more check logic
+            # For example: check recent test results, security scan results, etc.
           fi
 
           echo "should_deploy=$should_deploy" >> $GITHUB_OUTPUT
@@ -71,22 +71,22 @@ jobs:
 
           case $environment in
             test)
-              echo "✅ 部署到测试环境"
+              echo "✅ Deploy to test environment"
               ;;
             staging)
-              echo "✅ 部署到预生产环境"
+              echo "✅ Deploy to staging environment"
               ;;
             production)
-              echo "✅ 部署到生产环境"
-              echo "⚠️ 生产环境部署需要额外审批"
+              echo "✅ Deploy to production environment"
+              echo "⚠️ Production environment deployment requires additional approval"
               ;;
             *)
-              echo "❌ 无效的部署环境: $environment"
+              echo "❌ Invalid deployment environment: $environment"
               exit 1
               ;;
           esac
 
-  # 构建部署镜像
+  # Build deployment images
   build-deployment-images:
     name: 🔨 Build Deployment Images
     runs-on: ubuntu-latest
@@ -136,7 +136,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # 部署到测试环境
+  # Deploy to test environment
   deploy-to-test:
     name: 🧪 Deploy to Test Environment
     runs-on: ubuntu-latest
@@ -151,9 +151,9 @@ jobs:
 
       - name: Set up deployment configuration
         run: |
-          echo "配置测试环境部署参数..."
+          echo "Configuring test environment deployment parameters..."
 
-          # 创建部署配置
+          # Create deployment configuration
           mkdir -p deploy/test
 
           cat > deploy/test/docker-compose.yml << 'EOF'
@@ -215,40 +215,40 @@ jobs:
 
       - name: Deploy to test environment
         run: |
-          echo "部署到测试环境..."
+          echo "Deploying to test environment..."
 
-          # 这里应该是实际的部署逻辑
-          # 例如：SSH 到测试服务器，拉取镜像，更新服务等
+          # This should be the actual deployment logic
+          # For example: SSH to test server, pull images, update services, etc.
 
-          # 模拟部署过程
-          echo "1. 停止现有服务..."
+          # Simulate deployment process
+          echo "1. Stopping existing services..."
           # docker-compose -f deploy/test/docker-compose.yml down
 
-          echo "2. 拉取最新镜像..."
+          echo "2. Pulling latest images..."
           # docker-compose -f deploy/test/docker-compose.yml pull
 
-          echo "3. 启动服务..."
+          echo "3. Starting services..."
           # docker-compose -f deploy/test/docker-compose.yml up -d
 
-          echo "✅ 测试环境部署完成"
+          echo "✅ Test environment deployment completed"
 
       - name: Wait for services to be ready
         run: |
-          echo "等待服务启动..."
+          echo "Waiting for services to start..."
 
-          # 等待服务健康检查通过
+          # Wait for health checks to pass
           max_attempts=30
           attempt=1
 
           while [ $attempt -le $max_attempts ]; do
-            echo "检查服务状态... ($attempt/$max_attempts)"
+            echo "Checking service status... ($attempt/$max_attempts)"
 
-            # 这里应该检查实际的服务状态
-            # 例如：curl 健康检查端点
+            # This should check actual service status
+            # For example: curl health check endpoints
 
-            # 模拟健康检查
+            # Simulate health check
             if [ $attempt -ge 5 ]; then
-              echo "✅ 所有服务已就绪"
+              echo "✅ All services are ready"
               break
             fi
 
@@ -257,27 +257,27 @@ jobs:
           done
 
           if [ $attempt -gt $max_attempts ]; then
-            echo "❌ 服务启动超时"
+            echo "❌ Service startup timeout"
             exit 1
           fi
 
       - name: Run deployment verification tests
         run: |
-          echo "运行部署验证测试..."
+          echo "Running deployment verification tests..."
 
-          # 基本连通性测试
-          echo "1. API 服务连通性测试..."
+          # Basic connectivity test
+          echo "1. API service connectivity test..."
           # curl -f http://test.websoft9.com/health || exit 1
 
-          echo "2. SQLite 数据库连接测试..."
-          # 测试 SQLite 数据库连接
+          echo "2. SQLite database connection test..."
+          # Test SQLite database connection
 
-          echo "3. 功能验证测试..."
-          # 运行关键功能的验证测试
+          echo "3. Functional verification test..."
+          # Run verification tests for key functions
 
-          echo "✅ 部署验证测试通过"
+          echo "✅ Deployment verification tests passed"
 
-  # 部署到预生产环境
+  # Deploy to staging environment
   deploy-to-staging:
     name: 🎭 Deploy to Staging Environment
     runs-on: ubuntu-latest
@@ -292,21 +292,21 @@ jobs:
 
       - name: Deploy to staging environment
         run: |
-          echo "部署到预生产环境..."
+          echo "Deploying to staging environment..."
 
-          # 预生产环境的部署逻辑
-          # 通常包括更严格的验证和监控
+          # Staging environment deployment logic
+          # Usually includes stricter validation and monitoring
 
-          echo "✅ 预生产环境部署完成"
+          echo "✅ Staging environment deployment completed"
 
       - name: Run staging verification tests
         run: |
-          echo "运行预生产环境验证测试..."
+          echo "Running staging environment verification tests..."
 
-          # 更全面的验证测试
-          echo "✅ 预生产环境验证测试通过"
+          # More comprehensive verification tests
+          echo "✅ Staging environment verification tests passed"
 
-  # 部署到生产环境
+  # Deploy to production environment
   deploy-to-production:
     name: 🌟 Deploy to Production Environment
     runs-on: ubuntu-latest
@@ -321,38 +321,38 @@ jobs:
 
       - name: Create deployment backup
         run: |
-          echo "创建部署备份..."
+          echo "Creating deployment backup..."
 
-          # 备份当前生产环境配置和数据
+          # Backup current production environment configuration and data
           backup_timestamp=$(date +%Y%m%d_%H%M%S)
           echo "backup_timestamp=$backup_timestamp" >> $GITHUB_ENV
 
-          echo "✅ 备份创建完成: $backup_timestamp"
+          echo "✅ Backup created: $backup_timestamp"
 
       - name: Deploy to production environment
         run: |
-          echo "部署到生产环境..."
+          echo "Deploying to production environment..."
 
-          # 生产环境的部署逻辑
-          # 包括蓝绿部署、滚动更新等策略
+          # Production environment deployment logic
+          # Includes blue-green deployment, rolling updates, etc.
 
-          echo "✅ 生产环境部署完成"
+          echo "✅ Production environment deployment completed"
 
       - name: Run production verification tests
         run: |
-          echo "运行生产环境验证测试..."
+          echo "Running production environment verification tests..."
 
-          # 生产环境的验证测试
-          echo "✅ 生产环境验证测试通过"
+          # Production environment verification tests
+          echo "✅ Production environment verification tests passed"
 
       - name: Enable production traffic
         run: |
-          echo "启用生产环境流量..."
+          echo "Enabling production environment traffic..."
 
-          # 切换流量到新版本
-          echo "✅ 生产环境流量已启用"
+          # Switch traffic to new version
+          echo "✅ Production environment traffic enabled"
 
-  # 部署后健康检查
+  # Post-deployment health check
   post-deployment-health-check:
     name: 🏥 Post-deployment Health Check
     runs-on: ubuntu-latest
@@ -363,9 +363,9 @@ jobs:
         run: |
           environment="${{ needs.pre-deployment-check.outputs.deploy_environment }}"
 
-          echo "执行 $environment 环境的全面健康检查..."
+          echo "Performing comprehensive health check for $environment environment..."
 
-          # 设置环境 URL
+          # Set environment URL
           case $environment in
             test)
               base_url="https://test.websoft9.com"
@@ -378,49 +378,49 @@ jobs:
               ;;
           esac
 
-          echo "检查 URL: $base_url"
+          echo "Checking URL: $base_url"
 
-          # 健康检查项目
+          # Health check items
           checks=(
-            "API 服务状态"
-            "SQLite 数据库连接"
-            "Redis 连接"
-            "关键功能验证"
-            "性能指标检查"
+            "API Service Status"
+            "SQLite Database Connection"
+            "Redis Connection"
+            "Key Function Verification"
+            "Performance Metrics Check"
           )
 
           failed_checks=()
 
           for check in "${checks[@]}"; do
-            echo "执行检查: $check"
+            echo "Performing check: $check"
 
-            # 这里应该是实际的健康检查逻辑
-            # 模拟检查结果
-            if [ "$check" = "性能指标检查" ] && [ "$environment" = "production" ]; then
-              # 模拟生产环境性能检查可能失败
+            # This should be actual health check logic
+            # Simulate check results
+            if [ "$check" = "Performance Metrics Check" ] && [ "$environment" = "production" ]; then
+              # Simulate that production environment performance check might fail
               if [ $((RANDOM % 10)) -lt 2 ]; then
                 failed_checks+=("$check")
-                echo "❌ $check 失败"
+                echo "❌ $check failed"
                 continue
               fi
             fi
 
-            echo "✅ $check 通过"
+            echo "✅ $check passed"
           done
 
           if [ ${#failed_checks[@]} -gt 0 ]; then
             echo ""
-            echo "❌ 以下健康检查失败:"
+            echo "❌ The following health checks failed:"
             for check in "${failed_checks[@]}"; do
               echo "  - $check"
             done
 
-            # 设置输出以便后续步骤处理
+            # Set output for subsequent steps to handle
             echo "health_check_failed=true" >> $GITHUB_ENV
             echo "failed_checks=${failed_checks[*]}" >> $GITHUB_ENV
           else
             echo ""
-            echo "✅ 所有健康检查通过"
+            echo "✅ All health checks passed"
             echo "health_check_failed=false" >> $GITHUB_ENV
           fi
 
@@ -429,21 +429,21 @@ jobs:
         run: |
           environment="${{ needs.pre-deployment-check.outputs.deploy_environment }}"
 
-          echo "处理健康检查失败..."
+          echo "Handling health check failures..."
 
           if [ "$environment" = "production" ]; then
-            echo "⚠️ 生产环境健康检查失败，考虑回滚"
+            echo "⚠️ Production environment health check failed, consider rollback"
 
-            # 这里可以触发自动回滚逻辑
-            echo "触发回滚流程..."
+            # This can trigger automatic rollback logic
+            echo "Triggering rollback process..."
 
-            # 发送紧急通知
-            echo "发送紧急通知..."
+            # Send emergency notification
+            echo "Sending emergency notification..."
           else
-            echo "⚠️ $environment 环境健康检查失败，需要人工介入"
+            echo "⚠️ $environment environment health check failed, manual intervention required"
           fi
 
-  # 部署通知
+  # Deployment notification
   deployment-notification:
     name: 📢 Deployment Notification
     runs-on: ubuntu-latest
@@ -455,7 +455,7 @@ jobs:
         run: |
           environment="${{ needs.pre-deployment-check.outputs.deploy_environment }}"
 
-          # 确定部署结果
+          # Determine deployment result
           case $environment in
             test)
               deploy_result="${{ needs.deploy-to-test.result }}"
@@ -474,16 +474,16 @@ jobs:
           echo "deploy_result=$deploy_result" >> $GITHUB_OUTPUT
           echo "health_check_result=$health_check_result" >> $GITHUB_OUTPUT
 
-          # 确定整体状态
+          # Determine overall status
           if [ "$deploy_result" = "success" ] && [ "$health_check_result" = "success" ]; then
             echo "overall_status=success" >> $GITHUB_OUTPUT
-            echo "status_message=部署成功" >> $GITHUB_OUTPUT
+            echo "status_message=Deployment successful" >> $GITHUB_OUTPUT
           elif [ "$deploy_result" = "success" ] && [ "$health_check_result" = "failure" ]; then
             echo "overall_status=warning" >> $GITHUB_OUTPUT
-            echo "status_message=部署成功但健康检查失败" >> $GITHUB_OUTPUT
+            echo "status_message=Deployment successful but health check failed" >> $GITHUB_OUTPUT
           else
             echo "overall_status=failure" >> $GITHUB_OUTPUT
-            echo "status_message=部署失败" >> $GITHUB_OUTPUT
+            echo "status_message=Deployment failed" >> $GITHUB_OUTPUT
           fi
 
       - name: Prepare email content
@@ -493,18 +493,18 @@ jobs:
           message="${{ steps.result.outputs.status_message }}"
           environment="${{ steps.result.outputs.environment }}"
 
-          # 设置邮件主题
+          # Set email subject
           if [ "$status" = "success" ]; then
-            subject="✅ 部署成功 - ${{ github.repository }} ($environment)"
+            subject="✅ Deployment Successful - ${{ github.repository }} ($environment)"
           elif [ "$status" = "warning" ]; then
-            subject="⚠️ 部署警告 - ${{ github.repository }} ($environment)"
+            subject="⚠️ Deployment Warning - ${{ github.repository }} ($environment)"
           else
-            subject="❌ 部署失败 - ${{ github.repository }} ($environment)"
+            subject="❌ Deployment Failed - ${{ github.repository }} ($environment)"
           fi
 
           echo "subject=$subject" >> $GITHUB_OUTPUT
 
-          # 设置环境 URL
+          # Set environment URL
           case $environment in
             test)
               env_url="https://test.websoft9.com"
@@ -520,7 +520,7 @@ jobs:
               ;;
           esac
 
-          # 生成邮件正文
+          # Generate email body
           cat > email_body.html << EOF
           <!DOCTYPE html>
           <html>
@@ -551,42 +551,42 @@ jobs:
           </head>
           <body>
               <div class="header">
-                  <h2>🚀 部署执行报告</h2>
-                  <p><strong>仓库:</strong> ${{ github.repository }}</p>
-                  <p><strong>环境:</strong> <span class="env-badge env-$environment">$environment</span></p>
-                  <p><strong>状态:</strong> <span class="status-$(echo $status | tr '[:upper:]' '[:lower:]')">$message</span></p>
+                  <h2>🚀 Deployment Execution Report</h2>
+                  <p><strong>Repository:</strong> ${{ github.repository }}</p>
+                  <p><strong>Environment:</strong> <span class="env-badge env-$environment">$environment</span></p>
+                  <p><strong>Status:</strong> <span class="status-$(echo $status | tr '[:upper:]' '[:lower:]')">$message</span></p>
               </div>
 
-              <h3>📋 部署信息</h3>
+              <h3>📋 Deployment Information</h3>
               <table class="info-table">
-                  <tr><th>目标环境</th><td>$environment</td></tr>
-                  <tr><th>环境地址</th><td><a href="$env_url">$env_url</a></td></tr>
-                  <tr><th>分支</th><td>${{ github.ref_name }}</td></tr>
-                  <tr><th>提交</th><td>${{ github.sha }}</td></tr>
-                  <tr><th>部署者</th><td>${{ github.actor }}</td></tr>
-                  <tr><th>执行时间</th><td>$(date)</td></tr>
+                  <tr><th>Target Environment</th><td>$environment</td></tr>
+                  <tr><th>Environment URL</th><td><a href="$env_url">$env_url</a></td></tr>
+                  <tr><th>Branch</th><td>${{ github.ref_name }}</td></tr>
+                  <tr><th>Commit</th><td>${{ github.sha }}</td></tr>
+                  <tr><th>Deployer</th><td>${{ github.actor }}</td></tr>
+                  <tr><th>Execution Time</th><td>$(date)</td></tr>
               </table>
 
-              <h3>🔍 执行结果</h3>
+              <h3>🔍 Execution Results</h3>
               <table class="info-table">
-                  <tr><th>阶段</th><th>状态</th></tr>
-                  <tr><td>部署前检查</td><td>success</td></tr>
-                  <tr><td>镜像构建</td><td>success</td></tr>
-                  <tr><td>环境部署</td><td>${{ steps.result.outputs.deploy_result }}</td></tr>
-                  <tr><td>健康检查</td><td>${{ steps.result.outputs.health_check_result }}</td></tr>
+                  <tr><th>Stage</th><th>Status</th></tr>
+                  <tr><td>Pre-deployment Check</td><td>success</td></tr>
+                  <tr><td>Image Build</td><td>success</td></tr>
+                  <tr><td>Environment Deployment</td><td>${{ steps.result.outputs.deploy_result }}</td></tr>
+                  <tr><td>Health Check</td><td>${{ steps.result.outputs.health_check_result }}</td></tr>
               </table>
 
-              <h3>🔗 相关链接</h3>
+              <h3>🔗 Related Links</h3>
               <ul>
-                  <li><a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">查看工作流运行详情</a></li>
-                  <li><a href="${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}">查看提交详情</a></li>
-                  <li><a href="$env_url">访问部署环境</a></li>
-                  <li><a href="${{ github.server_url }}/${{ github.repository }}">访问仓库</a></li>
+                  <li><a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">View Workflow Run Details</a></li>
+                  <li><a href="${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}">View Commit Details</a></li>
+                  <li><a href="$env_url">Access Deployment Environment</a></li>
+                  <li><a href="${{ github.server_url }}/${{ github.repository }}">Access Repository</a></li>
               </ul>
 
               <div class="footer">
-                  <p>此邮件由 GitHub Actions 自动发送，请勿回复。</p>
-                  <p>如有问题，请联系开发团队。</p>
+                  <p>This email is automatically sent by GitHub Actions, please do not reply.</p>
+                  <p>If you have any questions, please contact the development team.</p>
               </div>
           </body>
           </html>
@@ -603,27 +603,27 @@ jobs:
             const healthCheckResult = '${{ steps.result.outputs.health_check_result }}';
             const overallStatus = '${{ steps.result.outputs.overall_status }}';
 
-            // 创建部署记录 Issue
+            // Create deployment record Issue
             const title = `[Deployment] ${environment} - ${overallStatus} - ${new Date().toISOString().split('T')[0]}`;
-            const body = `## 🚀 部署记录
+            const body = `## 🚀 Deployment Record
 
-            **环境:** ${environment}
-            **状态:** ${overallStatus}
-            **时间:** ${new Date().toISOString()}
-            **分支:** ${{ github.ref_name }}
-            **提交:** ${{ github.sha }}
-            **部署者:** ${{ github.actor }}
+            **Environment:** ${environment}
+            **Status:** ${overallStatus}
+            **Time:** ${new Date().toISOString()}
+            **Branch:** ${{ github.ref_name }}
+            **Commit:** ${{ github.sha }}
+            **Deployer:** ${{ github.actor }}
 
-            ### 部署结果
-            - **部署状态:** ${deployResult}
-            - **健康检查:** ${healthCheckResult}
+            ### Deployment Results
+            - **Deployment Status:** ${deployResult}
+            - **Health Check:** ${healthCheckResult}
 
-            ### 相关链接
-            - [工作流运行](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            - [提交详情](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})
+            ### Related Links
+            - [Workflow Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            - [Commit Details](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})
 
             ---
-            *此记录由部署工作流自动创建*`;
+            *This record was automatically created by the deployment workflow*`;
 
             await github.rest.issues.create({
               owner: context.repo.owner,
@@ -633,7 +633,7 @@ jobs:
               labels: ['deployment', environment, overallStatus]
             });
 
-  # 部署总结
+  # Deployment summary
   deployment-summary:
     name: 📊 Deployment Summary
     runs-on: ubuntu-latest
@@ -644,61 +644,61 @@ jobs:
         run: |
           environment="${{ needs.pre-deployment-check.outputs.deploy_environment }}"
 
-          echo "# 🚀 部署执行报告" >> $GITHUB_STEP_SUMMARY
+          echo "# 🚀 Deployment Execution Report" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**目标环境:** $environment" >> $GITHUB_STEP_SUMMARY
-          echo "**分支:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "**提交:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "**部署者:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
-          echo "**执行时间:** $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "**Target Environment:** $environment" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployer:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Execution Time:** $(date)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          echo "## 📋 执行结果" >> $GITHUB_STEP_SUMMARY
+          echo "## 📋 Execution Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| 阶段 | 状态 |" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|------|------|" >> $GITHUB_STEP_SUMMARY
-          echo "| 部署前检查 | ${{ needs.pre-deployment-check.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Pre-deployment Check | ${{ needs.pre-deployment-check.result }} |" >> $GITHUB_STEP_SUMMARY
 
           case $environment in
             test)
-              echo "| 测试环境部署 | ${{ needs.deploy-to-test.result }} |" >> $GITHUB_STEP_SUMMARY
+              echo "| Test Environment Deployment | ${{ needs.deploy-to-test.result }} |" >> $GITHUB_STEP_SUMMARY
               ;;
             staging)
-              echo "| 预生产环境部署 | ${{ needs.deploy-to-staging.result }} |" >> $GITHUB_STEP_SUMMARY
+              echo "| Staging Environment Deployment | ${{ needs.deploy-to-staging.result }} |" >> $GITHUB_STEP_SUMMARY
               ;;
             production)
-              echo "| 生产环境部署 | ${{ needs.deploy-to-production.result }} |" >> $GITHUB_STEP_SUMMARY
+              echo "| Production Environment Deployment | ${{ needs.deploy-to-production.result }} |" >> $GITHUB_STEP_SUMMARY
               ;;
           esac
 
-          echo "| 部署后健康检查 | ${{ needs.post-deployment-health-check.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Post-deployment Health Check | ${{ needs.post-deployment-health-check.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          # 确定整体状态并添加相应的总结
+          # Determine overall status and add appropriate summary
           if [[ "${{ needs.post-deployment-health-check.result }}" == "success" ]]; then
-            echo "## ✅ 部署成功" >> $GITHUB_STEP_SUMMARY
+            echo "## ✅ Deployment Successful" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "应用已成功部署到 $environment 环境，所有健康检查都已通过。" >> $GITHUB_STEP_SUMMARY
+            echo "Application has been successfully deployed to $environment environment, all health checks have passed." >> $GITHUB_STEP_SUMMARY
           else
-            echo "## ❌ 部署存在问题" >> $GITHUB_STEP_SUMMARY
+            echo "## ❌ Deployment Issues" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "部署过程中出现了问题，请检查详细日志。" >> $GITHUB_STEP_SUMMARY
+            echo "There were issues during the deployment process, please check detailed logs." >> $GITHUB_STEP_SUMMARY
           fi
 
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## 📎 相关链接" >> $GITHUB_STEP_SUMMARY
+          echo "## 📎 Related Links" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- [工作流运行](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
-          echo "- [提交详情](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})" >> $GITHUB_STEP_SUMMARY
+          echo "- [Workflow Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          echo "- [Commit Details](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})" >> $GITHUB_STEP_SUMMARY
 
           case $environment in
             test)
-              echo "- [测试环境](https://test.websoft9.com)" >> $GITHUB_STEP_SUMMARY
+              echo "- [Test Environment](https://test.websoft9.com)" >> $GITHUB_STEP_SUMMARY
               ;;
             staging)
-              echo "- [预生产环境](https://staging.websoft9.com)" >> $GITHUB_STEP_SUMMARY
+              echo "- [Staging Environment](https://staging.websoft9.com)" >> $GITHUB_STEP_SUMMARY
               ;;
             production)
-              echo "- [生产环境](https://websoft9.com)" >> $GITHUB_STEP_SUMMARY
+              echo "- [Production Environment](https://websoft9.com)" >> $GITHUB_STEP_SUMMARY
               ;;
           esac

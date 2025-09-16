@@ -19,7 +19,7 @@ env:
   REGISTRY_NAMESPACE: websoft9
 
 jobs:
-  # 验证发布条件
+  # Validate release conditions
   validate-release:
     name: 🔍 Validate Release
     runs-on: ubuntu-latest
@@ -42,16 +42,16 @@ jobs:
           fi
 
           echo "version=$version" >> $GITHUB_OUTPUT
-          echo "发布版本: $version"
+          echo "Release version: $version"
 
-          # 验证版本格式
+          # Validate version format
           if [[ ! "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$ ]]; then
-            echo "❌ 版本格式不正确: $version"
-            echo "正确格式: v1.0.0 或 v1.0.0-alpha"
+            echo "❌ Version format is incorrect: $version"
+            echo "Correct format: v1.0.0 or v1.0.0-alpha"
             exit 1
           fi
 
-          echo "✅ 版本格式正确"
+          echo "✅ Version format is correct"
 
       - name: Check if pre-release
         id: check-prerelease
@@ -61,7 +61,7 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             is_prerelease="${{ inputs.prerelease }}"
           else
-            # 检查版本号是否包含预发布标识
+            # Check if version contains pre-release identifier
             if [[ "$version" =~ -[a-zA-Z] ]]; then
               is_prerelease="true"
             else
@@ -70,7 +70,7 @@ jobs:
           fi
 
           echo "is_prerelease=$is_prerelease" >> $GITHUB_OUTPUT
-          echo "是否预发布: $is_prerelease"
+          echo "Is pre-release: $is_prerelease"
 
       - name: Validate changelog
         run: |
@@ -78,27 +78,27 @@ jobs:
 
           if [ -f "CHANGELOG.md" ]; then
             if grep -q "$version" CHANGELOG.md; then
-              echo "✅ CHANGELOG.md 包含版本 $version"
+              echo "✅ CHANGELOG.md contains version $version"
             else
-              echo "⚠️ CHANGELOG.md 不包含版本 $version"
-              echo "建议在 CHANGELOG.md 中添加版本说明"
+              echo "⚠️ CHANGELOG.md does not contain version $version"
+              echo "It is recommended to add version description in CHANGELOG.md"
             fi
           else
-            echo "⚠️ 未找到 CHANGELOG.md 文件"
-            echo "建议创建 CHANGELOG.md 文件记录版本变更"
+            echo "⚠️ CHANGELOG.md file not found"
+            echo "It is recommended to create a CHANGELOG.md file to record version changes"
           fi
 
       - name: Check for breaking changes
         run: |
           version="${{ steps.extract-version.outputs.version }}"
 
-          # 检查是否为主版本更新（可能包含破坏性变更）
+          # Check if this is a major version update (may contain breaking changes)
           if [[ "$version" =~ ^v[0-9]+\.0\.0$ ]]; then
-            echo "⚠️ 主版本更新，可能包含破坏性变更"
-            echo "请确保已更新迁移指南和文档"
+            echo "⚠️ Major version update, may contain breaking changes"
+            echo "Please ensure migration guides and documentation have been updated"
           fi
 
-  # 运行发布前测试
+  # Run pre-release tests
   pre-release-tests:
     name: 🧪 Pre-release Tests
     runs-on: ubuntu-latest
@@ -118,21 +118,21 @@ jobs:
 
       - name: Run comprehensive tests
         run: |
-          echo "运行发布前测试..."
+          echo "Running pre-release tests..."
 
-          # 运行 api-service 测试
+          # Run api-service tests
           cd api-service
           mkdir -p reports
           go test -v -race -coverprofile=reports/coverage.out ./...
           cd ../..
 
-          # 运行 websoft9-agent 测试
+          # Run websoft9-agent tests
           cd websoft9-agent
           mkdir -p reports
           go test -v -race -coverprofile=reports/coverage.out ./...
           cd ../..
 
-          echo "✅ 发布前测试完成"
+          echo "✅ Pre-release tests completed"
 
       - name: Upload test reports
         uses: actions/upload-artifact@v4
@@ -143,7 +143,7 @@ jobs:
             websoft9-agent/reports/
           retention-days: 30
 
-  # 构建多平台二进制文件
+  # Build multi-platform binaries
   build-binaries:
     name: 🔨 Build Multi-platform Binaries
     runs-on: ubuntu-latest
@@ -176,11 +176,11 @@ jobs:
           context="${{ matrix.context }}"
           main_path="${{ matrix.main_path }}"
 
-          echo "构建 $service 多平台二进制文件..."
+          echo "Building $service multi-platform binaries..."
 
           cd "$context"
 
-          # 定义构建目标
+          # Define build targets
           platforms=(
             "linux/amd64"
             "linux/arm64"
@@ -194,7 +194,7 @@ jobs:
           for platform in "${platforms[@]}"; do
             IFS='/' read -r GOOS GOARCH <<< "$platform"
 
-            echo "构建 $GOOS/$GOARCH..."
+            echo "Building $GOOS/$GOARCH..."
 
             output_name="$service"
             if [ "$GOOS" = "windows" ]; then
@@ -206,23 +206,23 @@ jobs:
               output_path="${output_path}.exe"
             fi
 
-            # 构建二进制文件
+            # Build binary file
             CGO_ENABLED=0 GOOS=$GOOS GOARCH=$GOARCH go build \
               -ldflags "-X main.Version=$version -X main.Commit=${{ github.sha }} -X main.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
               -o "$output_path" \
               "$main_path"
 
-            # 生成校验和
+            # Generate checksum
             if [ "$GOOS" = "windows" ]; then
               sha256sum "$output_path" > "${output_path}.sha256"
             else
               shasum -a 256 "$output_path" > "${output_path}.sha256"
             fi
 
-            echo "✅ $GOOS/$GOARCH 构建完成"
+            echo "✅ $GOOS/$GOARCH build completed"
           done
 
-          echo "✅ $service 多平台构建完成"
+          echo "✅ $service multi-platform build completed"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -231,7 +231,7 @@ jobs:
           path: dist/${{ matrix.service }}/
           retention-days: 30
 
-  # 构建和推送 Docker 镜像
+  # Build and push Docker images
   build-docker-images:
     name: 🐳 Build Docker Images
     runs-on: ubuntu-latest
@@ -301,7 +301,7 @@ jobs:
           path: ${{ matrix.service }}-sbom.spdx.json
           retention-days: 90
 
-  # 生成发布说明
+  # Generate release notes
   generate-release-notes:
     name: 📝 Generate Release Notes
     runs-on: ubuntu-latest
@@ -319,65 +319,65 @@ jobs:
         run: |
           version="${{ needs.validate-release.outputs.version }}"
 
-          echo "生成发布说明..."
+          echo "Generating release notes..."
 
-          # 获取上一个标签
+          # Get previous tag
           previous_tag=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
 
           if [ -n "$previous_tag" ]; then
-            echo "上一个版本: $previous_tag"
+            echo "Previous version: $previous_tag"
             commit_range="$previous_tag..HEAD"
           else
-            echo "首次发布"
+            echo "First release"
             commit_range="HEAD"
           fi
 
-          # 生成发布说明
+          # Generate release notes
           cat > release_notes.md << EOF
-          # $version 发布说明
+          # $version Release Notes
 
-          **发布时间:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
-          **提交范围:** $commit_range
+          **Release Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          **Commit Range:** $commit_range
 
-          ## 🎉 新功能
+          ## 🎉 New Features
 
           EOF
 
-          # 提取新功能提交
+          # Extract new feature commits
           git log --pretty=format:"- %s (%h)" $commit_range --grep="^feat" >> release_notes.md || true
 
           cat >> release_notes.md << EOF
 
-          ## 🐛 Bug 修复
+          ## 🐛 Bug Fixes
 
           EOF
 
-          # 提取 bug 修复提交
+          # Extract bug fix commits
           git log --pretty=format:"- %s (%h)" $commit_range --grep="^fix" >> release_notes.md || true
 
           cat >> release_notes.md << EOF
 
-          ## 📚 文档更新
+          ## 📚 Documentation Updates
 
           EOF
 
-          # 提取文档更新提交
+          # Extract documentation update commits
           git log --pretty=format:"- %s (%h)" $commit_range --grep="^docs" >> release_notes.md || true
 
           cat >> release_notes.md << EOF
 
-          ## 🔧 其他变更
+          ## 🔧 Other Changes
 
           EOF
 
-          # 提取其他类型的提交
+          # Extract other types of commits
           git log --pretty=format:"- %s (%h)" $commit_range --grep="^refactor\|^perf\|^test\|^chore" >> release_notes.md || true
 
           cat >> release_notes.md << EOF
 
-          ## 📦 下载
+          ## 📦 Downloads
 
-          ### Docker 镜像
+          ### Docker Images
 
           \`\`\`bash
           # API Service
@@ -387,42 +387,42 @@ jobs:
           docker pull ${{ env.REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/websoft9-agent:$version
           \`\`\`
 
-          ### 二进制文件
+          ### Binary Files
 
-          请从 [Releases 页面](https://github.com/${{ github.repository }}/releases/tag/$version) 下载对应平台的二进制文件。
+          Please download the binary files for the corresponding platform from the [Releases page](https://github.com/${{ github.repository }}/releases/tag/$version).
 
-          ## 🔍 校验和
+          ## 🔍 Checksums
 
-          所有二进制文件都提供了 SHA256 校验和，请在使用前验证文件完整性。
+          All binary files provide SHA256 checksums, please verify file integrity before use.
 
-          ## 📋 完整变更日志
+          ## 📋 Full Changelog
 
-          查看 [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/$version/CHANGELOG.md) 了解详细变更信息。
+          View [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/$version/CHANGELOG.md) for detailed change information.
 
-          ## 🆘 支持
+          ## 🆘 Support
 
-          如果遇到问题，请：
+          If you encounter issues, please:
 
-          1. 查看 [文档](https://docs.websoft9.com)
-          2. 搜索 [已知问题](https://github.com/${{ github.repository }}/issues)
-          3. 创建 [新的 Issue](https://github.com/${{ github.repository }}/issues/new)
+          1. View [Documentation](https://docs.websoft9.com)
+          2. Search [Known Issues](https://github.com/${{ github.repository }}/issues)
+          3. Create [New Issue](https://github.com/${{ github.repository }}/issues/new)
 
           ---
 
-          **完整提交历史:**
+          **Full Commit History:**
 
           EOF
 
-          # 添加完整的提交历史
+          # Add complete commit history
           git log --pretty=format:"- %s (%h) by %an" $commit_range >> release_notes.md
 
-          # 输出发布说明
+          # Output release notes
           release_notes=$(cat release_notes.md)
           echo "release_notes<<EOF" >> $GITHUB_OUTPUT
           echo "$release_notes" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-          echo "✅ 发布说明生成完成"
+          echo "✅ Release notes generation completed"
 
       - name: Upload release notes
         uses: actions/upload-artifact@v4
@@ -431,7 +431,7 @@ jobs:
           path: release_notes.md
           retention-days: 90
 
-  # 创建 GitHub Release
+  # Create GitHub Release
   create-github-release:
     name: 🚀 Create GitHub Release
     runs-on: ubuntu-latest
@@ -445,21 +445,21 @@ jobs:
 
       - name: Prepare release assets
         run: |
-          echo "准备发布资产..."
+          echo "Preparing release assets..."
 
           mkdir -p release-assets
 
-          # 复制二进制文件
+          # Copy binary files
           cp -r api-service-binaries/* release-assets/ 2>/dev/null || true
           cp -r websoft9-agent-binaries/* release-assets/ 2>/dev/null || true
 
-          # 复制 SBOM 文件
+          # Copy SBOM files
           cp -r *-sbom/* release-assets/ 2>/dev/null || true
 
-          # 生成发布资产清单
-          echo "# 发布资产清单" > release-assets/ASSETS.md
+          # Generate release asset manifest
+          echo "# Release Asset Manifest" > release-assets/ASSETS.md
           echo "" >> release-assets/ASSETS.md
-          echo "## 二进制文件" >> release-assets/ASSETS.md
+          echo "## Binary Files" >> release-assets/ASSETS.md
           echo "" >> release-assets/ASSETS.md
 
           for file in release-assets/*; do
@@ -471,7 +471,7 @@ jobs:
           done
 
           echo "" >> release-assets/ASSETS.md
-          echo "## 软件物料清单 (SBOM)" >> release-assets/ASSETS.md
+          echo "## Software Bill of Materials (SBOM)" >> release-assets/ASSETS.md
           echo "" >> release-assets/ASSETS.md
 
           for file in release-assets/*.spdx.json; do
@@ -481,7 +481,7 @@ jobs:
             fi
           done
 
-          echo "✅ 发布资产准备完成"
+          echo "✅ Release assets preparation completed"
 
       - name: Create GitHub Release
         uses: actions/create-release@v1
@@ -497,14 +497,14 @@ jobs:
 
       - name: Upload release assets
         run: |
-          echo "上传发布资产..."
+          echo "Uploading release assets..."
 
           upload_url="${{ steps.create_release.outputs.upload_url }}"
 
           for file in release-assets/*; do
             if [[ -f "$file" ]]; then
               filename=$(basename "$file")
-              echo "上传 $filename..."
+              echo "Uploading $filename..."
 
               curl -X POST \
                 -H "Authorization: token ${{ secrets.MYGITHUB_ADMIN_TOKEN }}" \
@@ -514,11 +514,11 @@ jobs:
             fi
           done
 
-          echo "✅ 发布资产上传完成"
+          echo "✅ Release assets upload completed"
 
 
 
-  # 发布总结
+  # Release summary
   release-summary:
     name: 📊 Release Summary
     runs-on: ubuntu-latest
@@ -530,39 +530,39 @@ jobs:
           version="${{ needs.validate-release.outputs.version }}"
           is_prerelease="${{ needs.validate-release.outputs.is_prerelease }}"
 
-          echo "# 🎉 发布执行报告" >> $GITHUB_STEP_SUMMARY
+          echo "# 🎉 Release Execution Report" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**版本:** $version" >> $GITHUB_STEP_SUMMARY
-          echo "**类型:** $([ "$is_prerelease" = "true" ] && echo "预发布" || echo "正式发布")" >> $GITHUB_STEP_SUMMARY
-          echo "**发布者:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
-          echo "**执行时间:** $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** $version" >> $GITHUB_STEP_SUMMARY
+          echo "**Type:** $([ "$is_prerelease" = "true" ] && echo "Pre-release" || echo "Official Release")" >> $GITHUB_STEP_SUMMARY
+          echo "**Publisher:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Execution Time:** $(date)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          echo "## 📋 执行结果" >> $GITHUB_STEP_SUMMARY
+          echo "## 📋 Execution Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| 阶段 | 状态 |" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|------|------|" >> $GITHUB_STEP_SUMMARY
-          echo "| 发布验证 | ${{ needs.validate-release.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 发布前测试 | ${{ needs.pre-release-tests.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 二进制构建 | ${{ needs.build-binaries.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Docker 构建 | ${{ needs.build-docker-images.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| GitHub 发布 | ${{ needs.create-github-release.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Release Validation | ${{ needs.validate-release.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Pre-release Tests | ${{ needs.pre-release-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Binary Build | ${{ needs.build-binaries.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Docker Build | ${{ needs.build-docker-images.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| GitHub Release | ${{ needs.create-github-release.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          # 确定整体状态
+          # Determine overall status
           if [[ "${{ needs.create-github-release.result }}" == "success" ]]; then
-            echo "## ✅ 发布成功" >> $GITHUB_STEP_SUMMARY
+            echo "## ✅ Release Successful" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "版本 $version 已成功发布！" >> $GITHUB_STEP_SUMMARY
+            echo "Version $version has been successfully released!" >> $GITHUB_STEP_SUMMARY
           else
-            echo "## ❌ 发布失败" >> $GITHUB_STEP_SUMMARY
+            echo "## ❌ Release Failed" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "发布过程中出现了问题，请检查详细日志。" >> $GITHUB_STEP_SUMMARY
+            echo "There were issues during the release process, please check detailed logs." >> $GITHUB_STEP_SUMMARY
           fi
 
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## 📎 相关链接" >> $GITHUB_STEP_SUMMARY
+          echo "## 📎 Related Links" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- [GitHub Release](https://github.com/${{ github.repository }}/releases/tag/$version)" >> $GITHUB_STEP_SUMMARY
           echo "- [Docker Hub](https://hub.docker.com/r/${{ env.REGISTRY_NAMESPACE }})" >> $GITHUB_STEP_SUMMARY
-          echo "- [工作流运行](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          echo "- [Workflow Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
