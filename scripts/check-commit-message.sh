@@ -1,46 +1,46 @@
 #!/bin/bash
 
-# Websoft9 提交消息格式检查脚本
-# 基于 Conventional Commits 规范
+# Websoft9 commit message format checking script
+# Based on Conventional Commits specification
 # https://www.conventionalcommits.org/
 
 set -e
 
-# 颜色定义
+# Color definitions
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# 帮助信息
+# Help information
 show_help() {
     echo "Usage: $0 [OPTIONS] <commit-message>"
     echo ""
-    echo "检查提交消息是否符合 Conventional Commits 规范"
+    echo "Check if commit message complies with Conventional Commits specification"
     echo ""
     echo "Options:"
-    echo "  -h, --help     显示帮助信息"
-    echo "  -f, --file     从文件读取提交消息"
-    echo "  -v, --verbose  显示详细信息"
+    echo "  -h, --help     Show help information"
+    echo "  -f, --file     Read commit message from file"
+    echo "  -v, --verbose  Show verbose information"
     echo ""
     echo "Examples:"
     echo "  $0 'feat(auth): add JWT token refresh mechanism'"
     echo "  $0 -f .git/COMMIT_EDITMSG"
     echo ""
-    echo "支持的提交类型："
-    echo "  feat     - 新功能"
-    echo "  fix      - Bug 修复"
-    echo "  docs     - 文档更新"
-    echo "  style    - 代码格式调整"
-    echo "  refactor - 代码重构"
-    echo "  test     - 测试相关"
-    echo "  chore    - 构建过程或辅助工具的变动"
-    echo "  perf     - 性能优化"
-    echo "  ci       - CI/CD 相关"
+    echo "Supported commit types:"
+    echo "  feat     - New feature"
+    echo "  fix      - Bug fix"
+    echo "  docs     - Documentation update"
+    echo "  style    - Code style adjustment"
+    echo "  refactor - Code refactoring"
+    echo "  test     - Test related"
+    echo "  chore    - Build process or auxiliary tool changes"
+    echo "  perf     - Performance optimization"
+    echo "  ci       - CI/CD related"
 }
 
-# 日志函数
+# Log functions
 log_error() {
     echo -e "${RED}❌ ERROR: $1${NC}" >&2
 }
@@ -57,24 +57,24 @@ log_info() {
     echo -e "${BLUE}ℹ️  INFO: $1${NC}"
 }
 
-# 检查提交消息格式
+# Check commit message format
 check_commit_message() {
     local message="$1"
     local verbose="$2"
 
     if [ -z "$message" ]; then
-        log_error "提交消息不能为空"
+        log_error "Commit message cannot be empty"
         return 1
     fi
 
-    # 移除前后空白字符
+    # Remove leading and trailing whitespace
     message=$(echo "$message" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
 
     if [ "$verbose" = "true" ]; then
-        log_info "检查提交消息: '$message'"
+        log_info "Checking commit message: '$message'"
     fi
 
-    # 定义允许的提交类型
+    # Define allowed commit types
     local valid_types="feat|fix|docs|style|refactor|test|chore|perf|ci"
 
     # Conventional Commits 正则表达式
@@ -82,29 +82,29 @@ check_commit_message() {
     local regex="^(${valid_types})(\([a-zA-Z0-9_-]+\))?: .{1,100}$"
 
     if [[ ! "$message" =~ $regex ]]; then
-        log_error "提交消息格式不正确"
+        log_error "Incorrect commit message format"
         echo ""
-        echo "正确格式: <type>[optional scope]: <description>"
+        echo "Correct format: <type>[optional scope]: <description>"
         echo ""
-        echo "示例:"
+        echo "Examples:"
         echo "  feat(auth): add JWT token refresh mechanism"
         echo "  fix(api): handle null pointer in user service"
         echo "  docs(readme): update installation instructions"
         echo ""
-        echo "要求:"
-        echo "  - 类型必须是: ${valid_types//|/, }"
-        echo "  - 描述长度: 1-100 字符"
-        echo "  - 格式: 类型(可选范围): 描述"
+        echo "Requirements:"
+        echo "  - Type must be: ${valid_types//|/, }"
+        echo "  - Description length: 1-100 characters"
+        echo "  - Format: type(optional scope): description"
         echo ""
         return 1
     fi
 
-    # 提取类型和描述
+    # Extract type and description
     local type=$(echo "$message" | sed -E "s/^(${valid_types})(\([^)]+\))?: .*/\1/")
     local scope=""
     local description=""
 
-    # 提取范围（如果存在）
+    # Extract scope (if exists)
     if echo "$message" | grep -q '('; then
         scope=$(echo "$message" | sed -E 's/^[^(]*\(([^)]+)\).*/\1/')
     fi
@@ -112,42 +112,42 @@ check_commit_message() {
     description=$(echo "$message" | sed -E "s/^(${valid_types})(\([^)]+\))?: (.*)/\3/")
 
     if [ "$verbose" = "true" ]; then
-        log_info "类型: $type"
+        log_info "Type: $type"
         if [ -n "$scope" ]; then
-            log_info "范围: $scope"
+            log_info "Scope: $scope"
         fi
-        log_info "描述: $description"
+        log_info "Description: $description"
     fi
 
-    # 检查描述是否以小写字母开头
+    # Check if description starts with lowercase letter
     if [[ "$description" =~ ^[A-Z] ]]; then
-        log_warning "建议描述以小写字母开头"
+        log_warning "Recommend starting description with lowercase letter"
     fi
 
-    # 检查描述是否以句号结尾
+    # Check if description ends with period
     if [[ "$description" =~ \.$$ ]]; then
-        log_warning "描述不应以句号结尾"
+        log_warning "Description should not end with period"
     fi
 
-    # 检查是否包含常见的不规范词汇
+    # Check for common irregular words
     local bad_words=("fixed" "added" "updated" "changed")
     for word in "${bad_words[@]}"; do
         if [[ "$description" =~ ^$word ]]; then
-            log_warning "建议使用动词原形而不是过去式: '$word' -> '${word%ed}'"
+            log_warning "Recommend using infinitive form instead of past tense: '$word' -> '${word%ed}'"
         fi
     done
 
-    log_success "提交消息格式正确"
+    log_success "Commit message format is correct"
     return 0
 }
 
-# 主函数
+# Main function
 main() {
     local commit_message=""
     local from_file=false
     local verbose=false
 
-    # 解析命令行参数
+    # Parse command line arguments
     while [[ $# -gt 0 ]]; do
         case $1 in
             -h|--help)
@@ -160,7 +160,7 @@ main() {
                 if [[ $# -gt 0 ]]; then
                     commit_message="$1"
                 else
-                    log_error "选项 -f 需要指定文件路径"
+                    log_error "Option -f requires file path"
                     exit 1
                 fi
                 ;;
@@ -168,7 +168,7 @@ main() {
                 verbose=true
                 ;;
             -*)
-                log_error "未知选项: $1"
+                log_error "Unknown option: $1"
                 show_help
                 exit 1
                 ;;
@@ -176,7 +176,7 @@ main() {
                 if [ -z "$commit_message" ]; then
                     commit_message="$1"
                 else
-                    log_error "只能指定一个提交消息"
+                    log_error "Can only specify one commit message"
                     exit 1
                 fi
                 ;;
@@ -184,19 +184,19 @@ main() {
         shift
     done
 
-    # 如果从文件读取
+    # If reading from file
     if [ "$from_file" = true ]; then
         if [ ! -f "$commit_message" ]; then
-            log_error "文件不存在: $commit_message"
+            log_error "File does not exist: $commit_message"
             exit 1
         fi
         commit_message=$(head -n 1 "$commit_message")
     fi
 
-    # 如果没有提供提交消息，尝试从标准输入读取
+    # If no commit message provided, try to read from stdin
     if [ -z "$commit_message" ]; then
         if [ -t 0 ]; then
-            log_error "请提供提交消息"
+            log_error "Please provide commit message"
             show_help
             exit 1
         else
@@ -204,7 +204,7 @@ main() {
         fi
     fi
 
-    # 检查提交消息
+    # Check commit message
     if check_commit_message "$commit_message" "$verbose"; then
         exit 0
     else
@@ -212,7 +212,7 @@ main() {
     fi
 }
 
-# 如果脚本被直接执行
+# If script is executed directly
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     main "$@"
 fi
