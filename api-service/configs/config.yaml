@@ -15,6 +15,9 @@ server:
     read_header_timeout: 60
     max_header_bytes: 1048576
 
+security:
+  aes_key: "your-32-char-aes-key-here!" # Must be 32 characters for AES-256
+
 # Database configuration
 # Supported types: sqlite, mysql, postgres
 database:

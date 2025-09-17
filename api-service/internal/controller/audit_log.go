@@ -59,7 +59,7 @@ func (c *AuditLogController) GetAuditLog(ctx *gin.Context) {
 
 	auditLog, err := c.auditLogService.GetAuditLog(ctx.Request.Context(), uint(id))
 	if err != nil {
-		ResponseNotFound(ctx, "common.not_found", c.i18n)
+		ResponseWithError(ctx, err, c.logger, c.i18n)
 		return
 	}
 
@@ -93,7 +93,7 @@ func (c *AuditLogController) ListAuditLogs(ctx *gin.Context) {
 
 	result, err := c.auditLogService.ListAuditLogs(ctx.Request.Context(), &req)
 	if err != nil {
-		ResponseInternalError(ctx, err, "common.failed", c.logger, c.i18n)
+		ResponseWithError(ctx, err, c.logger, c.i18n)
 		return
 	}
 
@@ -121,11 +121,11 @@ func (c *AuditLogController) GetAuditLogStatistics(ctx *gin.Context) {
 
 	statistics, err := c.auditLogService.GetStatistics(ctx.Request.Context(), &req)
 	if err != nil {
-		ResponseInternalError(ctx, err, "common.failed", c.logger, c.i18n)
+		ResponseWithError(ctx, err, c.logger, c.i18n)
 		return
 	}
 
-	ResponseOKWithData(ctx, statistics, "audit_log.success", c.i18n)
+	ResponseOKWithData(ctx, statistics, "common.success", c.i18n)
 }
 
 // ExportAuditLogs export audit logs
@@ -150,7 +150,7 @@ func (c *AuditLogController) ExportAuditLogs(ctx *gin.Context) {
 
 	data, contentType, err := c.auditLogService.ExportAuditLogs(ctx.Request.Context(), ctx, &req)
 	if err != nil {
-		ResponseInternalError(ctx, err, "common.failed", c.logger, c.i18n)
+		ResponseWithError(ctx, err, c.logger, c.i18n)
 		return
 	}
 
