@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// User 用户模型
+// User user model
 type User struct {
 	ID           uint       `json:"id" gorm:"primarykey"`
 	Username     string     `json:"username" gorm:"uniqueIndex;not null;size:64"`
@@ -13,7 +13,7 @@ type User struct {
 	Nickname     string     `json:"nickname" gorm:"size:64"`
 	Avatar       string     `json:"avatar" gorm:"size:255"`
 	Phone        string     `json:"phone" gorm:"size:20"`
-	Gender       int        `json:"gender" gorm:"default:0"` // 0:未知, 1:男, 2:女
+	Gender       int        `json:"gender" gorm:"default:0"` // 0:unknown, 1:male, 2:female
 	Signature    string     `json:"signature" gorm:"size:255"`
 	Status       int        `json:"status" gorm:"default:1"` // 1:active, 0:inactive
 	LastLoginAt  *time.Time `json:"last_login_at"`
@@ -23,28 +23,26 @@ type User struct {
 	CreatedAt    time.Time  `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt    time.Time  `json:"updated_at" gorm:"autoUpdateTime"`
 
-	// 关联字段 (不会直接映射到数据库，需要时通过 Preload 加载)
+	// Association fields (not directly mapped to the database, loaded via Preload when needed)
 	Roles      []Role          `json:"roles,omitempty" gorm:"many2many:user_roles"`
 	APITokens  []APIToken      `json:"api_tokens,omitempty" gorm:"foreignKey:UserID"`
 	TwoFactors []UserTwoFactor `json:"two_factors,omitempty" gorm:"foreignKey:UserID"`
 }
 
-// TableName 指定表名
+// TableName specifies the table name
 func (User) TableName() string {
 	return "users"
 }
 
-// IsActive 检查用户是否为活跃状态
+// IsActive checks if the user is active
 func (u *User) IsActive() bool {
 	return u.Status == 1
 }
 
-// GetDisplayName 获取用户显示名称
+// GetDisplayName gets the user's display name
 func (u *User) GetDisplayName() string {
 	if u.Nickname != "" {
 		return u.Nickname
 	}
 	return u.Username
 }
-
-// 移除重复的 Role 定义，使用 security.go 中的定义

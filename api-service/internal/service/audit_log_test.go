@@ -100,13 +100,13 @@ func (m *MockUserService) ListUsers(ctx context.Context, req *request.UserListRe
 	return args.Get(0).(*response.UserListResponse), args.Get(1).(int64), args.Error(2)
 }
 
-func (m *MockUserService) CreateUser(ctx context.Context, req *request.UserCreateRequest) (*response.UserResponse, error) {
-	args := m.Called(ctx, req)
+func (m *MockUserService) CreateUser(ctx context.Context, currentUserID uint, req *request.UserCreateRequest) (*response.UserResponse, error) {
+	args := m.Called(ctx, currentUserID, req)
 	return args.Get(0).(*response.UserResponse), args.Error(1)
 }
 
-func (m *MockUserService) UpdateUser(ctx context.Context, userID uint, req *request.UserUpdateRequest) (*response.UserResponse, error) {
-	args := m.Called(ctx, userID, req)
+func (m *MockUserService) UpdateUser(ctx context.Context, currentUserID, userID uint, req *request.UserUpdateRequest) (*response.UserResponse, error) {
+	args := m.Called(ctx, currentUserID, userID, req)
 	return args.Get(0).(*response.UserResponse), args.Error(1)
 }
 

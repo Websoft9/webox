@@ -86,7 +86,7 @@ type UserRole struct {
 	ID        uint       `json:"id" gorm:"primarykey"`
 	UserID    uint       `json:"user_id" gorm:"not null;index"`
 	RoleID    uint       `json:"role_id" gorm:"not null;index"`
-	GrantedBy *uint      `json:"granted_by" gorm:"index"`
+	GrantedBy uint       `json:"granted_by" gorm:"index"`
 	GrantedAt time.Time  `json:"granted_at" gorm:"not null;default:CURRENT_TIMESTAMP"`
 	ExpiresAt *time.Time `json:"expires_at"`
 	Status    int        `json:"status" gorm:"default:1"` //  -1:deleted, 0:disabled, 1:enabled
