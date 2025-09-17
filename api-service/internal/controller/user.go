@@ -70,42 +70,6 @@ func (c *UserController) handleUserIDBasedRequest(
 	pkg_response.Success(ctx, c.i18n.T(ctx, successMessageKey), nil)
 }
 
-// ChangePassword change user password
-// @Summary Change user password
-// @Description Change current user's password
-// @Tags Users
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param request body request.UserChangePasswordRequest true "Password change request"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
-// @Router /api/v1/users/password [put]
-func (c *UserController) ChangePassword(ctx *gin.Context) {
-	userID := c.getCurrentUserID(ctx)
-	if userID == 0 {
-		errors.HandleError(ctx, errors.ErrInvalidToken)
-		return
-	}
-
-	var req request.UserChangePasswordRequest
-	if !c.bindAndValidateRequest(ctx, &req, "change password") {
-		return
-	}
-
-	err := c.userService.ChangePassword(ctx, userID, &req)
-	if err != nil {
-		c.logger.ErrorContext(ctx, "Failed to change user password", logger.Uint("user_id", userID), logger.ErrorField(err))
-		errors.HandleError(ctx, err)
-		return
-	}
-
-	c.logger.InfoContext(ctx, "User password changed successfully", logger.Uint("user_id", userID))
-	pkg_response.Success(ctx, c.i18n.T(ctx, "user.password_change_success"), nil)
-}
-
 // ListUsers get user list (admin function)
 // @Summary List users
 // @Description Get paginated list of users (admin only)
@@ -363,21 +327,4 @@ func (c *UserController) UpdateUserPassword(ctx *gin.Context) {
 		func(ctx context.Context, userID uint, r interface{}) error {
 			return c.userService.UpdateUserPassword(ctx, userID, r.(*request.UserPasswordUpdateRequest))
 		}, "user.password_update_success")
-}
-
-// getCurrentUserID get current user ID from context
-func (c *UserController) getCurrentUserID(ctx *gin.Context) uint {
-	userID, exists := ctx.Get("user_id")
-	if !exists {
-		c.logger.WarnContext(ctx, "User ID not found in context")
-		return 0
-	}
-
-	id, ok := userID.(uint)
-	if !ok {
-		c.logger.WarnContext(ctx, "Invalid user ID type in context", logger.Any("user_id", userID))
-		return 0
-	}
-
-	return id
 }

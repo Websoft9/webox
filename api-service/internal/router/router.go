@@ -175,8 +175,6 @@ func setupI18nRoutes(v1 *gin.RouterGroup, i18nController *controller.I18nControl
 // setupUserRoutes sets up user management routes
 func setupUserRoutes(protected *gin.RouterGroup, userController *controller.UserController) {
 	users := protected.Group("/users")
-	// Current user operations
-	users.PUT("/password", userController.ChangePassword)
 
 	// User management operations (admin permissions required)
 	users.POST("", userController.CreateUser)

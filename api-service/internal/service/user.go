@@ -43,7 +43,7 @@ func (s *userService) ChangePassword(ctx context.Context, userID uint, req *requ
 		if err == gorm.ErrRecordNotFound {
 			return errors.NewAppError(errors.CodeRecordNotFound, "User not found")
 		}
-		return errors.WrapError(err, errors.CodeInternalError, "Failed to get user information")
+		return errors.WrapError(err, errors.CodeRecordQueryFailed, "Failed to get user information")
 	}
 
 	// 2. Verify old password
@@ -59,7 +59,7 @@ func (s *userService) ChangePassword(ctx context.Context, userID uint, req *requ
 	user.PasswordHash = hashedPassword
 	if err := s.userRepo.Update(ctx, user); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to update password", logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeInternalError, "Failed to update password")
+		return errors.WrapError(err, errors.CodeRecordUpdateFailed, "Failed to update password")
 	}
 
 	s.logger.InfoContext(ctx, "Password changed successfully", logger.Uint("user_id", userID))
@@ -97,7 +97,7 @@ func (s *userService) ListUsers(ctx context.Context,
 	users, total, err := s.userRepo.ListWithRelations(ctx, req.GetOffset(), req.GetPageSize(), filters)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to get user list", logger.ErrorField(err))
-		return nil, 0, errors.WrapError(err, errors.CodeInternalError, "Failed to get user list")
+		return nil, 0, errors.WrapError(err, errors.CodeRecordQueryFailed, "Failed to get user list")
 	}
 
 	// Convert to response format
@@ -119,10 +119,10 @@ func (s *userService) GetUser(ctx context.Context, userID uint) (*response.UserR
 	user, err := s.userRepo.GetByIDWithRelations(ctx, userID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, errors.NewAppError(errors.CodeRecordNotFound, "User not found")
+			return nil, errors.NewAppError(errors.CodeRecordQueryFailed, "User not found")
 		}
 		s.logger.ErrorContext(ctx, "Failed to get user", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, "Failed to get user")
+		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, "Failed to get user")
 	}
 
 	return s.buildUserResponse(user), nil
@@ -144,7 +144,7 @@ func (s *userService) CreateUser(ctx context.Context, currentUserID uint, req *r
 	err := s.userRepo.Create(ctx, user)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to create user", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, "Failed to create user")
+		return nil, errors.WrapError(err, errors.CodeRecordCreateFailed, "Failed to create user")
 	}
 
 	// 4. Assign roles if role_ids provided
@@ -159,7 +159,7 @@ func (s *userService) CreateUser(ctx context.Context, currentUserID uint, req *r
 			}
 			if err := s.userRepo.CreateUserRole(ctx, userRole); err != nil {
 				s.logger.ErrorContext(ctx, "Failed to assign role to user", logger.Uint("user_id", user.ID), logger.Uint("role_id", roleID), logger.ErrorField(err))
-				return nil, errors.WrapError(err, errors.CodeInternalError, "Failed to assign role to user")
+				return nil, errors.WrapError(err, errors.CodeRecordCreateFailed, "Failed to assign role to user")
 			}
 		}
 	}
@@ -196,7 +196,7 @@ func (s *userService) UpdateUser(ctx context.Context, currentUserID, userID uint
 	// 4. Save updates
 	if err := s.userRepo.Update(ctx, user); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to update user", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, "Failed to update user")
+		return nil, errors.WrapError(err, errors.CodeRecordUpdateFailed, "Failed to update user")
 	}
 
 	// 5. Synchronize roles if RoleIDs provided
@@ -220,7 +220,7 @@ func (s *userService) syncUserRoles(ctx context.Context, currentUserID, userID u
 	currentRoleIDs, err := s.userRepo.GetRoleIDsByUserID(ctx, userID)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to get current user roles", logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeInternalError, "Failed to get current user roles")
+		return errors.WrapError(err, errors.CodeRecordQueryFailed, "Failed to get current user roles")
 	}
 	currentRoleIDSet := make(map[uint]struct{}, len(currentRoleIDs))
 	for _, id := range currentRoleIDs {
@@ -251,13 +251,13 @@ func (s *userService) syncUserRoles(ctx context.Context, currentUserID, userID u
 			}
 			if err := s.userRepo.CreateUserRole(ctx, userRole); err != nil {
 				s.logger.ErrorContext(ctx, "Failed to assign role to user", logger.Uint("user_id", userID), logger.Uint("role_id", roleID), logger.ErrorField(err))
-				return errors.WrapError(err, errors.CodeInternalError, "Failed to assign role to user")
+				return errors.WrapError(err, errors.CodeRecordCreateFailed, "Failed to assign role to user")
 			}
 		}
 		if !inNew && inCurrent {
 			if err := s.userRepo.DeleteUserRole(ctx, userID, roleID); err != nil {
 				s.logger.ErrorContext(ctx, "Failed to remove role from user", logger.Uint("user_id", userID), logger.Uint("role_id", roleID), logger.ErrorField(err))
-				return errors.WrapError(err, errors.CodeInternalError, "Failed to remove role from user")
+				return errors.WrapError(err, errors.CodeRecordDeleteFailed, "Failed to remove role from user")
 			}
 		}
 	}
@@ -273,13 +273,13 @@ func (s *userService) UpdateUserStatus(ctx context.Context, userID uint, req *re
 		if err == gorm.ErrRecordNotFound {
 			return errors.NewAppError(errors.CodeRecordNotFound, "User not found")
 		}
-		return errors.WrapError(err, errors.CodeInternalError, "Failed to get user information")
+		return errors.WrapError(err, errors.CodeRecordQueryFailed, "Failed to get user information")
 	}
 
 	user.Status = req.Status
 	if err := s.userRepo.Update(ctx, user); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to update user status", logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeInternalError, "Failed to update user status")
+		return errors.WrapError(err, errors.CodeRecordUpdateFailed, "Failed to update user status")
 	}
 
 	s.logger.InfoContext(ctx, "User status updated successfully", logger.Uint("user_id", userID))
@@ -297,13 +297,13 @@ func (s *userService) DeleteUser(ctx context.Context, userID uint) error {
 			return errors.NewAppError(errors.CodeRecordNotFound, "User not found")
 		}
 		s.logger.ErrorContext(ctx, "Failed to check user", logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeInternalError, "Failed to check user")
+		return errors.WrapError(err, errors.CodeRecordQueryFailed, "Failed to check user")
 	}
 
 	// 2. Delete user
 	if err := s.userRepo.Delete(ctx, userID); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to delete user", logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeInternalError, "Failed to delete user")
+		return errors.WrapError(err, errors.CodeRecordDeleteFailed, "Failed to delete user")
 	}
 
 	s.logger.InfoContext(ctx, "User deleted successfully", logger.Uint("user_id", userID))
@@ -322,7 +322,7 @@ func (s *userService) UpdateUserPassword(
 		if err == gorm.ErrRecordNotFound {
 			return errors.NewAppError(errors.CodeRecordNotFound, "User not found")
 		}
-		return errors.WrapError(err, errors.CodeInternalError, "Failed to get user information")
+		return errors.WrapError(err, errors.CodeRecordQueryFailed, "Failed to get user information")
 	}
 
 	// 2. Encrypt new password
@@ -332,7 +332,7 @@ func (s *userService) UpdateUserPassword(
 	user.PasswordHash = hashedPassword
 	if err := s.userRepo.Update(ctx, user); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to update password", logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeInternalError, "Failed to update password")
+		return errors.WrapError(err, errors.CodeRecordUpdateFailed, "Failed to update password")
 	}
 
 	s.logger.InfoContext(ctx, "User password updated successfully", logger.Uint("user_id", userID))
@@ -357,7 +357,7 @@ func (s *userService) CheckUserQuota(ctx context.Context, userID uint, resourceT
 func (s *userService) validateEmailUniqueness(ctx context.Context, email string, userID uint) error {
 	exists, err := s.userRepo.ExistsByEmailExcludeID(ctx, email, userID)
 	if err != nil {
-		return errors.WrapError(err, errors.CodeInternalError, "Failed to check email uniqueness")
+		return errors.WrapError(err, errors.CodeRecordQueryFailed, "Failed to check email uniqueness")
 	}
 	if exists {
 		return errors.NewAppError(errors.CodeEmailAlreadyExists, "Email already exists")
@@ -371,7 +371,7 @@ func (s *userService) validateUserCreation(ctx context.Context, req *request.Use
 	exists, err := s.userRepo.ExistsByUsername(ctx, req.Username)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to check username", logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeInternalError, "Failed to check username")
+		return errors.WrapError(err, errors.CodeRecordQueryFailed, "Failed to check username")
 	}
 	if exists {
 		return errors.ErrUserAlreadyExists
@@ -381,7 +381,7 @@ func (s *userService) validateUserCreation(ctx context.Context, req *request.Use
 	exists, err = s.userRepo.ExistsByEmail(ctx, req.Email)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to check email", logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeInternalError, "Failed to check email")
+		return errors.WrapError(err, errors.CodeRecordQueryFailed, "Failed to check email")
 	}
 	if exists {
 		return errors.NewAppError(errors.CodeEmailAlreadyExists, "Email already exists")
