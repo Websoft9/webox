@@ -17,6 +17,7 @@ type Config struct {
 	Email    EmailConfigMain `mapstructure:"email"`
 	App      AppConfig       `mapstructure:"app"`
 	AuditLog AuditLogConfig  `mapstructure:"audit_log"`
+	Security SecurityConfig  `mapstructure:"security"`
 }
 
 type ServerConfig struct {
@@ -127,6 +128,11 @@ type AuditLogConfig struct {
 	SensitiveGetPaths []string `mapstructure:"sensitive_get_paths"`
 	AuditMethods      []string `mapstructure:"audit_methods"`
 	SkipMethods       []string `mapstructure:"skip_methods"`
+}
+
+// CryptoConfig encryption configuration
+type SecurityConfig struct {
+	AesKey string `mapstructure:"aes_key"`
 }
 
 func Load() (*Config, error) {
@@ -245,4 +251,7 @@ func setDefaults() {
 	})
 	viper.SetDefault("audit_log.audit_methods", []string{"POST", "PUT", "DELETE", "PATCH"})
 	viper.SetDefault("audit_log.skip_methods", []string{"OPTIONS", "HEAD"})
+
+	// Crypto defaults
+	viper.SetDefault("security.aes_key", "websoft9-default-encryption-key-change-in-production")
 }

@@ -24,6 +24,7 @@ type Controllers struct {
 	HealthController         *controller.HealthController
 	AuditLogController       *controller.AuditLogController
 	UserProfileController    *controller.UserProfileController
+	SystemConfigController   *controller.SystemConfigController
 
 	// More controllers can be added
 	// AppController  *controller.ApplicationController
@@ -142,6 +143,7 @@ func setupAPIRoutes(v1 *gin.RouterGroup, controllers *Controllers) {
 	setupAuthConfigRoutes(protected, controllers.SecurityController)
 	setupAuditLogRoutes(protected, controllers.AuditLogController)
 	setupUserProfileRoutes(protected, controllers.UserProfileController)
+	setupSystemConfigRoutes(protected, controllers.SystemConfigController)
 }
 
 // setupUserRoutes sets up user related routes
@@ -290,4 +292,20 @@ func setupUserProfileRoutes(protected *gin.RouterGroup, userProfileController *c
 	profile.PUT("/notification-settings", userProfileController.UpdateNotificationSettings)
 	profile.GET("/security-settings", userProfileController.GetSecuritySettings)
 	profile.PUT("/security-settings", userProfileController.UpdateSecuritySettings)
+}
+
+// setupSystemConfigRoutes sets up system configuration routes
+func setupSystemConfigRoutes(protected *gin.RouterGroup, systemConfigController *controller.SystemConfigController) {
+	if systemConfigController == nil {
+		return
+	}
+
+	// System configuration routes
+	systemConfigs := protected.Group("/system-configs")
+	systemConfigs.GET("", systemConfigController.ListSystemConfigs)
+	systemConfigs.PUT("", systemConfigController.BatchUpdateSystemConfigs)
+	systemConfigs.GET("/basic", systemConfigController.ListBasicConfigs)
+	systemConfigs.GET("/security", systemConfigController.ListSecurityConfigs)
+	systemConfigs.GET("/email", systemConfigController.ListEmailConfigs)
+	systemConfigs.POST("/smtp/test", systemConfigController.TestSMTP)
 }
