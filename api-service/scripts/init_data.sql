@@ -11,7 +11,7 @@ INSERT INTO `roles` (`name`, `code`, `description`, `is_system`, `status`) VALUE
 ('Operator', 'operator', 'Operations role responsible for system operations', 1, 1),
 ('User', 'user', 'Regular user role with basic permissions', 1, 1);
 
-INSERT INTO permissions (`parent_code`,`scope`,`name`,`code`,`module`,`action`,`resource`,`element`,`description`,`is_system`,`is_menu`,`sort_order`,`status`,`created_by`,`updated_by`,`created_at`,`updated_at`) VALUES
+INSERT INTO `permissions` (`parent_code`,`scope`,`name`,`code`,`module`,`action`,`resource`,`element`,`description`,`is_system`,`is_menu`,`sort_order`,`status`,`created_by`,`updated_by`,`created_at`,`updated_at`) VALUES
 	 (NULL,'platform','ui.platform','e06e84c7-fe48-4d0d-9dbb-cbe65cf5d936','platform','*',NULL,NULL,'Default permissions root node',1,1,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
 	 ('e06e84c7-fe48-4d0d-9dbb-cbe65cf5d936','platform','ui.home','16aa0ce0-ce2a-4075-8aee-5f9ccb472819','home','*',NULL,NULL,'Platform home page',1,1,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
 	 ('16aa0ce0-ce2a-4075-8aee-5f9ccb472819','platform','ui.project_overview_dashboard','b2fabec8-f7fe-480d-883c-5e0a355b8c69','project_overview','*',NULL,NULL,'Project overview dashboard all permissions',1,1,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),

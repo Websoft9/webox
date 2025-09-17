@@ -1024,7 +1024,6 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON audit_logs(created_at);
 
 -- Tag management indexes
 CREATE INDEX IF NOT EXISTS idx_tags_name ON tags(name);
-CREATE INDEX IF NOT EXISTS idx_tags_slug ON tags(slug);
 CREATE INDEX IF NOT EXISTS idx_tags_created_by ON tags(created_by);
 CREATE INDEX IF NOT EXISTS idx_taggings_tag_id ON taggings(tag_id);
 CREATE INDEX IF NOT EXISTS idx_taggings_resource_id ON taggings(resource_id);
