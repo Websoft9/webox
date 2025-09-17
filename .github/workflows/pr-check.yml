@@ -3,7 +3,7 @@ name: 🔍 PR Check
 on:
   pull_request:
     branches: [main, develop]
-    types: [opened, synchronize, reopened, edited]
+    types: [opened, synchronize]
 
 # Add necessary permissions
 permissions:
