@@ -336,3 +336,11 @@ ui:
   notification: "Alert Notification"
   profile: "Profile"
   audit_log: "Audit Log"
+
+# Notification module messages
+notification:
+  get_records_success: "Notification records retrieved successfully"
+  get_record_success: "Notification record retrieved successfully"
+  record_not_found: "Notification record not found"
+  get_records_failed: "Failed to get notification records"
+  get_record_failed: "Failed to get notification record"

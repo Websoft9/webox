@@ -55,6 +55,9 @@ var publicRoutes = []string{
 var whiteListRoutes = []string{
 	"/api/v1/api-tokens/refresh", // API token refresh
 	"/api/v1/api-tokens/revoke",  // API token revocation
+
+	"/api/v1/notifications/records",
+	"/api/v1/notifications/records/{id}",
 }
 
 // isPublicRoute checks if a given path is a public route that doesn't require authentication

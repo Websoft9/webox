@@ -336,3 +336,11 @@ ui:
   notification: "告警通知"
   profile: "个人中心"
   audit_log: "审计日志"
+
+# 通知模块消息
+notification:
+  get_records_success: "获取通知记录成功"
+  get_record_success: "获取通知记录详情成功"
+  record_not_found: "通知记录不存在"
+  get_records_failed: "获取通知记录失败"
+  get_record_failed: "获取通知记录详情失败"

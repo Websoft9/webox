@@ -1,6 +1,7 @@
 services:
   webox:
-    image: websoft9dev/webox-server:$WEBOX_VERSION
+    #image: websoft9dev/webox-server:$WEBOX_VERSION
+    image: api-service:latest
     container_name: websoft9-webox
     restart: unless-stopped
     env_file: .env
@@ -9,7 +10,7 @@ services:
       - redis_data:/var/lib/redis
     ports:
       - "8080:8080" # Web Service Port
-      - "9090:9090" # RPC Port
+      #- "9090:9090" # RPC Port
     healthcheck:
       test: ["CMD", "sh", "-c", "/home/appuser/scripts/healthcheck.sh"]
       interval: 10s
