@@ -4,6 +4,11 @@
 build:
 	go build -v -o api-service ./cmd/server
 
+# 构建用户创建工具
+build-create-user:
+	mkdir -p tools/create-user
+	go build -v -o tools/create-user/create-user ./tools/create-user
+
 # 运行应用
 run:
 	go run ./cmd/server
@@ -70,15 +75,15 @@ full-test: build
 
 # 数据库初始化（默认SQLite）
 init-db:
-	./scripts/init_db.sh
+	./scripts/init_db.sh --init ./scripts/init_data.sql
 
 # MySQL数据库初始化
 init-mysql:
-	./scripts/init_db.sh -t mysql -u root -p $(or $(DB_PASSWORD),password)
+	./scripts/init_db.sh -t mysql -u root -p $(or $(DB_PASSWORD),password) --init ./scripts/init_data.sql
 
 # PostgreSQL数据库初始化
 init-postgres:
-	./scripts/init_db.sh -t postgres -u postgres -p $(or $(DB_PASSWORD),password)
+	./scripts/init_db.sh -t postgres -u postgres -p $(or $(DB_PASSWORD),password) --init ./scripts/init_data.sql
 
 # 测试数据库连接
 test-db:
@@ -88,7 +93,7 @@ test-db:
 # 重置SQLite数据库
 reset-db:
 	rm -f data/websoft9.db
-	./scripts/init_db.sh
+	./scripts/init_db.sh --init ./scripts/init_data.sql
 
 # 健康检查
 health-check:

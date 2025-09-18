@@ -37,10 +37,10 @@ ARG COMMIT=1.0.0
 ARG BUILD_TIME=2025-08-01T00:00:00Z
 
 RUN CGO_ENABLED=1 GOOS=linux go build \
-    -ldflags "-X main.Version=${VERSION} -X main.Commit=${COMMIT} -X main.BuildTime=${BUILD_TIME} -w -s" \
-    -a -installsuffix cgo \
-    -o api-service \
-    ./cmd/server
+  -ldflags "-X main.Version=${VERSION} -X main.Commit=${COMMIT} -X main.BuildTime=${BUILD_TIME} -w -s" \
+  -a -installsuffix cgo \
+  -o api-service \
+  ./cmd/server
 
 # Runtime
 FROM alpine:latest
@@ -65,7 +65,7 @@ COPY --from=builder /app/api-service .
 # Copy configuration file (if it exists)
 COPY --from=builder /app/configs ./configs
 COPY --from=builder /app/scripts ./scripts
-RUN chmod +x ./scripts/init_db.sh ./scripts/init_influxdb.sh ./scripts/healthcheck.sh
+RUN chmod +x ./scripts/init_db.sh ./scripts/init_influxdb.sh ./scripts/healthcheck.sh ./scripts/init_user.sh
 
 # Copy influxdb from the build phase
 COPY --from=builder /app/influxdb${INFLUXDB_VERSION%%.*}-${INFLUXDB_VERSION}/usr/bin/influxd /usr/local/bin/
