@@ -110,18 +110,6 @@ validate_parameters() {
         return 1
     fi
 
-    # Check role code format (alphanumeric, underscore, hyphen allowed)
-    if [[ ! "$role_code" =~ ^[a-zA-Z0-9_-]+$ ]]; then
-        print_error "Role code must contain only alphanumeric characters, underscores, and hyphens"
-        return 1
-    fi
-
-    # Check role code length
-    if [[ ${#role_code} -lt 2 || ${#role_code} -gt 32 ]]; then
-        print_error "Role code must be between 2 and 32 characters long"
-        return 1
-    fi
-
     return 0
 }
 
