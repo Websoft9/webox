@@ -184,7 +184,7 @@ func (s *tagService) ListTags(ctx context.Context, req *request.TagListRequest) 
 	}
 
 	// Convert to response
-	var responses []*response.TagResponse
+	responses := make([]*response.TagResponse, 0, len(tags))
 	for _, tag := range tags {
 		responses = append(responses, s.convertTagToResponse(tag))
 	}
@@ -365,7 +365,7 @@ func (s *tagService) GetResourceTags(ctx context.Context, req *request.TaggingLi
 		return nil, errors.NewAppError(errors.CodeInternalError, "failed to get resource tags")
 	}
 
-	var responses []*response.TagSimpleResponse
+	responses := make([]*response.TagSimpleResponse, 0, len(taggings))
 	for _, tagging := range taggings {
 		if tagging.Tag != nil {
 			responses = append(responses, &response.TagSimpleResponse{
