@@ -24,7 +24,11 @@ type Controllers struct {
 	HealthController         *controller.HealthController
 	AuditLogController       *controller.AuditLogController
 	UserProfileController    *controller.UserProfileController
+<<<<<<< HEAD
 	SystemConfigController   *controller.SystemConfigController
+=======
+	TagController            *controller.TagController
+>>>>>>> 20582f6 (feat(tag): add tag feature)
 
 	// More controllers can be added
 	// AppController  *controller.ApplicationController
@@ -143,7 +147,11 @@ func setupAPIRoutes(v1 *gin.RouterGroup, controllers *Controllers) {
 	setupAuthConfigRoutes(protected, controllers.SecurityController)
 	setupAuditLogRoutes(protected, controllers.AuditLogController)
 	setupUserProfileRoutes(protected, controllers.UserProfileController)
+<<<<<<< HEAD
 	setupSystemConfigRoutes(protected, controllers.SystemConfigController)
+=======
+	setupTagRoutes(protected, controllers.TagController)
+>>>>>>> 20582f6 (feat(tag): add tag feature)
 }
 
 // setupUserRoutes sets up user related routes
@@ -308,4 +316,24 @@ func setupSystemConfigRoutes(protected *gin.RouterGroup, systemConfigController 
 	systemConfigs.GET("/security", systemConfigController.ListSecurityConfigs)
 	systemConfigs.GET("/email", systemConfigController.ListEmailConfigs)
 	systemConfigs.POST("/smtp/test", systemConfigController.TestSMTP)
+// setupTagRoutes sets up tag management routes
+func setupTagRoutes(protected *gin.RouterGroup, tagController *controller.TagController) {
+	if tagController == nil {
+		return
+	}
+
+	// Tag basic management endpoints
+	tags := protected.Group("/tags")
+	tags.GET("", tagController.ListTags)
+	tags.POST("", tagController.CreateTag)
+	tags.GET("/:id", tagController.GetTag)
+	tags.PUT("/:id", tagController.UpdateTag)
+	tags.DELETE("/:id", tagController.DeleteTag)
+
+	// Tag-resource association endpoints
+	tags.GET("/taggings", tagController.GetResourceTags)
+	tags.POST("/taggings", tagController.AssignTags)
+	tags.PUT("/taggings", tagController.ReplaceTags)
+	tags.DELETE("/taggings", tagController.UnassignTags)
+	tags.GET("/taggings/search", tagController.SearchResourcesByTags)
 }
