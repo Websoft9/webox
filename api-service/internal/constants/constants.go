@@ -49,6 +49,24 @@ const (
 	AppStatusCanceled  = "canceled"
 )
 
+// System config type constants
+const (
+	ConfigTypeString  = "STRING"
+	ConfigTypeBoolean = "BOOLEAN"
+	ConfigTypeNumber  = "NUMBER"
+	ConfigTypeJSON    = "JSON"
+)
+
+// System config category constants
+const (
+	CategoryBasic    = "basic"
+	CategorySMTP     = "smtp"
+	CategorySMS      = "sms"
+	CategorySecurity = "security"
+	CategorySystem   = "system"
+	CategoryLicense  = "license"
+)
+
 // Deployment status constants
 const (
 	DeploymentStatusPending  = "PENDING"
@@ -238,6 +256,7 @@ func GetModuleTableName(module string) string {
 		ModuleMarketplace:    "app_store_templates",
 		ModuleWishlist:       "app_store_wishlists",
 		ModuleNotification:   "notifications",
+		ModuleAdminSetting:   "system_configs",
 	}
 
 	if tableName, exists := moduleToTableName[module]; exists {
@@ -281,6 +300,7 @@ func GetModuleType(module string) string {
 		"admin-settings":    ModuleAdminSetting,
 		"platform-settings": ModulePlatformSetting,
 		"security":          ModuleSecurity,
+		"system-configs":    ModuleAdminSetting,
 	}
 	if moduleName, exists := module_type_map[module]; exists {
 		return moduleName
