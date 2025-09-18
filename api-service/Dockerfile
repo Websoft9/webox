@@ -28,8 +28,14 @@ COPY go.mod go.sum ./
 # Download dependencies
 RUN go mod download
 
+# Download swaggo
+RUN go install github.com/swaggo/swag/cmd/swag@latest
+
 # Copy Source code
 COPY . .
+
+# Generate swagger docs
+RUN swag init -g cmd/server/main.go
 
 # Building Application
 ARG VERSION=dev
