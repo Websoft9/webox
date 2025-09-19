@@ -59,25 +59,26 @@ ARG INFLUXDB_VERSION
 # Install CA Certificates and Time zone Data
 RUN apk --no-cache add ca-certificates bash sqlite curl supervisor redis
 
-# Create non-privileged user
-RUN adduser -D -s /bin/sh appuser
+# Create non-privileged user and prepare directories
+RUN adduser -D -s /bin/sh appuser && \
+  mkdir -p /home/appuser/data /home/appuser/logs /home/appuser/data/influxdb && \
+  chown -R appuser:appuser /home/appuser
 
 # Set working directory
 WORKDIR /home/appuser/
 
-# Copy binary files from the build phase
-COPY --from=builder /app/api-service .
+# Copy binary files from the build phase (as appuser)
+COPY --from=builder --chown=appuser:appuser /app/api-service .
 
-# Copy configuration file (if it exists)
-COPY --from=builder /app/configs ./configs
-COPY --from=builder /app/scripts ./scripts
-RUN chmod +x ./scripts/init_db.sh ./scripts/init_influxdb.sh ./scripts/healthcheck.sh ./scripts/init_user.sh
+# Copy configuration files (as appuser)
+COPY --from=builder --chown=appuser:appuser /app/configs ./configs
+COPY --from=builder --chown=appuser:appuser /app/scripts ./scripts
+
+# Make scripts executable
+RUN chmod +x ./scripts/*.sh
 
 # Copy influxdb from the build phase
 COPY --from=builder /app/influxdb${INFLUXDB_VERSION%%.*}-${INFLUXDB_VERSION}/usr/bin/influxd /usr/local/bin/
-
-# Create Data Directory
-RUN mkdir -p /home/appuser/data /home/appuser/logs /home/appuser/data/influxdb && chown -R appuser:appuser /home/appuser/
 
 # Copy the supervisord configuration file and health check script
 COPY supervisord.conf /etc/supervisord.conf.d/supervisord.conf
