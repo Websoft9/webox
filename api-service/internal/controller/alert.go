@@ -7,9 +7,9 @@ import (
 	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
 	pkg_response "api-service/pkg/response"
-	"regexp"
 	"strconv"
 
+	"github.com/expr-lang/expr"
 	"github.com/gin-gonic/gin"
 )
 
@@ -105,7 +105,7 @@ func (c *AlertController) CreateAlertRule(ctx *gin.Context) {
 	}
 
 	// Validate the condition expression format using regex
-	if !c.isValidConditionExpression(req.ConditionExpression) {
+	if !isExpression(req.ConditionExpression) {
 		c.logger.WarnContext(ctx, "Invalid condition expression format",
 			logger.String("expression", req.ConditionExpression))
 		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed,
@@ -130,32 +130,9 @@ func (c *AlertController) CreateAlertRule(ctx *gin.Context) {
 	pkg_response.Success(ctx, c.i18n.T(ctx, "alert.rule_create_success"), result)
 }
 
-// isValidConditionExpression validates if the condition expression has the correct format
-// using regular expressions to ensure proper syntax
-func (c *AlertController) isValidConditionExpression(expression string) bool {
-	if len(expression) == 0 {
-		return false
-	}
-
-	// Regular expression patterns for different types of condition expressions
-
-	// Basic pattern: matches simple expressions like "metric > 100" or "cpu.usage <= 80.5"
-	basicPattern := regexp.MustCompile(`^[a-zA-Z0-9_.-]+\s*([><]=?|==|!=)\s*[0-9]+(\.[0-9]+)?$`)
-
-	// Advanced pattern: matches expressions with functions like "avg(cpu.usage) > 90"
-	functionPattern := regexp.MustCompile(`^[a-zA-Z0-9_]+\([a-zA-Z0-9_.-]+\)\s*([><]=?|==|!=)\s*[0-9]+(\.[0-9]+)?$`)
-
-	// Compound pattern: matches expressions with logical operators like "cpu > 80 AND memory > 70"
-	compoundPattern := regexp.MustCompile(`^([a-zA-Z0-9_.-]+\s*([><]=?|==|!=)\s*[0-9]+(\.[0-9]+)?)\s*(AND|OR)\s*([a-zA-Z0-9_.-]+\s*([><]=?|==|!=)\s*[0-9]+(\.[0-9]+)?)$`)
-
-	// Time window pattern: matches expressions with time windows like "avg(cpu.usage, 5m) > 90"
-	timeWindowPattern := regexp.MustCompile(`^[a-zA-Z0-9_]+\([a-zA-Z0-9_.-]+,\s*[0-9]+[smhd]\)\s*([><]=?|==|!=)\s*[0-9]+(\.[0-9]+)?$`)
-
-	// Check if the expression matches any of the valid patterns
-	return basicPattern.MatchString(expression) ||
-		functionPattern.MatchString(expression) ||
-		compoundPattern.MatchString(expression) ||
-		timeWindowPattern.MatchString(expression)
+func isExpression(expression string) bool {
+	_, err := expr.Compile(expression, expr.Env(nil))
+	return err == nil
 }
 
 // GetAlertRule handles getting a single alert rule by ID
@@ -226,7 +203,7 @@ func (c *AlertController) UpdateAlertRule(ctx *gin.Context) {
 	}
 
 	// Validate condition expression if it's provided in the update request
-	if req.ConditionExpression != nil && !c.isValidConditionExpression(*req.ConditionExpression) {
+	if req.ConditionExpression != nil && !isExpression(*req.ConditionExpression) {
 		c.logger.WarnContext(ctx, "Invalid condition expression format",
 			logger.String("expression", *req.ConditionExpression))
 		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed,
