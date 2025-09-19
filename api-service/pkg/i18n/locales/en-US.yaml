@@ -336,5 +336,4 @@ ui:
   notification: "Alert Notification"
   profile: "Profile"
   audit_log: "Audit Log"
-  system_config: "Admin Configuration"
   tag_management: "Tag Management"
