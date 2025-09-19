@@ -176,6 +176,8 @@ func initDatabaseWrapper(cfg *config.Config, zapLogger logger.Logger) (*database
 		&model.UserLoginHistory{},
 		&model.UserProfile{},
 		&model.SystemConfig{},
+		&model.Tag{},
+		&model.Tagging{},
 	); migrateErr != nil {
 		return nil, fmt.Errorf("failed to migrate database models: %v", migrateErr)
 	}
@@ -343,6 +345,7 @@ type repositories struct {
 	auditLogRepo     repoInterface.AuditLogRepository
 	userProfileRepo  repoInterface.UserProfileRepository
 	systemConfigRepo repoInterface.SystemConfigRepository
+	tagRepo          repoInterface.TagRepository
 }
 
 // initRepositories creates and initializes all repository instances
@@ -357,6 +360,7 @@ func initRepositories(db *gorm.DB) *repositories {
 		auditLogRepo:     repoImpl.NewAuditLogRepository(db),
 		userProfileRepo:  repoImpl.NewUserProfileRepository(db),
 		systemConfigRepo: repoImpl.NewSystemConfigRepository(db),
+		tagRepo:          repoImpl.NewTagRepository(db),
 	}
 }
 
@@ -373,6 +377,7 @@ type businessServices struct {
 	auditLogService     serviceInterface.AuditLogService
 	userProfileService  serviceInterface.UserProfileService
 	systemConfigService serviceInterface.SystemConfigService
+	tagService          serviceInterface.TagService
 }
 
 // initBusinessServices creates and initializes all service instances with their dependencies
@@ -399,6 +404,7 @@ func initBusinessServices(
 		auditLogService:     serviceImpl.NewAuditLogService(repos.auditLogRepo, userService, db, zapLogger, i18nInstance, cfg),
 		userProfileService:  serviceImpl.NewUserProfileService(repos.userProfileRepo, zapLogger, i18nInstance),
 		systemConfigService: serviceImpl.NewSystemConfigService(repos.systemConfigRepo, cfg, db, zapLogger, i18nInstance),
+		tagService:          serviceImpl.NewTagService(repos.tagRepo, db, zapLogger, i18nInstance),
 	}
 }
 
@@ -439,6 +445,12 @@ func initControllers(
 		UserProfileController: controller.NewUserProfileController(services.userProfileService, zapLogger, i18nInstance),
 		SystemConfigController: controller.NewSystemConfigController(
 			services.systemConfigService,
+			validatorInstance,
+			zapLogger,
+			i18nInstance,
+		),
+		TagController: controller.NewTagController(
+			services.tagService,
 			validatorInstance,
 			zapLogger,
 			i18nInstance,

@@ -204,8 +204,9 @@ func (s *tagService) AssignTags(ctx context.Context, req *request.TagAssignReque
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// Process tag IDs
 		for _, tagID := range req.TagIDs {
-			// Check if tag exists
-			tag, err := s.tagRepo.GetTagByID(ctx, tagID)
+			// Check if tag exists using transaction
+			var tag model.Tag
+			err := tx.First(&tag, tagID).Error
 			if err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					continue // Skip non-existent tags
@@ -213,19 +214,23 @@ func (s *tagService) AssignTags(ctx context.Context, req *request.TagAssignReque
 				return errors.NewAppError(errors.CodeInternalError, "failed to get tag")
 			}
 
-			// Check if already associated
-			exists, err := s.tagRepo.ExistsTagging(ctx, tagID, req.ResourceID)
+			// Check if already associated using transaction
+			var count int64
+			err = tx.Model(&model.Tagging{}).
+				Where("tag_id = ? AND resource_id = ?", tagID, req.ResourceID).
+				Count(&count).Error
 			if err != nil {
 				return errors.NewAppError(errors.CodeInternalError, "failed to check tagging existence")
 			}
-			if !exists {
-				// Create association
+
+			if count == 0 {
+				// Create association using transaction
 				tagging := &model.Tagging{
 					TagID:      tagID,
 					ResourceID: req.ResourceID,
 					CreatedBy:  userID,
 				}
-				if err := s.tagRepo.CreateTagging(ctx, tagging); err != nil {
+				if err := tx.Create(tagging).Error; err != nil {
 					return errors.NewAppError(errors.CodeInternalError, "failed to create tagging")
 				}
 			}
@@ -241,19 +246,20 @@ func (s *tagService) AssignTags(ctx context.Context, req *request.TagAssignReque
 
 		// Process tag names (create if not exists)
 		for _, tagName := range req.TagNames {
-			// Try to get existing tag
-			tag, err := s.tagRepo.GetTagByName(ctx, tagName)
+			// Try to get existing tag using transaction
+			var tag model.Tag
+			err := tx.Where("name = ?", tagName).First(&tag).Error
 			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 				return errors.NewAppError(errors.CodeInternalError, "failed to get tag by name")
 			}
 
 			// Create tag if not exists
-			if tag == nil {
-				tag = &model.Tag{
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				tag = model.Tag{
 					Name:      tagName,
 					CreatedBy: userID,
 				}
-				if err := s.tagRepo.CreateTag(ctx, tag); err != nil {
+				if err := tx.Create(&tag).Error; err != nil {
 					return errors.NewAppError(errors.CodeInternalError, "failed to create tag")
 				}
 				results = append(results, response.TagAssignResult{
@@ -271,18 +277,22 @@ func (s *tagService) AssignTags(ctx context.Context, req *request.TagAssignReque
 				})
 			}
 
-			// Create association if not exists
-			exists, err := s.tagRepo.ExistsTagging(ctx, tag.ID, req.ResourceID)
+			// Create association if not exists using transaction
+			var count int64
+			err = tx.Model(&model.Tagging{}).
+				Where("tag_id = ? AND resource_id = ?", tag.ID, req.ResourceID).
+				Count(&count).Error
 			if err != nil {
 				return errors.NewAppError(errors.CodeInternalError, "failed to check tagging existence")
 			}
-			if !exists {
+
+			if count == 0 {
 				tagging := &model.Tagging{
 					TagID:      tag.ID,
 					ResourceID: req.ResourceID,
 					CreatedBy:  userID,
 				}
-				if err := s.tagRepo.CreateTagging(ctx, tagging); err != nil {
+				if err := tx.Create(tagging).Error; err != nil {
 					return errors.NewAppError(errors.CodeInternalError, "failed to create tagging")
 				}
 			}
@@ -322,8 +332,8 @@ func (s *tagService) ReplaceTags(ctx context.Context, req *request.TagAssignRequ
 		logger.Uint("user_id", uint(userID)))
 
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		// Remove all existing tags
-		if err := s.tagRepo.DeleteTaggingsByResourceID(ctx, req.ResourceID); err != nil {
+		// Remove all existing tags using transaction
+		if err := tx.Where("resource_id = ?", req.ResourceID).Delete(&model.Tagging{}).Error; err != nil {
 			return errors.NewAppError(errors.CodeInternalError, "failed to remove existing tags")
 		}
 		return nil

@@ -328,9 +328,9 @@ func setupTagRoutes(protected *gin.RouterGroup, tagController *controller.TagCon
 	tags.DELETE("/:id", tagController.DeleteTag)
 
 	// Tag-resource association endpoints
+	tags.POST("/assign", tagController.AssignTags)
+	tags.POST("/replace", tagController.ReplaceTags)
+	tags.POST("/unassign", tagController.UnassignTags)
 	tags.GET("/taggings", tagController.GetResourceTags)
-	tags.POST("/taggings", tagController.AssignTags)
-	tags.PUT("/taggings", tagController.ReplaceTags)
-	tags.DELETE("/taggings", tagController.UnassignTags)
 	tags.GET("/taggings/search", tagController.SearchResourcesByTags)
 }
