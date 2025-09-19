@@ -92,8 +92,7 @@ test-db:
 
 # 重置SQLite数据库
 reset-db:
-	rm -f data/websoft9.db
-	./scripts/init_db.sh --init ./scripts/init_data.sql
+	./scripts/init_db.sh --init ./scripts/init_data.sql --force
 
 # 健康检查
 health-check:

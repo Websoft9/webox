@@ -20,6 +20,7 @@ DB_USER=""
 DB_PASS=""
 SQLITE_PATH="./data/websoft9.db"
 INIT_SQL_FILE=""
+FORCE=false
 
 # Path to the flag file
 FLAG_FILE="./data/.websoft9_db_initialized"
@@ -49,8 +50,9 @@ show_usage() {
     echo "  -u, --user USER        Database username"
     echo "  -p, --password PASS    Database password"
     echo "  -f, --file PATH        SQLite database file path [default: ./data/websoft9.db]"
-    echo "  --init SQL_FILE        Initialize database and import data from specified SQL file"
-    echo "  --help                 Show this help message"
+    echo "      --force            Force initialization, ignore existing flag file and remove SQLite database"
+    echo "      --init SQL_FILE    Initialize database and import data from specified SQL file"
+    echo "      --help             Show this help message"
     echo ""
     echo "Examples:"
     echo "  $0                                    # Initialize SQLite database"
@@ -58,6 +60,7 @@ show_usage() {
     echo "  $0 -t sqlite -f /path/to/db.sqlite   # Initialize SQLite with custom path"
     echo "  $0 --init /path/to/data.sql          # Initialize and import data from SQL file"
     echo "  $0 -t mysql -u root -p pwd --init data.sql  # Initialize MySQL and import data"
+    echo "  $0 --force                           # Force re-initialization (ignore flag file)"
 }
 
 # Parse command line arguments
@@ -91,6 +94,10 @@ while [[ $# -gt 0 ]]; do
             SQLITE_PATH="$2"
             shift 2
             ;;
+        --force)
+            FORCE=true
+            shift 1
+            ;;
         --init)
             INIT_SQL_FILE="$2"
             shift 2
@@ -108,9 +115,27 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Check if the script has already been executed
-if [[ -f "$FLAG_FILE" ]]; then
+if [[ -f "$FLAG_FILE" && "$FORCE" != "true" ]]; then
     print_info "Database initialization already completed. Skipping..."
+    print_info "Use --force to reinitialize the database."
     exit 0
+fi
+
+# Handle force mode
+if [[ "$FORCE" == "true" ]]; then
+    print_warn "Force mode enabled - will reinitialize database"
+
+    # Remove flag file if it exists
+    if [[ -f "$FLAG_FILE" ]]; then
+        print_info "Removing existing flag file: $FLAG_FILE"
+        rm -f "$FLAG_FILE"
+    fi
+
+    # For SQLite, remove existing database file
+    if [[ "$DB_TYPE" == "sqlite" && -f "$SQLITE_PATH" ]]; then
+        print_warn "Removing existing SQLite database: $SQLITE_PATH"
+        rm -f "$SQLITE_PATH"
+    fi
 fi
 
 # Validate database type
