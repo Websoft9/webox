@@ -343,6 +343,7 @@ type repositories struct {
 	auditLogRepo     repoInterface.AuditLogRepository
 	userProfileRepo  repoInterface.UserProfileRepository
 	systemConfigRepo repoInterface.SystemConfigRepository
+	notificationRepo repoInterface.NotificationRecordRepository
 }
 
 // initRepositories creates and initializes all repository instances
@@ -357,22 +358,24 @@ func initRepositories(db *gorm.DB) *repositories {
 		auditLogRepo:     repoImpl.NewAuditLogRepository(db),
 		userProfileRepo:  repoImpl.NewUserProfileRepository(db),
 		systemConfigRepo: repoImpl.NewSystemConfigRepository(db),
+		notificationRepo: repoImpl.NewNotificationRecordRepository(db),
 	}
 }
 
 // businessServices struct holds all service instances for dependency injection
 // Provides business logic layer abstractions for different domains
 type businessServices struct {
-	userService         serviceInterface.UserService
-	userAuthService     serviceInterface.UserAuthService
-	roleService         serviceInterface.RoleService
-	permissionService   serviceInterface.PermissionService
-	apiTokenService     serviceInterface.APITokenService
-	authConfigService   serviceInterface.AuthConfigService
-	twoFactorService    serviceInterface.TwoFactorService
-	auditLogService     serviceInterface.AuditLogService
-	userProfileService  serviceInterface.UserProfileService
-	systemConfigService serviceInterface.SystemConfigService
+	userService               serviceInterface.UserService
+	userAuthService           serviceInterface.UserAuthService
+	roleService               serviceInterface.RoleService
+	permissionService         serviceInterface.PermissionService
+	apiTokenService           serviceInterface.APITokenService
+	authConfigService         serviceInterface.AuthConfigService
+	twoFactorService          serviceInterface.TwoFactorService
+	auditLogService           serviceInterface.AuditLogService
+	userProfileService        serviceInterface.UserProfileService
+	systemConfigService       serviceInterface.SystemConfigService
+	notificationRecordService serviceInterface.NotificationRecordService
 }
 
 // initBusinessServices creates and initializes all service instances with their dependencies
@@ -389,16 +392,17 @@ func initBusinessServices(
 	oauth2Service := serviceImpl.NewOAuth2Service(authConfigManager, zapLogger)
 	userService := serviceImpl.NewUserService(repos.userRepo, zapLogger)
 	return &businessServices{
-		userService:         userService,
-		userAuthService:     serviceImpl.NewUserAuthService(repos.userRepo, repos.apiTokenRepo, oauth2Service, zapLogger, cfg, authConfigManager, i18nInstance),
-		roleService:         serviceImpl.NewRoleService(repos.roleRepo, repos.permissionRepo, db, zapLogger, i18nInstance),
-		permissionService:   serviceImpl.NewPermissionService(repos.permissionRepo, db, zapLogger, i18nInstance),
-		apiTokenService:     serviceImpl.NewAPITokenService(repos.apiTokenRepo, authConfigManager, db, zapLogger, i18nInstance),
-		authConfigService:   serviceImpl.NewAuthConfigService(authConfigManager, zapLogger),
-		twoFactorService:    serviceImpl.NewTwoFactorService(repos.twoFactorRepo, db, zapLogger, i18nInstance),
-		auditLogService:     serviceImpl.NewAuditLogService(repos.auditLogRepo, userService, db, zapLogger, i18nInstance, cfg),
-		userProfileService:  serviceImpl.NewUserProfileService(repos.userProfileRepo, zapLogger, i18nInstance),
-		systemConfigService: serviceImpl.NewSystemConfigService(repos.systemConfigRepo, cfg, db, zapLogger, i18nInstance),
+		userService:               userService,
+		userAuthService:           serviceImpl.NewUserAuthService(repos.userRepo, repos.apiTokenRepo, oauth2Service, zapLogger, cfg, authConfigManager, i18nInstance),
+		roleService:               serviceImpl.NewRoleService(repos.roleRepo, repos.permissionRepo, db, zapLogger, i18nInstance),
+		permissionService:         serviceImpl.NewPermissionService(repos.permissionRepo, db, zapLogger, i18nInstance),
+		apiTokenService:           serviceImpl.NewAPITokenService(repos.apiTokenRepo, authConfigManager, db, zapLogger, i18nInstance),
+		authConfigService:         serviceImpl.NewAuthConfigService(authConfigManager, zapLogger),
+		twoFactorService:          serviceImpl.NewTwoFactorService(repos.twoFactorRepo, db, zapLogger, i18nInstance),
+		auditLogService:           serviceImpl.NewAuditLogService(repos.auditLogRepo, userService, db, zapLogger, i18nInstance, cfg),
+		userProfileService:        serviceImpl.NewUserProfileService(repos.userProfileRepo, zapLogger, i18nInstance),
+		systemConfigService:       serviceImpl.NewSystemConfigService(repos.systemConfigRepo, cfg, db, zapLogger, i18nInstance),
+		notificationRecordService: serviceImpl.NewNotificationRecordService(repos.notificationRepo, zapLogger, i18nInstance),
 	}
 }
 
@@ -443,6 +447,7 @@ func initControllers(
 			zapLogger,
 			i18nInstance,
 		),
+		NotificationRecordController: controller.NewNotificationRecordController(services.notificationRecordService, i18nInstance),
 	}
 }
 

@@ -335,3 +335,18 @@ const (
 	// Session timeout in seconds (30 minutes)
 	DefaultSessionTimeoutSeconds = 1800
 )
+
+// NotificationRecordStatus enum values
+const (
+	NotificationStatusPending = "PENDING"
+	NotificationStatusSent    = "SENT"
+	NotificationStatusFailed  = "FAILED"
+	NotificationStatusRetry   = "RETRY"
+)
+
+// NotificationChannelType enum values
+const (
+	NotificationChannelEmail    = "EMAIL"
+	NotificationChannelWebhook  = "WEBHOOK"
+	NotificationChannelInternal = "INTERNAL"
+)

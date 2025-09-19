@@ -11,29 +11,27 @@ import (
 	"api-service/internal/interface/service"
 	"api-service/internal/model"
 	"api-service/pkg/errors"
+	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
 )
 
 type notificationRecordService struct {
 	notificationRepo repository.NotificationRecordRepository
 	logger           logger.Logger
+	i18n             *i18n.I18n
 }
 
 // NewNotificationRecordService creates a new notification record service instance
 func NewNotificationRecordService(
 	notificationRepo repository.NotificationRecordRepository,
 	logger logger.Logger,
+	i18n *i18n.I18n,
 ) service.NotificationRecordService {
 	return &notificationRecordService{
 		notificationRepo: notificationRepo,
 		logger:           logger,
+		i18n:             i18n,
 	}
-}
-
-// logAndWrapError logs an error and wraps it with additional context
-func (s *notificationRecordService) logAndWrapError(ctx context.Context, err error, message, wrapMessage string) error {
-	s.logger.ErrorContext(ctx, message, logger.ErrorField(err))
-	return errors.WrapError(err, errors.CodeRecordQueryFailed, wrapMessage)
 }
 
 // GetNotificationRecordList retrieves notification records list with pagination and filtering
@@ -50,7 +48,8 @@ func (s *notificationRecordService) GetNotificationRecordList(
 	// Get records from repository
 	records, total, err := s.notificationRepo.GetList(ctx, req)
 	if err != nil {
-		return nil, s.logAndWrapError(ctx, err, "Failed to get notification records from repository", "failed to get notification records")
+		s.logger.ErrorContext(ctx, "Failed to get notification records from repository", logger.ErrorField(err))
+		return nil, errors.NewAppError(errors.CodeRecordQueryFailed, s.i18n.T(ctx, "notification.get_records_failed"))
 	}
 
 	// Convert to response format
@@ -98,9 +97,10 @@ func (s *notificationRecordService) GetNotificationRecordByID(ctx context.Contex
 		if err == gorm.ErrRecordNotFound {
 			s.logger.WarnContext(ctx, "Notification record not found",
 				logger.Uint("record_id", id))
-			return nil, errors.NewAppError(errors.CodeRecordNotFound, "Notification record not found")
+			return nil, errors.NewAppError(errors.CodeRecordNotFound, s.i18n.T(ctx, "notification.record_not_found"))
 		}
-		return nil, s.logAndWrapError(ctx, err, "Failed to get notification record from repository", "failed to get notification record")
+		s.logger.ErrorContext(ctx, "Failed to get notification record from repository", logger.ErrorField(err))
+		return nil, errors.NewAppError(errors.CodeRecordQueryFailed, s.i18n.T(ctx, "notification.get_record_failed"))
 	}
 
 	// Convert to detail response
@@ -120,7 +120,6 @@ func (s *notificationRecordService) convertToResponse(record *model.Notification
 		ID:            record.ID,
 		TemplateID:    record.TemplateID,
 		ChannelType:   record.ChannelType,
-		UserID:        record.UserID,
 		Recipient:     record.Recipient,
 		Subject:       record.Subject,
 		Content:       record.Content,
@@ -128,7 +127,6 @@ func (s *notificationRecordService) convertToResponse(record *model.Notification
 		RetryCount:    record.RetryCount,
 		ReferenceID:   record.ReferenceID,
 		ReferenceType: record.ReferenceType,
-		IsRead:        record.IsRead,
 		CreatedAt:     record.CreatedAt.Format("2006-01-02 15:04:05"),
 		UpdatedAt:     record.UpdatedAt.Format("2006-01-02 15:04:05"),
 		ErrorMsg:      record.ErrorMsg,
@@ -138,11 +136,6 @@ func (s *notificationRecordService) convertToResponse(record *model.Notification
 	if record.SentAt != nil {
 		sentAt := record.SentAt.Format("2006-01-02 15:04:05")
 		resp.SentAt = &sentAt
-	}
-
-	if record.ReadAt != nil {
-		readAt := record.ReadAt.Format("2006-01-02 15:04:05")
-		resp.ReadAt = &readAt
 	}
 
 	return resp

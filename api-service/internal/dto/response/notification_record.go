@@ -5,7 +5,6 @@ type NotificationRecordResponse struct {
 	ID            uint    `json:"id"`
 	TemplateID    *uint   `json:"template_id"`
 	ChannelType   string  `json:"channel_type"`
-	UserID        uint    `json:"user_id"`
 	Recipient     string  `json:"recipient"`
 	Subject       *string `json:"subject"`
 	Content       string  `json:"content"`
@@ -15,8 +14,6 @@ type NotificationRecordResponse struct {
 	RetryCount    int     `json:"retry_count"`
 	ReferenceID   *string `json:"reference_id"`
 	ReferenceType *string `json:"reference_type"`
-	IsRead        bool    `json:"is_read"`
-	ReadAt        *string `json:"read_at"`
 	CreatedAt     string  `json:"created_at"`
 	UpdatedAt     string  `json:"updated_at"`
 }

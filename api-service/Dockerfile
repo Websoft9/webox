@@ -25,6 +25,9 @@ RUN curl -L https://dl.influxdata.com/influxdb/releases/v${INFLUXDB_VERSION}/inf
 # Copy go mod files
 COPY go.mod go.sum ./
 
+# Set Go proxy for faster dependency resolution
+ENV GOPROXY=https://goproxy.cn,direct
+
 # Download dependencies
 RUN go mod download
 

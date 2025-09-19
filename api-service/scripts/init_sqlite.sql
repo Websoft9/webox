@@ -869,7 +869,7 @@ CREATE TABLE IF NOT EXISTS notification_templates (
 CREATE TABLE IF NOT EXISTS notification_records (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     template_id INTEGER REFERENCES notification_templates(id),
-    type VARCHAR(20) NOT NULL,
+    channel_type VARCHAR(20) NOT NULL,
     recipient VARCHAR(255) NOT NULL,
     subject VARCHAR(255),
     content TEXT NOT NULL,

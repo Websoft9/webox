@@ -10,9 +10,11 @@ import (
 	"github.com/stretchr/testify/mock"
 	"gorm.io/gorm"
 
+	"api-service/internal/constants"
 	"api-service/internal/dto"
 	"api-service/internal/dto/request"
 	"api-service/internal/model"
+	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
 )
 
@@ -41,7 +43,10 @@ func (m *MockNotificationRecordRepository) GetList(ctx context.Context, req *req
 func setupNotificationRecordServiceTest() (*notificationRecordService, *MockNotificationRecordRepository) {
 	mockRepo := new(MockNotificationRecordRepository)
 	mockLogger := logger.NewZapLogger(logger.InfoLevel, nil)
-	service := NewNotificationRecordService(mockRepo, mockLogger).(*notificationRecordService)
+	// Initialize i18n for testing
+	_ = i18n.Init() // Initialize with default config
+	mockI18n := i18n.NewI18n()
+	service := NewNotificationRecordService(mockRepo, mockLogger, mockI18n).(*notificationRecordService)
 	return service, mockRepo
 }
 
@@ -70,22 +75,20 @@ func TestNotificationRecordService_GetNotificationRecordList(t *testing.T) {
 			mockData: []*model.NotificationRecord{
 				{
 					ID:          1,
-					ChannelType: model.NotificationChannelEmail,
-					UserID:      1,
+					ChannelType: constants.NotificationChannelEmail,
 					Recipient:   "test@example.com",
 					Subject:     stringPtrNotification("Test Subject"),
 					Content:     "Test Content",
-					Status:      model.NotificationStatusSent,
+					Status:      constants.NotificationStatusSent,
 					CreatedAt:   time.Now(),
 					UpdatedAt:   time.Now(),
 				},
 				{
 					ID:          2,
-					ChannelType: model.NotificationChannelInternal,
-					UserID:      2,
+					ChannelType: constants.NotificationChannelInternal,
 					Recipient:   "user2",
 					Content:     "Internal notification",
-					Status:      model.NotificationStatusPending,
+					Status:      constants.NotificationStatusPending,
 					CreatedAt:   time.Now(),
 					UpdatedAt:   time.Now(),
 				},
@@ -150,12 +153,11 @@ func TestNotificationRecordService_GetNotificationRecordByID(t *testing.T) {
 			id:   1,
 			mockData: &model.NotificationRecord{
 				ID:          1,
-				ChannelType: model.NotificationChannelEmail,
-				UserID:      1,
+				ChannelType: constants.NotificationChannelEmail,
 				Recipient:   "test@example.com",
 				Subject:     stringPtrNotification("Test Subject"),
 				Content:     "Test Content",
-				Status:      model.NotificationStatusSent,
+				Status:      constants.NotificationStatusSent,
 				SentAt:      timePtrNotification(time.Now()),
 				CreatedAt:   time.Now(),
 				UpdatedAt:   time.Now(),
