@@ -6,7 +6,7 @@ import "time"
 type NotificationRecord struct {
 	ID            uint       `json:"id" gorm:"primaryKey;autoIncrement;comment:Record ID"`
 	TemplateID    *uint      `json:"template_id" gorm:"index;comment:Template ID"`
-	ChannelType   string     `json:"channel_type" gorm:"column:type;type:varchar(20);not null;comment:Notification channel"`
+	ChannelType   string     `json:"channel_type" gorm:"type:varchar(20);not null;comment:Notification channel"`
 	Recipient     string     `json:"recipient" gorm:"type:varchar(255);not null;comment:Recipient"`
 	Subject       *string    `json:"subject" gorm:"type:varchar(255);comment:Notification subject"`
 	Content       string     `json:"content" gorm:"type:text;not null;comment:Notification content"`
