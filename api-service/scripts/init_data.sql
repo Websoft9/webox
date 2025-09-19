@@ -4,12 +4,12 @@
 
 -- Insert default roles
 INSERT INTO `roles` (`name`, `code`, `description`, `is_system`, `status`) VALUES
-('Super Administrator', 'super_admin', 'System super administrator with all permissions', 1, 1),
-('System Administrator', 'admin', 'System administrator responsible for platform management', 1, 1),
-('Project Manager', 'project_admin', 'Project administrator responsible for project management', 1, 1),
-('Developer', 'developer', 'Developer role responsible for application development', 1, 1),
-('Operator', 'operator', 'Operations role responsible for system operations', 1, 1),
-('User', 'user', 'Regular user role with basic permissions', 1, 1);
+   ('Super Administrator', 'super_admin', 'System super administrator with all permissions', 1, 1),
+   ('System Administrator', 'admin', 'System administrator responsible for platform management', 1, 1),
+   ('Project Manager', 'project_admin', 'Project administrator responsible for project management', 1, 1),
+   ('Developer', 'developer', 'Developer role responsible for application development', 1, 1),
+   ('Operator', 'operator', 'Operations role responsible for system operations', 1, 1),
+   ('User', 'user', 'Regular user role with basic permissions', 1, 1);
 
 INSERT INTO `permissions` (`parent_code`,`scope`,`name`,`code`,`module`,`action`,`resource`,`element`,`description`,`is_system`,`is_menu`,`sort_order`,`status`,`created_by`,`updated_by`,`created_at`,`updated_at`) VALUES
 	 (NULL,'platform','ui.platform','e06e84c7-fe48-4d0d-9dbb-cbe65cf5d936','platform','*',NULL,NULL,'Default permissions root node',1,1,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
@@ -197,7 +197,18 @@ INSERT INTO `permissions` (`parent_code`,`scope`,`name`,`code`,`module`,`action`
 	 ('f8e5c2a1-3d47-4b8e-9c15-8a2b1f7e4d93','platform','ui.action_query','2f8e5b9c-4d7e-5f0b-9e23-6c3d8e0f2b4e','system_config','query','/system-configs/security',NULL,'Security configuration query permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
 	 ('f8e5c2a1-3d47-4b8e-9c15-8a2b1f7e4d93','platform','ui.action_query','3g9f6c0d-5e8f-6g1c-0f34-7d4e9f1g3c5f','system_config','query','/system-configs/email',NULL,'Email configuration query permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
 	 ('f8e5c2a1-3d47-4b8e-9c15-8a2b1f7e4d93','platform','ui.action_update','4h0g7d1e-6f9g-7h2d-1g45-8e5f0g2h4d6g','system_config','update','/system-configs',NULL,'Batch configuration update permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
-	 ('f8e5c2a1-3d47-4b8e-9c15-8a2b1f7e4d93','platform','ui.action_create','2b5f8e3d-4a71-4c89-9e36-7d1a9c5f8e42','system_config','create','/system-configs/smtp/test',NULL,'System SMTP configuration test permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19');
+	 ('f8e5c2a1-3d47-4b8e-9c15-8a2b1f7e4d93','platform','ui.action_create','2b5f8e3d-4a71-4c89-9e36-7d1a9c5f8e42','system_config','create','/system-configs/smtp/test',NULL,'System SMTP configuration test permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+   ('777614c1-7f84-4e3e-95ee-edab4f5a47bc','platform','ui.tag_management','f222cdfd-b473-4978-b898-d889ef217403','tag_management','*','/tags',NULL,'Tag management all permissions',1,1,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+   ('f222cdfd-b473-4978-b898-d889ef217403','platform','ui.action_query','48db84f1-1654-40eb-8bf3-7b0898fc3475','tag_management','query','/tags',NULL,'',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+   ('f222cdfd-b473-4978-b898-d889ef217403','platform','ui.action_create','9c30b13d-98c5-494c-9f19-dc88c41d6ede','tag_management','create','/tags',NULL,'',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+   ('f222cdfd-b473-4978-b898-d889ef217403','platform','ui.action_create','9ac9df41-ec72-4ead-9888-7b57c652a4aa','tag_management','create','/tags/assign',NULL,'',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+   ('f222cdfd-b473-4978-b898-d889ef217403','platform','ui.action_create','659e02e3-c0b6-4bda-8fe1-a2a7330a450f','tag_management','create','/tags/replace',NULL,'',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+   ('f222cdfd-b473-4978-b898-d889ef217403','platform','ui.action_query','63b88e02-e122-4140-93d3-4680a4fa20fe','tag_management','query','/tags/search',NULL,'',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+   ('f222cdfd-b473-4978-b898-d889ef217403','platform','ui.action_query','d7b3c9a5-a0ef-43a6-8bbd-277ed1737ee8','tag_management','query','/tags/taggings',NULL,'',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+   ('f222cdfd-b473-4978-b898-d889ef217403','platform','ui.action_create','6f65932d-2c43-41a0-a5d3-fadc1bccaaf7','tag_management','create','/tags/unassign',NULL,'',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+   ('f222cdfd-b473-4978-b898-d889ef217403','platform','ui.action_query','18842887-2e5f-444b-b035-ee6b804704ee','tag_management','query','/tags/*',NULL,'',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+   ('f222cdfd-b473-4978-b898-d889ef217403','platform','ui.action_update','64277337-5b57-41ff-9ae9-a8aaa137595a','tag_management','update','/tags/*',NULL,'',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+   ('f222cdfd-b473-4978-b898-d889ef217403','platform','ui.action_delete','ca45d4ee-cec5-407d-ab9f-7ff4a0eb20b9','tag_management','delete','/tags/*',NULL,'',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19');
 
 -- Insert default users and role permissions
 INSERT INTO `users` (`id`,`username`,`email`,`password_hash`,`nickname`,`avatar`,`phone`,`gender`,`signature`,`status`,`last_login_at`,`last_login_ip`,`timezone`,`language`,`created_at`,`updated_at`) VALUES
@@ -392,7 +403,18 @@ INSERT INTO `role_permissions` (`role_id`,`permission_code`,`granted_by`,`grante
          (1, '2f8e5b9c-4d7e-5f0b-9e23-6c3d8e0f2b4e',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
          (1, '3g9f6c0d-5e8f-6g1c-0f34-7d4e9f1g3c5f',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
          (1, '4h0g7d1e-6f9g-7h2d-1g45-8e5f0g2h4d6g',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
-         (1, '2b5f8e3d-4a71-4c89-9e36-7d1a9c5f8e42',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19');
+         (1, '2b5f8e3d-4a71-4c89-9e36-7d1a9c5f8e42',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, 'f222cdfd-b473-4978-b898-d889ef217403',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, '48db84f1-1654-40eb-8bf3-7b0898fc3475',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, '9c30b13d-98c5-494c-9f19-dc88c41d6ede',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, '9ac9df41-ec72-4ead-9888-7b57c652a4aa',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, '659e02e3-c0b6-4bda-8fe1-a2a7330a450f',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, '63b88e02-e122-4140-93d3-4680a4fa20fe',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, 'd7b3c9a5-a0ef-43a6-8bbd-277ed1737ee8',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, '6f65932d-2c43-41a0-a5d3-fadc1bccaaf7',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, '18842887-2e5f-444b-b035-ee6b804704ee',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, '64277337-5b57-41ff-9ae9-a8aaa137595a',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, 'ca45d4ee-cec5-407d-ab9f-7ff4a0eb20b9',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19');
 
 -- Insert default application categories
 INSERT INTO `app_store_categories` (`name`, `code`, `description`, `sort_order`, `status`) VALUES

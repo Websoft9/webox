@@ -336,3 +336,5 @@ ui:
   notification: "告警通知"
   profile: "个人中心"
   audit_log: "审计日志"
+  system_config: "管理员设置"
+  tag_management: "标签管理"
