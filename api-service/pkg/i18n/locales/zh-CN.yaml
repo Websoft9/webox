@@ -42,6 +42,31 @@ user_profile:
   password_verification_failed: "旧密码验证失败"
   password_update_failed: "密码更新失败"
 
+alert:
+  rule_create_success: "告警规则创建成功"
+  rule_create_failed: "创建告警规则失败"
+  rule_get_success: "获取告警规则成功"
+  rule_get_failed: "获取告警规则失败"
+  rule_list_success: "获取告警规则列表成功"
+  rule_list_failed: "获取告警规则列表失败"
+  rule_update_success: "更新告警规则成功"
+  rule_update_failed: "更新告警规则失败"
+  rule_delete_success: "删除告警规则成功"
+  rule_delete_failed: "删除告警规则失败"
+  rule_not_found: "未找到告警规则"
+  rule_invalid_id: "无效的告警规则ID"
+  record_list_success: "告警记录获取成功"
+  record_list_failed: "获取告警记录失败"
+  record_acknowledge_success: "告警记录确认成功"
+  record_acknowledge_failed: "确认告警记录失败"
+  record_resolve_success: "告警记录解决成功"
+  record_resolve_failed: "解决告警记录失败"
+  record_not_found: "告警记录不存在"
+  record_invalid_id: "无效的告警记录ID"
+  record_already_acknowledged: "告警记录已经被确认"
+  record_already_resolved: "告警记录已经被解决"
+  invalid_condition_expression: "条件表达式格式无效，请检查并重新输入"
+
 # 角色模块消息
 role:
   not_found: "角色不存在"
