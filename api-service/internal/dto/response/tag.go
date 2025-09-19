@@ -48,7 +48,7 @@ type TaggedResource struct {
 	ResourceID   uint64              `json:"resourceId" example:"1"`
 	ResourceName string              `json:"resourceName" example:"WordPress Blog"`
 	Tags         []TagSimpleResponse `json:"tags"`
-	MatchedTags  []uint64            `json:"matchedTags" example:"[1,3]"`
+	MatchedTags  []uint64            `json:"matchedTags"`
 	CreatedAt    time.Time           `json:"createdAt" example:"2024-01-15T10:30:00Z"`
 }
 

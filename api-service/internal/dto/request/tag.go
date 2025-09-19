@@ -23,21 +23,21 @@ type TagListRequest struct {
 // TagAssignRequest represents a request to assign tags to a resource
 type TagAssignRequest struct {
 	ResourceID uint64   `json:"resourceId" binding:"required" example:"123"`
-	TagIDs     []uint64 `json:"tagIds" example:"[1,2]"`
-	TagNames   []string `json:"tagNames" example:"[\"new-feature\",\"test-version\"]"`
+	TagIDs     []uint64 `json:"tagIds"`
+	TagNames   []string `json:"tagNames"`
 	ReplaceAll bool     `json:"replaceAll" example:"false"`
 }
 
 // TagUnassignRequest represents a request to unassign tags from a resource
 type TagUnassignRequest struct {
 	ResourceID uint64   `json:"resourceId" binding:"required" example:"123"`
-	TagIDs     []uint64 `json:"tagIds" binding:"required" example:"[3,4]"`
+	TagIDs     []uint64 `json:"tagIds" binding:"required"`
 }
 
 // TagSearchRequest represents a request to search resources by tags
 type TagSearchRequest struct {
-	TagIDs    []uint64 `form:"tagIds" binding:"omitempty" example:"[1,2,3]"`
-	TagNames  []string `form:"tagNames" binding:"omitempty" example:"[\"production\",\"mysql\"]"`
+	TagIDs    []uint64 `form:"tagIds" binding:"omitempty"`
+	TagNames  []string `form:"tagNames" binding:"omitempty"`
 	Operation string   `form:"operation" binding:"omitempty,oneof=AND OR" example:"AND"`
 	Page      int      `form:"page" binding:"omitempty,min=1" example:"1"`
 	PageSize  int      `form:"pageSize" binding:"omitempty,min=1,max=100" example:"20"`
