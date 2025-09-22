@@ -42,6 +42,31 @@ user_profile:
   password_verification_failed: "Old Password verification failed"
   password_update_failed: "Failed to update password"
 
+alert:
+  rule_create_success: "Alert rule created successfully"
+  rule_create_failed: "Failed to create alert rule"
+  rule_get_success: "Alert rule retrieved successfully"
+  rule_get_failed: "Failed to retrieve alert rule"
+  rule_list_success: "Alert rules retrieved successfully"
+  rule_list_failed: "Failed to retrieve alert rules"
+  rule_update_success: "Alert rule updated successfully"
+  rule_update_failed: "Failed to update alert rule"
+  rule_delete_success: "Alert rule deleted successfully"
+  rule_delete_failed: "Failed to delete alert rule"
+  rule_not_found: "Alert rule not found"
+  rule_invalid_id: "Invalid alert rule ID"
+  record_list_success: "Alert records retrieved successfully"
+  record_list_failed: "Failed to retrieve alert records"
+  record_acknowledge_success: "Alert record acknowledged successfully"
+  record_acknowledge_failed: "Failed to acknowledge alert record"
+  record_resolve_success: "Alert record resolved successfully"
+  record_resolve_failed: "Failed to resolve alert record"
+  record_not_found: "Alert record not found"
+  record_invalid_id: "Invalid alert record ID"
+  record_already_acknowledged: "Alert record already acknowledged"
+  record_already_resolved: "Alert record already resolved"
+  invalid_condition_expression: "Invalid condition expression format, please check and re-enter"
+
 # Role module messages
 role:
   not_found: "Role not found"

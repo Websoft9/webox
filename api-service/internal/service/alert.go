@@ -1,0 +1,447 @@
+package service
+
+import (
+	"api-service/internal/constants"
+	"api-service/internal/dto/request"
+	"api-service/internal/dto/response"
+	"api-service/internal/interface/repository"
+	"api-service/internal/model"
+	"api-service/pkg/errors"
+	"api-service/pkg/i18n"
+	"api-service/pkg/logger"
+	"context"
+	"time"
+
+	"gorm.io/gorm"
+)
+
+// alertService implements the alert service.
+type alertService struct {
+	alertRepo repository.AlertRepository
+	logger    logger.Logger
+	i18n      *i18n.I18n
+}
+
+// NewAlertService creates a new instance of alert service.
+func NewAlertService(
+	alertRepo repository.AlertRepository,
+	logger logger.Logger,
+	i18n *i18n.I18n,
+) *alertService {
+	return &alertService{
+		alertRepo: alertRepo,
+		logger:    logger,
+		i18n:      i18n,
+	}
+}
+
+// CreateAlertRule creates an alert rule.
+func (s *alertService) CreateAlertRule(ctx context.Context, currentUserID uint, req *request.AlertRuleCreateRequest) (*response.AlertRuleResponse, error) {
+	s.logger.InfoContext(ctx, "Creating alert rule",
+		logger.String("name", req.Name),
+		logger.String("ruleType", string(req.RuleType)))
+
+	// Build alert rule model
+	rule := &model.AlertRule{
+		Name:                 req.Name,
+		RuleType:             req.RuleType,
+		TargetType:           req.TargetType,
+		TargetID:             req.TargetID,
+		MetricName:           req.MetricName,
+		ConditionExpression:  req.ConditionExpression,
+		NotificationChannels: req.NotificationChannels,
+		OwnerID:              currentUserID,
+	}
+
+	if req.IsEnabled != nil {
+		rule.IsEnabled = *req.IsEnabled
+	} else {
+		rule.IsEnabled = true
+	}
+
+	// Save to database
+	if err := s.alertRepo.CreateAlertRule(ctx, rule); err != nil {
+		s.logger.ErrorContext(ctx, "Failed to create alert rule",
+			logger.String("name", req.Name),
+			logger.ErrorField(err))
+		return nil, errors.WrapError(err, errors.CodeRecordCreateFailed,
+			s.i18n.T(ctx, "alert.rule_create_failed"))
+	}
+
+	// Build response
+	return s.buildAlertRuleResponse(rule), nil
+}
+
+// GetAlertRuleByID retrieves a single alert rule.
+func (s *alertService) GetAlertRuleByID(ctx context.Context, id uint) (*response.AlertRuleResponse, error) {
+	s.logger.InfoContext(ctx, "Getting alert rule", logger.Uint("id", id))
+
+	rule, err := s.alertRepo.GetAlertRuleByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			s.logger.WarnContext(ctx, "Alert rule not found", logger.Uint("id", id))
+			return nil, errors.NewAppError(errors.CodeRecordNotFound,
+				s.i18n.T(ctx, "alert.rule_not_found"))
+		}
+		s.logger.ErrorContext(ctx, "Failed to get alert rule",
+			logger.Uint("id", id),
+			logger.ErrorField(err))
+		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed,
+			s.i18n.T(ctx, "alert.rule_get_failed"))
+	}
+
+	return s.buildAlertRuleResponse(rule), nil
+}
+
+// ListAlertRules retrieves a list of alert rules.
+func (s *alertService) ListAlertRules(ctx context.Context, req *request.AlertRuleQueryRequest) (*response.AlertRuleListResponse, error) {
+	s.logger.InfoContext(ctx, "Listing alert rules",
+		logger.Int("page", req.Page),
+		logger.Int("pageSize", req.PageSize))
+
+	// Build query parameters
+	params := map[string]interface{}{}
+	if req.RuleType != "" {
+		params["rule_type"] = req.RuleType
+	}
+	if req.TargetType != "" {
+		params["target_type"] = req.TargetType
+	}
+	if req.IsEnabled != nil {
+		params["is_enabled"] = *req.IsEnabled
+	}
+	if req.Keyword != "" {
+		params["keyword"] = req.Keyword
+	}
+
+	// Query data
+	rules, total, err := s.alertRepo.ListAlertRules(ctx, params, req.Page, req.PageSize)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to list alert rules", logger.ErrorField(err))
+		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed,
+			s.i18n.T(ctx, "alert.rule_list_failed"))
+	}
+
+	// Build response
+	items := make([]response.AlertRuleResponse, 0, len(rules))
+	for _, rule := range rules {
+		items = append(items, *s.buildAlertRuleResponse(rule))
+	}
+
+	return &response.AlertRuleListResponse{
+		Total: total,
+		Items: items,
+	}, nil
+}
+
+// UpdateAlertRule updates an alert rule.
+func (s *alertService) UpdateAlertRule(ctx context.Context, id uint, req *request.AlertRuleUpdateRequest) (*response.AlertRuleResponse, error) {
+	s.logger.InfoContext(ctx, "Updating alert rule", logger.Uint("id", id))
+
+	// Check if the rule exists
+	_, err := s.alertRepo.GetAlertRuleByID(ctx, id)
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			s.logger.WarnContext(ctx, "Alert rule not found for update", logger.Uint("id", id))
+			return nil, errors.NewAppError(errors.CodeRecordNotFound,
+				s.i18n.T(ctx, "alert.rule_not_found"))
+		}
+		s.logger.ErrorContext(ctx, "Failed to get alert rule for update",
+			logger.Uint("id", id),
+			logger.ErrorField(err))
+		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed,
+			s.i18n.T(ctx, "alert.rule_update_failed"))
+	}
+
+	// Build update data
+	updates := make(map[string]interface{})
+
+	if req.Name != nil {
+		updates["name"] = *req.Name
+	}
+
+	if req.ConditionExpression != nil {
+		updates["condition_expression"] = *req.ConditionExpression
+	}
+
+	if req.NotificationChannels != nil {
+		updates["notification_channels"] = *req.NotificationChannels
+	}
+
+	if req.IsEnabled != nil {
+		updates["is_enabled"] = *req.IsEnabled
+	}
+
+	// Update rule
+	if len(updates) > 0 {
+		updates["updated_at"] = time.Now()
+		// Use a different variable name to avoid shadowing
+		if updateErr := s.alertRepo.UpdateAlertRule(ctx, id, updates); updateErr != nil {
+			s.logger.ErrorContext(ctx, "Failed to update alert rule",
+				logger.Uint("id", id),
+				logger.ErrorField(updateErr))
+			return nil, errors.WrapError(updateErr, errors.CodeRecordUpdateFailed,
+				s.i18n.T(ctx, "alert.rule_update_failed"))
+		}
+	}
+
+	// Get latest data
+	updatedRule, err := s.alertRepo.GetAlertRuleByID(ctx, id)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to get updated alert rule",
+			logger.Uint("id", id),
+			logger.ErrorField(err))
+		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed,
+			s.i18n.T(ctx, "alert.rule_get_failed"))
+	}
+
+	return s.buildAlertRuleResponse(updatedRule), nil
+}
+
+// DeleteAlertRule deletes an alert rule.
+func (s *alertService) DeleteAlertRule(ctx context.Context, id uint) error {
+	s.logger.InfoContext(ctx, "Deleting alert rule", logger.Uint("id", id))
+
+	// Check if the rule exists
+	_, err := s.alertRepo.GetAlertRuleByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			s.logger.WarnContext(ctx, "Alert rule not found for deletion", logger.Uint("id", id))
+			return errors.NewAppError(errors.CodeRecordNotFound,
+				s.i18n.T(ctx, "alert.rule_not_found"))
+		}
+		s.logger.ErrorContext(ctx, "Failed to get alert rule for deletion",
+			logger.Uint("id", id),
+			logger.ErrorField(err))
+		return errors.WrapError(err, errors.CodeRecordQueryFailed,
+			s.i18n.T(ctx, "alert.rule_delete_failed"))
+	}
+
+	// Delete rule
+	if err := s.alertRepo.DeleteAlertRule(ctx, id); err != nil {
+		s.logger.ErrorContext(ctx, "Failed to delete alert rule",
+			logger.Uint("id", id),
+			logger.ErrorField(err))
+		return errors.WrapError(err, errors.CodeRecordDeleteFailed,
+			s.i18n.T(ctx, "alert.rule_delete_failed"))
+	}
+
+	return nil
+}
+
+// buildAlertRuleResponse builds the alert rule response.
+func (s *alertService) buildAlertRuleResponse(rule *model.AlertRule) *response.AlertRuleResponse {
+	return &response.AlertRuleResponse{
+		ID:                   rule.ID,
+		Name:                 rule.Name,
+		RuleType:             rule.RuleType,
+		TargetType:           rule.TargetType,
+		TargetID:             rule.TargetID,
+		MetricName:           rule.MetricName,
+		ConditionExpression:  rule.ConditionExpression,
+		NotificationChannels: rule.NotificationChannels,
+		IsEnabled:            rule.IsEnabled,
+		OwnerID:              rule.OwnerID,
+		CreatedAt:            rule.CreatedAt,
+		UpdatedAt:            rule.UpdatedAt,
+	}
+}
+
+// ListAlertRecords retrieves a paginated list of alert records
+func (s *alertService) ListAlertRecords(ctx context.Context, req *request.AlertRecordQueryRequest) (*response.AlertRecordListResponse, error) {
+	s.logger.InfoContext(ctx, "Listing alert records",
+		logger.Int("page", req.Page),
+		logger.Int("page_size", req.PageSize))
+
+	// Set default values
+	if req.Page <= 0 {
+		req.Page = 1
+	}
+	if req.PageSize <= 0 || req.PageSize > 100 {
+		req.PageSize = 20
+	}
+
+	// Build filters
+	filters := make(map[string]interface{})
+	if req.Status != "" {
+		filters["status"] = req.Status
+	}
+	if req.Severity != "" {
+		filters["severity"] = req.Severity
+	}
+	if !req.StartTime.IsZero() {
+		filters["start_time"] = req.StartTime
+	}
+	if !req.EndTime.IsZero() {
+		filters["end_time"] = req.EndTime
+	}
+	if req.AlertRuleID != nil {
+		filters["alert_rule_id"] = *req.AlertRuleID
+	}
+
+	// Calculate pagination offset
+	offset := (req.Page - 1) * req.PageSize
+
+	// Call repository to fetch data
+	records, total, err := s.alertRepo.ListAlertRecords(ctx, offset, req.PageSize, filters)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to list alert records", logger.ErrorField(err))
+		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, s.i18n.T(ctx, "alert.record_list_failed"))
+	}
+
+	// Convert to DTOs
+	result := &response.AlertRecordListResponse{
+		Records:  make([]response.AlertRecordResponse, 0, len(records)),
+		Total:    total,
+		Page:     req.Page,
+		PageSize: req.PageSize,
+	}
+
+	for _, record := range records {
+		result.Records = append(result.Records, s.mapAlertRecordToDTO(record))
+	}
+
+	s.logger.InfoContext(ctx, "Alert records retrieved successfully",
+		logger.Int64("total", total))
+	return result, nil
+}
+
+// AcknowledgeAlertRecord acknowledges an alert record
+func (s *alertService) AcknowledgeAlertRecord(ctx context.Context, id, userID uint, req *request.AlertAcknowledgeRequest) error {
+	s.logger.InfoContext(ctx, "Acknowledging alert record",
+		logger.Uint("id", id),
+		logger.Uint("user_id", userID))
+
+	// Get the record
+	record, err := s.alertRepo.GetAlertRecordByID(ctx, id)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return errors.NewAppError(errors.CodeRecordNotFound, s.i18n.T(ctx, "alert.record_not_found"))
+		}
+		s.logger.ErrorContext(ctx, "Failed to get alert record",
+			logger.Uint("id", id),
+			logger.ErrorField(err))
+		return errors.WrapError(err, errors.CodeRecordQueryFailed, s.i18n.T(ctx, "alert.record_acknowledge_failed"))
+	}
+
+	// Validate status
+	if record.AcknowledgedAt != nil {
+		return errors.NewAppError(errors.CodeResourceStateNotAllowed, s.i18n.T(ctx, "alert.record_already_acknowledged"))
+	}
+
+	// Check if already resolved
+	if record.Status == constants.AlertStatusResolved || record.Status == constants.AlertStatusConfirmed {
+		return errors.NewAppError(errors.CodeResourceStateNotAllowed, s.i18n.T(ctx, "alert.record_already_resolved"))
+	}
+
+	// Prepare update data
+	now := time.Now()
+	updateData := map[string]interface{}{
+		"acknowledged_at": now,
+		"acknowledged_by": userID,
+		"status":          constants.AlertStatusConfirmed,
+	}
+
+	// Add acknowledgement note if provided
+	if req.Note != "" {
+		updateData["resolution_note"] = req.Note
+	}
+
+	// Update the record
+	err = s.alertRepo.UpdateAlertRecord(ctx, id, updateData)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to update alert record for acknowledgement",
+			logger.Uint("id", id),
+			logger.ErrorField(err))
+		return errors.WrapError(err, errors.CodeRecordUpdateFailed, s.i18n.T(ctx, "alert.record_acknowledge_failed"))
+	}
+
+	s.logger.InfoContext(ctx, "Alert record acknowledged successfully",
+		logger.Uint("id", id),
+		logger.Uint("user_id", userID))
+	return nil
+}
+
+// ResolveAlertRecord resolves an alert record
+func (s *alertService) ResolveAlertRecord(ctx context.Context, id, userID uint, req *request.AlertResolveRequest) error {
+	s.logger.InfoContext(ctx, "Resolving alert record",
+		logger.Uint("id", id),
+		logger.Uint("user_id", userID))
+
+	// Get the record
+	record, err := s.alertRepo.GetAlertRecordByID(ctx, id)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return errors.NewAppError(errors.CodeRecordNotFound, s.i18n.T(ctx, "alert.record_not_found"))
+		}
+		s.logger.ErrorContext(ctx, "Failed to get alert record",
+			logger.Uint("id", id),
+			logger.ErrorField(err))
+		return errors.WrapError(err, errors.CodeRecordUpdateFailed, s.i18n.T(ctx, "alert.record_resolve_failed"))
+	}
+
+	// Validate status
+	if record.Status == constants.AlertStatusResolved || record.Status == constants.AlertStatusConfirmed {
+		return errors.NewAppError(errors.CodeResourceStateNotAllowed, s.i18n.T(ctx, "alert.record_already_resolved"))
+	}
+
+	// Prepare update data
+	now := time.Now()
+	updateData := map[string]interface{}{
+		"acknowledged_by": userID,
+		"status":          constants.AlertStatusResolved,
+		"resolved_at":     now,
+	}
+
+	// Add resolution note if provided
+	if req.ResolutionNote != "" {
+		updateData["resolution_note"] = req.ResolutionNote
+	}
+
+	// Update the record
+	err = s.alertRepo.UpdateAlertRecord(ctx, id, updateData)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to update alert record for resolution",
+			logger.Uint("id", id),
+			logger.ErrorField(err))
+		return errors.WrapError(err, errors.CodeRecordUpdateFailed, s.i18n.T(ctx, "alert.record_resolve_failed"))
+	}
+
+	s.logger.InfoContext(ctx, "Alert record resolved successfully",
+		logger.Uint("id", id),
+		logger.Uint("user_id", userID))
+	return nil
+}
+
+// mapAlertRecordToDTO converts an alert record model to DTO
+func (s *alertService) mapAlertRecordToDTO(record *model.AlertRecord) response.AlertRecordResponse {
+	return response.AlertRecordResponse{
+		ID:               record.ID,
+		AlertRuleID:      record.AlertRuleID,
+		AlertID:          record.AlertID,
+		Title:            record.Title,
+		Description:      record.Description,
+		Status:           record.Status,
+		Severity:         s.determineSeverity(record),
+		FiredAt:          record.FiredAt,
+		ResolvedAt:       record.ResolvedAt,
+		AcknowledgedAt:   record.AcknowledgedAt,
+		AcknowledgedBy:   record.AcknowledgedBy,
+		AcknowledgeNote:  record.AcknowledgeNote,
+		ResolutionNote:   record.ResolutionNote,
+		NotificationSent: record.NotificationSent,
+		CreatedAt:        record.CreatedAt,
+		UpdatedAt:        record.UpdatedAt,
+	}
+}
+
+// determineSeverity determines the severity level based on record status
+func (s *alertService) determineSeverity(record *model.AlertRecord) string {
+	// Determine severity based on business logic
+	// This is a simplified implementation, actual logic may vary
+	if record.Status == "FIRING" {
+		return "CRITICAL"
+	}
+	return "INFO"
+}

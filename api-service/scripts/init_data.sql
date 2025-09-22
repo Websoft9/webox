@@ -168,9 +168,10 @@ INSERT INTO `permissions` (`parent_code`,`scope`,`name`,`code`,`module`,`action`
 	 ('1adb3cfc-ddd8-42ab-9c0f-3b2881184852','platform','ui.action_query','a4e88f35-af15-4fe0-b30b-ec2f516e9fc3','user','query','/users',NULL,'User management query permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
 	 ('1adb3cfc-ddd8-42ab-9c0f-3b2881184852','platform','ui.action_create','01aaa408-953e-4c5a-8cb0-b507322a4205','user','create','/users',NULL,'User management create permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
 	 ('1adb3cfc-ddd8-42ab-9c0f-3b2881184852','platform','ui.action_update','a176c0fc-24ba-42f6-bb8f-1f80a8a2fe29','user','update','/users/*',NULL,'User management update permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+    ('1adb3cfc-ddd8-42ab-9c0f-3b2881184852','platform','ui.action_query','a176c0fc-24ba-42f7-bb8f-1f80a8a2fe29','user','query','/users/*',NULL,'User management update permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
 	 ('1adb3cfc-ddd8-42ab-9c0f-3b2881184852','platform','ui.action_delete','9644b60c-b8ea-4351-b672-e7b656bb33c2','user','delete','/users/*',NULL,'User management delete permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
 	 ('1adb3cfc-ddd8-42ab-9c0f-3b2881184852','platform','ui.action_update','167cfa0f-89ac-44a6-ab9c-fac2ec13ff62','user','update','/users/*/status',NULL,'User management enable permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
-	 ('1adb3cfc-ddd8-42ab-9c0f-3b2881184852','platform','ui.action_update','d1e3a654-78a9-4e78-905c-92f44e13ebc6','user','update','/users/*/status',NULL,'User management disable permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('1adb3cfc-ddd8-42ab-9c0f-3b2881184852','platform','ui.action_update','d1e3a654-78a9-4e78-905c-92f44e13ebc6','user','update','/users/*/password',NULL,'User management disable permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
 	 ('777614c1-7f84-4e3e-95ee-edab4f5a47bc','platform','ui.notification','ef4eab25-7246-43b2-aa11-5a5863d51de2','notification','*',NULL,NULL,'Alert notification management all permissions',1,1,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
 	 ('ef4eab25-7246-43b2-aa11-5a5863d51de2','platform','ui.action_query','021d7475-a9c6-4b06-9178-1e86e89cab88','notification','query',NULL,NULL,'Alert notification query permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
 	 ('ef4eab25-7246-43b2-aa11-5a5863d51de2','platform','ui.action_create','f2b881a4-a53c-49ed-a980-132854d7dfd1','notification','create',NULL,NULL,'Alert notification create permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
@@ -206,8 +207,19 @@ INSERT INTO `permissions` (`parent_code`,`scope`,`name`,`code`,`module`,`action`
    ('f222cdfd-b473-4978-b898-d889ef217403','platform','ui.action_create','6f65932d-2c43-41a0-a5d3-fadc1bccaaf7','tag_management','create','/tags/unassign',NULL,'Tag management create permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
    ('f222cdfd-b473-4978-b898-d889ef217403','platform','ui.action_query','18842887-2e5f-444b-b035-ee6b804704ee','tag_management','query','/tags/*',NULL,'Tag management query permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
    ('f222cdfd-b473-4978-b898-d889ef217403','platform','ui.action_update','64277337-5b57-41ff-9ae9-a8aaa137595a','tag_management','update','/tags/*',NULL,'Tag management update permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
-   ('f222cdfd-b473-4978-b898-d889ef217403','platform','ui.action_delete','ca45d4ee-cec5-407d-ab9f-7ff4a0eb20b9','tag_management','delete','/tags/*',NULL,'Tag management delete permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19');
-
+   ('f222cdfd-b473-4978-b898-d889ef217403','platform','ui.action_delete','ca45d4ee-cec5-407d-ab9f-7ff4a0eb20b9','tag_management','delete','/tags/*',NULL,'Tag management delete permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+   ('777614c1-7f84-4e3e-95ee-edab4f5a47bc','platform','ui.alert_management','e4d3f825-d72c-4a2e-b6fb-0143f5e5eb5e','alert','*','/alert',NULL,'Alert management all permissions',1,1,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+   ('e4d3f825-d72c-4a2e-b6fb-0143f5e5eb5e','platform','ui.alert_rules','19cb5c87-0d72-49d4-bc4f-1e3c9d8fea4c','alert','*','/alert/rules',NULL,'Alert rules management all permissions',1,1,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+   ('19cb5c87-0d72-49d4-bc4f-1e3c9d8fea4c','platform','ui.action_query','77f8a89d-6cff-4ed1-9454-e5bb0e4e3c7b','alert','query','/alert/rules/*',NULL,'Alert rules query permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+   ('19cb5c87-0d72-49d4-bc4f-1e3c9d8fea4c','platform','ui.action_query','77f8a89d-6cff-4ed0-9453-e5bb0e4e3c7b','alert','query','/alert/rules',NULL,'Alert rules query permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+   ('19cb5c87-0d72-49d4-bc4f-1e3c9d8fea4c','platform','ui.action_create','8124f8eb-d451-4fc1-a4a9-d70a872654d7','alert','create','/alert/rules',NULL,'Alert rules create permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+   ('19cb5c87-0d72-49d4-bc4f-1e3c9d8fea4c','platform','ui.action_update','573e94bf-4a7c-4ae7-8884-b22eb5051554','alert','update','/alert/rules/*',NULL,'Alert rules update permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+   ('19cb5c87-0d72-49d4-bc4f-1e3c9d8fea4c','platform','ui.action_delete','2c08f766-487f-498c-8baa-17c9ae7e5991','alert','delete','/alert/rules/*',NULL,'Alert rules delete permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+   ('e4d3f825-d72c-4a2e-b6fb-0143f5e5eb5e','platform','ui.alert_records','3a8d521d-d3f2-47d8-b302-62cc586bc8c5','alert','*','/alert/records',NULL,'Alert records management all permissions',1,1,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+   ('3a8d521d-d3f2-47d8-b302-62cc586bc8c5','platform','ui.action_query','a23c0473-c7a5-4651-b9e5-86fe5a87f416','alert','query','/alert/records',NULL,'Alert records query permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+   ('3a8d521d-d3f2-47d8-b302-62cc586bc8c5','platform','ui.action_update','6e3b8ca7-1e76-4c2c-a395-53795a426a02','alert','update','/alert/records/*/acknowledge',NULL,'Alert records acknowledge permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+   ('3a8d521d-d3f2-47d8-b302-62cc586bc8c5','platform','ui.action_update','dc85e805-bce7-4c2c-abef-3f813345921f','alert','update','/alert/records/*/resolve',NULL,'Alert records resolve permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19');
+    
 -- Insert default users and role permissions
 INSERT INTO `users` (`id`,`username`,`email`,`password_hash`,`nickname`,`avatar`,`phone`,`gender`,`signature`,`status`,`last_login_at`,`last_login_ip`,`timezone`,`language`,`created_at`,`updated_at`) VALUES
 	 (1,'admin','admin@websoft9.com','d1a7b27aa60359a6033b046831168286dddc5a83268d4d483d30a09983f9c944','Manager','','',0,'Websoft9 manager',1,NULL,'','Asia/Shanghai','zh-CN','2025-09-01 12:11:19','2025-09-01 12:11:19');
@@ -372,6 +384,7 @@ INSERT INTO `role_permissions` (`role_id`,`permission_code`,`granted_by`,`grante
          (1, 'a4e88f35-af15-4fe0-b30b-ec2f516e9fc3',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
          (1, '01aaa408-953e-4c5a-8cb0-b507322a4205',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
          (1, 'a176c0fc-24ba-42f6-bb8f-1f80a8a2fe29',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, 'a176c0fc-24ba-42f7-bb8f-1f80a8a2fe29',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
          (1, '9644b60c-b8ea-4351-b672-e7b656bb33c2',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
          (1, '167cfa0f-89ac-44a6-ab9c-fac2ec13ff62',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
          (1, 'd1e3a654-78a9-4e78-905c-92f44e13ebc6',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
@@ -410,8 +423,19 @@ INSERT INTO `role_permissions` (`role_id`,`permission_code`,`granted_by`,`grante
          (1, '6f65932d-2c43-41a0-a5d3-fadc1bccaaf7',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
          (1, '18842887-2e5f-444b-b035-ee6b804704ee',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
          (1, '64277337-5b57-41ff-9ae9-a8aaa137595a',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
-         (1, 'ca45d4ee-cec5-407d-ab9f-7ff4a0eb20b9',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19');
-
+         (1, 'ca45d4ee-cec5-407d-ab9f-7ff4a0eb20b9',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, 'e4d3f825-d72c-4a2e-b6fb-0143f5e5eb5e',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, '19cb5c87-0d72-49d4-bc4f-1e3c9d8fea4c',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, '77f8a89d-6cff-4ed0-9453-e5bb0e4e3c7b',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, '77f8a89d-6cff-4ed1-9454-e5bb0e4e3c7b',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, '8124f8eb-d451-4fc1-a4a9-d70a872654d7',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, '573e94bf-4a7c-4ae7-8884-b22eb5051554',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, '2c08f766-487f-498c-8baa-17c9ae7e5991',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, '3a8d521d-d3f2-47d8-b302-62cc586bc8c5',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, 'a23c0473-c7a5-4651-b9e5-86fe5a87f416',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, '6e3b8ca7-1e76-4c2c-a395-53795a426a02',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, 'dc85e805-bce7-4c2c-abef-3f813345921f',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19');
+         
 -- Insert default application categories
 INSERT INTO `app_store_categories` (`name`, `code`, `description`, `sort_order`, `status`) VALUES
 ('Web Services', 'web', 'Web servers and related applications', 1, 1),
