@@ -136,7 +136,7 @@ func (s *tagService) UpdateTag(ctx context.Context, id uint64, req *request.TagU
 }
 
 // DeleteTag deletes a tag
-func (s *tagService) DeleteTag(ctx context.Context, id uint64, userID uint64) error {
+func (s *tagService) DeleteTag(ctx context.Context, id, userID uint64) error {
 	s.logger.InfoContext(ctx, "Deleting tag",
 		logger.Uint("tag_id", uint(id)),
 		logger.Uint("user_id", uint(userID)))
@@ -198,106 +198,28 @@ func (s *tagService) AssignTags(ctx context.Context, req *request.TagAssignReque
 		logger.Uint("resource_id", uint(req.ResourceID)),
 		logger.Uint("user_id", uint(userID)))
 
-	var results []response.TagAssignResult
-	var tagIDs []uint64
+	var allResults []response.TagAssignResult
+	var allTagIDs []uint64
 
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// Process tag IDs
-		for _, tagID := range req.TagIDs {
-			// Check if tag exists using transaction
-			var tag model.Tag
-			err := tx.First(&tag, tagID).Error
+		if len(req.TagIDs) > 0 {
+			results1, tagIDs1, err := s.processTagIDsForAssignment(tx, req.TagIDs, req.ResourceID, userID)
 			if err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					continue // Skip non-existent tags
-				}
-				return errors.NewAppError(errors.CodeInternalError, "failed to get tag")
+				return err
 			}
-
-			// Check if already associated using transaction
-			var count int64
-			err = tx.Model(&model.Tagging{}).
-				Where("tag_id = ? AND resource_id = ?", tagID, req.ResourceID).
-				Count(&count).Error
-			if err != nil {
-				return errors.NewAppError(errors.CodeInternalError, "failed to check tagging existence")
-			}
-
-			if count == 0 {
-				// Create association using transaction
-				tagging := &model.Tagging{
-					TagID:      tagID,
-					ResourceID: req.ResourceID,
-					CreatedBy:  userID,
-				}
-				if err := tx.Create(tagging).Error; err != nil {
-					return errors.NewAppError(errors.CodeInternalError, "failed to create tagging")
-				}
-			}
-
-			tagIDs = append(tagIDs, tagID)
-			results = append(results, response.TagAssignResult{
-				Name:    tag.Name,
-				TagID:   tagID,
-				Status:  "associated",
-				Message: "Tag associated",
-			})
+			allResults = append(allResults, results1...)
+			allTagIDs = append(allTagIDs, tagIDs1...)
 		}
 
-		// Process tag names (create if not exists)
-		for _, tagName := range req.TagNames {
-			// Try to get existing tag using transaction
-			var tag model.Tag
-			err := tx.Where("name = ?", tagName).First(&tag).Error
-			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-				return errors.NewAppError(errors.CodeInternalError, "failed to get tag by name")
-			}
-
-			// Create tag if not exists
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				tag = model.Tag{
-					Name:      tagName,
-					CreatedBy: userID,
-				}
-				if err := tx.Create(&tag).Error; err != nil {
-					return errors.NewAppError(errors.CodeInternalError, "failed to create tag")
-				}
-				results = append(results, response.TagAssignResult{
-					Name:    tagName,
-					TagID:   tag.ID,
-					Status:  "created",
-					Message: "Tag created and associated",
-				})
-			} else {
-				results = append(results, response.TagAssignResult{
-					Name:    tagName,
-					TagID:   tag.ID,
-					Status:  "associated",
-					Message: "Tag associated",
-				})
-			}
-
-			// Create association if not exists using transaction
-			var count int64
-			err = tx.Model(&model.Tagging{}).
-				Where("tag_id = ? AND resource_id = ?", tag.ID, req.ResourceID).
-				Count(&count).Error
+		// Process tag names
+		if len(req.TagNames) > 0 {
+			results2, tagIDs2, err := s.processTagNamesForAssignment(tx, req.TagNames, req.ResourceID, userID)
 			if err != nil {
-				return errors.NewAppError(errors.CodeInternalError, "failed to check tagging existence")
+				return err
 			}
-
-			if count == 0 {
-				tagging := &model.Tagging{
-					TagID:      tag.ID,
-					ResourceID: req.ResourceID,
-					CreatedBy:  userID,
-				}
-				if err := tx.Create(tagging).Error; err != nil {
-					return errors.NewAppError(errors.CodeInternalError, "failed to create tagging")
-				}
-			}
-
-			tagIDs = append(tagIDs, tag.ID)
+			allResults = append(allResults, results2...)
+			allTagIDs = append(allTagIDs, tagIDs2...)
 		}
 
 		return nil
@@ -314,13 +236,13 @@ func (s *tagService) AssignTags(ctx context.Context, req *request.TagAssignReque
 	}
 
 	// Convert slice to match expected type
-	var resourceTagsConverted []response.TagSimpleResponse
+	resourceTagsConverted := make([]response.TagSimpleResponse, 0, len(resourceTags))
 	for _, tag := range resourceTags {
 		resourceTagsConverted = append(resourceTagsConverted, *tag)
 	}
 
 	return &response.TagAssignResponse{
-		Results:      results,
+		Results:      allResults,
 		ResourceTags: resourceTagsConverted,
 	}, nil
 }
@@ -393,20 +315,10 @@ func (s *tagService) GetResourceTags(ctx context.Context, req *request.TaggingLi
 func (s *tagService) SearchResourcesByTags(ctx context.Context, req *request.TagSearchRequest) (*response.TagSearchResponse, error) {
 	s.logger.InfoContext(ctx, "Searching resources by tags")
 
-	// Parse tag names to IDs
-	var allTagIDs []uint64
-	allTagIDs = append(allTagIDs, req.TagIDs...)
-
-	for _, tagName := range req.TagNames {
-		tag, err := s.tagRepo.GetTagByName(ctx, tagName)
-		if err != nil {
-			if !errors.Is(err, gorm.ErrRecordNotFound) {
-				return nil, errors.NewAppError(errors.CodeInternalError, "failed to get tag by name")
-			}
-			// Skip non-existent tags
-			continue
-		}
-		allTagIDs = append(allTagIDs, tag.ID)
+	// Collect all tag IDs
+	allTagIDs, err := s.collectTagIDs(ctx, req)
+	if err != nil {
+		return nil, err
 	}
 
 	if len(allTagIDs) == 0 {
@@ -439,8 +351,27 @@ func (s *tagService) SearchResourcesByTags(ctx context.Context, req *request.Tag
 		return nil, errors.NewAppError(errors.CodeInternalError, "failed to search resources by tags")
 	}
 
-	// Group by resource ID and build response
+	// Build resource map
+	resourceMap := s.buildSimpleResourceMap(taggings)
+
+	// Convert to slice
+	resources := make([]response.TaggedResource, 0, len(resourceMap))
+	for _, resource := range resourceMap {
+		resources = append(resources, *resource)
+	}
+
+	return &response.TagSearchResponse{
+		Total:     total,
+		Page:      req.Page,
+		PageSize:  req.PageSize,
+		Resources: resources,
+	}, nil
+}
+
+// buildSimpleResourceMap builds a simple resource map from taggings
+func (s *tagService) buildSimpleResourceMap(taggings []*model.Tagging) map[uint64]*response.TaggedResource {
 	resourceMap := make(map[uint64]*response.TaggedResource)
+
 	for _, tagging := range taggings {
 		if resource, exists := resourceMap[tagging.ResourceID]; exists {
 			// Add tag to existing resource
@@ -455,7 +386,7 @@ func (s *tagService) SearchResourcesByTags(ctx context.Context, req *request.Tag
 			// Create new resource entry
 			resource := &response.TaggedResource{
 				ResourceID:   tagging.ResourceID,
-				ResourceName: fmt.Sprintf("Resource %d", tagging.ResourceID), // This should be populated from actual resource service
+				ResourceName: fmt.Sprintf("Resource %d", tagging.ResourceID),
 				Tags:         []response.TagSimpleResponse{},
 				MatchedTags:  []uint64{},
 				CreatedAt:    tagging.CreatedAt,
@@ -471,27 +402,7 @@ func (s *tagService) SearchResourcesByTags(ctx context.Context, req *request.Tag
 		}
 	}
 
-	// Convert map to slice
-	var resources []response.TaggedResource
-	for _, resource := range resourceMap {
-		// Set matched tags
-		for _, tag := range resource.Tags {
-			for _, tagID := range allTagIDs {
-				if tag.ID == tagID {
-					resource.MatchedTags = append(resource.MatchedTags, tagID)
-					break
-				}
-			}
-		}
-		resources = append(resources, *resource)
-	}
-
-	return &response.TagSearchResponse{
-		Total:     total,
-		Page:      req.Page,
-		PageSize:  req.PageSize,
-		Resources: resources,
-	}, nil
+	return resourceMap
 }
 
 // SearchTags searches for tags by name pattern
@@ -528,4 +439,136 @@ func (s *tagService) convertTagToResponse(tag *model.Tag) *response.TagResponse 
 		CreatedAt:   tag.CreatedAt,
 		UpdatedAt:   tag.UpdatedAt,
 	}
+}
+
+// processTagIDsForAssignment processes existing tag IDs and creates associations
+func (s *tagService) processTagIDsForAssignment(tx *gorm.DB, tagIDs []uint64, resourceID, userID uint64) ([]response.TagAssignResult, []uint64, error) {
+	results := make([]response.TagAssignResult, 0, len(tagIDs))
+	processedTagIDs := make([]uint64, 0, len(tagIDs))
+
+	for _, tagID := range tagIDs {
+		// Check if tag exists using transaction
+		var tag model.Tag
+		err := tx.First(&tag, tagID).Error
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				continue // Skip non-existent tags
+			}
+			return nil, nil, errors.NewAppError(errors.CodeInternalError, "failed to get tag")
+		}
+
+		// Check if already associated using transaction
+		var count int64
+		err = tx.Model(&model.Tagging{}).
+			Where("tag_id = ? AND resource_id = ?", tagID, resourceID).
+			Count(&count).Error
+		if err != nil {
+			return nil, nil, errors.NewAppError(errors.CodeInternalError, "failed to check tagging existence")
+		}
+
+		if count == 0 {
+			// Create association using transaction
+			tagging := &model.Tagging{
+				TagID:      tagID,
+				ResourceID: resourceID,
+				CreatedBy:  userID,
+			}
+			if err := tx.Create(tagging).Error; err != nil {
+				return nil, nil, errors.NewAppError(errors.CodeInternalError, "failed to create tagging")
+			}
+		}
+
+		results = append(results, response.TagAssignResult{
+			Name:    tag.Name,
+			TagID:   tagID,
+			Status:  "associated",
+			Message: "Tag associated",
+		})
+		processedTagIDs = append(processedTagIDs, tagID)
+	}
+
+	return results, processedTagIDs, nil
+}
+
+// processTagNamesForAssignment processes tag names and creates new tags if needed
+func (s *tagService) processTagNamesForAssignment(tx *gorm.DB, tagNames []string, resourceID, userID uint64) ([]response.TagAssignResult, []uint64, error) {
+	results := make([]response.TagAssignResult, 0, len(tagNames))
+	processedTagIDs := make([]uint64, 0, len(tagNames))
+
+	for _, tagName := range tagNames {
+		// Try to get existing tag using transaction
+		var tag model.Tag
+		err := tx.Where("name = ?", tagName).First(&tag).Error
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil, errors.NewAppError(errors.CodeInternalError, "failed to get tag by name")
+		}
+
+		// Create tag if not exists
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			tag = model.Tag{
+				Name:      tagName,
+				CreatedBy: userID,
+			}
+			if createErr := tx.Create(&tag).Error; createErr != nil {
+				return nil, nil, errors.NewAppError(errors.CodeInternalError, "failed to create tag")
+			}
+			results = append(results, response.TagAssignResult{
+				Name:    tagName,
+				TagID:   tag.ID,
+				Status:  "created",
+				Message: "Tag created and associated",
+			})
+		} else {
+			results = append(results, response.TagAssignResult{
+				Name:    tagName,
+				TagID:   tag.ID,
+				Status:  "associated",
+				Message: "Tag associated",
+			})
+		}
+
+		// Create association if not exists using transaction
+		var count int64
+		err = tx.Model(&model.Tagging{}).
+			Where("tag_id = ? AND resource_id = ?", tag.ID, resourceID).
+			Count(&count).Error
+		if err != nil {
+			return nil, nil, errors.NewAppError(errors.CodeInternalError, "failed to check tagging existence")
+		}
+
+		if count == 0 {
+			tagging := &model.Tagging{
+				TagID:      tag.ID,
+				ResourceID: resourceID,
+				CreatedBy:  userID,
+			}
+			if err := tx.Create(tagging).Error; err != nil {
+				return nil, nil, errors.NewAppError(errors.CodeInternalError, "failed to create tagging")
+			}
+		}
+
+		processedTagIDs = append(processedTagIDs, tag.ID)
+	}
+
+	return results, processedTagIDs, nil
+}
+
+// collectTagIDs collects all tag IDs from request and tag names
+func (s *tagService) collectTagIDs(ctx context.Context, req *request.TagSearchRequest) ([]uint64, error) {
+	allTagIDs := make([]uint64, 0, len(req.TagIDs)+len(req.TagNames))
+	allTagIDs = append(allTagIDs, req.TagIDs...)
+
+	for _, tagName := range req.TagNames {
+		tag, err := s.tagRepo.GetTagByName(ctx, tagName)
+		if err != nil {
+			if !errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil, errors.NewAppError(errors.CodeInternalError, "failed to get tag by name")
+			}
+			// Skip non-existent tags
+			continue
+		}
+		allTagIDs = append(allTagIDs, tag.ID)
+	}
+
+	return allTagIDs, nil
 }

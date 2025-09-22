@@ -144,8 +144,8 @@ func (tc *TagController) UpdateTag(c *gin.Context) {
 	}
 
 	var req request.TagUpdateRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		tc.logger.WarnContext(c, "Update tag request parameter binding failed", logger.ErrorField(err))
+	if bindErr := c.ShouldBindJSON(&req); bindErr != nil {
+		tc.logger.WarnContext(c, "Update tag request parameter binding failed", logger.ErrorField(bindErr))
 		errors.HandleError(c, errors.ErrValidationFailed)
 		return
 	}

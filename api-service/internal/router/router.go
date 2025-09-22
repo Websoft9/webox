@@ -27,7 +27,7 @@ type Controllers struct {
 	SystemConfigController   *controller.SystemConfigController
 	TagController            *controller.TagController
 
-	AlertController          *controller.AlertController
+	AlertController *controller.AlertController
 	// More controllers can be added
 	// AppController  *controller.ApplicationController
 }
@@ -316,6 +316,7 @@ func setupSystemConfigRoutes(protected *gin.RouterGroup, systemConfigController 
 
 // setupTagRoutes sets up tag management routes
 func setupTagRoutes(protected *gin.RouterGroup, tagController *controller.TagController) {
+	if tagController == nil {
 		return
 	}
 
@@ -334,6 +335,8 @@ func setupTagRoutes(protected *gin.RouterGroup, tagController *controller.TagCon
 	tags.POST("/unassign", tagController.UnassignTags)
 	tags.GET("/taggings", tagController.GetResourceTags)
 	tags.GET("/taggings/search", tagController.SearchResourcesByTags)
+}
+
 // setupAlertRoutes registers all alert related routes
 func setupAlertRoutes(protected *gin.RouterGroup, alertController *controller.AlertController) {
 	alertGroup := protected.Group("/alert")
