@@ -6,7 +6,7 @@ services:
     restart: unless-stopped
     env_file: .env
     volumes:
-      - webox_data:/home/appuser/data
+      - webox_data:/home/appuser
       - redis_data:/var/lib/redis
     ports:
       - "8080:8080" # Web Service Port

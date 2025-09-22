@@ -14,6 +14,15 @@ definitions:
           type: string
         type: array
     type: object
+  request.BatchUpdateSystemConfigsRequest:
+    properties:
+      configs:
+        items:
+          $ref: '#/definitions/request.UpdateSystemConfigRequest'
+        type: array
+    required:
+    - configs
+    type: object
   request.ConfirmTOTPRequest:
     properties:
       code:
@@ -149,6 +158,17 @@ definitions:
         minimum: 1
         type: integer
     type: object
+  request.NotificationSettingsRequest:
+    properties:
+      email_notifications:
+        type: boolean
+      marketing_emails:
+        type: boolean
+      push_notifications:
+        type: boolean
+      sms_notifications:
+        type: boolean
+    type: object
   request.OAuth2LoginConfigRequest:
     properties:
       auto_register:
@@ -245,6 +265,23 @@ definitions:
       require_uppercase:
         type: boolean
     type: object
+  request.ProfileChangePasswordRequest:
+    properties:
+      confirm_password:
+        example: newpass123
+        type: string
+      new_password:
+        example: newpass123
+        minLength: 6
+        type: string
+      old_password:
+        example: oldpass123
+        type: string
+    required:
+    - confirm_password
+    - new_password
+    - old_password
+    type: object
   request.ResendVerificationRequest:
     properties:
       username:
@@ -282,6 +319,14 @@ definitions:
     required:
     - permission_ids
     type: object
+  request.SecuritySettingsRequest:
+    properties:
+      login_alerts:
+        type: boolean
+      session_timeout:
+        minimum: 0
+        type: integer
+    type: object
   request.SessionConfigRequest:
     properties:
       max_concurrent_sessions:
@@ -307,6 +352,13 @@ definitions:
         type: string
       period:
         type: integer
+    type: object
+  request.TestSMTPRequest:
+    properties:
+      test_email:
+        type: string
+    required:
+    - test_email
     type: object
   request.TokenAuthRequest:
     properties:
@@ -388,6 +440,31 @@ definitions:
         - 1
         type: integer
     type: object
+  request.UpdateSystemConfigRequest:
+    properties:
+      category:
+        type: string
+      config_key:
+        type: string
+      config_type:
+        enum:
+        - STRING
+        - BOOLEAN
+        - NUMBER
+        - JSON
+        type: string
+      config_value:
+        type: string
+      description:
+        type: string
+      sort_order:
+        type: integer
+    required:
+    - category
+    - config_key
+    - config_type
+    - config_value
+    type: object
   request.UserAuthRequest:
     properties:
       basic_auth:
@@ -415,75 +492,15 @@ definitions:
         - $ref: '#/definitions/request.TwoFactorRequest'
         description: Two-factor authentication configuration
     type: object
-  request.UserChangePasswordRequest:
-    properties:
-      new_password:
-        example: newpass123
-        type: string
-      old_password:
-        example: oldpass123
-        type: string
-    required:
-    - new_password
-    - old_password
-    type: object
   request.UserCreateRequest:
-    properties:
-      avatar:
-        example: https://example.com/avatar.jpg
-        type: string
-      email:
-        example: john@example.com
-        type: string
-      gender:
-        example: 1
-        maximum: 2
-        minimum: 0
-        type: integer
-      language:
-        example: zh-CN
-        maxLength: 10
-        type: string
-      nickname:
-        example: John Doe
-        maxLength: 64
-        type: string
-      password:
-        example: password123
-        type: string
-      phone:
-        example: "+1234567890"
-        maxLength: 20
-        type: string
-      signature:
-        example: This is my signature
-        maxLength: 255
-        type: string
-      status:
-        example: 1
-        maximum: 1
-        minimum: 0
-        type: integer
-      timezone:
-        example: Asia/Shanghai
-        maxLength: 64
-        type: string
-      username:
-        example: johndoe
-        maxLength: 64
-        type: string
-    required:
-    - email
-    - password
-    - username
     type: object
   request.UserLoginRequest:
     properties:
       password:
-        example: "123456"
+        example: Websoft9
         type: string
       username:
-        example: john@example.com or johndoe
+        example: admin@websoft9.com
         type: string
     required:
     - password
@@ -496,6 +513,35 @@ definitions:
         type: string
     required:
     - new_password
+    type: object
+  request.UserProfileUpdateRequest:
+    properties:
+      avatar:
+        example: https://example.com/avatar.jpg
+        type: string
+      gender:
+        description: 0-unknown, 1-male, 2-female
+        enum:
+        - 0
+        - 1
+        - 2
+        example: 1
+        type: integer
+      language:
+        example: zh-CN
+        type: string
+      nickname:
+        example: John Doe
+        type: string
+      phone:
+        example: "+1234567890"
+        type: string
+      signature:
+        example: This is my signature
+        type: string
+      timezone:
+        example: Asia/Shanghai
+        type: string
     type: object
   request.UserRegisterRequest:
     properties:
@@ -510,42 +556,6 @@ definitions:
     - username
     type: object
   request.UserUpdateRequest:
-    properties:
-      avatar:
-        example: https://example.com/avatar.jpg
-        type: string
-      email:
-        example: newemail@example.com
-        type: string
-      gender:
-        example: 1
-        maximum: 2
-        minimum: 0
-        type: integer
-      language:
-        example: zh-CN
-        maxLength: 10
-        type: string
-      nickname:
-        example: John Doe
-        maxLength: 64
-        type: string
-      phone:
-        example: "+1234567890"
-        maxLength: 20
-        type: string
-      signature:
-        example: This is my signature
-        maxLength: 255
-        type: string
-      timezone:
-        example: Asia/Shanghai
-        maxLength: 64
-        type: string
-      username:
-        example: johndoe
-        maxLength: 64
-        type: string
     type: object
   request.UserUpdateStatusRequest:
     properties:
@@ -784,6 +794,34 @@ definitions:
       template:
         type: string
     type: object
+  response.LoginHistoryItem:
+    properties:
+      browser:
+        type: string
+      device:
+        type: string
+      id:
+        type: integer
+      ip_address:
+        type: string
+      location:
+        type: string
+      login_time:
+        type: string
+      logout_time:
+        type: string
+      status:
+        type: string
+      user_agent:
+        type: string
+    type: object
+  response.LoginHistoryResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/response.LoginHistoryItem'
+        type: array
+    type: object
   response.LoginSecurityResponse:
     properties:
       allowed_login_hours:
@@ -800,6 +838,103 @@ definitions:
         type: boolean
       max_login_attempts:
         type: integer
+    type: object
+  response.NotificationRecordDetailResponse:
+    properties:
+      channel_type:
+        type: string
+      content:
+        type: string
+      created_at:
+        type: string
+      error_msg:
+        type: string
+      id:
+        type: integer
+      recipient:
+        type: string
+      reference_id:
+        type: string
+      reference_type:
+        type: string
+      retry_count:
+        type: integer
+      sent_at:
+        type: string
+      status:
+        type: string
+      subject:
+        type: string
+      template_id:
+        type: integer
+      template_name:
+        type: string
+      updated_at:
+        type: string
+      user_name:
+        type: string
+    type: object
+  response.NotificationRecordListResponse:
+    properties:
+      items:
+        description: Notification record list
+        items:
+          $ref: '#/definitions/response.NotificationRecordResponse'
+        type: array
+      page:
+        description: Current page number
+        type: integer
+      page_size:
+        description: Items per page
+        type: integer
+      total:
+        description: Total records
+        type: integer
+      total_pages:
+        description: Total pages
+        type: integer
+    type: object
+  response.NotificationRecordResponse:
+    properties:
+      channel_type:
+        type: string
+      content:
+        type: string
+      created_at:
+        type: string
+      error_msg:
+        type: string
+      id:
+        type: integer
+      recipient:
+        type: string
+      reference_id:
+        type: string
+      reference_type:
+        type: string
+      retry_count:
+        type: integer
+      sent_at:
+        type: string
+      status:
+        type: string
+      subject:
+        type: string
+      template_id:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  response.NotificationSettingsResponse:
+    properties:
+      email_notifications:
+        type: boolean
+      marketing_emails:
+        type: boolean
+      push_notifications:
+        type: boolean
+      sms_notifications:
+        type: boolean
     type: object
   response.OAuth2LoginResponse:
     properties:
@@ -1051,6 +1186,13 @@ definitions:
       name:
         type: string
     type: object
+  response.SecuritySettingsResponse:
+    properties:
+      login_alerts:
+        type: boolean
+      session_timeout:
+        type: integer
+    type: object
   response.SessionConfigResponse:
     properties:
       max_concurrent_sessions:
@@ -1214,6 +1356,58 @@ definitions:
         type: string
       user:
         $ref: '#/definitions/response.UserResponse'
+    type: object
+  response.UserProfileResponse:
+    properties:
+      avatar:
+        example: https://example.com/avatar.jpg
+        type: string
+      created_at:
+        example: "2023-01-01T00:00:00Z"
+        type: string
+      email:
+        example: john@example.com
+        type: string
+      gender:
+        example: 1
+        type: integer
+      id:
+        example: 1
+        type: integer
+      language:
+        example: zh-CN
+        type: string
+      last_login_at:
+        example: "2023-01-01T12:00:00Z"
+        type: string
+      last_login_ip:
+        example: 192.168.1.1
+        type: string
+      nickname:
+        example: John Doe
+        type: string
+      phone:
+        example: "+1234567890"
+        type: string
+      roles:
+        items:
+          $ref: '#/definitions/response.RoleResponse'
+        type: array
+      signature:
+        example: This is my signature
+        type: string
+      status:
+        example: 1
+        type: integer
+      timezone:
+        example: Asia/Shanghai
+        type: string
+      updated_at:
+        example: "2023-01-01T00:00:00Z"
+        type: string
+      username:
+        example: john_doe
+        type: string
     type: object
   response.UserResponse:
     properties:
@@ -1984,6 +2178,119 @@ paths:
       summary: Get translations
       tags:
       - Internationalization
+  /api/v1/notifications/records:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve notification records list with pagination and filtering
+        options
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: page_size
+        type: integer
+      - description: Channel type filter
+        enum:
+        - EMAIL
+        - WEBHOOK
+        - INTERNAL
+        in: query
+        name: channel_type
+        type: string
+      - description: Status filter
+        enum:
+        - PENDING
+        - SENT
+        - FAILED
+        - RETRY
+        in: query
+        name: status
+        type: string
+      - description: Recipient filter
+        in: query
+        name: recipient
+        type: string
+      - description: Sent time start filter
+        format: "2006-01-02 15:04:05"
+        in: query
+        name: sent_start
+        type: string
+      - description: Sent time end filter
+        format: "2006-01-02 15:04:05"
+        in: query
+        name: sent_end
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.NotificationRecordListResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get notification records list
+      tags:
+      - Notification Management
+  /api/v1/notifications/records/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve detailed information of a specific notification record
+      parameters:
+      - description: Notification record ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.NotificationRecordDetailResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get notification record details
+      tags:
+      - Notification Management
   /api/v1/permissions:
     get:
       consumes:
@@ -2285,6 +2592,301 @@ paths:
       summary: Get permission tree
       tags:
       - Permission Management
+  /api/v1/profile:
+    get:
+      consumes:
+      - application/json
+      description: Get user profile information by user ID
+      parameters:
+      - description: User ID to get profile for
+        in: query
+        name: userid
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.UserProfileResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user profile
+      tags:
+      - Profile
+    put:
+      consumes:
+      - application/json
+      description: Update current user's profile information
+      parameters:
+      - description: Profile update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.UserProfileUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.UserProfileResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update user profile
+      tags:
+      - Profile
+  /api/v1/profile/login-history:
+    get:
+      consumes:
+      - application/json
+      description: Get login history records for the current user
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.LoginHistoryResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get login history records
+      tags:
+      - Profile
+  /api/v1/profile/notification-settings:
+    get:
+      consumes:
+      - application/json
+      description: Get notification settings for the current user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.NotificationSettingsResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get notification settings
+      tags:
+      - Profile
+    put:
+      consumes:
+      - application/json
+      description: Update notification settings for the current user
+      parameters:
+      - description: Notification settings request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.NotificationSettingsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update notification settings
+      tags:
+      - Profile
+  /api/v1/profile/password:
+    put:
+      consumes:
+      - application/json
+      description: Change user's password by user ID
+      parameters:
+      - description: Password change request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.ProfileChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Change user password
+      tags:
+      - Profile
+  /api/v1/profile/security-settings:
+    get:
+      consumes:
+      - application/json
+      description: Get security settings for the current user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.SecuritySettingsResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get security settings
+      tags:
+      - Profile
+    put:
+      consumes:
+      - application/json
+      description: Update security settings for the current user
+      parameters:
+      - description: Security settings request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.SecuritySettingsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update security settings
+      tags:
+      - Profile
   /api/v1/roles:
     get:
       consumes:
@@ -2606,6 +3208,175 @@ paths:
       summary: Get users associated with role
       tags:
       - Role Management
+  /api/v1/system-configs:
+    get:
+      description: List system configurations with pagination and filtering
+      parameters:
+      - description: Filter by category
+        in: query
+        name: category
+        type: string
+      - description: Filter by keyword
+        in: query
+        name: keyword
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List system configurations
+      tags:
+      - System Config
+    put:
+      consumes:
+      - application/json
+      description: Batch update system configurations
+      parameters:
+      - description: Batch System Configuration Data
+        in: body
+        name: configs
+        required: true
+        schema:
+          $ref: '#/definitions/request.BatchUpdateSystemConfigsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Batch update system configurations
+      tags:
+      - System Config
+  /api/v1/system-configs/basic:
+    get:
+      description: List basic category system configurations
+      parameters:
+      - description: Filter by keyword
+        in: query
+        name: keyword
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List basic system configurations
+      tags:
+      - System Config
+  /api/v1/system-configs/email:
+    get:
+      description: List email category system configurations
+      parameters:
+      - description: Filter by keyword
+        in: query
+        name: keyword
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List email system configurations
+      tags:
+      - System Config
+  /api/v1/system-configs/security:
+    get:
+      description: List security category system configurations
+      parameters:
+      - description: Filter by keyword
+        in: query
+        name: keyword
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List security system configurations
+      tags:
+      - System Config
+  /api/v1/system-configs/smtp/test:
+    post:
+      consumes:
+      - application/json
+      description: Test SMTP configuration by sending a test email
+      parameters:
+      - description: Test email request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.TestSMTPRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Test SMTP configuration
+      tags:
+      - System Config
   /api/v1/two-factor:
     get:
       consumes:
@@ -3290,42 +4061,6 @@ paths:
       security:
       - BearerAuth: []
       summary: Update user status
-      tags:
-      - Users
-  /api/v1/users/password:
-    put:
-      consumes:
-      - application/json
-      description: Change current user's password
-      parameters:
-      - description: Password change request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/request.UserChangePasswordRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/response.APIResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/response.APIResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.APIResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/response.APIResponse'
-      security:
-      - BearerAuth: []
-      summary: Change user password
       tags:
       - Users
   /health/database:

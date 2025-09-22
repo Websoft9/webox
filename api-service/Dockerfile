@@ -74,6 +74,7 @@ COPY --from=builder /app/api-service .
 # Copy configuration file (if it exists)
 COPY --from=builder /app/configs ./configs
 COPY --from=builder /app/scripts ./scripts
+
 RUN chmod +x ./scripts/init_db.sh ./scripts/init_influxdb.sh ./scripts/healthcheck.sh ./scripts/init_user.sh
 
 # Copy influxdb from the build phase

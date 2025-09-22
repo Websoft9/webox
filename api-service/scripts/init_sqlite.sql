@@ -798,22 +798,18 @@ CREATE TABLE IF NOT EXISTS system_configs (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- Service configuration parameters table
-CREATE TABLE IF NOT EXISTS service_configs (
+-- Notification channels table
+CREATE TABLE IF NOT EXISTS notification_channels (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    code TEXT NOT NULL UNIQUE, -- Configuration code (unique identifier)
-    config_key TEXT NOT NULL, -- Configuration key
-    config_value TEXT, -- Configuration value
-    config_type TEXT NOT NULL DEFAULT 'STRING' CHECK (config_type IN ('STRING', 'INTEGER', 'BOOLEAN', 'JSON', 'FLOAT')), -- Configuration type
-    category TEXT NOT NULL, -- Configuration category
-    description TEXT, -- Configuration description
-    is_readonly INTEGER NOT NULL DEFAULT 0 CHECK (is_readonly IN (0, 1)), -- Whether read-only
-    is_encrypted INTEGER NOT NULL DEFAULT 0 CHECK (is_encrypted IN (0, 1)), -- Whether encrypted
-    default_value TEXT, -- Default value
-    sort_order INTEGER NOT NULL DEFAULT 0, -- Sort order
-    owner_id INTEGER NOT NULL, -- Owner ID
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, -- Creation time
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP -- Update time
+    code VARCHAR(64) NOT NULL UNIQUE,
+    name VARCHAR(128) NOT NULL,
+    description TEXT,
+    channel_type VARCHAR(20) NOT NULL CHECK (channel_type IN ('EMAIL', 'WEBHOOK', 'INTERNAL')),
+    channel_config TEXT NOT NULL, -- JSON format
+    owner_id INTEGER NOT NULL REFERENCES users(id),
+    status INTEGER DEFAULT 1, -- -1-deleted, 0-disabled, 1-enabled
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Alert rules table
@@ -975,10 +971,10 @@ CREATE INDEX IF NOT EXISTS idx_project_files_project ON project_files(project_id
 CREATE INDEX IF NOT EXISTS idx_project_files_parent ON project_files(parent_id);
 CREATE INDEX IF NOT EXISTS idx_project_activities_project ON project_activities(project_id);
 
--- Create service_onfigs indexes
-CREATE INDEX IF NOT EXISTS idx_service_configs_category ON service_configs (category);
-CREATE INDEX IF NOT EXISTS idx_service_configs_config_type ON service_configs (config_type);
-CREATE INDEX IF NOT EXISTS idx_service_configs_sort_order ON service_configs (sort_order);
+-- Notification channels related indexes
+CREATE INDEX IF NOT EXISTS idx_notification_channels_type ON notification_channels(channel_type);
+CREATE INDEX IF NOT EXISTS idx_notification_channels_owner ON notification_channels(owner_id);
+CREATE INDEX IF NOT EXISTS idx_notification_channels_code ON notification_channels(code);
 
 -- User permissions related indexes
 CREATE INDEX IF NOT EXISTS idx_user_roles_user ON user_roles(user_id);
@@ -1057,13 +1053,12 @@ CREATE TRIGGER IF NOT EXISTS update_project_files_updated_at
         UPDATE project_files SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
     END;
 
--- Create trigger for updating updated_at timestamp
-CREATE TRIGGER IF NOT EXISTS update_service_configs_updated_at
-    AFTER UPDATE ON service_configs
-    FOR EACH ROW
-BEGIN
-    UPDATE service_configs SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
-END;
+-- Create trigger for notification_channels updated_at
+CREATE TRIGGER IF NOT EXISTS update_notification_channels_updated_at
+    AFTER UPDATE ON notification_channels
+    BEGIN
+        UPDATE notification_channels SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+    END;
 
 -- App store related triggers
 CREATE TRIGGER IF NOT EXISTS update_app_store_categories_updated_at

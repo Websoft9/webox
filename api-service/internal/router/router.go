@@ -296,13 +296,15 @@ func setupUserProfileRoutes(protected *gin.RouterGroup, userProfileController *c
 }
 
 // setupNotificationRoutes sets up notification management routes
-func setupNotificationRoutes(protected *gin.RouterGroup, notificationController *controller.NotificationRecordController) {
-	if notificationController == nil {
-		return
-	}
+func setupNotificationRoutes(
+	protected *gin.RouterGroup,
+	notificationController *controller.NotificationRecordController,
+) {
+	notifications := protected.Group("/notifications")
 
 	// Notification record routes
-	notifications := protected.Group("/notifications")
-	notifications.GET("/records", notificationController.GetNotificationRecords)
-	notifications.GET("/records/:id", notificationController.GetNotificationRecord)
+	if notificationController != nil {
+		notifications.GET("/records", notificationController.GetNotificationRecords)
+		notifications.GET("/records/:id", notificationController.GetNotificationRecord)
+	}
 }

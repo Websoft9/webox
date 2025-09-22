@@ -9,7 +9,6 @@ import (
 	"api-service/internal/dto/response"
 	"api-service/internal/interface/repository"
 	"api-service/internal/interface/service"
-	"api-service/internal/model"
 	"api-service/pkg/errors"
 	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
@@ -49,13 +48,15 @@ func (s *notificationRecordService) GetNotificationRecordList(
 	records, total, err := s.notificationRepo.GetList(ctx, req)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to get notification records from repository", logger.ErrorField(err))
-		return nil, errors.NewAppError(errors.CodeRecordQueryFailed, s.i18n.T(ctx, "notification.get_records_failed"))
+		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, s.i18n.T(ctx, "notification.get_records_failed"))
 	}
 
 	// Convert to response format
 	responses := make([]response.NotificationRecordResponse, 0, len(records))
 	for _, record := range records {
-		responses = append(responses, *s.convertToResponse(record))
+		// Direct struct conversion since model and response have identical structure
+		resp := response.NotificationRecordResponse(*record)
+		responses = append(responses, resp)
 	}
 
 	// Build paginated response
@@ -100,43 +101,16 @@ func (s *notificationRecordService) GetNotificationRecordByID(ctx context.Contex
 			return nil, errors.NewAppError(errors.CodeRecordNotFound, s.i18n.T(ctx, "notification.record_not_found"))
 		}
 		s.logger.ErrorContext(ctx, "Failed to get notification record from repository", logger.ErrorField(err))
-		return nil, errors.NewAppError(errors.CodeRecordQueryFailed, s.i18n.T(ctx, "notification.get_record_failed"))
+		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, s.i18n.T(ctx, "notification.get_record_failed"))
 	}
 
 	// Convert to detail response
 	detailResp := &response.NotificationRecordDetailResponse{
-		NotificationRecordResponse: *s.convertToResponse(record),
+		NotificationRecordResponse: response.NotificationRecordResponse(*record),
 	}
 
 	s.logger.InfoContext(ctx, "Notification record retrieved successfully",
 		logger.Uint("record_id", id))
 
 	return detailResp, nil
-}
-
-// convertToResponse converts model.NotificationRecord to response.NotificationRecordResponse
-func (s *notificationRecordService) convertToResponse(record *model.NotificationRecord) *response.NotificationRecordResponse {
-	resp := &response.NotificationRecordResponse{
-		ID:            record.ID,
-		TemplateID:    record.TemplateID,
-		ChannelType:   record.ChannelType,
-		Recipient:     record.Recipient,
-		Subject:       record.Subject,
-		Content:       record.Content,
-		Status:        record.Status,
-		RetryCount:    record.RetryCount,
-		ReferenceID:   record.ReferenceID,
-		ReferenceType: record.ReferenceType,
-		CreatedAt:     record.CreatedAt.Format("2006-01-02 15:04:05"),
-		UpdatedAt:     record.UpdatedAt.Format("2006-01-02 15:04:05"),
-		ErrorMsg:      record.ErrorMsg,
-	}
-
-	// Format optional timestamp fields
-	if record.SentAt != nil {
-		sentAt := record.SentAt.Format("2006-01-02 15:04:05")
-		resp.SentAt = &sentAt
-	}
-
-	return resp
 }

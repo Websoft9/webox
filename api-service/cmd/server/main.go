@@ -176,6 +176,7 @@ func initDatabaseWrapper(cfg *config.Config, zapLogger logger.Logger) (*database
 		&model.UserLoginHistory{},
 		&model.UserProfile{},
 		&model.SystemConfig{},
+		&model.NotificationRecord{},
 	); migrateErr != nil {
 		return nil, fmt.Errorf("failed to migrate database models: %v", migrateErr)
 	}
