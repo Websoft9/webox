@@ -63,7 +63,7 @@ type UserUpdateRequest struct {
 
 // UserUpdateStatusRequest 用户状态更新请求
 type UserUpdateStatusRequest struct {
-	Status int `json:"status" binding:"required,min=0,max=1" example:"1"`
+	Status int `json:"status" binding:"min=0,max=1" example:"1"`
 }
 
 // UserPasswordUpdateRequest 管理员修改用户密码请求

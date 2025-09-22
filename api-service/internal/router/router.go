@@ -27,6 +27,7 @@ type Controllers struct {
 	SystemConfigController   *controller.SystemConfigController
 	TagController            *controller.TagController
 
+	AlertController          *controller.AlertController
 	// More controllers can be added
 	// AppController  *controller.ApplicationController
 }
@@ -146,6 +147,7 @@ func setupAPIRoutes(v1 *gin.RouterGroup, controllers *Controllers) {
 	setupUserProfileRoutes(protected, controllers.UserProfileController)
 	setupSystemConfigRoutes(protected, controllers.SystemConfigController)
 	setupTagRoutes(protected, controllers.TagController)
+	setupAlertRoutes(protected, controllers.AlertController)
 }
 
 // setupUserRoutes sets up user related routes
@@ -314,7 +316,6 @@ func setupSystemConfigRoutes(protected *gin.RouterGroup, systemConfigController 
 
 // setupTagRoutes sets up tag management routes
 func setupTagRoutes(protected *gin.RouterGroup, tagController *controller.TagController) {
-	if tagController == nil {
 		return
 	}
 
@@ -333,4 +334,20 @@ func setupTagRoutes(protected *gin.RouterGroup, tagController *controller.TagCon
 	tags.POST("/unassign", tagController.UnassignTags)
 	tags.GET("/taggings", tagController.GetResourceTags)
 	tags.GET("/taggings/search", tagController.SearchResourcesByTags)
+// setupAlertRoutes registers all alert related routes
+func setupAlertRoutes(protected *gin.RouterGroup, alertController *controller.AlertController) {
+	alertGroup := protected.Group("/alert")
+
+	// Alert rules routes
+	rulesGroup := alertGroup.Group("/rules")
+	rulesGroup.GET("", alertController.GetAlertRules)          // Get list of alert rules
+	rulesGroup.POST("", alertController.CreateAlertRule)       // Create a new alert rule
+	rulesGroup.GET("/:id", alertController.GetAlertRule)       // Get a single alert rule by ID
+	rulesGroup.PUT("/:id", alertController.UpdateAlertRule)    // Update an alert rule
+	rulesGroup.DELETE("/:id", alertController.DeleteAlertRule) // Delete an alert rule
+
+	recordsGroup := alertGroup.Group("/records")
+	recordsGroup.GET("", alertController.GetAlertRecords)                        // Get list of alert records
+	recordsGroup.PUT("/:id/acknowledge", alertController.AcknowledgeAlertRecord) // Acknowledge an alert
+	recordsGroup.PUT("/:id/resolve", alertController.ResolveAlertRecord)         // Resolve an alert
 }

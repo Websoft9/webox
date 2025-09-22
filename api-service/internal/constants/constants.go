@@ -351,3 +351,10 @@ const (
 	// Session timeout in seconds (30 minutes)
 	DefaultSessionTimeoutSeconds = 1800
 )
+
+// alert constants
+const (
+	AlertStatusFiring    = "FIRING"
+	AlertStatusConfirmed = "CONFIRMED"
+	AlertStatusResolved  = "RESOLVED"
+)

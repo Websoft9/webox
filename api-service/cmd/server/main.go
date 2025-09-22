@@ -178,6 +178,8 @@ func initDatabaseWrapper(cfg *config.Config, zapLogger logger.Logger) (*database
 		&model.SystemConfig{},
 		&model.Tag{},
 		&model.Tagging{},
+		&model.AlertRecord{},
+		&model.AlertRule{},
 	); migrateErr != nil {
 		return nil, fmt.Errorf("failed to migrate database models: %v", migrateErr)
 	}
@@ -346,6 +348,7 @@ type repositories struct {
 	userProfileRepo  repoInterface.UserProfileRepository
 	systemConfigRepo repoInterface.SystemConfigRepository
 	tagRepo          repoInterface.TagRepository
+	alertRepo        repoInterface.AlertRepository
 }
 
 // initRepositories creates and initializes all repository instances
@@ -361,6 +364,7 @@ func initRepositories(db *gorm.DB) *repositories {
 		userProfileRepo:  repoImpl.NewUserProfileRepository(db),
 		systemConfigRepo: repoImpl.NewSystemConfigRepository(db),
 		tagRepo:          repoImpl.NewTagRepository(db),
+		alertRepo:        repoImpl.NewAlertRepository(db),
 	}
 }
 
@@ -378,6 +382,7 @@ type businessServices struct {
 	userProfileService  serviceInterface.UserProfileService
 	systemConfigService serviceInterface.SystemConfigService
 	tagService          serviceInterface.TagService
+	alertServices       serviceInterface.AlertService
 }
 
 // initBusinessServices creates and initializes all service instances with their dependencies
@@ -405,6 +410,7 @@ func initBusinessServices(
 		userProfileService:  serviceImpl.NewUserProfileService(repos.userProfileRepo, zapLogger, i18nInstance),
 		systemConfigService: serviceImpl.NewSystemConfigService(repos.systemConfigRepo, cfg, db, zapLogger, i18nInstance),
 		tagService:          serviceImpl.NewTagService(repos.tagRepo, db, zapLogger, i18nInstance),
+		alertServices:       serviceImpl.NewAlertService(repos.alertRepo, zapLogger, i18nInstance),
 	}
 }
 
@@ -443,6 +449,7 @@ func initControllers(
 		HealthController:      controller.NewHealthController(cfg),
 		AuditLogController:    controller.NewAuditLogController(services.auditLogService, validatorInstance, zapLogger, i18nInstance),
 		UserProfileController: controller.NewUserProfileController(services.userProfileService, zapLogger, i18nInstance),
+		AlertController:       controller.NewAlertController(services.alertServices, zapLogger, i18nInstance),
 		SystemConfigController: controller.NewSystemConfigController(
 			services.systemConfigService,
 			validatorInstance,
