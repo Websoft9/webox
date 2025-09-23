@@ -26,6 +26,7 @@ type Controllers struct {
 	UserProfileController    *controller.UserProfileController
 	SystemConfigController   *controller.SystemConfigController
 	AlertController          *controller.AlertController
+	SecretKeyController      *controller.SecretKeyController
 	// More controllers can be added
 	// AppController  *controller.ApplicationController
 }
@@ -145,6 +146,7 @@ func setupAPIRoutes(v1 *gin.RouterGroup, controllers *Controllers) {
 	setupUserProfileRoutes(protected, controllers.UserProfileController)
 	setupSystemConfigRoutes(protected, controllers.SystemConfigController)
 	setupAlertRoutes(protected, controllers.AlertController)
+	setupSecretKeyRoutes(protected, controllers.SecretKeyController)
 }
 
 // setupUserRoutes sets up user related routes
@@ -328,4 +330,21 @@ func setupAlertRoutes(protected *gin.RouterGroup, alertController *controller.Al
 	recordsGroup.GET("", alertController.GetAlertRecords)                        // Get list of alert records
 	recordsGroup.PUT("/:id/acknowledge", alertController.AcknowledgeAlertRecord) // Acknowledge an alert
 	recordsGroup.PUT("/:id/resolve", alertController.ResolveAlertRecord)         // Resolve an alert
+}
+
+// setupSecretKeyRoutes sets up secret key management routes
+func setupSecretKeyRoutes(protected *gin.RouterGroup, secretKeyController *controller.SecretKeyController) {
+	if secretKeyController == nil {
+		return
+	}
+
+	// Secret key routes
+	secretKeys := protected.Group("/secret-keys")
+	secretKeys.GET("", secretKeyController.ListSecretKeys)              // GET /api/v1/secret-keys
+	secretKeys.POST("", secretKeyController.CreateSecretKey)            // POST /api/v1/secret-keys
+	secretKeys.GET("/export", secretKeyController.ExportSecretKeys)     // GET /api/v1/secret-keys/export
+	secretKeys.GET("/:id", secretKeyController.GetSecretKey)            // GET /api/v1/secret-keys/{id}
+	secretKeys.GET("/:id/value", secretKeyController.GetSecretKeyValue) // GET /api/v1/secret-keys/{id}/value
+	secretKeys.PUT("/:id", secretKeyController.UpdateSecretKey)         // PUT /api/v1/secret-keys/{id}
+	secretKeys.DELETE("/:id", secretKeyController.DeleteSecretKey)      // DELETE /api/v1/secret-keys/{id}
 }

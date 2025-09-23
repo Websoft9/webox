@@ -342,3 +342,8 @@ const (
 	AlertStatusConfirmed = "CONFIRMED"
 	AlertStatusResolved  = "RESOLVED"
 )
+
+const (
+	// Default limit for exporting all secret keys
+	DefaultExportPageSize = 1000
+)
