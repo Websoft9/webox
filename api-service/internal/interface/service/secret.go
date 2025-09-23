@@ -13,16 +13,16 @@ type SecretKeyService interface {
 	CreateSecretKey(ctx context.Context, req *request.SecretKeyCreateRequest, userID uint) (*response.SecretKeyResponse, error)
 
 	// GetSecretKey retrieves a secret key by ID (without sensitive data)
-	GetSecretKey(ctx context.Context, id uint, userID uint) (*response.SecretKeyResponse, error)
+	GetSecretKey(ctx context.Context, id, userID uint) (*response.SecretKeyResponse, error)
 
 	// GetSecretKeyValue retrieves the decrypted value of a secret key
-	GetSecretKeyValue(ctx context.Context, id uint, userID uint) (*response.SecretKeyValueResponse, error)
+	GetSecretKeyValue(ctx context.Context, id, userID uint) (*response.SecretKeyValueResponse, error)
 
 	// UpdateSecretKey updates an existing secret key
-	UpdateSecretKey(ctx context.Context, id uint, req *request.SecretKeyUpdateRequest, userID uint) (*response.SecretKeyResponse, error)
+	UpdateSecretKey(ctx context.Context, id, userID uint, req *request.SecretKeyUpdateRequest) (*response.SecretKeyResponse, error)
 
 	// DeleteSecretKey deletes a secret key
-	DeleteSecretKey(ctx context.Context, id uint, userID uint) error
+	DeleteSecretKey(ctx context.Context, id, userID uint) error
 
 	// ListSecretKeys retrieves secret keys with pagination and filtering
 	ListSecretKeys(ctx context.Context, req *request.SecretKeyQueryRequest, userID uint) (*response.SecretKeyListResponse, error)

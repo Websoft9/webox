@@ -90,7 +90,7 @@ func (s *secretKeyService) CreateSecretKey(ctx context.Context, req *request.Sec
 }
 
 // GetSecretKey retrieves a secret key by ID
-func (s *secretKeyService) GetSecretKey(ctx context.Context, id uint, userID uint) (*response.SecretKeyResponse, error) {
+func (s *secretKeyService) GetSecretKey(ctx context.Context, id, userID uint) (*response.SecretKeyResponse, error) {
 	s.logger.InfoContext(ctx, "Getting secret key",
 		logger.Uint("id", id),
 		logger.Uint("user_id", userID))
@@ -115,7 +115,7 @@ func (s *secretKeyService) GetSecretKey(ctx context.Context, id uint, userID uin
 }
 
 // GetSecretKeyValue retrieves the decrypted value of a secret key
-func (s *secretKeyService) GetSecretKeyValue(ctx context.Context, id uint, userID uint) (*response.SecretKeyValueResponse, error) {
+func (s *secretKeyService) GetSecretKeyValue(ctx context.Context, id, userID uint) (*response.SecretKeyValueResponse, error) {
 	s.logger.InfoContext(ctx, "Getting secret key value",
 		logger.Uint("id", id),
 		logger.Uint("user_id", userID))
@@ -149,7 +149,7 @@ func (s *secretKeyService) GetSecretKeyValue(ctx context.Context, id uint, userI
 }
 
 // UpdateSecretKey updates an existing secret key
-func (s *secretKeyService) UpdateSecretKey(ctx context.Context, id uint, req *request.SecretKeyUpdateRequest, userID uint) (*response.SecretKeyResponse, error) {
+func (s *secretKeyService) UpdateSecretKey(ctx context.Context, id, userID uint, req *request.SecretKeyUpdateRequest) (*response.SecretKeyResponse, error) {
 	s.logger.InfoContext(ctx, "Updating secret key",
 		logger.Uint("id", id),
 		logger.Uint("user_id", userID))
@@ -190,7 +190,7 @@ func (s *secretKeyService) UpdateSecretKey(ctx context.Context, id uint, req *re
 }
 
 // DeleteSecretKey deletes a secret key
-func (s *secretKeyService) DeleteSecretKey(ctx context.Context, id uint, userID uint) error {
+func (s *secretKeyService) DeleteSecretKey(ctx context.Context, id, userID uint) error {
 	s.logger.InfoContext(ctx, "Deleting secret key",
 		logger.Uint("id", id),
 		logger.Uint("user_id", userID))
@@ -244,7 +244,7 @@ func (s *secretKeyService) ListSecretKeys(ctx context.Context, req *request.Secr
 }
 
 // ExportSecretKeys exports secret keys in specified format
-func (s *secretKeyService) ExportSecretKeys(ctx context.Context, req *request.SecretKeyExportRequest, userID uint) ([]byte, string, error) {
+func (s *secretKeyService) ExportSecretKeys(ctx context.Context, req *request.SecretKeyExportRequest, userID uint) (data []byte, filename string, err error) {
 	s.logger.InfoContext(ctx, "Exporting secret keys",
 		logger.Uint("user_id", userID),
 		logger.String("format", req.Format))
@@ -291,7 +291,7 @@ func (s *secretKeyService) ValidateSecretKeyOwnership(ctx context.Context, secre
 }
 
 // exportToCSV exports secret keys to CSV format
-func (s *secretKeyService) exportToCSV(secretKeys []*model.SecretKey) ([]byte, string, error) {
+func (s *secretKeyService) exportToCSV(secretKeys []*model.SecretKey) (data []byte, filename string, err error) {
 	var buf bytes.Buffer
 	writer := csv.NewWriter(&buf)
 
@@ -333,22 +333,22 @@ func (s *secretKeyService) exportToCSV(secretKeys []*model.SecretKey) ([]byte, s
 		return nil, "", errors.NewAppError(errors.CodeInternalError, "Failed to export CSV")
 	}
 
-	filename := fmt.Sprintf("secret-keys-%s.csv", time.Now().Format("20060102"))
+	filename = fmt.Sprintf("secret-keys-%s.csv", time.Now().Format("20060102"))
 	return buf.Bytes(), filename, nil
 }
 
 // exportToJSON exports secret keys to JSON format
-func (s *secretKeyService) exportToJSON(secretKeys []*model.SecretKey) ([]byte, string, error) {
+func (s *secretKeyService) exportToJSON(secretKeys []*model.SecretKey) (data []byte, filename string, err error) {
 	responses := make([]*response.SecretKeyResponse, 0, len(secretKeys))
 	for _, sk := range secretKeys {
 		responses = append(responses, response.ToSecretKeyResponse(sk))
 	}
 
-	data, err := json.MarshalIndent(responses, "", "  ")
+	data, err = json.MarshalIndent(responses, "", "  ")
 	if err != nil {
 		return nil, "", errors.NewAppError(errors.CodeInternalError, "Failed to export JSON")
 	}
 
-	filename := fmt.Sprintf("secret-keys-%s.json", time.Now().Format("20060102"))
+	filename = fmt.Sprintf("secret-keys-%s.json", time.Now().Format("20060102"))
 	return data, filename, nil
 }

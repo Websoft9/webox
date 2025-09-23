@@ -8,6 +8,7 @@ import (
 	"api-service/pkg/logger"
 	pkg_response "api-service/pkg/response"
 	"fmt"
+	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -199,8 +200,8 @@ func (c *SecretKeyController) UpdateSecretKey(ctx *gin.Context) {
 
 	// Parse request parameters
 	var req request.SecretKeyUpdateRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		c.logger.WarnContext(ctx, "Invalid request parameters", logger.ErrorField(err))
+	if bindErr := ctx.ShouldBindJSON(&req); bindErr != nil {
+		c.logger.WarnContext(ctx, "Invalid request parameters", logger.ErrorField(bindErr))
 		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed, c.i18n.T(ctx, "common.validation_failed")))
 		return
 	}
@@ -215,7 +216,7 @@ func (c *SecretKeyController) UpdateSecretKey(ctx *gin.Context) {
 	c.logger.InfoContext(ctx, "Handling update secret key request", logger.Uint("userID", userID.(uint)), logger.Uint("secretKeyID", uint(id)))
 
 	// Call service layer to update secret key
-	secretKey, err := c.secretKeyService.UpdateSecretKey(ctx.Request.Context(), uint(id), &req, userID.(uint))
+	secretKey, err := c.secretKeyService.UpdateSecretKey(ctx.Request.Context(), uint(id), userID.(uint), &req)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Failed to update secret key", logger.ErrorField(err))
 		errors.HandleError(ctx, err)
@@ -365,7 +366,7 @@ func (c *SecretKeyController) ExportSecretKeys(ctx *gin.Context) {
 	ctx.Header("Content-Length", strconv.Itoa(len(data)))
 
 	c.logger.InfoContext(ctx, "Secret keys exported successfully", logger.Uint("user_id", userID.(uint)))
-	ctx.Writer.WriteHeader(200)
+	ctx.Writer.WriteHeader(http.StatusOK)
 	_, _ = ctx.Writer.Write(data)
 }
 

@@ -1,6 +1,7 @@
 package crypto
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
@@ -11,6 +12,13 @@ import (
 	"fmt"
 )
 
+const (
+	MinRSAKeySize      = 2048
+	RSAKeySizeBits     = 8
+	RSAOAEPHashLen     = 32 // SHA256 hash length in bytes
+	RSAOAEPHashPadding = 2
+)
+
 // RSACrypto is a utility for RSA encryption and decryption
 type RSACrypto struct {
 	privateKey *rsa.PrivateKey
@@ -19,7 +27,7 @@ type RSACrypto struct {
 
 // NewRSACrypto creates a new RSA encryption instance with specified key size
 func NewRSACrypto(keySize int) (*RSACrypto, error) {
-	if keySize < 2048 {
+	if keySize < MinRSAKeySize {
 		return nil, errors.New("RSA key size must be at least 2048 bits")
 	}
 
@@ -72,9 +80,9 @@ func NewRSACryptoFromKeys(privateKeyPEM, publicKeyPEM string) (*RSACrypto, error
 	privateKey, err := x509.ParsePKCS1PrivateKey(privateBlock.Bytes)
 	if err != nil {
 		// Try PKCS8 format
-		key, err := x509.ParsePKCS8PrivateKey(privateBlock.Bytes)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse private key: %w", err)
+		key, pkcs8Err := x509.ParsePKCS8PrivateKey(privateBlock.Bytes)
+		if pkcs8Err != nil {
+			return nil, fmt.Errorf("failed to parse private key: %w", pkcs8Err)
 		}
 		var ok bool
 		privateKey, ok = key.(*rsa.PrivateKey)
@@ -193,7 +201,7 @@ func (r *RSACrypto) GetKeySize() int {
 	if r.privateKey == nil {
 		return 0
 	}
-	return r.privateKey.Size() * 8
+	return r.privateKey.Size() * RSAKeySizeBits
 }
 
 // ValidateKeys verifies if the key pair is valid and working
@@ -214,7 +222,7 @@ func (r *RSACrypto) ValidateKeys() error {
 		return fmt.Errorf("decryption failed during validation: %w", err)
 	}
 
-	if string(decrypted) != string(testData) {
+	if !bytes.Equal(decrypted, testData) {
 		return errors.New("key pair validation failed: decrypted data does not match original")
 	}
 
@@ -248,7 +256,7 @@ func (r *RSACrypto) GetMaxEncryptSize() int {
 		return 0
 	}
 	// SHA256 hash length is 32 bytes
-	return r.publicKey.Size() - 2*32 - 2
+	return r.publicKey.Size() - 2*RSAOAEPHashLen - RSAOAEPHashPadding
 }
 
 // EncryptLarge encrypts large data by splitting it into chunks

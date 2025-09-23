@@ -60,7 +60,7 @@ func ToSecretKeyResponse(secretKey *model.SecretKey) *SecretKeyResponse {
 		response.Description = secretKey.Description
 	}
 
-	// Note: AuthorizedUsers and AuthorizedGroups are simplified
+	// AuthorizedUsers and AuthorizedGroups are simplified for response DTO.
 	// In the actual implementation, these would come from authorization logic
 	response.AuthorizedUsers = []uint{secretKey.OwnerID}
 	response.AuthorizedGroups = []uint{}
