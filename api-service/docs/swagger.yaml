@@ -1,5 +1,8 @@
 basePath: /
 definitions:
+  model.JSONChannelConfig:
+    additionalProperties: true
+    type: object
   request.APIAuthRequest:
     properties:
       oauth2:
@@ -29,6 +32,86 @@ definitions:
         type: string
     required:
     - code
+    type: object
+  request.CreateEmailChannelRequest:
+    properties:
+      code:
+        example: email-channel-001
+        maxLength: 50
+        minLength: 3
+        type: string
+      description:
+        example: Email notification channel for alerts
+        maxLength: 500
+        type: string
+      encoding:
+        enum:
+        - utf-8
+        - gbk
+        - gb2312
+        example: utf-8
+        type: string
+      name:
+        example: My Email Channel
+        maxLength: 100
+        minLength: 1
+        type: string
+      quiet_hours:
+        example: 22:00-08:00
+        maxLength: 100
+        type: string
+      rate_limit:
+        example: 3
+        maximum: 1000
+        minimum: 0
+        type: integer
+      retry_count:
+        example: 3
+        maximum: 10
+        minimum: 0
+        type: integer
+      sender_email:
+        example: noreply@example.com
+        type: string
+      sender_name:
+        example: System Notifications
+        type: string
+      smtp_host:
+        example: smtp.gmail.com
+        type: string
+      smtp_password:
+        example: your-password
+        type: string
+      smtp_port:
+        example: 587
+        maximum: 65535
+        minimum: 1
+        type: integer
+      smtp_security:
+        enum:
+        - none
+        - tls
+        - ssl
+        example: tls
+        type: string
+      smtp_timeout:
+        example: 30
+        maximum: 300
+        minimum: 0
+        type: integer
+      smtp_username:
+        example: user@example.com
+        type: string
+    required:
+    - code
+    - name
+    - sender_email
+    - sender_name
+    - smtp_host
+    - smtp_password
+    - smtp_port
+    - smtp_security
+    - smtp_username
     type: object
   request.CreatePermissionRequest:
     properties:
@@ -95,6 +178,77 @@ definitions:
     - code
     - name
     type: object
+  request.CreateWebhookChannelRequest:
+    properties:
+      code:
+        example: webhook-channel-001
+        maxLength: 50
+        minLength: 3
+        type: string
+      description:
+        example: Webhook notification channel for alerts
+        maxLength: 500
+        type: string
+      encoding:
+        enum:
+        - utf-8
+        - gbk
+        - gb2312
+        example: utf-8
+        type: string
+      headers:
+        additionalProperties:
+          type: string
+        example:
+          '"Authorization"': '"Bearer token"}'
+          '{"Content-Type"': '"application/json"'
+        type: object
+      method:
+        enum:
+        - GET
+        - POST
+        - PUT
+        - PATCH
+        - DELETE
+        example: POST
+        type: string
+      name:
+        example: My Webhook Channel
+        maxLength: 100
+        minLength: 1
+        type: string
+      quiet_hours:
+        example: 22:00-08:00
+        maxLength: 100
+        type: string
+      rate_limit:
+        example: 3
+        maximum: 1000
+        minimum: 0
+        type: integer
+      retry_count:
+        example: 3
+        maximum: 10
+        minimum: 0
+        type: integer
+      secret:
+        example: your-webhook-secret
+        maxLength: 100
+        type: string
+      timeout:
+        example: 30
+        maximum: 300
+        minimum: 0
+        type: integer
+      url:
+        example: https://api.example.com/webhook
+        type: string
+    required:
+    - code
+    - method
+    - name
+    - url
+    type: object
   request.DisableTOTPRequest:
     properties:
       code:
@@ -157,72 +311,6 @@ definitions:
         maximum: 20
         minimum: 1
         type: integer
-    type: object
-  request.NotificationChannelCreateRequest:
-    properties:
-      channel_config:
-        additionalProperties: true
-        type: object
-      channel_type:
-        enum:
-        - EMAIL
-        - WEBHOOK
-        type: string
-      code:
-        maxLength: 64
-        minLength: 3
-        type: string
-      description:
-        type: string
-      name:
-        maxLength: 128
-        minLength: 2
-        type: string
-    required:
-    - channel_config
-    - channel_type
-    - code
-    - name
-    type: object
-  request.NotificationChannelEmailTestRequest:
-    properties:
-      content:
-        type: string
-      subject:
-        type: string
-      to_emails:
-        items:
-          type: string
-        type: array
-    required:
-    - content
-    - subject
-    - to_emails
-    type: object
-  request.NotificationChannelUpdateRequest:
-    properties:
-      channel_config:
-        additionalProperties: true
-        type: object
-      channel_type:
-        enum:
-        - EMAIL
-        - WEBHOOK
-        type: string
-      description:
-        type: string
-      name:
-        maxLength: 128
-        minLength: 2
-        type: string
-    type: object
-  request.NotificationChannelWebhookTestRequest:
-    properties:
-      payload:
-        additionalProperties: true
-        type: object
-    required:
-    - payload
     type: object
   request.NotificationSettingsRequest:
     properties:
@@ -419,12 +507,34 @@ definitions:
       period:
         type: integer
     type: object
+  request.TestEmailChannelRequest:
+    properties:
+      code:
+        type: string
+      content:
+        type: string
+      recipient:
+        type: string
+      subject:
+        type: string
+    required:
+    - code
+    - recipient
+    type: object
   request.TestSMTPRequest:
     properties:
       test_email:
         type: string
     required:
     - test_email
+    type: object
+  request.TestWebhookChannelRequest:
+    properties:
+      code:
+        type: string
+      payload: {}
+    required:
+    - code
     type: object
   request.TokenAuthRequest:
     properties:
@@ -465,6 +575,71 @@ definitions:
         $ref: '#/definitions/request.SessionConfigRequest'
       user_auth:
         $ref: '#/definitions/request.UserAuthRequest'
+    type: object
+  request.UpdateEmailChannelRequest:
+    properties:
+      description:
+        example: Updated email notification channel
+        maxLength: 500
+        type: string
+      encoding:
+        enum:
+        - utf-8
+        - gbk
+        - gb2312
+        example: utf-8
+        type: string
+      name:
+        example: Updated Email Channel
+        maxLength: 100
+        minLength: 1
+        type: string
+      quiet_hours:
+        example: 22:00-08:00
+        maxLength: 100
+        type: string
+      rate_limit:
+        example: 3
+        maximum: 1000
+        minimum: 0
+        type: integer
+      retry_count:
+        example: 3
+        maximum: 10
+        minimum: 0
+        type: integer
+      sender_email:
+        example: noreply@example.com
+        type: string
+      sender_name:
+        example: System Notifications
+        type: string
+      smtp_host:
+        example: smtp.gmail.com
+        type: string
+      smtp_password:
+        example: your-password
+        type: string
+      smtp_port:
+        example: 587
+        maximum: 65535
+        minimum: 1
+        type: integer
+      smtp_security:
+        enum:
+        - none
+        - tls
+        - ssl
+        example: tls
+        type: string
+      smtp_timeout:
+        example: 30
+        maximum: 300
+        minimum: 0
+        type: integer
+      smtp_username:
+        example: user@example.com
+        type: string
     type: object
   request.UpdatePermissionRequest:
     properties:
@@ -530,6 +705,67 @@ definitions:
     - config_key
     - config_type
     - config_value
+    type: object
+  request.UpdateWebhookChannelRequest:
+    properties:
+      description:
+        example: Updated webhook notification channel
+        maxLength: 500
+        type: string
+      encoding:
+        enum:
+        - utf-8
+        - gbk
+        - gb2312
+        example: utf-8
+        type: string
+      headers:
+        additionalProperties:
+          type: string
+        example:
+          '"Authorization"': '"Bearer token"}'
+          '{"Content-Type"': '"application/json"'
+        type: object
+      method:
+        enum:
+        - GET
+        - POST
+        - PUT
+        - PATCH
+        - DELETE
+        example: POST
+        type: string
+      name:
+        example: Updated Webhook Channel
+        maxLength: 100
+        minLength: 1
+        type: string
+      quiet_hours:
+        example: 22:00-08:00
+        maxLength: 100
+        type: string
+      rate_limit:
+        example: 3
+        maximum: 1000
+        minimum: 0
+        type: integer
+      retry_count:
+        example: 3
+        maximum: 10
+        minimum: 0
+        type: integer
+      secret:
+        example: your-webhook-secret
+        maxLength: 100
+        type: string
+      timeout:
+        example: 30
+        maximum: 300
+        minimum: 0
+        type: integer
+      url:
+        example: https://api.example.com/webhook
+        type: string
     type: object
   request.UserAuthRequest:
     properties:
@@ -908,8 +1144,7 @@ definitions:
   response.NotificationChannelDetailResponse:
     properties:
       channel_config:
-        additionalProperties: true
-        type: object
+        $ref: '#/definitions/model.JSONChannelConfig'
       channel_type:
         type: string
       code:
@@ -922,24 +1157,9 @@ definitions:
         type: integer
       name:
         type: string
-      status:
+      owner_id:
         type: integer
-      updated_at:
-        type: string
-    type: object
-  response.NotificationChannelItemResponse:
-    properties:
-      channel_type:
-        type: string
-      code:
-        type: string
-      created_at:
-        type: string
-      description:
-        type: string
-      id:
-        type: integer
-      name:
+      owner_name:
         type: string
       status:
         type: integer
@@ -948,9 +1168,9 @@ definitions:
     type: object
   response.NotificationChannelListResponse:
     properties:
-      channels:
+      items:
         items:
-          $ref: '#/definitions/response.NotificationChannelItemResponse'
+          $ref: '#/definitions/response.NotificationChannelResponse'
         type: array
       page:
         type: integer
@@ -960,6 +1180,29 @@ definitions:
         type: integer
       total_pages:
         type: integer
+    type: object
+  response.NotificationChannelResponse:
+    properties:
+      channel_config:
+        $ref: '#/definitions/model.JSONChannelConfig'
+      channel_type:
+        type: string
+      code:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      owner_id:
+        type: integer
+      status:
+        type: integer
+      updated_at:
+        type: string
     type: object
   response.NotificationRecordDetailResponse:
     properties:
@@ -2300,30 +2543,26 @@ paths:
       summary: Get translations
       tags:
       - Internationalization
-  /api/v1/notification-channels:
+  /api/v1/notifications/channels:
     get:
       consumes:
       - application/json
-      description: Get paginated list of notification channels
+      description: Get paginated list of notification channels with filtering
       parameters:
       - default: 1
         description: Page number
         in: query
         name: page
         type: integer
-      - default: 10
+      - default: 20
         description: Page size
         in: query
         name: page_size
         type: integer
-      - description: Status filter
-        enum:
-        - -1
-        - 0
-        - 1
+      - description: Search keyword
         in: query
-        name: status
-        type: integer
+        name: search
+        type: string
       - description: Channel type filter
         enum:
         - EMAIL
@@ -2331,10 +2570,6 @@ paths:
         - INTERNAL
         in: query
         name: channel_type
-        type: string
-      - description: Search keyword
-        in: query
-        name: keyword
         type: string
       produces:
       - application/json
@@ -2356,83 +2591,31 @@ paths:
           description: Unauthorized
           schema:
             $ref: '#/definitions/response.APIResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/response.APIResponse'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/response.APIResponse'
       security:
       - BearerAuth: []
-      summary: List notification channels
+      summary: Get notification channels list
       tags:
-      - NotificationChannels
-    post:
-      consumes:
-      - application/json
-      description: Create a new notification channel
-      parameters:
-      - description: Channel creation request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/request.NotificationChannelCreateRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.APIResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/response.NotificationChannelDetailResponse'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/response.APIResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.APIResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/response.APIResponse'
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: '#/definitions/response.APIResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/response.APIResponse'
-      security:
-      - BearerAuth: []
-      summary: Create notification channel
-      tags:
-      - NotificationChannels
-  /api/v1/notification-channels/{id}:
+      - Notification Channels
+  /api/v1/notifications/channels/{code}:
     delete:
       consumes:
       - application/json
-      description: Delete a notification channel
+      description: Delete an existing notification channel by code
       parameters:
-      - description: Channel ID
+      - description: Channel code
         in: path
-        name: id
+        name: code
         required: true
-        type: integer
+        type: string
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "204":
+          description: No Content
           schema:
             $ref: '#/definitions/response.APIResponse'
         "400":
@@ -2441,10 +2624,6 @@ paths:
             $ref: '#/definitions/response.APIResponse'
         "401":
           description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.APIResponse'
-        "403":
-          description: Forbidden
           schema:
             $ref: '#/definitions/response.APIResponse'
         "404":
@@ -2459,17 +2638,17 @@ paths:
       - BearerAuth: []
       summary: Delete notification channel
       tags:
-      - NotificationChannels
+      - Notification Channels
     get:
       consumes:
       - application/json
-      description: Get detailed information of a specific notification channel
+      description: Get detailed information about a specific notification channel
       parameters:
-      - description: Channel ID
+      - description: Channel code
         in: path
-        name: id
+        name: code
         required: true
-        type: integer
+        type: string
       produces:
       - application/json
       responses:
@@ -2490,10 +2669,6 @@ paths:
           description: Unauthorized
           schema:
             $ref: '#/definitions/response.APIResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/response.APIResponse'
         "404":
           description: Not Found
           schema:
@@ -2504,25 +2679,26 @@ paths:
             $ref: '#/definitions/response.APIResponse'
       security:
       - BearerAuth: []
-      summary: Get notification channel details
+      summary: Get notification channel by code
       tags:
-      - NotificationChannels
+      - Notification Channels
+  /api/v1/notifications/channels/{code}/email:
     put:
       consumes:
       - application/json
-      description: Update a notification channel
+      description: Update an existing email notification channel configuration
       parameters:
-      - description: Channel ID
+      - description: Channel code
         in: path
-        name: id
+        name: code
         required: true
-        type: integer
-      - description: Channel update request
+        type: string
+      - description: Updated email channel configuration
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/request.NotificationChannelUpdateRequest'
+          $ref: '#/definitions/request.UpdateEmailChannelRequest'
       produces:
       - application/json
       responses:
@@ -2533,7 +2709,7 @@ paths:
             - $ref: '#/definitions/response.APIResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/response.NotificationChannelDetailResponse'
+                  $ref: '#/definitions/response.NotificationChannelResponse'
               type: object
         "400":
           description: Bad Request
@@ -2543,57 +2719,6 @@ paths:
           description: Unauthorized
           schema:
             $ref: '#/definitions/response.APIResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/response.APIResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/response.APIResponse'
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: '#/definitions/response.APIResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/response.APIResponse'
-      security:
-      - BearerAuth: []
-      summary: Update notification channel
-      tags:
-      - NotificationChannels
-  /api/v1/notification-channels/{id}/disable:
-    post:
-      consumes:
-      - application/json
-      description: Disable a notification channel
-      parameters:
-      - description: Channel ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/response.APIResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/response.APIResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.APIResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/response.APIResponse'
         "404":
           description: Not Found
           schema:
@@ -2604,69 +2729,116 @@ paths:
             $ref: '#/definitions/response.APIResponse'
       security:
       - BearerAuth: []
-      summary: Disable notification channel
+      summary: Update email notification channel
       tags:
-      - NotificationChannels
-  /api/v1/notification-channels/{id}/enable:
-    post:
+      - Notification Channels
+  /api/v1/notifications/channels/{code}/webhook:
+    put:
       consumes:
       - application/json
-      description: Enable a notification channel
+      description: Update an existing webhook notification channel configuration
       parameters:
-      - description: Channel ID
+      - description: Channel code
         in: path
-        name: id
+        name: code
         required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/response.APIResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/response.APIResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.APIResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/response.APIResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/response.APIResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/response.APIResponse'
-      security:
-      - BearerAuth: []
-      summary: Enable notification channel
-      tags:
-      - NotificationChannels
-  /api/v1/notification-channels/{id}/test/email:
-    post:
-      consumes:
-      - application/json
-      description: Send test email to verify channel configuration
-      parameters:
-      - description: Channel ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Email test request
+        type: string
+      - description: Updated webhook channel configuration
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/request.NotificationChannelEmailTestRequest'
+          $ref: '#/definitions/request.UpdateWebhookChannelRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.NotificationChannelResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update webhook notification channel
+      tags:
+      - Notification Channels
+  /api/v1/notifications/channels/email:
+    post:
+      consumes:
+      - application/json
+      description: Create a new email notification channel with SMTP configuration
+      parameters:
+      - description: Email channel configuration
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CreateEmailChannelRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.NotificationChannelResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create email notification channel
+      tags:
+      - Notification Channels
+  /api/v1/notifications/channels/test/email:
+    post:
+      consumes:
+      - application/json
+      description: Test an email notification channel by sending a test message
+      parameters:
+      - description: Test email configuration
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.TestEmailChannelRequest'
       produces:
       - application/json
       responses:
@@ -2680,18 +2852,6 @@ paths:
             $ref: '#/definitions/response.APIResponse'
         "401":
           description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.APIResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/response.APIResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/response.APIResponse'
-        "422":
-          description: Unprocessable Entity
           schema:
             $ref: '#/definitions/response.APIResponse'
         "500":
@@ -2702,24 +2862,19 @@ paths:
       - BearerAuth: []
       summary: Test email notification channel
       tags:
-      - NotificationChannels
-  /api/v1/notification-channels/{id}/test/webhook:
+      - Notification Channels
+  /api/v1/notifications/channels/test/webhook:
     post:
       consumes:
       - application/json
-      description: Send test webhook to verify channel configuration
+      description: Test a webhook notification channel by sending a test message
       parameters:
-      - description: Channel ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Webhook test request
+      - description: Test webhook configuration
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/request.NotificationChannelWebhookTestRequest'
+          $ref: '#/definitions/request.TestWebhookChannelRequest'
       produces:
       - application/json
       responses:
@@ -2735,18 +2890,6 @@ paths:
           description: Unauthorized
           schema:
             $ref: '#/definitions/response.APIResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/response.APIResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/response.APIResponse'
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: '#/definitions/response.APIResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -2755,7 +2898,53 @@ paths:
       - BearerAuth: []
       summary: Test webhook notification channel
       tags:
-      - NotificationChannels
+      - Notification Channels
+  /api/v1/notifications/channels/webhook:
+    post:
+      consumes:
+      - application/json
+      description: Create a new webhook notification channel with URL and headers
+        configuration
+      parameters:
+      - description: Webhook channel configuration
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CreateWebhookChannelRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.NotificationChannelResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create webhook notification channel
+      tags:
+      - Notification Channels
   /api/v1/notifications/records:
     get:
       consumes:

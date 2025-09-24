@@ -16,7 +16,7 @@ type NotificationChannelConfig struct {
 	ChannelType   string            `json:"channel_type" gorm:"size:16;not null;comment:Channel type (EMAIL, WEBHOOK)"`
 	ChannelConfig JSONChannelConfig `json:"channel_config" gorm:"type:json;comment:Channel configuration data"`
 	OwnerID       uint              `json:"owner_id" gorm:"not null;comment:Channel owner user ID"`
-	Status        int8              `json:"status" gorm:"default:1;comment:Channel status (-1:deleted, 0:disabled, 1:enabled)"`
+	Status        int8              `json:"status" gorm:"default:1;comment:Channel status (0:disabled, 1:enabled)"`
 	CreatedAt     time.Time         `json:"created_at"`
 	UpdatedAt     time.Time         `json:"updated_at"`
 }

@@ -454,7 +454,7 @@ func initControllers(
 			i18nInstance,
 		),
 		NotificationRecordController:  controller.NewNotificationRecordController(services.notificationRecordService, i18nInstance),
-		NotificationChannelController: controller.NewNotificationChannelController(services.notificationChannelService, zapLogger, i18nInstance),
+		NotificationChannelController: controller.NewNotificationChannelController(services.notificationChannelService, zapLogger, i18nInstance, validatorInstance),
 	}
 }
 

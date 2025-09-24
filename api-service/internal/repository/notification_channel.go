@@ -50,7 +50,7 @@ func (r *notificationChannelRepository) GetByID(ctx context.Context, id uint) (*
 		logger.Uint("id", id))
 
 	var channel model.NotificationChannelConfig
-	if err := r.db.WithContext(ctx).Where("status != ?", -1).First(&channel, id).Error; err != nil {
+	if err := r.db.WithContext(ctx).First(&channel, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			r.logger.InfoContext(ctx, "Notification channel not found", logger.Uint("id", id))
 		} else {
@@ -69,7 +69,7 @@ func (r *notificationChannelRepository) GetByCode(ctx context.Context, code stri
 		logger.String("code", code))
 
 	var channel model.NotificationChannelConfig
-	if err := r.db.WithContext(ctx).Where("code = ? AND status != ?", code, -1).First(&channel).Error; err != nil {
+	if err := r.db.WithContext(ctx).Where("code = ?", code).First(&channel).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			r.logger.InfoContext(ctx, "Notification channel not found", logger.String("code", code))
 		} else {
@@ -100,16 +100,14 @@ func (r *notificationChannelRepository) Update(ctx context.Context, channel *mod
 	return nil
 }
 
-// Delete soft deletes a notification channel by ID
+// Delete hard deletes a notification channel by ID
 func (r *notificationChannelRepository) Delete(ctx context.Context, id uint) error {
-	r.logger.InfoContext(ctx, "Deleting notification channel",
+	r.logger.InfoContext(ctx, "Hard deleting notification channel",
 		logger.String("operation", "Delete"),
 		logger.Uint("id", id))
 
-	// Use status-based soft delete instead of GORM Delete
-	if err := r.db.WithContext(ctx).Model(&model.NotificationChannelConfig{}).
-		Where("id = ? AND status != ?", id, -1).
-		Update("status", -1).Error; err != nil {
+	// Use hard delete instead of soft delete
+	if err := r.db.WithContext(ctx).Delete(&model.NotificationChannelConfig{}, id).Error; err != nil {
 		r.logger.ErrorContext(ctx, "Failed to delete notification channel", logger.ErrorField(err))
 		return err
 	}
@@ -125,7 +123,7 @@ func (r *notificationChannelRepository) GetList(ctx context.Context, req *reques
 		logger.Int("page", req.Page),
 		logger.Int("page_size", req.PageSize))
 
-	query := r.db.WithContext(ctx).Model(&model.NotificationChannelConfig{}).Where("status != ?", -1)
+	query := r.db.WithContext(ctx).Model(&model.NotificationChannelConfig{})
 
 	// Apply filters
 	if req.ChannelType != "" {
@@ -177,7 +175,7 @@ func (r *notificationChannelRepository) CheckCodeExists(ctx context.Context, cod
 		logger.String("operation", "CheckCodeExists"),
 		logger.String("code", code))
 
-	query := r.db.WithContext(ctx).Model(&model.NotificationChannelConfig{}).Where("code = ? AND status != ?", code, -1)
+	query := r.db.WithContext(ctx).Model(&model.NotificationChannelConfig{}).Where("code = ?", code)
 
 	// Exclude specific ID if provided
 	if len(excludeID) > 0 && excludeID[0] > 0 {

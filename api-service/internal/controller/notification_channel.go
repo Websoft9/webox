@@ -4,13 +4,13 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 
 	"api-service/internal/dto/request"
 	"api-service/internal/interface/service"
 	"api-service/pkg/errors"
 	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
-	"api-service/pkg/response"
 )
 
 // NotificationChannelController handles notification channel related HTTP requests
@@ -18,6 +18,7 @@ type NotificationChannelController struct {
 	channelService service.NotificationChannelService
 	logger         logger.Logger
 	i18n           *i18n.I18n
+	validator      *validator.Validate
 }
 
 // NewNotificationChannelController creates a new notification channel controller
@@ -25,11 +26,13 @@ func NewNotificationChannelController(
 	channelService service.NotificationChannelService,
 	logger logger.Logger,
 	i18n *i18n.I18n,
+	validator *validator.Validate,
 ) *NotificationChannelController {
 	return &NotificationChannelController{
 		channelService: channelService,
 		logger:         logger,
 		i18n:           i18n,
+		validator:      validator,
 	}
 }
 
@@ -53,28 +56,14 @@ func (ctrl *NotificationChannelController) GetChannelList(c *gin.Context) {
 	var req request.GetNotificationChannelListRequest
 
 	// Bind and validate query parameters
-	if err := c.ShouldBindQuery(&req); err != nil {
-		ctrl.logger.ErrorContext(c.Request.Context(), "Invalid query parameters", logger.ErrorField(err))
-		errors.HandleError(c, errors.NewAppError(errors.CodeValidationFailed, "Invalid query parameters"))
+	if !BindAndValidateQuery(c, &req, ctrl.validator, ctrl.logger, ctrl.i18n) {
 		return
-	}
-
-	// Set default pagination if not provided
-	if req.Page <= 0 {
-		req.Page = 1
-	}
-	if req.PageSize <= 0 {
-		req.PageSize = 20
-	}
-	if req.PageSize > 100 {
-		req.PageSize = 100
 	}
 
 	// Call service
 	result, err := ctrl.channelService.GetChannelList(c.Request.Context(), &req)
 	if err != nil {
-		ctrl.logger.ErrorContext(c.Request.Context(), "Failed to get notification channel list", logger.ErrorField(err))
-		errors.HandleError(c, err)
+		ResponseWithError(c, err, ctrl.logger, ctrl.i18n)
 		return
 	}
 
@@ -102,23 +91,21 @@ func (ctrl *NotificationChannelController) GetChannelByCode(c *gin.Context) {
 	code := c.Param("code")
 	if code == "" {
 		ctrl.logger.WarnContext(c.Request.Context(), "Channel code is required")
-		errors.HandleError(c, errors.NewAppError(errors.CodeValidationFailed, "Channel code is required"))
+		ResponseBadRequest(c, errors.NewAppError(errors.CodeValidationFailed, "Channel code is required"), "common.validation_failed", ctrl.i18n)
 		return
 	}
 
 	// Call service
 	result, err := ctrl.channelService.GetChannelByCode(c.Request.Context(), code)
 	if err != nil {
-		ctrl.logger.ErrorContext(c.Request.Context(), "Failed to get notification channel",
-			logger.String("code", code), logger.ErrorField(err))
-		errors.HandleError(c, err)
+		ResponseWithError(c, err, ctrl.logger, ctrl.i18n)
 		return
 	}
 
 	ctrl.logger.InfoContext(c.Request.Context(), "Notification channel retrieved successfully",
 		logger.String("code", code))
 
-	response.Success(c, ctrl.i18n.T(c.Request.Context(), "notification.channel.get_success"), result)
+	ResponseOKWithData(c, result, "notification.channel.get_success", ctrl.i18n)
 }
 
 // CreateEmailChannel create email notification channel
@@ -139,40 +126,27 @@ func (ctrl *NotificationChannelController) CreateEmailChannel(c *gin.Context) {
 	var req request.CreateEmailChannelRequest
 
 	// Bind and validate request
-	if err := c.ShouldBindJSON(&req); err != nil {
-		ctrl.logger.WarnContext(c.Request.Context(), "Invalid request body", logger.ErrorField(err))
-		errors.HandleError(c, errors.NewAppError(errors.CodeValidationFailed, err.Error()))
+	if !BindAndValidateRequest(c, &req, ctrl.validator, ctrl.logger, ctrl.i18n) {
 		return
 	}
 
-	// Get user ID from context (from JWT middleware)
-	userID, exists := c.Get("user_id")
-	if !exists {
-		ctrl.logger.ErrorContext(c.Request.Context(), "User ID not found in context")
-		errors.HandleError(c, errors.NewAppError(errors.CodeInvalidToken, "User authentication required"))
-		return
-	}
-
-	userIDUint, ok := userID.(uint)
+	// Get user ID from context
+	userID, ok := GetUserID(c, ctrl.i18n)
 	if !ok {
-		ctrl.logger.ErrorContext(c.Request.Context(), "Invalid user ID type in context")
-		errors.HandleError(c, errors.NewAppError(errors.CodeInternalError, "Invalid user authentication"))
 		return
 	}
 
 	// Call service
-	result, err := ctrl.channelService.CreateEmailChannel(c.Request.Context(), &req, userIDUint)
+	result, err := ctrl.channelService.CreateEmailChannel(c.Request.Context(), &req, userID)
 	if err != nil {
-		ctrl.logger.ErrorContext(c.Request.Context(), "Failed to create email notification channel",
-			logger.String("code", req.Code), logger.ErrorField(err))
-		errors.HandleError(c, err)
+		ResponseWithError(c, err, ctrl.logger, ctrl.i18n)
 		return
 	}
 
 	ctrl.logger.InfoContext(c.Request.Context(), "Email notification channel created successfully",
 		logger.String("code", req.Code))
 
-	response.Success(c, ctrl.i18n.T(c.Request.Context(), "notification.channel.create_success"), result)
+	ResponseOKWithData(c, result, "notification.channel.create_success", ctrl.i18n)
 }
 
 // CreateWebhookChannel create webhook notification channel
@@ -193,40 +167,27 @@ func (ctrl *NotificationChannelController) CreateWebhookChannel(c *gin.Context) 
 	var req request.CreateWebhookChannelRequest
 
 	// Bind and validate request
-	if err := c.ShouldBindJSON(&req); err != nil {
-		ctrl.logger.WarnContext(c.Request.Context(), "Invalid request body", logger.ErrorField(err))
-		errors.HandleError(c, errors.NewAppError(errors.CodeValidationFailed, err.Error()))
+	if !BindAndValidateRequest(c, &req, ctrl.validator, ctrl.logger, ctrl.i18n) {
 		return
 	}
 
-	// Get user ID from context (from JWT middleware)
-	userID, exists := c.Get("user_id")
-	if !exists {
-		ctrl.logger.ErrorContext(c.Request.Context(), "User ID not found in context")
-		errors.HandleError(c, errors.NewAppError(errors.CodeInvalidToken, "User authentication required"))
-		return
-	}
-
-	userIDUint, ok := userID.(uint)
+	// Get user ID from context
+	userID, ok := GetUserID(c, ctrl.i18n)
 	if !ok {
-		ctrl.logger.ErrorContext(c.Request.Context(), "Invalid user ID type in context")
-		errors.HandleError(c, errors.NewAppError(errors.CodeInternalError, "Invalid user authentication"))
 		return
 	}
 
 	// Call service
-	result, err := ctrl.channelService.CreateWebhookChannel(c.Request.Context(), &req, userIDUint)
+	result, err := ctrl.channelService.CreateWebhookChannel(c.Request.Context(), &req, userID)
 	if err != nil {
-		ctrl.logger.ErrorContext(c.Request.Context(), "Failed to create webhook notification channel",
-			logger.String("code", req.Code), logger.ErrorField(err))
-		errors.HandleError(c, err)
+		ResponseWithError(c, err, ctrl.logger, ctrl.i18n)
 		return
 	}
 
 	ctrl.logger.InfoContext(c.Request.Context(), "Webhook notification channel created successfully",
 		logger.String("code", req.Code))
 
-	response.Success(c, ctrl.i18n.T(c.Request.Context(), "notification.channel.create_success"), result)
+	ResponseOKWithData(c, result, "notification.channel.create_success", ctrl.i18n)
 }
 
 // UpdateEmailChannel update email notification channel
@@ -248,47 +209,34 @@ func (ctrl *NotificationChannelController) UpdateEmailChannel(c *gin.Context) {
 	code := c.Param("code")
 	if code == "" {
 		ctrl.logger.WarnContext(c.Request.Context(), "Channel code is required")
-		errors.HandleError(c, errors.NewAppError(errors.CodeValidationFailed, "Channel code is required"))
+		ResponseBadRequest(c, errors.NewAppError(errors.CodeValidationFailed, "Channel code is required"), "common.validation_failed", ctrl.i18n)
 		return
 	}
 
 	var req request.UpdateEmailChannelRequest
 
 	// Bind and validate request
-	if err := c.ShouldBindJSON(&req); err != nil {
-		ctrl.logger.WarnContext(c.Request.Context(), "Invalid request body", logger.ErrorField(err))
-		errors.HandleError(c, errors.NewAppError(errors.CodeValidationFailed, err.Error()))
+	if !BindAndValidateRequest(c, &req, ctrl.validator, ctrl.logger, ctrl.i18n) {
 		return
 	}
 
-	// Get user ID from context (from JWT middleware)
-	userID, exists := c.Get("user_id")
-	if !exists {
-		ctrl.logger.ErrorContext(c.Request.Context(), "User ID not found in context")
-		errors.HandleError(c, errors.NewAppError(errors.CodeInvalidToken, "User authentication required"))
-		return
-	}
-
-	userIDUint, ok := userID.(uint)
+	// Get user ID from context
+	userID, ok := GetUserID(c, ctrl.i18n)
 	if !ok {
-		ctrl.logger.ErrorContext(c.Request.Context(), "Invalid user ID type in context")
-		errors.HandleError(c, errors.NewAppError(errors.CodeInternalError, "Invalid user authentication"))
 		return
 	}
 
 	// Call service
-	result, err := ctrl.channelService.UpdateEmailChannel(c.Request.Context(), code, &req, userIDUint)
+	result, err := ctrl.channelService.UpdateEmailChannel(c.Request.Context(), code, &req, userID)
 	if err != nil {
-		ctrl.logger.ErrorContext(c.Request.Context(), "Failed to update email notification channel",
-			logger.String("code", code), logger.ErrorField(err))
-		errors.HandleError(c, err)
+		ResponseWithError(c, err, ctrl.logger, ctrl.i18n)
 		return
 	}
 
 	ctrl.logger.InfoContext(c.Request.Context(), "Email notification channel updated successfully",
 		logger.String("code", code))
 
-	response.Success(c, ctrl.i18n.T(c.Request.Context(), "notification.channel.update_success"), result)
+	ResponseOKWithData(c, result, "notification.channel.update_success", ctrl.i18n)
 }
 
 // UpdateWebhookChannel update webhook notification channel
@@ -310,47 +258,34 @@ func (ctrl *NotificationChannelController) UpdateWebhookChannel(c *gin.Context) 
 	code := c.Param("code")
 	if code == "" {
 		ctrl.logger.WarnContext(c.Request.Context(), "Channel code is required")
-		errors.HandleError(c, errors.NewAppError(errors.CodeValidationFailed, "Channel code is required"))
+		ResponseBadRequest(c, errors.NewAppError(errors.CodeValidationFailed, "Channel code is required"), "common.validation_failed", ctrl.i18n)
 		return
 	}
 
 	var req request.UpdateWebhookChannelRequest
 
 	// Bind and validate request
-	if err := c.ShouldBindJSON(&req); err != nil {
-		ctrl.logger.WarnContext(c.Request.Context(), "Invalid request body", logger.ErrorField(err))
-		errors.HandleError(c, errors.NewAppError(errors.CodeValidationFailed, err.Error()))
+	if !BindAndValidateRequest(c, &req, ctrl.validator, ctrl.logger, ctrl.i18n) {
 		return
 	}
 
-	// Get user ID from context (from JWT middleware)
-	userID, exists := c.Get("user_id")
-	if !exists {
-		ctrl.logger.ErrorContext(c.Request.Context(), "User ID not found in context")
-		errors.HandleError(c, errors.NewAppError(errors.CodeInvalidToken, "User authentication required"))
-		return
-	}
-
-	userIDUint, ok := userID.(uint)
+	// Get user ID from context
+	userID, ok := GetUserID(c, ctrl.i18n)
 	if !ok {
-		ctrl.logger.ErrorContext(c.Request.Context(), "Invalid user ID type in context")
-		errors.HandleError(c, errors.NewAppError(errors.CodeInternalError, "Invalid user authentication"))
 		return
 	}
 
 	// Call service
-	result, err := ctrl.channelService.UpdateWebhookChannel(c.Request.Context(), code, &req, userIDUint)
+	result, err := ctrl.channelService.UpdateWebhookChannel(c.Request.Context(), code, &req, userID)
 	if err != nil {
-		ctrl.logger.ErrorContext(c.Request.Context(), "Failed to update webhook notification channel",
-			logger.String("code", code), logger.ErrorField(err))
-		errors.HandleError(c, err)
+		ResponseWithError(c, err, ctrl.logger, ctrl.i18n)
 		return
 	}
 
 	ctrl.logger.InfoContext(c.Request.Context(), "Webhook notification channel updated successfully",
 		logger.String("code", code))
 
-	response.Success(c, ctrl.i18n.T(c.Request.Context(), "notification.channel.update_success"), result)
+	ResponseOKWithData(c, result, "notification.channel.update_success", ctrl.i18n)
 }
 
 // DeleteChannel delete notification channel
@@ -371,31 +306,20 @@ func (ctrl *NotificationChannelController) DeleteChannel(c *gin.Context) {
 	code := c.Param("code")
 	if code == "" {
 		ctrl.logger.WarnContext(c.Request.Context(), "Channel code is required")
-		errors.HandleError(c, errors.NewAppError(errors.CodeValidationFailed, "Channel code is required"))
+		ResponseBadRequest(c, errors.NewAppError(errors.CodeValidationFailed, "Channel code is required"), "common.validation_failed", ctrl.i18n)
 		return
 	}
 
-	// Get user ID from context (from JWT middleware)
-	userID, exists := c.Get("user_id")
-	if !exists {
-		ctrl.logger.ErrorContext(c.Request.Context(), "User ID not found in context")
-		errors.HandleError(c, errors.NewAppError(errors.CodeInvalidToken, "User authentication required"))
-		return
-	}
-
-	userIDUint, ok := userID.(uint)
+	// Get user ID from context
+	userID, ok := GetUserID(c, ctrl.i18n)
 	if !ok {
-		ctrl.logger.ErrorContext(c.Request.Context(), "Invalid user ID type in context")
-		errors.HandleError(c, errors.NewAppError(errors.CodeInternalError, "Invalid user authentication"))
 		return
 	}
 
 	// Call service
-	err := ctrl.channelService.DeleteChannel(c.Request.Context(), code, userIDUint)
+	err := ctrl.channelService.DeleteChannel(c.Request.Context(), code, userID)
 	if err != nil {
-		ctrl.logger.ErrorContext(c.Request.Context(), "Failed to delete notification channel",
-			logger.String("code", code), logger.ErrorField(err))
-		errors.HandleError(c, err)
+		ResponseWithError(c, err, ctrl.logger, ctrl.i18n)
 		return
 	}
 
@@ -422,18 +346,14 @@ func (ctrl *NotificationChannelController) TestEmailChannel(c *gin.Context) {
 	var req request.TestEmailChannelRequest
 
 	// Bind and validate request
-	if err := c.ShouldBindJSON(&req); err != nil {
-		ctrl.logger.WarnContext(c.Request.Context(), "Invalid request body", logger.ErrorField(err))
-		errors.HandleError(c, errors.NewAppError(errors.CodeValidationFailed, err.Error()))
+	if !BindAndValidateRequest(c, &req, ctrl.validator, ctrl.logger, ctrl.i18n) {
 		return
 	}
 
 	// Call service
 	result, err := ctrl.channelService.TestEmailChannel(c.Request.Context(), &req)
 	if err != nil {
-		ctrl.logger.ErrorContext(c.Request.Context(), "Failed to test email notification channel",
-			logger.String("code", req.Code), logger.ErrorField(err))
-		errors.HandleError(c, err)
+		ResponseWithError(c, err, ctrl.logger, ctrl.i18n)
 		return
 	}
 
@@ -441,7 +361,7 @@ func (ctrl *NotificationChannelController) TestEmailChannel(c *gin.Context) {
 		logger.String("code", req.Code),
 		logger.Bool("success", result.Success))
 
-	response.Success(c, ctrl.i18n.T(c.Request.Context(), "notification.channel.test_complete"), result)
+	ResponseOKWithData(c, result, "notification.channel.test_complete", ctrl.i18n)
 }
 
 // TestWebhookChannel test webhook notification channel
@@ -461,18 +381,14 @@ func (ctrl *NotificationChannelController) TestWebhookChannel(c *gin.Context) {
 	var req request.TestWebhookChannelRequest
 
 	// Bind and validate request
-	if err := c.ShouldBindJSON(&req); err != nil {
-		ctrl.logger.WarnContext(c.Request.Context(), "Invalid request body", logger.ErrorField(err))
-		errors.HandleError(c, errors.NewAppError(errors.CodeValidationFailed, err.Error()))
+	if !BindAndValidateRequest(c, &req, ctrl.validator, ctrl.logger, ctrl.i18n) {
 		return
 	}
 
 	// Call service
 	result, err := ctrl.channelService.TestWebhookChannel(c.Request.Context(), &req)
 	if err != nil {
-		ctrl.logger.ErrorContext(c.Request.Context(), "Failed to test webhook notification channel",
-			logger.String("code", req.Code), logger.ErrorField(err))
-		errors.HandleError(c, err)
+		ResponseWithError(c, err, ctrl.logger, ctrl.i18n)
 		return
 	}
 
@@ -480,5 +396,5 @@ func (ctrl *NotificationChannelController) TestWebhookChannel(c *gin.Context) {
 		logger.String("code", req.Code),
 		logger.Bool("success", result.Success))
 
-	response.Success(c, ctrl.i18n.T(c.Request.Context(), "notification.channel.test_complete"), result)
+	ResponseOKWithData(c, result, "notification.channel.test_complete", ctrl.i18n)
 }

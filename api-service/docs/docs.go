@@ -1115,14 +1115,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/notification-channels": {
+        "/api/v1/notifications/channels": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Get paginated list of notification channels",
+                "description": "Get paginated list of notification channels with filtering",
                 "consumes": [
                     "application/json"
                 ],
@@ -1130,9 +1130,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "NotificationChannels"
+                    "Notification Channels"
                 ],
-                "summary": "List notification channels",
+                "summary": "Get notification channels list",
                 "parameters": [
                     {
                         "type": "integer",
@@ -1143,20 +1143,15 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
-                        "default": 10,
+                        "default": 20,
                         "description": "Page size",
                         "name": "page_size",
                         "in": "query"
                     },
                     {
-                        "enum": [
-                            -1,
-                            0,
-                            1
-                        ],
-                        "type": "integer",
-                        "description": "Status filter",
-                        "name": "status",
+                        "type": "string",
+                        "description": "Search keyword",
+                        "name": "search",
                         "in": "query"
                     },
                     {
@@ -1168,12 +1163,6 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Channel type filter",
                         "name": "channel_type",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Search keyword",
-                        "name": "keyword",
                         "in": "query"
                     }
                 ],
@@ -1208,12 +1197,6 @@ const docTemplate = `{
                             "$ref": "#/definitions/response.APIResponse"
                         }
                     },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -1221,14 +1204,16 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
+            }
+        },
+        "/api/v1/notifications/channels/email": {
             "post": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Create a new notification channel",
+                "description": "Create a new email notification channel with SMTP configuration",
                 "consumes": [
                     "application/json"
                 ],
@@ -1236,17 +1221,17 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "NotificationChannels"
+                    "Notification Channels"
                 ],
-                "summary": "Create notification channel",
+                "summary": "Create email notification channel",
                 "parameters": [
                     {
-                        "description": "Channel creation request",
+                        "description": "Email channel configuration",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.NotificationChannelCreateRequest"
+                            "$ref": "#/definitions/request.CreateEmailChannelRequest"
                         }
                     }
                 ],
@@ -1262,7 +1247,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/response.NotificationChannelDetailResponse"
+                                            "$ref": "#/definitions/response.NotificationChannelResponse"
                                         }
                                     }
                                 }
@@ -1281,14 +1266,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/response.APIResponse"
                         }
                     },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    },
-                    "422": {
-                        "description": "Unprocessable Entity",
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/response.APIResponse"
                         }
@@ -1302,14 +1281,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/notification-channels/{id}": {
-            "get": {
+        "/api/v1/notifications/channels/test/email": {
+            "post": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Get detailed information of a specific notification channel",
+                "description": "Test an email notification channel by sending a test message",
                 "consumes": [
                     "application/json"
                 ],
@@ -1317,35 +1296,25 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "NotificationChannels"
+                    "Notification Channels"
                 ],
-                "summary": "Get notification channel details",
+                "summary": "Test email notification channel",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "Channel ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
+                        "description": "Test email configuration",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.TestEmailChannelRequest"
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/response.NotificationChannelDetailResponse"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/response.APIResponse"
                         }
                     },
                     "400": {
@@ -1356,18 +1325,6 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/response.APIResponse"
                         }
@@ -1379,14 +1336,16 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
-            "put": {
+            }
+        },
+        "/api/v1/notifications/channels/test/webhook": {
+            "post": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Update a notification channel",
+                "description": "Test a webhook notification channel by sending a test message",
                 "consumes": [
                     "application/json"
                 ],
@@ -1394,25 +1353,148 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "NotificationChannels"
+                    "Notification Channels"
                 ],
-                "summary": "Update notification channel",
+                "summary": "Test webhook notification channel",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "Channel ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Channel update request",
+                        "description": "Test webhook configuration",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.NotificationChannelUpdateRequest"
+                            "$ref": "#/definitions/request.TestWebhookChannelRequest"
                         }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/notifications/channels/webhook": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new webhook notification channel with URL and headers configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification Channels"
+                ],
+                "summary": "Create webhook notification channel",
+                "parameters": [
+                    {
+                        "description": "Webhook channel configuration",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.CreateWebhookChannelRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.NotificationChannelResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/notifications/channels/{code}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get detailed information about a specific notification channel",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification Channels"
+                ],
+                "summary": "Get notification channel by code",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Channel code",
+                        "name": "code",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -1446,20 +1528,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/response.APIResponse"
                         }
                     },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    },
                     "404": {
                         "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    },
-                    "422": {
-                        "description": "Unprocessable Entity",
                         "schema": {
                             "$ref": "#/definitions/response.APIResponse"
                         }
@@ -1478,7 +1548,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Delete a notification channel",
+                "description": "Delete an existing notification channel by code",
                 "consumes": [
                     "application/json"
                 ],
@@ -1486,21 +1556,21 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "NotificationChannels"
+                    "Notification Channels"
                 ],
                 "summary": "Delete notification channel",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "Channel ID",
-                        "name": "id",
+                        "type": "string",
+                        "description": "Channel code",
+                        "name": "code",
                         "in": "path",
                         "required": true
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "204": {
+                        "description": "No Content",
                         "schema": {
                             "$ref": "#/definitions/response.APIResponse"
                         }
@@ -1513,12 +1583,6 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
                         "schema": {
                             "$ref": "#/definitions/response.APIResponse"
                         }
@@ -1538,14 +1602,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/notification-channels/{id}/disable": {
-            "post": {
+        "/api/v1/notifications/channels/{code}/email": {
+            "put": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Disable a notification channel",
+                "description": "Update an existing email notification channel configuration",
                 "consumes": [
                     "application/json"
                 ],
@@ -1553,158 +1617,24 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "NotificationChannels"
+                    "Notification Channels"
                 ],
-                "summary": "Disable notification channel",
+                "summary": "Update email notification channel",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "Channel ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/notification-channels/{id}/enable": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Enable a notification channel",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "NotificationChannels"
-                ],
-                "summary": "Enable notification channel",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Channel ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/notification-channels/{id}/test/email": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Send test email to verify channel configuration",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "NotificationChannels"
-                ],
-                "summary": "Test email notification channel",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Channel ID",
-                        "name": "id",
+                        "type": "string",
+                        "description": "Channel code",
+                        "name": "code",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "Email test request",
+                        "description": "Updated email channel configuration",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.NotificationChannelEmailTestRequest"
+                            "$ref": "#/definitions/request.UpdateEmailChannelRequest"
                         }
                     }
                 ],
@@ -1712,7 +1642,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.NotificationChannelResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -1727,20 +1669,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/response.APIResponse"
                         }
                     },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    },
                     "404": {
                         "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    },
-                    "422": {
-                        "description": "Unprocessable Entity",
                         "schema": {
                             "$ref": "#/definitions/response.APIResponse"
                         }
@@ -1754,14 +1684,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/notification-channels/{id}/test/webhook": {
-            "post": {
+        "/api/v1/notifications/channels/{code}/webhook": {
+            "put": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Send test webhook to verify channel configuration",
+                "description": "Update an existing webhook notification channel configuration",
                 "consumes": [
                     "application/json"
                 ],
@@ -1769,24 +1699,24 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "NotificationChannels"
+                    "Notification Channels"
                 ],
-                "summary": "Test webhook notification channel",
+                "summary": "Update webhook notification channel",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "Channel ID",
-                        "name": "id",
+                        "type": "string",
+                        "description": "Channel code",
+                        "name": "code",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "Webhook test request",
+                        "description": "Updated webhook channel configuration",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.NotificationChannelWebhookTestRequest"
+                            "$ref": "#/definitions/request.UpdateWebhookChannelRequest"
                         }
                     }
                 ],
@@ -1794,7 +1724,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.NotificationChannelResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -1809,20 +1751,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/response.APIResponse"
                         }
                     },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    },
                     "404": {
                         "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    },
-                    "422": {
-                        "description": "Unprocessable Entity",
                         "schema": {
                             "$ref": "#/definitions/response.APIResponse"
                         }
@@ -5099,6 +5029,10 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "model.JSONChannelConfig": {
+            "type": "object",
+            "additionalProperties": true
+        },
         "request.APIAuthRequest": {
             "type": "object",
             "properties": {
@@ -5143,6 +5077,106 @@ const docTemplate = `{
             "properties": {
                 "code": {
                     "type": "string"
+                }
+            }
+        },
+        "request.CreateEmailChannelRequest": {
+            "type": "object",
+            "required": [
+                "code",
+                "name",
+                "sender_email",
+                "sender_name",
+                "smtp_host",
+                "smtp_password",
+                "smtp_port",
+                "smtp_security",
+                "smtp_username"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 3,
+                    "example": "email-channel-001"
+                },
+                "description": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "example": "Email notification channel for alerts"
+                },
+                "encoding": {
+                    "type": "string",
+                    "enum": [
+                        "utf-8",
+                        "gbk",
+                        "gb2312"
+                    ],
+                    "example": "utf-8"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1,
+                    "example": "My Email Channel"
+                },
+                "quiet_hours": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "example": "22:00-08:00"
+                },
+                "rate_limit": {
+                    "type": "integer",
+                    "maximum": 1000,
+                    "minimum": 0,
+                    "example": 3
+                },
+                "retry_count": {
+                    "type": "integer",
+                    "maximum": 10,
+                    "minimum": 0,
+                    "example": 3
+                },
+                "sender_email": {
+                    "type": "string",
+                    "example": "noreply@example.com"
+                },
+                "sender_name": {
+                    "type": "string",
+                    "example": "System Notifications"
+                },
+                "smtp_host": {
+                    "type": "string",
+                    "example": "smtp.gmail.com"
+                },
+                "smtp_password": {
+                    "type": "string",
+                    "example": "your-password"
+                },
+                "smtp_port": {
+                    "type": "integer",
+                    "maximum": 65535,
+                    "minimum": 1,
+                    "example": 587
+                },
+                "smtp_security": {
+                    "type": "string",
+                    "enum": [
+                        "none",
+                        "tls",
+                        "ssl"
+                    ],
+                    "example": "tls"
+                },
+                "smtp_timeout": {
+                    "type": "integer",
+                    "maximum": 300,
+                    "minimum": 0,
+                    "example": 30
+                },
+                "smtp_username": {
+                    "type": "string",
+                    "example": "user@example.com"
                 }
             }
         },
@@ -5231,6 +5265,96 @@ const docTemplate = `{
                 },
                 "sort_order": {
                     "type": "integer"
+                }
+            }
+        },
+        "request.CreateWebhookChannelRequest": {
+            "type": "object",
+            "required": [
+                "code",
+                "method",
+                "name",
+                "url"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 3,
+                    "example": "webhook-channel-001"
+                },
+                "description": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "example": "Webhook notification channel for alerts"
+                },
+                "encoding": {
+                    "type": "string",
+                    "enum": [
+                        "utf-8",
+                        "gbk",
+                        "gb2312"
+                    ],
+                    "example": "utf-8"
+                },
+                "headers": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "example": {
+                        "\"Authorization\"": "\"Bearer token\"}",
+                        "{\"Content-Type\"": "\"application/json\""
+                    }
+                },
+                "method": {
+                    "type": "string",
+                    "enum": [
+                        "GET",
+                        "POST",
+                        "PUT",
+                        "PATCH",
+                        "DELETE"
+                    ],
+                    "example": "POST"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1,
+                    "example": "My Webhook Channel"
+                },
+                "quiet_hours": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "example": "22:00-08:00"
+                },
+                "rate_limit": {
+                    "type": "integer",
+                    "maximum": 1000,
+                    "minimum": 0,
+                    "example": 3
+                },
+                "retry_count": {
+                    "type": "integer",
+                    "maximum": 10,
+                    "minimum": 0,
+                    "example": 3
+                },
+                "secret": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "example": "your-webhook-secret"
+                },
+                "timeout": {
+                    "type": "integer",
+                    "maximum": 300,
+                    "minimum": 0,
+                    "example": 30
+                },
+                "url": {
+                    "type": "string",
+                    "example": "https://api.example.com/webhook"
                 }
             }
         },
@@ -5326,99 +5450,6 @@ const docTemplate = `{
                     "type": "integer",
                     "maximum": 20,
                     "minimum": 1
-                }
-            }
-        },
-        "request.NotificationChannelCreateRequest": {
-            "type": "object",
-            "required": [
-                "channel_config",
-                "channel_type",
-                "code",
-                "name"
-            ],
-            "properties": {
-                "channel_config": {
-                    "type": "object",
-                    "additionalProperties": true
-                },
-                "channel_type": {
-                    "type": "string",
-                    "enum": [
-                        "EMAIL",
-                        "WEBHOOK"
-                    ]
-                },
-                "code": {
-                    "type": "string",
-                    "maxLength": 64,
-                    "minLength": 3
-                },
-                "description": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string",
-                    "maxLength": 128,
-                    "minLength": 2
-                }
-            }
-        },
-        "request.NotificationChannelEmailTestRequest": {
-            "type": "object",
-            "required": [
-                "content",
-                "subject",
-                "to_emails"
-            ],
-            "properties": {
-                "content": {
-                    "type": "string"
-                },
-                "subject": {
-                    "type": "string"
-                },
-                "to_emails": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
-        "request.NotificationChannelUpdateRequest": {
-            "type": "object",
-            "properties": {
-                "channel_config": {
-                    "type": "object",
-                    "additionalProperties": true
-                },
-                "channel_type": {
-                    "type": "string",
-                    "enum": [
-                        "EMAIL",
-                        "WEBHOOK"
-                    ]
-                },
-                "description": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string",
-                    "maxLength": 128,
-                    "minLength": 2
-                }
-            }
-        },
-        "request.NotificationChannelWebhookTestRequest": {
-            "type": "object",
-            "required": [
-                "payload"
-            ],
-            "properties": {
-                "payload": {
-                    "type": "object",
-                    "additionalProperties": true
                 }
             }
         },
@@ -5710,6 +5741,27 @@ const docTemplate = `{
                 }
             }
         },
+        "request.TestEmailChannelRequest": {
+            "type": "object",
+            "required": [
+                "code",
+                "recipient"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "recipient": {
+                    "type": "string"
+                },
+                "subject": {
+                    "type": "string"
+                }
+            }
+        },
         "request.TestSMTPRequest": {
             "type": "object",
             "required": [
@@ -5719,6 +5771,18 @@ const docTemplate = `{
                 "test_email": {
                     "type": "string"
                 }
+            }
+        },
+        "request.TestWebhookChannelRequest": {
+            "type": "object",
+            "required": [
+                "code"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "payload": {}
             }
         },
         "request.TokenAuthRequest": {
@@ -5780,6 +5844,89 @@ const docTemplate = `{
                 },
                 "user_auth": {
                     "$ref": "#/definitions/request.UserAuthRequest"
+                }
+            }
+        },
+        "request.UpdateEmailChannelRequest": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "example": "Updated email notification channel"
+                },
+                "encoding": {
+                    "type": "string",
+                    "enum": [
+                        "utf-8",
+                        "gbk",
+                        "gb2312"
+                    ],
+                    "example": "utf-8"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1,
+                    "example": "Updated Email Channel"
+                },
+                "quiet_hours": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "example": "22:00-08:00"
+                },
+                "rate_limit": {
+                    "type": "integer",
+                    "maximum": 1000,
+                    "minimum": 0,
+                    "example": 3
+                },
+                "retry_count": {
+                    "type": "integer",
+                    "maximum": 10,
+                    "minimum": 0,
+                    "example": 3
+                },
+                "sender_email": {
+                    "type": "string",
+                    "example": "noreply@example.com"
+                },
+                "sender_name": {
+                    "type": "string",
+                    "example": "System Notifications"
+                },
+                "smtp_host": {
+                    "type": "string",
+                    "example": "smtp.gmail.com"
+                },
+                "smtp_password": {
+                    "type": "string",
+                    "example": "your-password"
+                },
+                "smtp_port": {
+                    "type": "integer",
+                    "maximum": 65535,
+                    "minimum": 1,
+                    "example": 587
+                },
+                "smtp_security": {
+                    "type": "string",
+                    "enum": [
+                        "none",
+                        "tls",
+                        "ssl"
+                    ],
+                    "example": "tls"
+                },
+                "smtp_timeout": {
+                    "type": "integer",
+                    "maximum": 300,
+                    "minimum": 0,
+                    "example": 30
+                },
+                "smtp_username": {
+                    "type": "string",
+                    "example": "user@example.com"
                 }
             }
         },
@@ -5871,6 +6018,84 @@ const docTemplate = `{
                 },
                 "sort_order": {
                     "type": "integer"
+                }
+            }
+        },
+        "request.UpdateWebhookChannelRequest": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "example": "Updated webhook notification channel"
+                },
+                "encoding": {
+                    "type": "string",
+                    "enum": [
+                        "utf-8",
+                        "gbk",
+                        "gb2312"
+                    ],
+                    "example": "utf-8"
+                },
+                "headers": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "example": {
+                        "\"Authorization\"": "\"Bearer token\"}",
+                        "{\"Content-Type\"": "\"application/json\""
+                    }
+                },
+                "method": {
+                    "type": "string",
+                    "enum": [
+                        "GET",
+                        "POST",
+                        "PUT",
+                        "PATCH",
+                        "DELETE"
+                    ],
+                    "example": "POST"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1,
+                    "example": "Updated Webhook Channel"
+                },
+                "quiet_hours": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "example": "22:00-08:00"
+                },
+                "rate_limit": {
+                    "type": "integer",
+                    "maximum": 1000,
+                    "minimum": 0,
+                    "example": 3
+                },
+                "retry_count": {
+                    "type": "integer",
+                    "maximum": 10,
+                    "minimum": 0,
+                    "example": 3
+                },
+                "secret": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "example": "your-webhook-secret"
+                },
+                "timeout": {
+                    "type": "integer",
+                    "maximum": 300,
+                    "minimum": 0,
+                    "example": 30
+                },
+                "url": {
+                    "type": "string",
+                    "example": "https://api.example.com/webhook"
                 }
             }
         },
@@ -6433,8 +6658,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "channel_config": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/definitions/model.JSONChannelConfig"
                 },
                 "channel_type": {
                     "type": "string"
@@ -6454,33 +6678,10 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
-                "status": {
+                "owner_id": {
                     "type": "integer"
                 },
-                "updated_at": {
-                    "type": "string"
-                }
-            }
-        },
-        "response.NotificationChannelItemResponse": {
-            "type": "object",
-            "properties": {
-                "channel_type": {
-                    "type": "string"
-                },
-                "code": {
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "name": {
+                "owner_name": {
                     "type": "string"
                 },
                 "status": {
@@ -6494,10 +6695,10 @@ const docTemplate = `{
         "response.NotificationChannelListResponse": {
             "type": "object",
             "properties": {
-                "channels": {
+                "items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/response.NotificationChannelItemResponse"
+                        "$ref": "#/definitions/response.NotificationChannelResponse"
                     }
                 },
                 "page": {
@@ -6511,6 +6712,41 @@ const docTemplate = `{
                 },
                 "total_pages": {
                     "type": "integer"
+                }
+            }
+        },
+        "response.NotificationChannelResponse": {
+            "type": "object",
+            "properties": {
+                "channel_config": {
+                    "$ref": "#/definitions/model.JSONChannelConfig"
+                },
+                "channel_type": {
+                    "type": "string"
+                },
+                "code": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "owner_id": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
