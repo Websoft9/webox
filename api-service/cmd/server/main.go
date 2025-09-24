@@ -178,6 +178,7 @@ func initDatabaseWrapper(cfg *config.Config, zapLogger logger.Logger) (*database
 		&model.SystemConfig{},
 		&model.AlertRecord{},
 		&model.AlertRule{},
+		&model.SecretKey{},
 	); migrateErr != nil {
 		return nil, fmt.Errorf("failed to migrate database models: %v", migrateErr)
 	}
@@ -346,6 +347,7 @@ type repositories struct {
 	userProfileRepo  repoInterface.UserProfileRepository
 	systemConfigRepo repoInterface.SystemConfigRepository
 	alertRepo        repoInterface.AlertRepository
+	secretKeyRepo    repoInterface.SecretKeyRepository
 }
 
 // initRepositories creates and initializes all repository instances
@@ -361,6 +363,7 @@ func initRepositories(db *gorm.DB) *repositories {
 		userProfileRepo:  repoImpl.NewUserProfileRepository(db),
 		systemConfigRepo: repoImpl.NewSystemConfigRepository(db),
 		alertRepo:        repoImpl.NewAlertRepository(db),
+		secretKeyRepo:    repoImpl.NewSecretKeyRepository(db),
 	}
 }
 
@@ -378,6 +381,7 @@ type businessServices struct {
 	userProfileService  serviceInterface.UserProfileService
 	systemConfigService serviceInterface.SystemConfigService
 	alertServices       serviceInterface.AlertService
+	secretKeyService    serviceInterface.SecretKeyService
 }
 
 // initBusinessServices creates and initializes all service instances with their dependencies
@@ -405,6 +409,7 @@ func initBusinessServices(
 		userProfileService:  serviceImpl.NewUserProfileService(repos.userProfileRepo, zapLogger, i18nInstance),
 		systemConfigService: serviceImpl.NewSystemConfigService(repos.systemConfigRepo, cfg, db, zapLogger, i18nInstance),
 		alertServices:       serviceImpl.NewAlertService(repos.alertRepo, zapLogger, i18nInstance),
+		secretKeyService:    serviceImpl.NewSecretKeyService(repos.secretKeyRepo, zapLogger, i18nInstance),
 	}
 }
 
@@ -444,6 +449,7 @@ func initControllers(
 		AuditLogController:    controller.NewAuditLogController(services.auditLogService, validatorInstance, zapLogger, i18nInstance),
 		UserProfileController: controller.NewUserProfileController(services.userProfileService, zapLogger, i18nInstance),
 		AlertController:       controller.NewAlertController(services.alertServices, zapLogger, i18nInstance),
+		SecretKeyController:   controller.NewSecretKeyController(services.secretKeyService, zapLogger, i18nInstance),
 		SystemConfigController: controller.NewSystemConfigController(
 			services.systemConfigService,
 			validatorInstance,
