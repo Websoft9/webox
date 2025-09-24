@@ -134,6 +134,20 @@ const (
 	UserMappingUsername = "username"
 )
 
+// Tag management constants
+const (
+	TagMaxNameLength          = 128
+	TagMaxBatchSize           = 50
+	TagMaxColorLength         = 16
+	TagMaxDescLength          = 500
+	TagSearchOpAND            = "AND"
+	TagSearchOpOR             = "OR"
+	TagAssignStatusCreated    = "created"
+	TagAssignStatusAssociated = "associated"
+	DefaultTagPageSize        = 20
+	MaxTagPageSize            = 100
+)
+
 // Auth config constants
 const (
 	DefaultTokenExpiresIn        = 3600  // 1 hour
@@ -227,6 +241,7 @@ const (
 	ModuleNotification     = "告警通知"
 	ModuleProfile          = "个人中心"
 	ModuleAuditLog         = "审计日志"
+	ModuleTag              = "标签管理"
 	ModuleSystem           = "System"
 )
 
@@ -257,6 +272,7 @@ func GetModuleTableName(module string) string {
 		ModuleWishlist:       "app_store_wishlists",
 		ModuleNotification:   "notifications",
 		ModuleAdminSetting:   "system_configs",
+		ModuleTag:            "tags",
 	}
 
 	if tableName, exists := moduleToTableName[module]; exists {
