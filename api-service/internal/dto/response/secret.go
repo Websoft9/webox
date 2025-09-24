@@ -7,19 +7,20 @@ import (
 
 // SecretKeyResponse represents the response for secret key data
 type SecretKeyResponse struct {
-	ID               uint                `json:"id" example:"1"`
-	Name             string              `json:"name" example:"Database Connection Key"`
-	KeyType          model.SecretKeyType `json:"key_type" example:"DATABASE"`
-	Usage            string              `json:"usage" example:"MYSQL_CONNECTION"`
-	Description      *string             `json:"description" example:"MySQL database connection credentials"`
-	IsEncrypted      bool                `json:"is_encrypted" example:"true"`
-	CustomFields     model.CustomFields  `json:"custom_fields" example:"{\"rotation_interval\": 90}"`
-	AuthorizedUsers  []uint              `json:"authorized_users" example:"[1, 2, 3]"`
-	AuthorizedGroups []uint              `json:"authorized_groups" example:"[1]"`
-	ExpiresAt        *time.Time          `json:"expires_at" example:"2025-12-31T23:59:59Z"`
-	OwnerID          uint                `json:"owner_id" example:"1"`
-	CreatedAt        time.Time           `json:"created_at" example:"2024-01-01T00:00:00Z"`
-	UpdatedAt        time.Time           `json:"updated_at" example:"2024-06-15T10:30:00Z"`
+	ID          uint                `json:"id" example:"1"`
+	Name        string              `json:"name" example:"Database Connection Key"`
+	KeyType     model.SecretKeyType `json:"key_type" example:"DATABASE"`
+	Usage       string              `json:"usage" example:"MYSQL_CONNECTION"`
+	Description *string             `json:"description" example:"MySQL database connection credentials"`
+	IsEncrypted bool                `json:"is_encrypted" example:"true"`
+	// @Schema(example="{\"rotation_interval\":90}")
+	CustomFields model.CustomFields `json:"custom_fields"`
+	// @Schema(example="[1,2,3]")
+	AuthorizedUsers []uint     `json:"authorized_users"`
+	ExpiresAt       *time.Time `json:"expires_at" example:"2025-12-31T23:59:59Z"`
+	OwnerID         uint       `json:"owner_id" example:"1"`
+	CreatedAt       time.Time  `json:"created_at" example:"2024-01-01T00:00:00Z"`
+	UpdatedAt       time.Time  `json:"updated_at" example:"2024-06-15T10:30:00Z"`
 }
 
 // SecretKeyValueResponse represents the response for secret key value
@@ -63,7 +64,6 @@ func ToSecretKeyResponse(secretKey *model.SecretKey) *SecretKeyResponse {
 	// AuthorizedUsers and AuthorizedGroups are simplified for response DTO.
 	// In the actual implementation, these would come from authorization logic
 	response.AuthorizedUsers = []uint{secretKey.OwnerID}
-	response.AuthorizedGroups = []uint{}
 
 	return response
 }

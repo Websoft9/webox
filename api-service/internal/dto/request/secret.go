@@ -12,9 +12,11 @@ type SecretKeyCreateRequest struct {
 	EncryptedValue  string              `json:"encrypted_value" binding:"required" example:"username:password or key content"`
 	ResourceGroupID *uint               `json:"resource_group_id" example:"1"`
 	Description     *string             `json:"description" example:"MySQL database connection credentials"`
-	CustomFields    model.CustomFields  `json:"custom_fields" example:"{\"rotation_interval\": 90}"`
-	AuthorizedUsers []uint              `json:"authorized_users" example:"[1, 2, 3]"`
-	ExpiresAt       *time.Time          `json:"expires_at" example:"2025-12-31T23:59:59Z"`
+	// @Schema(example="{\"rotation_interval\":90}")
+	CustomFields model.CustomFields `json:"custom_fields"`
+	// @Schema(example="[1,2,3]")
+	AuthorizedUsers []uint     `json:"authorized_users"`
+	ExpiresAt       *time.Time `json:"expires_at" example:"2025-12-31T23:59:59Z"`
 }
 
 // SecretKeyUpdateRequest represents the request to update a secret key

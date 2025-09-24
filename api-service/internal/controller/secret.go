@@ -283,7 +283,6 @@ func (c *SecretKeyController) DeleteSecretKey(ctx *gin.Context) {
 // @Param page query int false "Page number" default(1)
 // @Param page_size query int false "Page size" default(20)
 // @Param key_type query string false "Key type filter" Enums(API_KEY,DATABASE,SSH,CERTIFICATE,CUSTOM)
-// @Param search query string false "Search keyword"
 // @Success 200 {object} response.APIResponse{data=response.SecretKeyListResponse}
 // @Failure 400 {object} response.APIResponse
 // @Failure 401 {object} response.APIResponse
@@ -327,7 +326,6 @@ func (c *SecretKeyController) ListSecretKeys(ctx *gin.Context) {
 // @Accept json
 // @Produce application/octet-stream
 // @Param format query string false "Export format" Enums(csv,json,excel) default(csv)
-// @Param key_type query string false "Key type filter" Enums(API_KEY,DATABASE,SSH,CERTIFICATE,CUSTOM)
 // @Success 200 {file} file "Exported file"
 // @Failure 400 {object} response.APIResponse
 // @Failure 401 {object} response.APIResponse
