@@ -63,7 +63,7 @@ func (s *secretKeyService) CreateSecretKey(ctx context.Context, req *request.Sec
 	}
 
 	// Encrypt the secret value using RSA
-	rsaCrypto, err := crypto.NewRSACrypto(2048)
+	rsaCrypto, err := crypto.NewRSACrypto(crypto.MinRSAKeySize)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to create RSA crypto",
 			logger.ErrorField(err))
@@ -161,7 +161,7 @@ func (s *secretKeyService) GetSecretKeyValue(ctx context.Context, id, userID uin
 		logger.Uint("secret_key_id", id),
 		logger.Uint("user_id", userID))
 
-	rsaCrypto, err := crypto.NewRSACrypto(2048)
+	rsaCrypto, err := crypto.NewRSACrypto(crypto.MinRSAKeySize)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to create RSA crypto",
 			logger.ErrorField(err))
@@ -201,7 +201,7 @@ func (s *secretKeyService) UpdateSecretKey(ctx context.Context, id, userID uint,
 	}
 
 	// Encrypt the secret value using RSA
-	rsaCrypto, err := crypto.NewRSACrypto(2048)
+	rsaCrypto, err := crypto.NewRSACrypto(crypto.MinRSAKeySize)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to create RSA crypto",
 			logger.ErrorField(err))
