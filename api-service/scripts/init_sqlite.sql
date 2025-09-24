@@ -804,7 +804,7 @@ CREATE TABLE IF NOT EXISTS notification_channels (
     code VARCHAR(64) NOT NULL UNIQUE,
     name VARCHAR(128) NOT NULL,
     description TEXT,
-    channel_type VARCHAR(20) NOT NULL CHECK (channel_type IN ('EMAIL', 'WEBHOOK', 'INTERNAL')),
+    channel_type VARCHAR(20) NOT NULL CHECK (channel_type IN ('EMAIL', 'WEBHOOK')),
     channel_config TEXT NOT NULL, -- JSON format
     owner_id INTEGER NOT NULL REFERENCES users(id),
     status INTEGER DEFAULT 1, -- -1-deleted, 0-disabled, 1-enabled

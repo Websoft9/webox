@@ -16,16 +16,17 @@ import (
 
 // Controllers controller collection
 type Controllers struct {
-	UserController               *controller.UserController
-	UserAuthController           *controller.UserAuthController
-	I18nController               *controller.I18nController
-	RolePermissionController     *controller.RolePermissionController
-	SecurityController           *controller.SecurityController
-	HealthController             *controller.HealthController
-	AuditLogController           *controller.AuditLogController
-	UserProfileController        *controller.UserProfileController
-	SystemConfigController       *controller.SystemConfigController
-	NotificationRecordController *controller.NotificationRecordController
+	UserController                *controller.UserController
+	UserAuthController            *controller.UserAuthController
+	I18nController                *controller.I18nController
+	RolePermissionController      *controller.RolePermissionController
+	SecurityController            *controller.SecurityController
+	HealthController              *controller.HealthController
+	AuditLogController            *controller.AuditLogController
+	UserProfileController         *controller.UserProfileController
+	SystemConfigController        *controller.SystemConfigController
+	NotificationRecordController  *controller.NotificationRecordController
+	NotificationChannelController *controller.NotificationChannelController
 
 	// More controllers can be added
 	// AppController  *controller.ApplicationController
@@ -144,7 +145,8 @@ func setupAPIRoutes(v1 *gin.RouterGroup, controllers *Controllers) {
 	setupAuthConfigRoutes(protected, controllers.SecurityController)
 	setupAuditLogRoutes(protected, controllers.AuditLogController)
 	setupUserProfileRoutes(protected, controllers.UserProfileController)
-	setupNotificationRoutes(protected, controllers.NotificationRecordController)
+	setupSystemConfigRoutes(protected, controllers.SystemConfigController)
+	setupNotificationRoutes(protected, controllers.NotificationRecordController, controllers.NotificationChannelController)
 }
 
 // setupUserRoutes sets up user related routes
@@ -295,10 +297,29 @@ func setupUserProfileRoutes(protected *gin.RouterGroup, userProfileController *c
 	profile.PUT("/security-settings", userProfileController.UpdateSecuritySettings)
 }
 
+// setupSystemConfigRoutes sets up system configuration routes
+func setupSystemConfigRoutes(protected *gin.RouterGroup, systemConfigController *controller.SystemConfigController) {
+	if systemConfigController == nil {
+		return
+	}
+
+	// System configuration routes
+	systemConfigs := protected.Group("/system-configs")
+	systemConfigs.GET("", systemConfigController.ListSystemConfigs)
+	systemConfigs.POST("/batch", systemConfigController.BatchUpdateSystemConfigs)
+	systemConfigs.POST("/smtp/test", systemConfigController.TestSMTP)
+
+	// Category-specific configuration routes
+	systemConfigs.GET("/basic", systemConfigController.ListBasicConfigs)
+	systemConfigs.GET("/security", systemConfigController.ListSecurityConfigs)
+	systemConfigs.GET("/email", systemConfigController.ListEmailConfigs)
+}
+
 // setupNotificationRoutes sets up notification management routes
 func setupNotificationRoutes(
 	protected *gin.RouterGroup,
 	notificationController *controller.NotificationRecordController,
+	channelController *controller.NotificationChannelController,
 ) {
 	notifications := protected.Group("/notifications")
 
@@ -306,5 +327,21 @@ func setupNotificationRoutes(
 	if notificationController != nil {
 		notifications.GET("/records", notificationController.GetNotificationRecords)
 		notifications.GET("/records/:id", notificationController.GetNotificationRecord)
+	}
+
+	// Notification channel routes
+	if channelController != nil {
+		// Channel management routes
+		notifications.GET("/channels", channelController.GetChannelList)
+		notifications.GET("/channels/:code", channelController.GetChannelByCode)
+		notifications.POST("/channels/email", channelController.CreateEmailChannel)
+		notifications.POST("/channels/webhook", channelController.CreateWebhookChannel)
+		notifications.PUT("/channels/:code/email", channelController.UpdateEmailChannel)
+		notifications.PUT("/channels/:code/webhook", channelController.UpdateWebhookChannel)
+		notifications.DELETE("/channels/:code", channelController.DeleteChannel)
+
+		// Channel testing routes
+		notifications.POST("/channels/test/email", channelController.TestEmailChannel)
+		notifications.POST("/channels/test/webhook", channelController.TestWebhookChannel)
 	}
 }

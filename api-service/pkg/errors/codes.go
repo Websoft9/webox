@@ -70,6 +70,19 @@ const (
 	CodeUserAlreadyExists              = 5011 // Username already exists
 	CodePermissionInvalid              = 5012 // Permission invalid
 
+	// Notification channel related error codes (5100-5199)
+	CodeNotificationChannelNotFound          = 5101 // Notification channel not found
+	CodeNotificationChannelAlreadyExists     = 5102 // Notification channel already exists
+	CodeNotificationChannelInvalidType       = 5103 // Invalid notification channel type
+	CodeNotificationChannelInvalidConfig     = 5104 // Invalid notification channel configuration
+	CodeNotificationChannelTestFailed        = 5105 // Notification channel test failed
+	CodeNotificationChannelEmailTestFailed   = 5106 // Email notification test failed
+	CodeNotificationChannelWebhookTestFailed = 5107 // Webhook notification test failed
+	CodeNotificationChannelCreateFailed      = 5108 // Notification channel creation failed
+	CodeNotificationChannelUpdateFailed      = 5109 // Notification channel update failed
+	CodeNotificationChannelDeleteFailed      = 5110 // Notification channel deletion failed
+	CodeNotificationChannelInUse             = 5111 // Notification channel is in use
+
 	// System related error codes (6000-6999)
 	CodeInternalError                = 6001 // System Internal Error
 	CodeCacheServiceUnavailable      = 6002 // Cache service unavailable
@@ -229,6 +242,19 @@ var CodeMessages = map[int]string{
 	CodeGatewayConfigUpdateFailed:      "Gateway configuration update failed",
 	CodeUserAlreadyExists:              "Username already exists",
 	CodePermissionInvalid:              "Permission invalid",
+
+	// Notification channel related errors (5100-5199)
+	CodeNotificationChannelNotFound:          "Notification channel not found",
+	CodeNotificationChannelAlreadyExists:     "Notification channel already exists",
+	CodeNotificationChannelInvalidType:       "Invalid notification channel type",
+	CodeNotificationChannelInvalidConfig:     "Invalid notification channel configuration",
+	CodeNotificationChannelTestFailed:        "Notification channel test failed",
+	CodeNotificationChannelEmailTestFailed:   "Email notification test failed",
+	CodeNotificationChannelWebhookTestFailed: "Webhook notification test failed",
+	CodeNotificationChannelCreateFailed:      "Notification channel creation failed",
+	CodeNotificationChannelUpdateFailed:      "Notification channel update failed",
+	CodeNotificationChannelDeleteFailed:      "Notification channel deletion failed",
+	CodeNotificationChannelInUse:             "Notification channel is in use",
 
 	// System related errors (6000-6999)
 	CodeInternalError:                "System Internal Error",
