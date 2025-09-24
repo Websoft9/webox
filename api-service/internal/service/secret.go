@@ -14,6 +14,7 @@ import (
 	"api-service/internal/interface/repository"
 	"api-service/internal/interface/service"
 	"api-service/internal/model"
+	"api-service/pkg/crypto"
 	"api-service/pkg/errors"
 	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
@@ -61,11 +62,26 @@ func (s *secretKeyService) CreateSecretKey(ctx context.Context, req *request.Sec
 		return nil, errors.NewAppError(errors.CodeResourceAlreadyExists, s.i18n.T(ctx, "secret.name_already_exists"))
 	}
 
+	// Encrypt the secret value using RSA
+	rsaCrypto, err := crypto.NewRSACrypto(2048)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to create RSA crypto",
+			logger.ErrorField(err))
+		return nil, errors.WrapError(err, errors.CodeEncryptFailed, s.i18n.T(ctx, "business.encrypt_failed"))
+	}
+
+	encryptedValue, err := rsaCrypto.EncryptString(req.EncryptedValue)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to encrypt secret key value",
+			logger.ErrorField(err))
+		return nil, errors.WrapError(err, errors.CodeEncryptFailed, s.i18n.T(ctx, "business.encrypt_failed"))
+	}
+
 	// Create the secret key model
 	secretKey := &model.SecretKey{
 		Name:            req.Name,
 		KeyType:         req.KeyType,
-		EncryptedValue:  req.EncryptedValue,
+		EncryptedValue:  encryptedValue, // 使用加密后的值
 		Description:     req.Description,
 		CustomFields:    req.CustomFields,
 		ExpiresAt:       req.ExpiresAt,
@@ -145,7 +161,21 @@ func (s *secretKeyService) GetSecretKeyValue(ctx context.Context, id, userID uin
 		logger.Uint("secret_key_id", id),
 		logger.Uint("user_id", userID))
 
-	return response.ToSecretKeyValueResponse(secretKey.EncryptedValue, secretKey.ExpiresAt), nil
+	rsaCrypto, err := crypto.NewRSACrypto(2048)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to create RSA crypto",
+			logger.ErrorField(err))
+		return nil, errors.WrapError(err, errors.CodeDecryptFailed, s.i18n.T(ctx, "business.decrypt_failed"))
+	}
+
+	decryptedValue, err := rsaCrypto.DecryptString(secretKey.EncryptedValue)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to decrypt secret key value",
+			logger.ErrorField(err))
+		return nil, errors.WrapError(err, errors.CodeDecryptFailed, s.i18n.T(ctx, "business.decrypt_failed"))
+	}
+
+	return response.ToSecretKeyValueResponse(decryptedValue, secretKey.ExpiresAt), nil
 }
 
 // UpdateSecretKey updates an existing secret key
@@ -170,8 +200,23 @@ func (s *secretKeyService) UpdateSecretKey(ctx context.Context, id, userID uint,
 		return nil, errors.NewAppError(errors.CodeAccessDenied, s.i18n.T(ctx, "secret.access_denied"))
 	}
 
+	// Encrypt the secret value using RSA
+	rsaCrypto, err := crypto.NewRSACrypto(2048)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to create RSA crypto",
+			logger.ErrorField(err))
+		return nil, errors.WrapError(err, errors.CodeEncryptFailed, s.i18n.T(ctx, "business.encrypt_failed"))
+	}
+
+	encryptedValue, err := rsaCrypto.EncryptString(req.EncryptedValue)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to encrypt secret key value",
+			logger.ErrorField(err))
+		return nil, errors.WrapError(err, errors.CodeEncryptFailed, s.i18n.T(ctx, "business.encrypt_failed"))
+	}
+
 	// Update fields based on the simplified SecretKeyUpdateRequest
-	secretKey.EncryptedValue = req.EncryptedValue
+	secretKey.EncryptedValue = encryptedValue
 	secretKey.KeyType = req.KeyType
 
 	// Save changes

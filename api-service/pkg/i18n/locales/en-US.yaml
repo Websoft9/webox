@@ -344,6 +344,8 @@ business:
   gateway_config_update_failed: "Gateway configuration update failed"
   user_already_exists: "Username already exists"
   permission_invalid: "Permission invalid"
+  encrypt_failed: "Data encryption failed"
+  decrypt_failed: "Data decryption failed"
 
 # System error messages
 system:

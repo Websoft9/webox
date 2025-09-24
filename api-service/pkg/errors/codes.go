@@ -69,6 +69,8 @@ const (
 	CodeGatewayConfigUpdateFailed      = 5010 // Gateway configuration update failed
 	CodeUserAlreadyExists              = 5011 // Username already exists
 	CodePermissionInvalid              = 5012 // Permission invalid
+	CodeEncryptFailed                  = 5013 // Data encryption failed
+	CodeDecryptFailed                  = 5014 // Data decryption failed
 
 	// System related error codes (6000-6999)
 	CodeInternalError                = 6001 // System Internal Error
@@ -149,6 +151,8 @@ var CodeToI18nKey = map[int]string{
 	CodeGatewayConfigUpdateFailed:      "business.gateway_config_update_failed",
 	CodeUserAlreadyExists:              "business.user_already_exists",
 	CodePermissionInvalid:              "business.permission_invalid",
+	CodeEncryptFailed:                  "business.encrypt_failed",
+	CodeDecryptFailed:                  "business.decrypt_failed",
 
 	// System related errors (6000-6999)
 	CodeInternalError:                "system.internal_error",

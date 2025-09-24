@@ -343,6 +343,8 @@ business:
   gateway_config_update_failed: "网关配置更新失败"
   user_already_exists: "用户名已经存在"
   permission_invalid: "权限验证无效"
+  encrypt_failed: "数据加密失败"
+  decrypt_failed: "数据解密失败"
 
 # 系统错误消息
 system:
