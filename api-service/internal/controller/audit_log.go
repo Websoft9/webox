@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"api-service/internal/constants"
 	"api-service/internal/dto/response"
 	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
@@ -175,9 +176,9 @@ func generateExportFilename(format string) string {
 // getFileExtensionByFormat returns the correct file extension for the given format
 func getFileExtensionByFormat(format string) string {
 	switch format {
-	case "excel":
+	case constants.ExportFormatJson:
 		return ".xlsx"
-	case "json":
+	case constants.ExportFormatExcel:
 		return ".json"
 	default:
 		return ".csv"

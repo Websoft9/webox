@@ -71,7 +71,7 @@ func NewRSACryptoFromPrivateKey(privateKeyPEM string) (*RSACrypto, error) {
 	}, nil
 }
 
-func NewRSACryptoFromConfig(securityConfig config.SecurityConfig) (*RSACrypto, error) {
+func NewRSACryptoFromConfig(securityConfig *config.SecurityConfig) (*RSACrypto, error) {
 	var privateKeyPEM, publicKeyPEM string
 
 	if securityConfig.RSAPrivateKey != "" && securityConfig.RSAPublicKey != "" {

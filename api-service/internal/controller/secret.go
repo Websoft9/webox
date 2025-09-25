@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"api-service/internal/constants"
 	"api-service/internal/dto/request"
 	"api-service/internal/dto/response"
 	"api-service/internal/interface/service"
@@ -371,9 +372,9 @@ func (c *SecretKeyController) ExportSecretKeys(ctx *gin.Context) {
 // getContentTypeByFormat returns the correct content type for the given format
 func getContentTypeByFormat(format string) string {
 	switch format {
-	case "json":
+	case constants.ExportFormatJson:
 		return "application/json"
-	case "excel":
+	case constants.ExportFormatExcel:
 		return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 	default:
 		return "text/csv"
