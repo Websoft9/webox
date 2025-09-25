@@ -2,11 +2,11 @@ package controller
 
 import (
 	"api-service/internal/dto/request"
+	"api-service/internal/dto/response"
 	"api-service/internal/interface/service"
 	"api-service/pkg/errors"
 	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
-	pkg_response "api-service/pkg/response"
 	"strconv"
 
 	"github.com/expr-lang/expr"
@@ -82,7 +82,7 @@ func (c *AlertController) GetAlertRules(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "Alert rule list successful")
-	pkg_response.Success(ctx, c.i18n.T(ctx, "alert.rule_list_success"), result)
+	response.Success(ctx, c.i18n.T(ctx, "alert.rule_list_success"), result)
 }
 
 // CreateAlertRule handles creating an alert rule
@@ -115,7 +115,7 @@ func (c *AlertController) CreateAlertRule(ctx *gin.Context) {
 
 	currentUserID, exists := ctx.Get("user_id")
 	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		response.Unauthorized(ctx, "auth.user_not_authenticated")
 		return
 	}
 
@@ -127,7 +127,7 @@ func (c *AlertController) CreateAlertRule(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "Alert rule create successful")
-	pkg_response.Success(ctx, c.i18n.T(ctx, "alert.rule_create_success"), result)
+	response.Success(ctx, c.i18n.T(ctx, "alert.rule_create_success"), result)
 }
 
 func isExpression(expression string) bool {
@@ -169,7 +169,7 @@ func (c *AlertController) GetAlertRule(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "Alert rule retrieved successfully")
-	pkg_response.Success(ctx, c.i18n.T(ctx, "alert.rule_get_success"), result)
+	response.Success(ctx, c.i18n.T(ctx, "alert.rule_get_success"), result)
 }
 
 // UpdateAlertRule handles updating an alert rule
@@ -221,7 +221,7 @@ func (c *AlertController) UpdateAlertRule(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "Alert rule updated successfully")
-	pkg_response.Success(ctx, c.i18n.T(ctx, "alert.rule_update_success"), result)
+	response.Success(ctx, c.i18n.T(ctx, "alert.rule_update_success"), result)
 }
 
 // DeleteAlertRule handles deleting an alert rule
@@ -258,7 +258,7 @@ func (c *AlertController) DeleteAlertRule(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "Alert rule deleted successfully")
-	pkg_response.Success(ctx, c.i18n.T(ctx, "alert.rule_delete_success"), nil)
+	response.Success(ctx, c.i18n.T(ctx, "alert.rule_delete_success"), nil)
 }
 
 // GetAlertRecords handles getting alert records list
@@ -294,7 +294,7 @@ func (c *AlertController) GetAlertRecords(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "Alert records list successful")
-	pkg_response.Success(ctx, c.i18n.T(ctx, "alert.record_list_success"), result)
+	response.Success(ctx, c.i18n.T(ctx, "alert.record_list_success"), result)
 }
 
 // AcknowledgeAlertRecord handles acknowledging an alert record
@@ -355,7 +355,7 @@ func (c *AlertController) AcknowledgeAlertRecord(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "Alert record acknowledged successfully")
-	pkg_response.Success(ctx, c.i18n.T(ctx, "alert.record_acknowledge_success"), nil)
+	response.Success(ctx, c.i18n.T(ctx, "alert.record_acknowledge_success"), nil)
 }
 
 // ResolveAlertRecord handles resolving an alert record
@@ -416,5 +416,5 @@ func (c *AlertController) ResolveAlertRecord(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "Alert record resolved successfully")
-	pkg_response.Success(ctx, c.i18n.T(ctx, "alert.record_resolve_success"), nil)
+	response.Success(ctx, c.i18n.T(ctx, "alert.record_resolve_success"), nil)
 }

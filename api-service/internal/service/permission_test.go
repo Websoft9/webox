@@ -32,7 +32,6 @@ func (suite *PermissionServiceTestSuite) SetupTest() {
 		permissionRepo: suite.mockPermissionRepo,
 		db:             &gorm.DB{},
 		logger:         suite.logger,
-		i18n:           nil, // Mock i18n not needed for unit tests
 	}
 }
 
@@ -357,7 +356,6 @@ func BenchmarkPermissionService_CreatePermission(b *testing.B) {
 		permissionRepo: mockPermissionRepo,
 		db:             &gorm.DB{},
 		logger:         logger,
-		i18n:           nil,
 	}
 
 	ctx := context.Background()

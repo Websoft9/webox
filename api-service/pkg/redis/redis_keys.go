@@ -23,8 +23,16 @@ const (
 	// Redis key constants for login security
 	RK_LOGIN_ATTEMPTS = "AUTH:LOGIN:ATTEMPTS:%s" // Login attempts counter key
 	RK_LOGIN_LOCKER   = "LOCKER:LOGIN:%s"        // Login lockout key
+
+	// Redis key constants for user preferences
+	RK_USER_PREFERENCES = "PREFERENCES:USER:%d" // User preferences hash key format
 )
 
 func FormatRedisKey(redisPrefix, key string) string {
 	return fmt.Sprintf(redisPrefix, key)
+}
+
+// FormatRedisKeyWithID formats Redis key with numeric ID
+func FormatRedisKeyWithID(redisPrefix string, id uint) string {
+	return fmt.Sprintf(redisPrefix, id)
 }

@@ -101,7 +101,6 @@ func (suite *APITokenServiceTestSuite) SetupTest() {
 		tokenRepo: suite.mockTokenRepo,
 		db:        &gorm.DB{},
 		logger:    suite.logger,
-		i18n:      nil, // Mock i18n not needed for unit tests
 	}
 }
 

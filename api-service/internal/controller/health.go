@@ -2,9 +2,9 @@ package controller
 
 import (
 	"api-service/internal/config"
+	"api-service/internal/dto/response"
 	"api-service/pkg/database"
 	"api-service/pkg/redis"
-	"api-service/pkg/response"
 	"net/http"
 	"time"
 

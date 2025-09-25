@@ -1,4 +1,4 @@
-package dto
+package common
 
 // 分页相关常量
 const (

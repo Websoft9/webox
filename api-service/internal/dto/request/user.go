@@ -1,6 +1,6 @@
 package request
 
-import "api-service/internal/dto"
+import "api-service/internal/dto/common"
 
 // UserRegisterRequest 用户注册请求
 type UserRegisterRequest struct {
@@ -22,7 +22,7 @@ type UserChangePasswordRequest struct {
 
 // UserListRequest 用户列表请求
 type UserListRequest struct {
-	dto.BaseListRequest
+	common.BaseListRequest
 	Status   *int    `form:"status" json:"status" binding:"omitempty,min=0,max=1" example:"1"`
 	Keyword  *string `form:"keyword" json:"keyword" binding:"omitempty" example:"john"`
 	Gender   *int    `form:"gender" json:"gender" binding:"omitempty,min=0,max=2" example:"1"`

@@ -7,7 +7,6 @@ import (
 	"api-service/internal/interface/service"
 	"api-service/internal/model"
 	"api-service/pkg/errors"
-	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
 	"context"
 	"math"
@@ -20,7 +19,6 @@ type roleService struct {
 	permissionRepo repository.PermissionRepository
 	db             *gorm.DB
 	logger         logger.Logger
-	i18nInstance   *i18n.I18n
 }
 
 // NewRoleService creates a new role service instance
@@ -29,14 +27,12 @@ func NewRoleService(
 	permissionRepo repository.PermissionRepository,
 	db *gorm.DB,
 	logger logger.Logger,
-	i18nInstance *i18n.I18n,
 ) service.RoleService {
 	return &roleService{
 		roleRepo:       roleRepo,
 		permissionRepo: permissionRepo,
 		db:             db,
 		logger:         logger,
-		i18nInstance:   i18nInstance,
 	}
 }
 

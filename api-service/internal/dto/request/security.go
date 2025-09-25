@@ -28,8 +28,8 @@ type ListRolesRequest struct {
 	PaginationRequest
 	Search    string `form:"search"`
 	Status    *int   `form:"status" validate:"omitempty,oneof=-1 0 1"`
-	StartTime string `form:"start_time" validate:"omitempty,datetime=2006-01-02 15:04:05"`
-	EndTime   string `form:"end_time" validate:"omitempty,datetime=2006-01-02 15:04:05"`
+	StartTime string `form:"start_time" validate:"omitempty,datetime=2006-01-02T15:04:05Z07:00"`
+	EndTime   string `form:"end_time" validate:"omitempty,datetime=2006-01-02T15:04:05Z07:00"`
 }
 
 // CreatePermissionRequest creates permission request
@@ -61,8 +61,8 @@ type ListPermissionsRequest struct {
 	Module    string `form:"module"`
 	Scope     string `form:"scope" validate:"omitempty,oneof=platform project"`
 	Status    *int   `form:"status" validate:"omitempty,oneof=-1 0 1"`
-	StartTime string `form:"start_time" validate:"omitempty,datetime=2006-01-02 15:04:05"`
-	EndTime   string `form:"end_time" validate:"omitempty,datetime=2006-01-02 15:04:05"`
+	StartTime string `form:"start_time" validate:"omitempty,datetime=2006-01-02T15:04:05Z07:00"`
+	EndTime   string `form:"end_time" validate:"omitempty,datetime=2006-01-02T15:04:05Z07:00"`
 }
 
 // PermissionTreeRequest permission tree query request

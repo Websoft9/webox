@@ -341,6 +341,13 @@ const (
 	DefaultTimeRangeHours = 7 * 24 // Default time range in hours (7 days)
 )
 
+// alert constants
+const (
+	AlertStatusFiring    = "FIRING"
+	AlertStatusConfirmed = "CONFIRMED"
+	AlertStatusResolved  = "RESOLVED"
+)
+
 const (
 	// StringTrue represents the string "true"
 	StringTrue = "true"
@@ -352,9 +359,44 @@ const (
 	DefaultSessionTimeoutSeconds = 1800
 )
 
-// alert constants
+// Time field names constants for timezone conversion middleware
+// These field names will be automatically converted to user's timezone in API responses
 const (
-	AlertStatusFiring    = "FIRING"
-	AlertStatusConfirmed = "CONFIRMED"
-	AlertStatusResolved  = "RESOLVED"
+	// Common timestamp fields
+	TimeFieldCreatedAt = "created_at"
+	TimeFieldUpdatedAt = "updated_at"
+)
+
+// GetTimezoneConvertibleFields returns a list of all time field names that should be converted to user's timezone
+func GetTimezoneConvertibleFields() []string {
+	return []string{
+		// Common timestamp fields
+		TimeFieldCreatedAt,
+		TimeFieldUpdatedAt,
+	}
+}
+
+// User preferences config keys
+const (
+	UserCategory = "general"
+	UserLanguage = "language"
+	UserTimezone = "timezone"
+)
+
+// System preferences config keys
+const (
+	SystemLanguage = "system." + UserLanguage
+	SystemTimezone = "system." + UserTimezone
+
+	// Default time format for datetime display: "2006-01-02T15:04:05Z07:00"
+	DefaultTimeFormat = time.RFC3339
+
+	// Default language code
+	DefaultLanguage = "en-US"
+
+	// Default time zone
+	DefaultTimeZone = "UTC"
+
+	// Maximum length of SQL log
+	MaxSQLLogLength = 100
 )

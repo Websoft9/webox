@@ -6,7 +6,6 @@ import (
 	securityInterface "api-service/internal/interface/service"
 	serviceImpl "api-service/internal/service"
 	"api-service/pkg/errors"
-	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
 	"time"
 
@@ -22,7 +21,6 @@ type SecurityController struct {
 	twoFactorService  securityInterface.TwoFactorService
 	validator         *validator.Validate
 	logger            logger.Logger
-	i18n              *i18n.I18n
 }
 
 // OAuth2CallbackRequest represents OAuth2 callback request
@@ -61,7 +59,6 @@ func NewSecurityController(
 	twoFactorService securityInterface.TwoFactorService,
 	validator *validator.Validate,
 	logger logger.Logger,
-	i18n *i18n.I18n,
 ) *SecurityController {
 	return &SecurityController{
 		apiTokenService:   apiTokenService,
@@ -70,7 +67,6 @@ func NewSecurityController(
 		twoFactorService:  twoFactorService,
 		validator:         validator,
 		logger:            logger,
-		i18n:              i18n,
 	}
 }
 
@@ -90,14 +86,14 @@ func (c *SecurityController) RevokeAPIToken(ctx *gin.Context) {
 	var req request.RevokeAPITokenRequest
 
 	// Bind and validate request
-	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger, c.i18n) {
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
 	// Get current user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		response.Unauthorized(ctx, "auth.user_not_authenticated")
 		return
 	}
 
@@ -105,13 +101,13 @@ func (c *SecurityController) RevokeAPIToken(ctx *gin.Context) {
 	err := c.apiTokenService.RevokeAPITokenByToken(ctx.Request.Context(), req.Token, userID.(uint))
 	if err != nil {
 		if errors.Is(err, errors.ErrRecordNotFound) {
-			ResponseBadRequest(ctx, err, "api_token.invalid_token", c.i18n)
+			response.BadRequest(ctx, err, "api_token.invalid_token")
 		} else {
-			ResponseWithError(ctx, err, c.logger, c.i18n)
+			response.WithError(ctx, err, c.logger)
 		}
 		return
 	}
-	ResponseOK(ctx, "api_token.revoke_success", c.i18n)
+	response.OK(ctx, "api_token.revoke_success")
 }
 
 // RefreshAPIToken refreshes API token
@@ -129,17 +125,17 @@ func (c *SecurityController) RefreshAPIToken(ctx *gin.Context) {
 	// Get current user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		response.Unauthorized(ctx, "auth.user_not_authenticated")
 		return
 	}
 
 	// Refresh API token for current user
 	token, err := c.apiTokenService.RefreshUserAPIToken(ctx.Request.Context(), userID.(uint))
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err, c.logger)
 		return
 	}
-	ResponseOKWithData(ctx, token, "api_token.refresh_success", c.i18n)
+	response.OKWithData(ctx, token, "api_token.refresh_success")
 }
 
 // GetAuthConfig gets authentication config
@@ -156,10 +152,10 @@ func (c *SecurityController) GetAuthConfig(ctx *gin.Context) {
 	// Get auth config
 	config, err := c.authConfigService.GetAuthConfig(ctx.Request.Context())
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err, c.logger)
 		return
 	}
-	ResponseOKWithData(ctx, config, "common.success", c.i18n)
+	response.OKWithData(ctx, config, "common.success")
 }
 
 // UpdateAuthConfig updates authentication config
@@ -178,17 +174,17 @@ func (c *SecurityController) UpdateAuthConfig(ctx *gin.Context) {
 	var req request.UpdateAuthConfigRequest
 
 	// Bind and validate request
-	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger, c.i18n) {
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
 	// Update auth config
 	err := c.authConfigService.UpdateAuthConfig(ctx.Request.Context(), &req)
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err, c.logger)
 		return
 	}
-	ResponseOK(ctx, "auth_config.update_success", c.i18n)
+	response.OK(ctx, "auth_config.update_success")
 }
 
 // GetOAuth2Providers gets OAuth2 providers
@@ -205,10 +201,10 @@ func (c *SecurityController) GetOAuth2Providers(ctx *gin.Context) {
 	// Get OAuth2 providers
 	providers, err := c.authConfigService.GetOAuth2Providers(ctx.Request.Context())
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err, c.logger)
 		return
 	}
-	ResponseOKWithData(ctx, providers, "common.success", c.i18n)
+	response.OKWithData(ctx, providers, "common.success")
 }
 
 // EnableTOTP enables TOTP two-factor authentication
@@ -226,17 +222,17 @@ func (c *SecurityController) EnableTOTP(ctx *gin.Context) {
 	// Get current user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		response.Unauthorized(ctx, "auth.user_not_authenticated")
 		return
 	}
 
 	// Enable TOTP
 	setup, err := c.twoFactorService.EnableTOTP(ctx.Request.Context(), userID.(uint))
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err, c.logger)
 		return
 	}
-	ResponseOKWithData(ctx, setup, "two_factor.enable_totp_success", c.i18n)
+	response.OKWithData(ctx, setup, "two_factor.enable_totp_success")
 }
 
 // ConfirmTOTP confirms TOTP setup
@@ -257,31 +253,31 @@ func (c *SecurityController) ConfirmTOTP(ctx *gin.Context) {
 	// Bind request parameters
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(err))
-		ResponseBadRequest(ctx, err, "validation.invalid_request_format", c.i18n)
+		response.BadRequest(ctx, err, "validation.invalid_request_format")
 		return
 	}
 
 	// Validate request parameters
 	if err := c.validator.Struct(&req); err != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(err))
-		ResponseBadRequest(ctx, err, "validation.request_validation_failed", c.i18n)
+		response.BadRequest(ctx, err, "validation.request_validation_failed")
 		return
 	}
 
 	// Get current user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		response.Unauthorized(ctx, "auth.user_not_authenticated")
 		return
 	}
 
 	// Confirm TOTP
 	result, err := c.twoFactorService.ConfirmTOTP(ctx.Request.Context(), userID.(uint), req.Code)
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err, c.logger)
 		return
 	}
-	ResponseOKWithData(ctx, result, "two_factor.confirm_totp_success", c.i18n)
+	response.OKWithData(ctx, result, "two_factor.confirm_totp_success")
 }
 
 // DisableTOTP disables TOTP two-factor authentication
@@ -302,31 +298,31 @@ func (c *SecurityController) DisableTOTP(ctx *gin.Context) {
 	// Bind request parameters
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(err))
-		ResponseBadRequest(ctx, err, "validation.invalid_request_format", c.i18n)
+		response.BadRequest(ctx, err, "validation.invalid_request_format")
 		return
 	}
 
 	// Validate request parameters
 	if err := c.validator.Struct(&req); err != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(err))
-		ResponseBadRequest(ctx, err, "validation.request_validation_failed", c.i18n)
+		response.BadRequest(ctx, err, "validation.request_validation_failed")
 		return
 	}
 
 	// Get current user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		response.Unauthorized(ctx, "auth.user_not_authenticated")
 		return
 	}
 
 	// Disable TOTP
 	err := c.twoFactorService.DisableTOTP(ctx.Request.Context(), userID.(uint), req.Code)
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err, c.logger)
 		return
 	}
-	ResponseOK(ctx, "two_factor.disable_totp_success", c.i18n)
+	response.OK(ctx, "two_factor.disable_totp_success")
 }
 
 // EnableEmailTwoFactor enables email two-factor authentication
@@ -347,31 +343,31 @@ func (c *SecurityController) EnableEmailTwoFactor(ctx *gin.Context) {
 	// Bind request parameters
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(err))
-		ResponseBadRequest(ctx, err, "validation.invalid_request_format", c.i18n)
+		response.BadRequest(ctx, err, "validation.invalid_request_format")
 		return
 	}
 
 	// Validate request parameters
 	if err := c.validator.Struct(&req); err != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(err))
-		ResponseBadRequest(ctx, err, "validation.request_validation_failed", c.i18n)
+		response.BadRequest(ctx, err, "validation.request_validation_failed")
 		return
 	}
 
 	// Get current user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		response.Unauthorized(ctx, "auth.user_not_authenticated")
 		return
 	}
 
 	// Enable email two-factor
 	err := c.twoFactorService.EnableEmailTwoFactor(ctx.Request.Context(), userID.(uint), req.Email)
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err, c.logger)
 		return
 	}
-	ResponseOK(ctx, "two_factor.enable_email_success", c.i18n)
+	response.OK(ctx, "two_factor.enable_email_success")
 }
 
 // DisableEmailTwoFactor disables email two-factor authentication
@@ -389,17 +385,17 @@ func (c *SecurityController) DisableEmailTwoFactor(ctx *gin.Context) {
 	// Get current user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		response.Unauthorized(ctx, "auth.user_not_authenticated")
 		return
 	}
 
 	// Disable email two-factor
 	err := c.twoFactorService.DisableEmailTwoFactor(ctx.Request.Context(), userID.(uint))
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err, c.logger)
 		return
 	}
-	ResponseOK(ctx, "two_factor.disable_email_success", c.i18n)
+	response.OK(ctx, "two_factor.disable_email_success")
 }
 
 // SendEmailCode sends email verification code
@@ -417,17 +413,17 @@ func (c *SecurityController) SendEmailCode(ctx *gin.Context) {
 	// Get current user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		response.Unauthorized(ctx, "auth.user_not_authenticated")
 		return
 	}
 
 	// Send email code
 	err := c.twoFactorService.SendEmailCode(ctx.Request.Context(), userID.(uint))
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err, c.logger)
 		return
 	}
-	ResponseOK(ctx, "two_factor.send_email_code_success", c.i18n)
+	response.OK(ctx, "two_factor.send_email_code_success")
 }
 
 // VerifyTwoFactor verifies two-factor authentication code
@@ -448,14 +444,14 @@ func (c *SecurityController) VerifyTwoFactor(ctx *gin.Context) {
 	// Bind request parameters
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(err))
-		ResponseBadRequest(ctx, err, "validation.invalid_request_format", c.i18n)
+		response.BadRequest(ctx, err, "validation.invalid_request_format")
 		return
 	}
 
 	// Validate request parameters
 	if err := c.validator.Struct(&req); err != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(err))
-		ResponseBadRequest(ctx, err, "validation.request_validation_failed", c.i18n)
+		response.BadRequest(ctx, err, "validation.request_validation_failed")
 		return
 	}
 
@@ -463,13 +459,13 @@ func (c *SecurityController) VerifyTwoFactor(ctx *gin.Context) {
 	result, err := c.twoFactorService.VerifyTwoFactor(ctx.Request.Context(), req.UserID, req.Code, req.Method)
 	if err != nil {
 		if err.Error() == "invalid code" || err.Error() == "code expired" {
-			ResponseUnauthorized(ctx, "two_factor.invalid_code", c.i18n)
+			response.Unauthorized(ctx, "two_factor.invalid_code")
 			return
 		}
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err, c.logger)
 		return
 	}
-	ResponseOKWithData(ctx, result, "two_factor.verify_success", c.i18n)
+	response.OKWithData(ctx, result, "two_factor.verify_success")
 }
 
 // GetTwoFactorStatus gets user's two-factor authentication status
@@ -486,17 +482,17 @@ func (c *SecurityController) GetTwoFactorStatus(ctx *gin.Context) {
 	// Get current user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		response.Unauthorized(ctx, "auth.user_not_authenticated")
 		return
 	}
 
 	// Get two-factor status
 	status, err := c.twoFactorService.GetTwoFactorStatus(ctx.Request.Context(), userID.(uint))
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err, c.logger)
 		return
 	}
-	ResponseOKWithData(ctx, status, "common.success", c.i18n)
+	response.OKWithData(ctx, status, "common.success")
 }
 
 // GenerateBackupCodes generates backup codes for two-factor authentication
@@ -514,17 +510,17 @@ func (c *SecurityController) GenerateBackupCodes(ctx *gin.Context) {
 	// Get current user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		response.Unauthorized(ctx, "auth.user_not_authenticated")
 		return
 	}
 
 	// Generate backup codes
 	codes, err := c.twoFactorService.GenerateBackupCodes(ctx.Request.Context(), userID.(uint))
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err, c.logger)
 		return
 	}
-	ResponseOKWithData(ctx, codes, "two_factor.backup_codes_success", c.i18n)
+	response.OKWithData(ctx, codes, "two_factor.backup_codes_success")
 }
 
 // DisableTwoFactor disables two-factor authentication
@@ -540,7 +536,7 @@ func (c *SecurityController) GenerateBackupCodes(ctx *gin.Context) {
 // @Router /api/v1/two-factor/disable [post]
 func (c *SecurityController) DisableTwoFactor(ctx *gin.Context) {
 	// Get user ID from path parameter
-	userID, ok := ParseIDParam(ctx, "user_id", "validation.invalid_user_id", c.i18n)
+	userID, ok := ParseIDParam(ctx, "user_id", "validation.invalid_user_id")
 	if !ok {
 		return
 	}
@@ -548,24 +544,24 @@ func (c *SecurityController) DisableTwoFactor(ctx *gin.Context) {
 	// Get current user ID for authorization check
 	currentUserID, exists := ctx.Get("user_id")
 	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		response.Unauthorized(ctx, "auth.user_not_authenticated")
 		return
 	}
 
 	// Check if user can manage this account (self or admin)
 	if userID != currentUserID.(uint) {
 		// TODO: Add admin permission check here
-		ResponseForbidden(ctx, "auth.insufficient_permissions", c.i18n)
+		response.AccessForbidden(ctx, "auth.insufficient_permissions")
 		return
 	}
 
 	// Disable two-factor authentication
 	err := c.twoFactorService.DisableEmailTwoFactor(ctx.Request.Context(), userID)
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err, c.logger)
 		return
 	}
-	ResponseOK(ctx, "two_factor.disable_success", c.i18n)
+	response.OK(ctx, "two_factor.disable_success")
 }
 
 // GenerateTOTPSecret generates TOTP secret
@@ -581,7 +577,7 @@ func (c *SecurityController) DisableTwoFactor(ctx *gin.Context) {
 // @Router /api/v1/two-factor/totp/generate [post]
 func (c *SecurityController) GenerateTOTPSecret(ctx *gin.Context) {
 	// Get user ID from path parameter
-	userID, ok := ParseIDParam(ctx, "user_id", "validation.invalid_user_id", c.i18n)
+	userID, ok := ParseIDParam(ctx, "user_id", "validation.invalid_user_id")
 	if !ok {
 		return
 	}
@@ -589,22 +585,22 @@ func (c *SecurityController) GenerateTOTPSecret(ctx *gin.Context) {
 	// Get current user ID for authorization check
 	currentUserID, exists := ctx.Get("user_id")
 	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		response.Unauthorized(ctx, "auth.user_not_authenticated")
 		return
 	}
 
 	// Check if user can manage this account (self or admin)
 	if userID != currentUserID.(uint) {
 		// TODO: Add admin permission check here
-		ResponseForbidden(ctx, "auth.insufficient_permissions", c.i18n)
+		response.AccessForbidden(ctx, "auth.insufficient_permissions")
 		return
 	}
 
 	// Generate TOTP secret
 	setup, err := c.twoFactorService.EnableTOTP(ctx.Request.Context(), userID)
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err, c.logger)
 		return
 	}
-	ResponseOKWithData(ctx, setup, "two_factor.totp_generate_success", c.i18n)
+	response.OKWithData(ctx, setup, "two_factor.totp_generate_success")
 }

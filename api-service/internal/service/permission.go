@@ -7,7 +7,6 @@ import (
 	"api-service/internal/interface/service"
 	"api-service/internal/model"
 	"api-service/pkg/errors"
-	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
 	"context"
 	"math"
@@ -19,7 +18,6 @@ type permissionService struct {
 	permissionRepo repository.PermissionRepository
 	db             *gorm.DB
 	logger         logger.Logger
-	i18n           *i18n.I18n
 }
 
 // NewPermissionService creates a new permission service instance
@@ -27,13 +25,11 @@ func NewPermissionService(
 	permissionRepo repository.PermissionRepository,
 	db *gorm.DB,
 	logger logger.Logger,
-	i18n *i18n.I18n,
 ) service.PermissionService {
 	return &permissionService{
 		permissionRepo: permissionRepo,
 		db:             db,
 		logger:         logger,
-		i18n:           i18n,
 	}
 }
 

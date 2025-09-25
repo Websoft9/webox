@@ -2,11 +2,11 @@ package controller
 
 import (
 	"api-service/internal/dto/request"
+	"api-service/internal/dto/response"
 	"api-service/internal/interface/service"
 	"api-service/pkg/errors"
 	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
-	pkg_response "api-service/pkg/response"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -83,7 +83,7 @@ func (tc *TagController) CreateTag(c *gin.Context) {
 	}
 
 	tc.logger.InfoContext(c, "Tag created successfully", logger.Uint("tag_id", uint(tag.ID)))
-	pkg_response.Success(c, tc.i18n.T(c, "tag.create.success"), tag)
+	response.Success(c, tc.i18n.T(c, "tag.create.success"), tag)
 }
 
 // GetTag retrieves a tag by ID
@@ -115,7 +115,7 @@ func (tc *TagController) GetTag(c *gin.Context) {
 		return
 	}
 
-	pkg_response.Success(c, tc.i18n.T(c, "tag.get.success"), tag)
+	response.Success(c, tc.i18n.T(c, "tag.get.success"), tag)
 }
 
 // UpdateTag updates an existing tag
@@ -164,7 +164,7 @@ func (tc *TagController) UpdateTag(c *gin.Context) {
 	}
 
 	tc.logger.InfoContext(c, "Tag updated successfully", logger.Uint("tag_id", uint(id)))
-	pkg_response.Success(c, tc.i18n.T(c, "tag.update.success"), tag)
+	response.Success(c, tc.i18n.T(c, "tag.update.success"), tag)
 }
 
 // DeleteTag deletes a tag
@@ -204,7 +204,7 @@ func (tc *TagController) DeleteTag(c *gin.Context) {
 	}
 
 	tc.logger.InfoContext(c, "Tag deleted successfully", logger.Uint("tag_id", uint(id)))
-	pkg_response.Success(c, tc.i18n.T(c, "tag.delete.success"), nil)
+	response.Success(c, tc.i18n.T(c, "tag.delete.success"), nil)
 }
 
 // ListTags lists tags with optional filtering
@@ -235,7 +235,7 @@ func (tc *TagController) ListTags(c *gin.Context) {
 		return
 	}
 
-	pkg_response.Success(c, tc.i18n.T(c, "tag.list.success"), tags)
+	response.Success(c, tc.i18n.T(c, "tag.list.success"), tags)
 }
 
 // AssignTags assigns tags to resources
@@ -276,7 +276,7 @@ func (tc *TagController) AssignTags(c *gin.Context) {
 	tc.logger.InfoContext(c, "Tags assigned successfully",
 		logger.Uint("resource_id", uint(req.ResourceID)),
 		logger.Int("tag_count", len(req.TagNames)))
-	pkg_response.Success(c, tc.i18n.T(c, "tag.assign.success"), result)
+	response.Success(c, tc.i18n.T(c, "tag.assign.success"), result)
 }
 
 // ReplaceTags replaces all tags for resources
@@ -317,7 +317,7 @@ func (tc *TagController) ReplaceTags(c *gin.Context) {
 	tc.logger.InfoContext(c, "Tags replaced successfully",
 		logger.Uint("resource_id", uint(req.ResourceID)),
 		logger.Int("tag_count", len(req.TagNames)))
-	pkg_response.Success(c, tc.i18n.T(c, "tag.replace.success"), result)
+	response.Success(c, tc.i18n.T(c, "tag.replace.success"), result)
 }
 
 // UnassignTags removes tags from resources
@@ -358,7 +358,7 @@ func (tc *TagController) UnassignTags(c *gin.Context) {
 	tc.logger.InfoContext(c, "Tags unassigned successfully",
 		logger.Uint("resource_id", uint(req.ResourceID)),
 		logger.Int("tag_count", len(req.TagIDs)))
-	pkg_response.Success(c, tc.i18n.T(c, "tag.unassign.success"), result)
+	response.Success(c, tc.i18n.T(c, "tag.unassign.success"), result)
 }
 
 // SearchTags searches for tags
@@ -391,7 +391,7 @@ func (tc *TagController) SearchTags(c *gin.Context) {
 	tc.logger.InfoContext(c, "Tags searched successfully",
 		logger.String("query", req.Q),
 		logger.Int("result_count", len(tags)))
-	pkg_response.Success(c, tc.i18n.T(c, "tag.search.success"), tags)
+	response.Success(c, tc.i18n.T(c, "tag.search.success"), tags)
 }
 
 // GetResourceTags gets tags for a specific resource
@@ -424,7 +424,7 @@ func (tc *TagController) GetResourceTags(c *gin.Context) {
 	tc.logger.InfoContext(c, "Resource tags retrieved successfully",
 		logger.Uint("resource_id", uint(req.ResourceID)),
 		logger.Int("tag_count", len(tags)))
-	pkg_response.Success(c, tc.i18n.T(c, "tag.resource.success"), tags)
+	response.Success(c, tc.i18n.T(c, "tag.resource.success"), tags)
 }
 
 // SearchResourcesByTags searches for resources by tags
@@ -462,5 +462,5 @@ func (tc *TagController) SearchResourcesByTags(c *gin.Context) {
 		logger.Int("tag_id_count", len(req.TagIDs)),
 		logger.Int("tag_name_count", len(req.TagNames)),
 		logger.String("operation", req.Operation))
-	pkg_response.Success(c, tc.i18n.T(c, "tag.search.resources.success"), result)
+	response.Success(c, tc.i18n.T(c, "tag.search.resources.success"), result)
 }

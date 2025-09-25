@@ -50,7 +50,7 @@ database:
 
   # MySQL specific settings
   charset: "utf8mb4"
-  timezone: "Local" # Local, UTC, or specific timezone
+  timezone: "UTC" # Local, UTC, or specific timezone
 
 redis:
   host: "localhost"
