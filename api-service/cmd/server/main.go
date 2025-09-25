@@ -409,7 +409,7 @@ func initBusinessServices(
 		userProfileService:  serviceImpl.NewUserProfileService(repos.userProfileRepo, zapLogger, i18nInstance),
 		systemConfigService: serviceImpl.NewSystemConfigService(repos.systemConfigRepo, cfg, db, zapLogger, i18nInstance),
 		alertServices:       serviceImpl.NewAlertService(repos.alertRepo, zapLogger, i18nInstance),
-		secretKeyService:    serviceImpl.NewSecretKeyService(repos.secretKeyRepo, zapLogger, i18nInstance),
+		secretKeyService:    serviceImpl.NewSecretKeyService(repos.secretKeyRepo, zapLogger, i18nInstance, cfg),
 	}
 }
 

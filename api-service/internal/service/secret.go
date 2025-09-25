@@ -6,8 +6,10 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"os"
 	"time"
 
+	"api-service/internal/config"
 	"api-service/internal/constants"
 	"api-service/internal/dto/request"
 	"api-service/internal/dto/response"
@@ -27,6 +29,7 @@ type secretKeyService struct {
 	secretKeyRepo repository.SecretKeyRepository
 	logger        logger.Logger
 	i18n          *i18n.I18n
+	rsaCrypto     *crypto.RSACrypto
 }
 
 // NewSecretKeyService creates a new secret key service
@@ -34,12 +37,46 @@ func NewSecretKeyService(
 	secretKeyRepo repository.SecretKeyRepository,
 	logger logger.Logger,
 	i18n *i18n.I18n,
+	cfg *config.Config,
 ) service.SecretKeyService {
+	rsaCrypto, err := initRSACryptoFromConfig(&cfg.Security)
+	if err != nil {
+		rsaCrypto, err = crypto.NewRSACrypto(crypto.MinRSAKeySize)
+		if err != nil {
+			panic(fmt.Sprintf("Failed to initialize RSA crypto: %v", err))
+		}
+	}
 	return &secretKeyService{
 		secretKeyRepo: secretKeyRepo,
 		logger:        logger,
 		i18n:          i18n,
+		rsaCrypto:     rsaCrypto,
 	}
+}
+
+func initRSACryptoFromConfig(securityConfig *config.SecurityConfig) (*crypto.RSACrypto, error) {
+	var privateKeyPEM, publicKeyPEM string
+
+	if securityConfig.RSAPrivateKey != "" && securityConfig.RSAPublicKey != "" {
+		privateKeyPEM = securityConfig.RSAPrivateKey
+		publicKeyPEM = securityConfig.RSAPublicKey
+	} else if securityConfig.RSAPrivateKeyFile != "" && securityConfig.RSAPublicKeyFile != "" {
+		privateKeyBytes, err := os.ReadFile(securityConfig.RSAPrivateKeyFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read private key file: %w", err)
+		}
+		privateKeyPEM = string(privateKeyBytes)
+
+		publicKeyBytes, err := os.ReadFile(securityConfig.RSAPublicKeyFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read public key file: %w", err)
+		}
+		publicKeyPEM = string(publicKeyBytes)
+	} else {
+		return nil, fmt.Errorf("no RSA keys configured")
+	}
+
+	return crypto.NewRSACryptoFromKeys(privateKeyPEM, publicKeyPEM)
 }
 
 // CreateSecretKey creates a new secret key
@@ -62,15 +99,8 @@ func (s *secretKeyService) CreateSecretKey(ctx context.Context, req *request.Sec
 		return nil, errors.NewAppError(errors.CodeResourceAlreadyExists, s.i18n.T(ctx, "secret.name_already_exists"))
 	}
 
-	// Encrypt the secret value using RSA
-	rsaCrypto, err := crypto.NewRSACrypto(crypto.MinRSAKeySize)
-	if err != nil {
-		s.logger.ErrorContext(ctx, "Failed to create RSA crypto",
-			logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeEncryptFailed, s.i18n.T(ctx, "business.encrypt_failed"))
-	}
+	encryptedValue, err := s.rsaCrypto.EncryptString(req.EncryptedValue)
 
-	encryptedValue, err := rsaCrypto.EncryptString(req.EncryptedValue)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to encrypt secret key value",
 			logger.ErrorField(err))
@@ -161,14 +191,8 @@ func (s *secretKeyService) GetSecretKeyValue(ctx context.Context, id, userID uin
 		logger.Uint("secret_key_id", id),
 		logger.Uint("user_id", userID))
 
-	rsaCrypto, err := crypto.NewRSACrypto(crypto.MinRSAKeySize)
-	if err != nil {
-		s.logger.ErrorContext(ctx, "Failed to create RSA crypto",
-			logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeDecryptFailed, s.i18n.T(ctx, "business.decrypt_failed"))
-	}
+	decryptedValue, err := s.rsaCrypto.DecryptString(secretKey.EncryptedValue)
 
-	decryptedValue, err := rsaCrypto.DecryptString(secretKey.EncryptedValue)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to decrypt secret key value",
 			logger.ErrorField(err))
@@ -201,14 +225,8 @@ func (s *secretKeyService) UpdateSecretKey(ctx context.Context, id, userID uint,
 	}
 
 	// Encrypt the secret value using RSA
-	rsaCrypto, err := crypto.NewRSACrypto(crypto.MinRSAKeySize)
-	if err != nil {
-		s.logger.ErrorContext(ctx, "Failed to create RSA crypto",
-			logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeEncryptFailed, s.i18n.T(ctx, "business.encrypt_failed"))
-	}
+	encryptedValue, err := s.rsaCrypto.EncryptString(req.EncryptedValue)
 
-	encryptedValue, err := rsaCrypto.EncryptString(req.EncryptedValue)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to encrypt secret key value",
 			logger.ErrorField(err))

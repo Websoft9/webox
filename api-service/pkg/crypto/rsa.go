@@ -1,6 +1,7 @@
 package crypto
 
 import (
+	"api-service/internal/config"
 	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
@@ -10,6 +11,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"os"
 )
 
 const (
@@ -67,6 +69,31 @@ func NewRSACryptoFromPrivateKey(privateKeyPEM string) (*RSACrypto, error) {
 		privateKey: privateKey,
 		publicKey:  &privateKey.PublicKey,
 	}, nil
+}
+
+func NewRSACryptoFromConfig(securityConfig config.SecurityConfig) (*RSACrypto, error) {
+	var privateKeyPEM, publicKeyPEM string
+
+	if securityConfig.RSAPrivateKey != "" && securityConfig.RSAPublicKey != "" {
+		privateKeyPEM = securityConfig.RSAPrivateKey
+		publicKeyPEM = securityConfig.RSAPublicKey
+	} else if securityConfig.RSAPrivateKeyFile != "" && securityConfig.RSAPublicKeyFile != "" {
+		privateKeyBytes, err := os.ReadFile(securityConfig.RSAPrivateKeyFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read private key file: %w", err)
+		}
+		privateKeyPEM = string(privateKeyBytes)
+
+		publicKeyBytes, err := os.ReadFile(securityConfig.RSAPublicKeyFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read public key file: %w", err)
+		}
+		publicKeyPEM = string(publicKeyBytes)
+	} else {
+		return NewRSACrypto(MinRSAKeySize)
+	}
+
+	return NewRSACryptoFromKeys(privateKeyPEM, publicKeyPEM)
 }
 
 // NewRSACryptoFromKeys creates an RSA crypto instance from PEM-encoded private and public keys
