@@ -2,9 +2,10 @@ package controller
 
 import (
 	"api-service/internal/dto/request"
+	"api-service/internal/dto/response"
 	"api-service/internal/interface/service"
-	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
+	"api-service/pkg/utils"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -17,7 +18,6 @@ type RolePermissionController struct {
 	permissionService service.PermissionService
 	validator         *validator.Validate
 	logger            logger.Logger
-	i18n              *i18n.I18n
 }
 
 // NewRolePermissionController creates a new role & permission controller instance
@@ -26,14 +26,12 @@ func NewRolePermissionController(
 	permissionService service.PermissionService,
 	validator *validator.Validate,
 	logger logger.Logger,
-	i18n *i18n.I18n,
 ) *RolePermissionController {
 	return &RolePermissionController{
 		roleService:       roleService,
 		permissionService: permissionService,
 		validator:         validator,
 		logger:            logger,
-		i18n:              i18n,
 	}
 }
 
@@ -53,24 +51,24 @@ func (c *RolePermissionController) CreateRole(ctx *gin.Context) {
 	var req request.CreateRoleRequest
 
 	// Bind and validate request
-	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger, c.i18n) {
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
 	// Get current user ID
-	userID, ok := GetUserID(ctx, c.i18n)
+	userID, ok := GetUserID(ctx)
 	if !ok {
 		return
 	}
 
 	// Create role
-	role, err := c.roleService.CreateRole(ctx.Request.Context(), &req, userID)
+	role, err := c.roleService.CreateRole(utils.ContextWithUserID(ctx), &req, userID)
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err, c.logger)
 		return
 	}
 
-	ResponseOKWithData(ctx, role, "role.created_success", c.i18n)
+	response.OKWithData(ctx, role, "role.created_success")
 }
 
 // GetRole gets role details
@@ -87,19 +85,19 @@ func (c *RolePermissionController) CreateRole(ctx *gin.Context) {
 // @Router /api/v1/roles/{id} [get]
 func (c *RolePermissionController) GetRole(ctx *gin.Context) {
 	// Get role ID
-	id, ok := ParseIDParam(ctx, "id", "validation.invalid_role_id", c.i18n)
+	id, ok := ParseIDParam(ctx, "id", "validation.invalid_role_id")
 	if !ok {
 		return
 	}
 
 	// Get role
-	role, err := c.roleService.GetRole(ctx.Request.Context(), id)
+	role, err := c.roleService.GetRole(utils.ContextWithUserID(ctx), id)
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err, c.logger)
 		return
 	}
 
-	ResponseOKWithData(ctx, role, "common.success", c.i18n)
+	response.OKWithData(ctx, role, "common.success")
 }
 
 // ListRoles gets role list
@@ -124,24 +122,24 @@ func (c *RolePermissionController) ListRoles(ctx *gin.Context) {
 	// Bind query parameters
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Invalid query parameters", logger.ErrorField(err))
-		ResponseBadRequest(ctx, err, "validation.invalid_query_parameters", c.i18n)
+		response.BadRequest(ctx, err, "validation.invalid_query_parameters")
 		return
 	}
 
 	// Validate request parameters
 	if err := c.validator.Struct(&req); err != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Query validation failed", logger.ErrorField(err))
-		ResponseBadRequest(ctx, err, "validation.query_validation_failed", c.i18n)
+		response.BadRequest(ctx, err, "validation.query_validation_failed")
 		return
 	}
 
 	// Get role list
-	roles, err := c.roleService.ListRoles(ctx.Request.Context(), &req)
+	roles, err := c.roleService.ListRoles(utils.ContextWithUserID(ctx), &req)
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err, c.logger)
 		return
 	}
-	ResponseOKWithData(ctx, roles, "common.success", c.i18n)
+	response.OKWithData(ctx, roles, "common.success")
 }
 
 // UpdateRole updates role
@@ -162,7 +160,7 @@ func (c *RolePermissionController) UpdateRole(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		ResponseBadRequest(ctx, err, "validation.invalid_role_id", c.i18n)
+		response.BadRequest(ctx, err, "validation.invalid_role_id")
 		return
 	}
 
@@ -171,32 +169,32 @@ func (c *RolePermissionController) UpdateRole(ctx *gin.Context) {
 	// Bind request parameters
 	if bindErr := ctx.ShouldBindJSON(&req); bindErr != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(bindErr))
-		ResponseBadRequest(ctx, bindErr, "validation.invalid_request_format", c.i18n)
+		response.BadRequest(ctx, bindErr, "validation.invalid_request_format")
 		return
 	}
 
 	// Validate request parameters
 	if validateErr := c.validator.Struct(&req); validateErr != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(validateErr))
-		ResponseBadRequest(ctx, validateErr, "validation.request_validation_failed", c.i18n)
+		response.BadRequest(ctx, validateErr, "validation.request_validation_failed")
 		return
 	}
 
 	// Get current user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		response.Unauthorized(ctx, "auth.user_not_authenticated")
 		return
 	}
 
 	// Update role
-	role, err := c.roleService.UpdateRole(ctx.Request.Context(), uint(id), &req, userID.(uint))
+	role, err := c.roleService.UpdateRole(utils.ContextWithUserID(ctx), uint(id), &req, userID.(uint))
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err, c.logger)
 		return
 	}
 
-	ResponseOKWithData(ctx, role, "role.update_success", c.i18n)
+	response.OKWithData(ctx, role, "role.update_success")
 }
 
 // DeleteRole deletes role
@@ -216,17 +214,17 @@ func (c *RolePermissionController) DeleteRole(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		ResponseBadRequest(ctx, err, "validation.invalid_role_id", c.i18n)
+		response.BadRequest(ctx, err, "validation.invalid_role_id")
 		return
 	}
 
 	// Delete role
-	err = c.roleService.DeleteRole(ctx.Request.Context(), uint(id))
+	err = c.roleService.DeleteRole(utils.ContextWithUserID(ctx), uint(id))
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err, c.logger)
 		return
 	}
-	ResponseOK(ctx, "role.delete_success", c.i18n)
+	response.OK(ctx, "role.delete_success")
 }
 
 // AssignPermissions assigns permissions to role
@@ -247,7 +245,7 @@ func (c *RolePermissionController) AssignPermissions(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		ResponseBadRequest(ctx, err, "validation.invalid_role_id", c.i18n)
+		response.BadRequest(ctx, err, "validation.invalid_role_id")
 		return
 	}
 
@@ -256,31 +254,31 @@ func (c *RolePermissionController) AssignPermissions(ctx *gin.Context) {
 	// Bind request parameters
 	if bindErr := ctx.ShouldBindJSON(&req); bindErr != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(bindErr))
-		ResponseBadRequest(ctx, bindErr, "validation.invalid_request_format", c.i18n)
+		response.BadRequest(ctx, bindErr, "validation.invalid_request_format")
 		return
 	}
 
 	// Validate request parameters
 	if validateErr := c.validator.Struct(&req); validateErr != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(validateErr))
-		ResponseBadRequest(ctx, validateErr, "validation.request_validation_failed", c.i18n)
+		response.BadRequest(ctx, validateErr, "validation.request_validation_failed")
 		return
 	}
 
 	// Get current user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		response.Unauthorized(ctx, "auth.user_not_authenticated")
 		return
 	}
 
 	// Assign permissions
-	err = c.roleService.AssignPermissions(ctx.Request.Context(), uint(id), &req, userID.(uint))
+	err = c.roleService.AssignPermissions(utils.ContextWithUserID(ctx), uint(id), &req, userID.(uint))
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err, c.logger)
 		return
 	}
-	ResponseOK(ctx, "role.assign_permissions_success", c.i18n)
+	response.OK(ctx, "role.assign_permissions_success")
 }
 
 // RemovePermissions removes permissions from role
@@ -301,7 +299,7 @@ func (c *RolePermissionController) RemovePermissions(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		ResponseBadRequest(ctx, err, "validation.invalid_role_id", c.i18n)
+		response.BadRequest(ctx, err, "validation.invalid_role_id")
 		return
 	}
 
@@ -310,24 +308,24 @@ func (c *RolePermissionController) RemovePermissions(ctx *gin.Context) {
 	// Bind request parameters
 	if bindErr := ctx.ShouldBindJSON(&req); bindErr != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(bindErr))
-		ResponseBadRequest(ctx, bindErr, "validation.invalid_request_format", c.i18n)
+		response.BadRequest(ctx, bindErr, "validation.invalid_request_format")
 		return
 	}
 
 	// Validate request parameters
 	if validateErr := c.validator.Struct(&req); validateErr != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(validateErr))
-		ResponseBadRequest(ctx, validateErr, "validation.request_validation_failed", c.i18n)
+		response.BadRequest(ctx, validateErr, "validation.request_validation_failed")
 		return
 	}
 
 	// Remove permissions
-	err = c.roleService.RemovePermissions(ctx.Request.Context(), uint(id), &req)
+	err = c.roleService.RemovePermissions(utils.ContextWithUserID(ctx), uint(id), &req)
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err, c.logger)
 		return
 	}
-	ResponseOK(ctx, "role.remove_permissions_success", c.i18n)
+	response.OK(ctx, "role.remove_permissions_success")
 }
 
 // GetRoleUsers gets users associated with role
@@ -346,7 +344,7 @@ func (c *RolePermissionController) RemovePermissions(ctx *gin.Context) {
 // @Router /api/v1/roles/{id}/users [get]
 func (c *RolePermissionController) GetRoleUsers(ctx *gin.Context) {
 	// Get role ID
-	id, ok := ParseIDParam(ctx, "id", "validation.invalid_role_id", c.i18n)
+	id, ok := ParseIDParam(ctx, "id", "validation.invalid_role_id")
 	if !ok {
 		return
 	}
@@ -355,12 +353,12 @@ func (c *RolePermissionController) GetRoleUsers(ctx *gin.Context) {
 	page, pageSize := GetPaginationParams(ctx)
 
 	// Get role users
-	users, err := c.roleService.GetRoleUsers(ctx.Request.Context(), id, page, pageSize)
+	users, err := c.roleService.GetRoleUsers(utils.ContextWithUserID(ctx), id, page, pageSize)
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err, c.logger)
 		return
 	}
-	ResponseOKWithData(ctx, users, "common.success", c.i18n)
+	response.OKWithData(ctx, users, "common.success")
 }
 
 // CreatePermission creates a new permission
@@ -379,23 +377,23 @@ func (c *RolePermissionController) CreatePermission(ctx *gin.Context) {
 	var req request.CreatePermissionRequest
 
 	// Bind and validate request
-	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger, c.i18n) {
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
 	// Get current user ID
-	userID, ok := GetUserID(ctx, c.i18n)
+	userID, ok := GetUserID(ctx)
 	if !ok {
 		return
 	}
 
 	// Create permission
-	permission, err := c.permissionService.CreatePermission(ctx.Request.Context(), &req, userID)
+	permission, err := c.permissionService.CreatePermission(utils.ContextWithUserID(ctx), &req, userID)
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err, c.logger)
 		return
 	}
-	ResponseOKWithData(ctx, permission, "permission.created_success", c.i18n)
+	response.OKWithData(ctx, permission, "permission.created_success")
 }
 
 // GetPermission gets permission details
@@ -412,18 +410,18 @@ func (c *RolePermissionController) CreatePermission(ctx *gin.Context) {
 // @Router /api/v1/permissions/{id} [get]
 func (c *RolePermissionController) GetPermission(ctx *gin.Context) {
 	// Get permission ID
-	id, ok := ParseIDParam(ctx, "id", "validation.invalid_permission_id", c.i18n)
+	id, ok := ParseIDParam(ctx, "id", "validation.invalid_permission_id")
 	if !ok {
 		return
 	}
 
 	// Get permission
-	permission, err := c.permissionService.GetPermission(ctx.Request.Context(), id)
+	permission, err := c.permissionService.GetPermission(utils.ContextWithUserID(ctx), id)
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err, c.logger)
 		return
 	}
-	ResponseOKWithData(ctx, permission, "common.success", c.i18n)
+	response.OKWithData(ctx, permission, "common.success")
 }
 
 // UpdatePermission updates permission
@@ -444,7 +442,7 @@ func (c *RolePermissionController) UpdatePermission(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		ResponseBadRequest(ctx, err, "validation.invalid_permission_id", c.i18n)
+		response.BadRequest(ctx, err, "validation.invalid_permission_id")
 		return
 	}
 
@@ -453,31 +451,31 @@ func (c *RolePermissionController) UpdatePermission(ctx *gin.Context) {
 	// Bind request parameters
 	if bindErr := ctx.ShouldBindJSON(&req); bindErr != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(bindErr))
-		ResponseBadRequest(ctx, bindErr, "validation.invalid_request_format", c.i18n)
+		response.BadRequest(ctx, bindErr, "validation.invalid_request_format")
 		return
 	}
 
 	// Validate request parameters
 	if validateErr := c.validator.Struct(&req); validateErr != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(validateErr))
-		ResponseBadRequest(ctx, validateErr, "validation.request_validation_failed", c.i18n)
+		response.BadRequest(ctx, validateErr, "validation.request_validation_failed")
 		return
 	}
 
 	// Get current user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		response.Unauthorized(ctx, "auth.user_not_authenticated")
 		return
 	}
 
 	// Update permission
-	permission, err := c.permissionService.UpdatePermission(ctx.Request.Context(), uint(id), &req, userID.(uint))
+	permission, err := c.permissionService.UpdatePermission(utils.ContextWithUserID(ctx), uint(id), &req, userID.(uint))
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err, c.logger)
 		return
 	}
-	ResponseOKWithData(ctx, permission, "permission.update_success", c.i18n)
+	response.OKWithData(ctx, permission, "permission.update_success")
 }
 
 // DeletePermission deletes permission
@@ -497,17 +495,17 @@ func (c *RolePermissionController) DeletePermission(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		ResponseBadRequest(ctx, err, "validation.invalid_permission_id", c.i18n)
+		response.BadRequest(ctx, err, "validation.invalid_permission_id")
 		return
 	}
 
 	// Delete permission
-	err = c.permissionService.DeletePermission(ctx.Request.Context(), uint(id))
+	err = c.permissionService.DeletePermission(utils.ContextWithUserID(ctx), uint(id))
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err, c.logger)
 		return
 	}
-	ResponseOK(ctx, "permission.delete_success", c.i18n)
+	response.OK(ctx, "permission.delete_success")
 }
 
 // ListPermissions gets permission list
@@ -534,24 +532,24 @@ func (c *RolePermissionController) ListPermissions(ctx *gin.Context) {
 	// Bind query parameters
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Invalid query parameters", logger.ErrorField(err))
-		ResponseBadRequest(ctx, err, "validation.invalid_query_parameters", c.i18n)
+		response.BadRequest(ctx, err, "validation.invalid_query_parameters")
 		return
 	}
 
 	// Validate request parameters
 	if err := c.validator.Struct(&req); err != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Query validation failed", logger.ErrorField(err))
-		ResponseBadRequest(ctx, err, "validation.query_validation_failed", c.i18n)
+		response.BadRequest(ctx, err, "validation.query_validation_failed")
 		return
 	}
 
 	// Get permission list
-	permissions, err := c.permissionService.ListPermissions(ctx.Request.Context(), &req)
+	permissions, err := c.permissionService.ListPermissions(utils.ContextWithUserID(ctx), &req)
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err, c.logger)
 		return
 	}
-	ResponseOKWithData(ctx, permissions, "common.success", c.i18n)
+	response.OKWithData(ctx, permissions, "common.success")
 }
 
 // GetPermissionTree gets permission tree
@@ -572,24 +570,24 @@ func (c *RolePermissionController) GetPermissionTree(ctx *gin.Context) {
 	// Bind query parameters
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Invalid query parameters", logger.ErrorField(err))
-		ResponseBadRequest(ctx, err, "validation.invalid_query_parameters", c.i18n)
+		response.BadRequest(ctx, err, "validation.invalid_query_parameters")
 		return
 	}
 
 	// Validate request parameters
 	if err := c.validator.Struct(&req); err != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Query validation failed", logger.ErrorField(err))
-		ResponseBadRequest(ctx, err, "validation.query_validation_failed", c.i18n)
+		response.BadRequest(ctx, err, "validation.query_validation_failed")
 		return
 	}
 
 	// Get permission tree
-	tree, err := c.permissionService.GetPermissionTree(ctx.Request.Context(), &req)
+	tree, err := c.permissionService.GetPermissionTree(utils.ContextWithUserID(ctx), &req)
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err, c.logger)
 		return
 	}
-	ResponseOKWithData(ctx, tree, "common.success", c.i18n)
+	response.OKWithData(ctx, tree, "common.success")
 }
 
 // GetPermissionRoles gets roles associated with permission
@@ -611,7 +609,7 @@ func (c *RolePermissionController) GetPermissionRoles(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		ResponseBadRequest(ctx, err, "validation.invalid_permission_id", c.i18n)
+		response.BadRequest(ctx, err, "validation.invalid_permission_id")
 		return
 	}
 
@@ -632,10 +630,10 @@ func (c *RolePermissionController) GetPermissionRoles(ctx *gin.Context) {
 	}
 
 	// Get permission roles
-	roles, err := c.permissionService.GetPermissionRoles(ctx.Request.Context(), uint(id), page, pageSize)
+	roles, err := c.permissionService.GetPermissionRoles(utils.ContextWithUserID(ctx), uint(id), page, pageSize)
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err, c.logger)
 		return
 	}
-	ResponseOKWithData(ctx, roles, "common.success", c.i18n)
+	response.OKWithData(ctx, roles, "common.success")
 }

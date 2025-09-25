@@ -251,7 +251,6 @@ func setupRoleServiceTest() (*roleService, *MockRoleRepository, *MockPermissionR
 		permissionRepo: mockPermissionRepo,
 		db:             testDB,
 		logger:         mockLogger,
-		i18nInstance:   nil, // Mock i18n not needed for unit tests
 	}
 
 	return service, mockRoleRepo, mockPermissionRepo, mockDB

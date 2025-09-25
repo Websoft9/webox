@@ -2,11 +2,11 @@ package controller
 
 import (
 	"api-service/internal/dto/request"
+	"api-service/internal/dto/response"
 	"api-service/internal/interface/service"
 	"api-service/pkg/errors"
 	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
-	pkg_response "api-service/pkg/response"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -60,7 +60,7 @@ func (c *SecretKeyController) CreateSecretKey(ctx *gin.Context) {
 	// Get current logged in user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		response.Unauthorized(ctx, "auth.user_not_authenticated")
 		return
 	}
 
@@ -75,7 +75,7 @@ func (c *SecretKeyController) CreateSecretKey(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "Secret key created successfully", logger.Uint("userID", userID.(uint)))
-	pkg_response.Success(ctx, c.i18n.T(ctx, "secret_key.create_success"), secretKey)
+	response.OKWithData(ctx, secretKey, "secret_key.create_success")
 }
 
 // GetSecretKey retrieves a secret key by ID
@@ -106,7 +106,7 @@ func (c *SecretKeyController) GetSecretKey(ctx *gin.Context) {
 	// Get current logged in user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		response.Unauthorized(ctx, "auth.user_not_authenticated")
 		return
 	}
 
@@ -121,7 +121,7 @@ func (c *SecretKeyController) GetSecretKey(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "Secret key retrieved successfully", logger.Uint("userID", userID.(uint)))
-	pkg_response.Success(ctx, c.i18n.T(ctx, "secret_key.get_success"), secretKey)
+	response.OKWithData(ctx, secretKey, "secret_key.get_success")
 }
 
 // GetSecretKeyValue retrieves the decrypted value of a secret key
@@ -153,7 +153,7 @@ func (c *SecretKeyController) GetSecretKeyValue(ctx *gin.Context) {
 	// Get current logged in user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		response.Unauthorized(ctx, "auth.user_not_authenticated")
 		return
 	}
 
@@ -168,7 +168,7 @@ func (c *SecretKeyController) GetSecretKeyValue(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "Secret key value retrieved successfully", logger.Uint("userID", userID.(uint)))
-	pkg_response.Success(ctx, c.i18n.T(ctx, "secret_key.get_value_success"), secretKeyValue)
+	response.OKWithData(ctx, secretKeyValue, "secret_key.get_value_success")
 }
 
 // UpdateSecretKey updates an existing secret key
@@ -209,7 +209,7 @@ func (c *SecretKeyController) UpdateSecretKey(ctx *gin.Context) {
 	// Get current logged in user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		response.Unauthorized(ctx, "auth.user_not_authenticated")
 		return
 	}
 
@@ -224,7 +224,7 @@ func (c *SecretKeyController) UpdateSecretKey(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "Secret key updated successfully", logger.Uint("userID", userID.(uint)))
-	pkg_response.Success(ctx, c.i18n.T(ctx, "secret_key.update_success"), secretKey)
+	response.OKWithData(ctx, secretKey, "secret_key.update_success")
 }
 
 // DeleteSecretKey deletes a secret key
@@ -255,7 +255,7 @@ func (c *SecretKeyController) DeleteSecretKey(ctx *gin.Context) {
 	// Get current logged in user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		response.Unauthorized(ctx, "auth.user_not_authenticated")
 		return
 	}
 
@@ -270,7 +270,7 @@ func (c *SecretKeyController) DeleteSecretKey(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "Secret key deleted successfully", logger.Uint("userID", userID.(uint)))
-	pkg_response.Success(ctx, c.i18n.T(ctx, "secret_key.delete_success"), nil)
+	response.OK(ctx, "secret_key.delete_success")
 }
 
 // ListSecretKeys retrieves secret keys with pagination and filtering
@@ -300,7 +300,7 @@ func (c *SecretKeyController) ListSecretKeys(ctx *gin.Context) {
 	// Get current logged in user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		response.Unauthorized(ctx, "auth.user_not_authenticated")
 		return
 	}
 
@@ -315,7 +315,7 @@ func (c *SecretKeyController) ListSecretKeys(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "Secret keys retrieved successfully", logger.Uint("user_id", userID.(uint)))
-	pkg_response.Success(ctx, c.i18n.T(ctx, "secret_key.list_success"), secretKeys)
+	response.OKWithData(ctx, secretKeys, "secret_key.list_success")
 }
 
 // ExportSecretKeys exports secret keys in specified format
@@ -343,7 +343,7 @@ func (c *SecretKeyController) ExportSecretKeys(ctx *gin.Context) {
 	// Get current logged in user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		response.Unauthorized(ctx, "auth.user_not_authenticated")
 		return
 	}
 

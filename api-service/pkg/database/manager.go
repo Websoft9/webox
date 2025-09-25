@@ -2,6 +2,7 @@ package database
 
 import (
 	"api-service/internal/config"
+	"api-service/pkg/database/plugins"
 	"api-service/pkg/logger"
 	"context"
 	"fmt"
@@ -42,6 +43,19 @@ func NewDatabaseManagerFactory(cfg *config.Config) *DatabaseManagerFactory {
 // CreateManager creates the appropriate database manager based on configuration
 func (factory *DatabaseManagerFactory) CreateManager(db *gorm.DB) (DatabaseManager, error) {
 	logger.Debug("Creating database manager", logger.String("database_type", factory.config.Database.Type))
+
+	// Initialize timezone conversion plugin
+	if err := factory.initTimezonePlugin(db); err != nil {
+		logger.Error("Failed to initialize timezone plugin", logger.ErrorField(err))
+		// Does not affect manager creation, only logs the error
+	}
+
+	// Initialize Permission i18n hook
+	if err := factory.initPermissionI18nHook(db); err != nil {
+		logger.Error("Failed to initialize Permission i18n hook", logger.ErrorField(err))
+		// Does not affect manager creation, only logs the error
+	}
+
 	switch factory.config.Database.Type {
 	case DatabaseTypeSQLite:
 		logger.Debug("Creating SQLite manager")
@@ -56,6 +70,39 @@ func (factory *DatabaseManagerFactory) CreateManager(db *gorm.DB) (DatabaseManag
 		logger.Error("Unsupported database type", logger.String("database_type", factory.config.Database.Type))
 		return nil, fmt.Errorf("unsupported database type: %s", factory.config.Database.Type)
 	}
+}
+
+// initTimezonePlugin initializes the timezone conversion plugin
+func (factory *DatabaseManagerFactory) initTimezonePlugin(db *gorm.DB) error {
+	if db == nil {
+		return fmt.Errorf("database connection is nil")
+	}
+
+	// Create timezone conversion plugin with Redis client
+	timezonePlugin := plugins.NewTimezonePlugin(db, plugins.WithLogger(logger.GetDefault()))
+
+	// Register plugin to database
+	if err := db.Use(timezonePlugin); err != nil {
+		return fmt.Errorf("failed to register timezone plugin: %v", err)
+	}
+
+	logger.Info("Timezone conversion plugin initialized successfully")
+	return nil
+}
+
+// initPermissionI18nHook initializes the Permission i18n hook
+func (factory *DatabaseManagerFactory) initPermissionI18nHook(db *gorm.DB) error {
+	if db == nil {
+		return fmt.Errorf("database connection is nil")
+	}
+
+	// Register Permission i18n hook
+	if err := plugins.RegisterPermissionI18nHook(db); err != nil {
+		return fmt.Errorf("failed to register Permission i18n hook: %v", err)
+	}
+
+	logger.Info("Permission i18n hook initialized successfully")
+	return nil
 }
 
 // GenericManager is a generic database manager (for MySQL and PostgreSQL)

@@ -176,6 +176,8 @@ func initDatabaseWrapper(cfg *config.Config, zapLogger logger.Logger) (*database
 		&model.UserLoginHistory{},
 		&model.UserProfile{},
 		&model.SystemConfig{},
+		&model.Tag{},
+		&model.Tagging{},
 		&model.AlertRecord{},
 		&model.AlertRule{},
 		&model.SecretKey{},
@@ -346,6 +348,7 @@ type repositories struct {
 	auditLogRepo     repoInterface.AuditLogRepository
 	userProfileRepo  repoInterface.UserProfileRepository
 	systemConfigRepo repoInterface.SystemConfigRepository
+	tagRepo          repoInterface.TagRepository
 	alertRepo        repoInterface.AlertRepository
 	secretKeyRepo    repoInterface.SecretKeyRepository
 }
@@ -362,6 +365,7 @@ func initRepositories(db *gorm.DB) *repositories {
 		auditLogRepo:     repoImpl.NewAuditLogRepository(db),
 		userProfileRepo:  repoImpl.NewUserProfileRepository(db),
 		systemConfigRepo: repoImpl.NewSystemConfigRepository(db),
+		tagRepo:          repoImpl.NewTagRepository(db),
 		alertRepo:        repoImpl.NewAlertRepository(db),
 		secretKeyRepo:    repoImpl.NewSecretKeyRepository(db),
 	}
@@ -380,6 +384,7 @@ type businessServices struct {
 	auditLogService     serviceInterface.AuditLogService
 	userProfileService  serviceInterface.UserProfileService
 	systemConfigService serviceInterface.SystemConfigService
+	tagService          serviceInterface.TagService
 	alertServices       serviceInterface.AlertService
 	secretKeyService    serviceInterface.SecretKeyService
 }
@@ -398,16 +403,26 @@ func initBusinessServices(
 	oauth2Service := serviceImpl.NewOAuth2Service(authConfigManager, zapLogger)
 	userService := serviceImpl.NewUserService(repos.userRepo, zapLogger)
 	return &businessServices{
-		userService:         userService,
-		userAuthService:     serviceImpl.NewUserAuthService(repos.userRepo, repos.apiTokenRepo, oauth2Service, zapLogger, cfg, authConfigManager, i18nInstance),
-		roleService:         serviceImpl.NewRoleService(repos.roleRepo, repos.permissionRepo, db, zapLogger, i18nInstance),
-		permissionService:   serviceImpl.NewPermissionService(repos.permissionRepo, db, zapLogger, i18nInstance),
-		apiTokenService:     serviceImpl.NewAPITokenService(repos.apiTokenRepo, authConfigManager, db, zapLogger, i18nInstance),
+		userService: userService,
+		userAuthService: serviceImpl.NewUserAuthService(
+			repos.userRepo,
+			repos.apiTokenRepo,
+			repos.userProfileRepo,
+			repos.systemConfigRepo,
+			oauth2Service,
+			zapLogger,
+			cfg,
+			authConfigManager,
+		),
+		roleService:         serviceImpl.NewRoleService(repos.roleRepo, repos.permissionRepo, db, zapLogger),
+		permissionService:   serviceImpl.NewPermissionService(repos.permissionRepo, db, zapLogger),
+		apiTokenService:     serviceImpl.NewAPITokenService(repos.apiTokenRepo, authConfigManager, db, zapLogger),
 		authConfigService:   serviceImpl.NewAuthConfigService(authConfigManager, zapLogger),
-		twoFactorService:    serviceImpl.NewTwoFactorService(repos.twoFactorRepo, db, zapLogger, i18nInstance),
+		twoFactorService:    serviceImpl.NewTwoFactorService(repos.twoFactorRepo, db, zapLogger),
 		auditLogService:     serviceImpl.NewAuditLogService(repos.auditLogRepo, userService, db, zapLogger, i18nInstance, cfg),
-		userProfileService:  serviceImpl.NewUserProfileService(repos.userProfileRepo, zapLogger, i18nInstance),
 		systemConfigService: serviceImpl.NewSystemConfigService(repos.systemConfigRepo, cfg, db, zapLogger, i18nInstance),
+		userProfileService:  serviceImpl.NewUserProfileService(repos.userProfileRepo, zapLogger, i18nInstance),
+		tagService:          serviceImpl.NewTagService(repos.tagRepo, db, zapLogger, i18nInstance),
 		alertServices:       serviceImpl.NewAlertService(repos.alertRepo, zapLogger, i18nInstance),
 		secretKeyService:    serviceImpl.NewSecretKeyService(repos.secretKeyRepo, zapLogger, i18nInstance, cfg),
 	}
@@ -427,14 +442,13 @@ func initControllers(
 
 	return &router.Controllers{
 		UserController:     controller.NewUserController(services.userService, zapLogger, i18nInstance),
-		UserAuthController: controller.NewUserAuthController(services.userAuthService, zapLogger, i18nInstance),
+		UserAuthController: controller.NewUserAuthController(services.userAuthService, zapLogger),
 		I18nController:     controller.NewI18nController(),
 		RolePermissionController: controller.NewRolePermissionController(
 			services.roleService,
 			services.permissionService,
 			validatorInstance,
 			zapLogger,
-			i18nInstance,
 		),
 		SecurityController: controller.NewSecurityController(
 			services.apiTokenService,
@@ -443,7 +457,6 @@ func initControllers(
 			services.twoFactorService,
 			validatorInstance,
 			zapLogger,
-			i18nInstance,
 		),
 		HealthController:      controller.NewHealthController(cfg),
 		AuditLogController:    controller.NewAuditLogController(services.auditLogService, validatorInstance, zapLogger, i18nInstance),
@@ -452,6 +465,12 @@ func initControllers(
 		SecretKeyController:   controller.NewSecretKeyController(services.secretKeyService, zapLogger, i18nInstance),
 		SystemConfigController: controller.NewSystemConfigController(
 			services.systemConfigService,
+			validatorInstance,
+			zapLogger,
+			i18nInstance,
+		),
+		TagController: controller.NewTagController(
+			services.tagService,
 			validatorInstance,
 			zapLogger,
 			i18nInstance,

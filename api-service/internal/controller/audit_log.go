@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"api-service/internal/dto/response"
 	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
 	"fmt"
@@ -53,17 +54,17 @@ func (c *AuditLogController) GetAuditLog(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		ResponseBadRequest(ctx, err, "validation.invalid_query_parameters", c.i18n)
+		response.BadRequest(ctx, err, "validation.invalid_query_parameters")
 		return
 	}
 
 	auditLog, err := c.auditLogService.GetAuditLog(ctx.Request.Context(), uint(id))
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err, c.logger)
 		return
 	}
 
-	ResponseOKWithData(ctx, auditLog, "common.success", c.i18n)
+	response.OKWithData(ctx, auditLog, "common.success")
 }
 
 // ListAuditLogs get audit log list
@@ -87,17 +88,17 @@ func (c *AuditLogController) GetAuditLog(ctx *gin.Context) {
 func (c *AuditLogController) ListAuditLogs(ctx *gin.Context) {
 	var req request.ListAuditLogRequest
 
-	if !BindAndValidateQuery(ctx, &req, c.validator, c.logger, c.i18n) {
+	if !BindAndValidateQuery(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
 	result, err := c.auditLogService.ListAuditLogs(ctx.Request.Context(), &req)
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err, c.logger)
 		return
 	}
 
-	ResponseOKWithData(ctx, result, "common.success", c.i18n)
+	response.OKWithData(ctx, result, "common.success")
 }
 
 // GetAuditLogStatistics get audit log statistics
@@ -115,17 +116,17 @@ func (c *AuditLogController) ListAuditLogs(ctx *gin.Context) {
 func (c *AuditLogController) GetAuditLogStatistics(ctx *gin.Context) {
 	var req request.AuditLogStatisticsRequest
 
-	if !BindAndValidateQuery(ctx, &req, c.validator, c.logger, c.i18n) {
+	if !BindAndValidateQuery(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
 	statistics, err := c.auditLogService.GetStatistics(ctx.Request.Context(), &req)
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err, c.logger)
 		return
 	}
 
-	ResponseOKWithData(ctx, statistics, "common.success", c.i18n)
+	response.OKWithData(ctx, statistics, "common.success")
 }
 
 // ExportAuditLogs export audit logs
@@ -144,13 +145,13 @@ func (c *AuditLogController) GetAuditLogStatistics(ctx *gin.Context) {
 func (c *AuditLogController) ExportAuditLogs(ctx *gin.Context) {
 	var req request.ExportAuditLogRequest
 
-	if !BindAndValidateQuery(ctx, &req, c.validator, c.logger, c.i18n) {
+	if !BindAndValidateQuery(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
 	data, contentType, err := c.auditLogService.ExportAuditLogs(ctx.Request.Context(), ctx, &req)
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err, c.logger)
 		return
 	}
 

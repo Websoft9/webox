@@ -2,11 +2,11 @@ package controller
 
 import (
 	"api-service/internal/dto/request"
+	"api-service/internal/dto/response"
 	"api-service/internal/interface/service"
 	"api-service/pkg/errors"
 	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
-	pkg_response "api-service/pkg/response"
 	"context"
 	"strconv"
 
@@ -67,7 +67,7 @@ func (c *UserController) handleUserIDBasedRequest(
 	}
 
 	c.logger.InfoContext(ctx, "User "+action+" successful", logger.Uint("user_id", uint(userID)))
-	pkg_response.Success(ctx, c.i18n.T(ctx, successMessageKey), nil)
+	response.Success(ctx, c.i18n.T(ctx, successMessageKey), nil)
 }
 
 // ListUsers get user list (admin function)
@@ -125,7 +125,7 @@ func (c *UserController) ListUsers(ctx *gin.Context) {
 		"total_pages": (int(total) + req.PageSize - 1) / req.PageSize,
 	}
 
-	pkg_response.Success(ctx, c.i18n.T(ctx, "user.list_get_success"), result)
+	response.Success(ctx, c.i18n.T(ctx, "user.list_get_success"), result)
 }
 
 // CreateUser create user (admin function)
@@ -145,7 +145,7 @@ func (c *UserController) ListUsers(ctx *gin.Context) {
 func (c *UserController) CreateUser(ctx *gin.Context) {
 	currentUserID, exists := ctx.Get("user_id")
 	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		response.Unauthorized(ctx, "auth.user_not_authenticated")
 		return
 	}
 	var req request.UserCreateRequest
@@ -162,7 +162,7 @@ func (c *UserController) CreateUser(ctx *gin.Context) {
 
 	c.logger.InfoContext(ctx, "User created successfully", logger.String("username", req.Username),
 		logger.Uint("user_id", result.ID))
-	pkg_response.Success(ctx, c.i18n.T(ctx, "user.created_success"), result)
+	response.Success(ctx, c.i18n.T(ctx, "user.created_success"), result)
 }
 
 // GetUser get user details (admin function)
@@ -197,7 +197,7 @@ func (c *UserController) GetUser(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "User details retrieved successfully", logger.Uint("user_id", uint(userID)))
-	pkg_response.Success(ctx, c.i18n.T(ctx, "common.success"), user)
+	response.Success(ctx, c.i18n.T(ctx, "common.success"), user)
 }
 
 // UpdateUser update user (admin function)
@@ -219,7 +219,7 @@ func (c *UserController) GetUser(ctx *gin.Context) {
 func (c *UserController) UpdateUser(ctx *gin.Context) {
 	currentUserID, exists := ctx.Get("user_id")
 	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		response.Unauthorized(ctx, "auth.user_not_authenticated")
 		return
 	}
 	userIDStr := ctx.Param("id")
@@ -243,7 +243,7 @@ func (c *UserController) UpdateUser(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "User updated successfully", logger.Uint("user_id", uint(userID)))
-	pkg_response.Success(ctx, c.i18n.T(ctx, "user.updated_success"), result)
+	response.Success(ctx, c.i18n.T(ctx, "user.updated_success"), result)
 }
 
 // DeleteUser delete user (admin function)
@@ -278,7 +278,7 @@ func (c *UserController) DeleteUser(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "User deleted successfully", logger.Uint("user_id", uint(userID)))
-	pkg_response.Success(ctx, c.i18n.T(ctx, "user.deleted_success"), nil)
+	response.Success(ctx, c.i18n.T(ctx, "user.deleted_success"), nil)
 }
 
 // UpdateUserStatus update user status (admin function)

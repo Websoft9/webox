@@ -87,7 +87,7 @@ type UserRole struct {
 	UserID    uint       `json:"user_id" gorm:"not null;index"`
 	RoleID    uint       `json:"role_id" gorm:"not null;index"`
 	GrantedBy uint       `json:"granted_by" gorm:"index"`
-	GrantedAt time.Time  `json:"granted_at" gorm:"not null;default:CURRENT_TIMESTAMP"`
+	GrantedAt time.Time  `json:"granted_at" gorm:"not null"`
 	ExpiresAt *time.Time `json:"expires_at"`
 	Status    int        `json:"status" gorm:"default:1"` //  -1:deleted, 0:disabled, 1:enabled
 	CreatedAt time.Time  `json:"created_at"`
@@ -109,7 +109,7 @@ type RolePermission struct {
 	RoleID         uint      `json:"role_id" gorm:"not null;index"`
 	PermissionCode string    `json:"permission_code" gorm:"not null;size:64;index"`
 	GrantedBy      *uint     `json:"granted_by" gorm:"index"`
-	GrantedAt      time.Time `json:"granted_at" gorm:"not null;default:CURRENT_TIMESTAMP"`
+	GrantedAt      time.Time `json:"granted_at" gorm:"not null"`
 	Status         int       `json:"status" gorm:"default:1"` //  -1:deleted, 0:disabled, 1:enabled
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`

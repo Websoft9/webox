@@ -48,17 +48,15 @@ type EmailTemplateData struct {
 type emailService struct {
 	config *config.EmailConfigMain // SMTP configuration settings
 	logger logger.Logger           // Logger for tracking email operations
-	i18n   *i18n.I18n              // Internationalization support
 }
 
 // NewEmailService creates a new instance of the email service
 // It initializes the service with the provided configuration, logger, and i18n support
 // Returns an EmailService interface implementation
-func NewEmailService(cfg *config.Config, logger logger.Logger, i18nInstance *i18n.I18n) EmailService {
+func NewEmailService(cfg *config.Config, logger logger.Logger) EmailService {
 	return &emailService{
 		config: &cfg.Email,
 		logger: logger,
-		i18n:   i18nInstance,
 	}
 }
 

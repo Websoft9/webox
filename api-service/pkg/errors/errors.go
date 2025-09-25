@@ -292,14 +292,14 @@ var (
 
 // GetErrCodeAndMessageKey extracts HTTP status code and i18n message key from an error
 // This function is used by the controller helpers to provide consistent error responses
-func GetErrCodeAndMessageKey(err error) (statusCode int, messageKey string) {
+func GetErrCodeAndMessageKey(err error) (statusCode, bizCode int, messageKey string) {
 	if appErr, ok := err.(*AppError); ok {
 		// For AppError, return the HTTP status and i18n key
-		return appErr.HTTPStatus, appErr.I18nKey
+		return appErr.HTTPStatus, appErr.Code, appErr.I18nKey
 	}
 
 	// For standard errors, return default values
-	return http.StatusInternalServerError, "system.internal_error"
+	return http.StatusInternalServerError, CodeInternalError, "system.internal_error"
 }
 
 // Is checks if an error matches a target error

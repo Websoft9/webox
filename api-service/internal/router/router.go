@@ -27,6 +27,8 @@ type Controllers struct {
 	SystemConfigController   *controller.SystemConfigController
 	AlertController          *controller.AlertController
 	SecretKeyController      *controller.SecretKeyController
+	TagController            *controller.TagController
+
 	// More controllers can be added
 	// AppController  *controller.ApplicationController
 }
@@ -145,6 +147,7 @@ func setupAPIRoutes(v1 *gin.RouterGroup, controllers *Controllers) {
 	setupAuditLogRoutes(protected, controllers.AuditLogController)
 	setupUserProfileRoutes(protected, controllers.UserProfileController)
 	setupSystemConfigRoutes(protected, controllers.SystemConfigController)
+	setupTagRoutes(protected, controllers.TagController)
 	setupAlertRoutes(protected, controllers.AlertController)
 	setupSecretKeyRoutes(protected, controllers.SecretKeyController)
 }
@@ -313,9 +316,31 @@ func setupSystemConfigRoutes(protected *gin.RouterGroup, systemConfigController 
 	systemConfigs.POST("/smtp/test", systemConfigController.TestSMTP)
 }
 
+// setupTagRoutes sets up tag management routes
+func setupTagRoutes(protected *gin.RouterGroup, tagController *controller.TagController) {
+	if tagController == nil {
+		return
+	}
+
+	// Tag basic management endpoints
+	tags := protected.Group("/tags")
+	tags.GET("", tagController.ListTags)
+	tags.POST("", tagController.CreateTag)
+	tags.GET("/search", tagController.SearchTags)
+	tags.GET("/:id", tagController.GetTag)
+	tags.PUT("/:id", tagController.UpdateTag)
+	tags.DELETE("/:id", tagController.DeleteTag)
+
+	// Tag-resource association endpoints
+	tags.POST("/assign", tagController.AssignTags)
+	tags.POST("/replace", tagController.ReplaceTags)
+	tags.POST("/unassign", tagController.UnassignTags)
+	tags.GET("/taggings", tagController.GetResourceTags)
+	tags.GET("/taggings/search", tagController.SearchResourcesByTags)
+}
+
 // setupAlertRoutes registers all alert related routes
 func setupAlertRoutes(protected *gin.RouterGroup, alertController *controller.AlertController) {
-	// Alert route group
 	alertGroup := protected.Group("/alert")
 
 	// Alert rules routes

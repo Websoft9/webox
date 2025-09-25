@@ -7,7 +7,6 @@ import (
 	"api-service/internal/interface/service"
 	"api-service/pkg/auth"
 	"api-service/pkg/errors"
-	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
 	"api-service/pkg/redis"
 	"context"
@@ -22,7 +21,6 @@ type apiTokenService struct {
 	authConfigManager *config.AuthConfigManager
 	db                *gorm.DB
 	logger            logger.Logger
-	i18n              *i18n.I18n
 }
 
 // NewAPITokenService creates a new API token service instance
@@ -31,14 +29,12 @@ func NewAPITokenService(
 	authConfigManager *config.AuthConfigManager,
 	db *gorm.DB,
 	logger logger.Logger,
-	i18n *i18n.I18n,
 ) service.APITokenService {
 	return &apiTokenService{
 		tokenRepo:         tokenRepo,
 		authConfigManager: authConfigManager,
 		db:                db,
 		logger:            logger,
-		i18n:              i18n,
 	}
 }
 

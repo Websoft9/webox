@@ -1,9 +1,9 @@
 package controller
 
 import (
+	"api-service/internal/dto/response"
 	"api-service/internal/middleware"
 	"api-service/pkg/i18n"
-	pkg_response "api-service/pkg/response"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -33,7 +33,7 @@ func (c *I18nController) GetLanguages(ctx *gin.Context) {
 		languages = append(languages, info)
 	}
 
-	pkg_response.Success(ctx, middleware.T(ctx, "common.success"), gin.H{
+	response.Success(ctx, middleware.T(ctx, "common.success"), gin.H{
 		"languages": languages,
 		"default":   i18n.DefaultLanguage,
 	})
@@ -65,7 +65,7 @@ func (c *I18nController) GetTranslations(ctx *gin.Context) {
 		"error.internal_error":     i18n.T("error.internal_error", lang),
 	}
 
-	pkg_response.Success(ctx, middleware.T(ctx, "common.success"), gin.H{
+	response.Success(ctx, middleware.T(ctx, "common.success"), gin.H{
 		"language":     lang,
 		"translations": translations,
 	})

@@ -134,6 +134,20 @@ const (
 	UserMappingUsername = "username"
 )
 
+// Tag management constants
+const (
+	TagMaxNameLength          = 128
+	TagMaxBatchSize           = 50
+	TagMaxColorLength         = 16
+	TagMaxDescLength          = 500
+	TagSearchOpAND            = "AND"
+	TagSearchOpOR             = "OR"
+	TagAssignStatusCreated    = "created"
+	TagAssignStatusAssociated = "associated"
+	DefaultTagPageSize        = 20
+	MaxTagPageSize            = 100
+)
+
 // Auth config constants
 const (
 	DefaultTokenExpiresIn        = 3600  // 1 hour
@@ -227,6 +241,7 @@ const (
 	ModuleNotification     = "告警通知"
 	ModuleProfile          = "个人中心"
 	ModuleAuditLog         = "审计日志"
+	ModuleTag              = "标签管理"
 	ModuleSystem           = "System"
 )
 
@@ -257,6 +272,7 @@ func GetModuleTableName(module string) string {
 		ModuleWishlist:       "app_store_wishlists",
 		ModuleNotification:   "notifications",
 		ModuleAdminSetting:   "system_configs",
+		ModuleTag:            "tags",
 	}
 
 	if tableName, exists := moduleToTableName[module]; exists {
@@ -325,6 +341,13 @@ const (
 	DefaultTimeRangeHours = 7 * 24 // Default time range in hours (7 days)
 )
 
+// alert constants
+const (
+	AlertStatusFiring    = "FIRING"
+	AlertStatusConfirmed = "CONFIRMED"
+	AlertStatusResolved  = "RESOLVED"
+)
+
 const (
 	// StringTrue represents the string "true"
 	StringTrue = "true"
@@ -336,11 +359,46 @@ const (
 	DefaultSessionTimeoutSeconds = 1800
 )
 
-// alert constants
+// Time field names constants for timezone conversion middleware
+// These field names will be automatically converted to user's timezone in API responses
 const (
-	AlertStatusFiring    = "FIRING"
-	AlertStatusConfirmed = "CONFIRMED"
-	AlertStatusResolved  = "RESOLVED"
+	// Common timestamp fields
+	TimeFieldCreatedAt = "created_at"
+	TimeFieldUpdatedAt = "updated_at"
+)
+
+// GetTimezoneConvertibleFields returns a list of all time field names that should be converted to user's timezone
+func GetTimezoneConvertibleFields() []string {
+	return []string{
+		// Common timestamp fields
+		TimeFieldCreatedAt,
+		TimeFieldUpdatedAt,
+	}
+}
+
+// User preferences config keys
+const (
+	UserCategory = "general"
+	UserLanguage = "language"
+	UserTimezone = "timezone"
+)
+
+// System preferences config keys
+const (
+	SystemLanguage = "system." + UserLanguage
+	SystemTimezone = "system." + UserTimezone
+
+	// Default time format for datetime display: "2006-01-02T15:04:05Z07:00"
+	DefaultTimeFormat = time.RFC3339
+
+	// Default language code
+	DefaultLanguage = "en-US"
+
+	// Default time zone
+	DefaultTimeZone = "UTC"
+
+	// Maximum length of SQL log
+	MaxSQLLogLength = 100
 )
 
 const (
