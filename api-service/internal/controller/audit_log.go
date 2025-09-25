@@ -177,9 +177,9 @@ func generateExportFilename(format string) string {
 func getFileExtensionByFormat(format string) string {
 	switch format {
 	case constants.ExportFormatJson:
-		return ".xlsx"
-	case constants.ExportFormatExcel:
 		return ".json"
+	case constants.ExportFormatExcel:
+		return ".xlsx"
 	default:
 		return ".csv"
 	}
