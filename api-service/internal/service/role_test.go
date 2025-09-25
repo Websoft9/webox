@@ -159,8 +159,8 @@ func (m *MockPermissionRepository) Delete(ctx context.Context, id uint) error {
 	return args.Error(0)
 }
 
-func (m *MockPermissionRepository) List(ctx context.Context, req *request.ListPermissionsRequest) ([]*model.Permission, int64, error) {
-	args := m.Called(ctx, req)
+func (m *MockPermissionRepository) List(ctx context.Context, req *request.ListPermissionsRequest, lang string) ([]*model.Permission, int64, error) {
+	args := m.Called(ctx, req, lang)
 	return args.Get(0).([]*model.Permission), args.Get(1).(int64), args.Error(2)
 }
 

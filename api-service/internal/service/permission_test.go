@@ -164,7 +164,7 @@ func (suite *PermissionServiceTestSuite) TestListPermissions_Success() {
 	}
 	total := int64(2)
 
-	suite.mockPermissionRepo.On("List", ctx, req).Return(permissions, total, nil)
+	suite.mockPermissionRepo.On("List", ctx, req, mock.AnythingOfType("string")).Return(permissions, total, nil)
 
 	// Execute
 	result, err := suite.service.ListPermissions(ctx, req)

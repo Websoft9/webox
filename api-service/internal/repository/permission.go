@@ -5,7 +5,9 @@ import (
 	"api-service/internal/interface/repository"
 	"api-service/internal/model"
 	"api-service/pkg/errors"
+	"api-service/pkg/i18n"
 	"context"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -144,16 +146,26 @@ func (r *permissionRepository) Delete(ctx context.Context, id uint) error {
 }
 
 // List retrieves a list of permissions
-func (r *permissionRepository) List(ctx context.Context, req *request.ListPermissionsRequest) ([]*model.Permission, int64, error) {
+func (r *permissionRepository) List(ctx context.Context, req *request.ListPermissionsRequest, lang string) ([]*model.Permission, int64, error) {
 	var permissions []*model.Permission
 	var total int64
 
 	query := r.db.WithContext(ctx).Model(&model.Permission{}).Where("status != -1")
 
-	// Build query conditions
+	// Build query conditions with translation support
 	if req.Search != "" {
-		query = query.Where("name LIKE ? OR code LIKE ? OR description LIKE ?",
-			"%"+req.Search+"%", "%"+req.Search+"%", "%"+req.Search+"%")
+		// Find permission codes that match the translated names
+		matchedCodes, err := r.findMatchingPermissionCodes(ctx, req.Search, lang)
+		if err != nil {
+			// If translation matching fails, fallback to original search
+			query = query.Where("code LIKE ? OR description LIKE ?", "%"+req.Search+"%", "%"+req.Search+"%")
+		} else if len(matchedCodes) > 0 {
+			// Use matched codes from translation, also include code and description search
+			query = query.Where("code IN (?) OR code LIKE ? OR description LIKE ?", matchedCodes, "%"+req.Search+"%", "%"+req.Search+"%")
+		} else {
+			// No translation matches found, fallback to original search
+			query = query.Where("code LIKE ? OR description LIKE ?", "%"+req.Search+"%", "%"+req.Search+"%")
+		}
 	}
 
 	if req.Module != "" {
@@ -583,4 +595,40 @@ func (r *permissionRepository) UpdateWithTx(ctx context.Context, tx *gorm.DB, pe
 	}
 
 	return nil
+}
+
+// findMatchingPermissionCodes finds permission codes that match the search term after translation
+func (r *permissionRepository) findMatchingPermissionCodes(ctx context.Context, searchTerm, lang string) ([]string, error) {
+	// Create a struct to hold only the fields we need
+	type PermissionForTranslation struct {
+		Name string `gorm:"column:name"`
+		Code string `gorm:"column:code"`
+	}
+
+	var permissions []PermissionForTranslation
+	err := r.db.WithContext(ctx).Model(&model.Permission{}).
+		Select("name, code").
+		Where("status != -1").
+		Order("id").
+		Find(&permissions).Error
+
+	if err != nil {
+		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to get permissions for translation matching")
+	}
+
+	var matchedCodes []string
+	searchTermLower := strings.ToLower(searchTerm)
+
+	for _, perm := range permissions {
+		// Translate the permission name using i18n
+		translatedName := i18n.T(perm.Name, lang)
+		translatedNameLower := strings.ToLower(translatedName)
+
+		// Check if translated name contains the search term
+		if strings.Contains(translatedNameLower, searchTermLower) {
+			matchedCodes = append(matchedCodes, perm.Code)
+		}
+	}
+
+	return matchedCodes, nil
 }
