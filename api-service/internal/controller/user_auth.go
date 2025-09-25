@@ -2,11 +2,10 @@ package controller
 
 import (
 	"api-service/internal/dto/request"
+	"api-service/internal/dto/response"
 	"api-service/internal/interface/service"
 	"api-service/pkg/errors"
-	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
-	pkg_response "api-service/pkg/response"
 	"api-service/pkg/utils"
 	"context"
 
@@ -17,19 +16,16 @@ import (
 type UserAuthController struct {
 	userAuthService service.UserAuthService
 	logger          logger.Logger
-	i18n            *i18n.I18n
 }
 
 // NewUserAuthController creates a new user authentication controller
 func NewUserAuthController(
 	userAuthService service.UserAuthService,
 	logger logger.Logger,
-	i18n *i18n.I18n,
 ) *UserAuthController {
 	return &UserAuthController{
 		userAuthService: userAuthService,
 		logger:          logger,
-		i18n:            i18n,
 	}
 }
 
@@ -67,7 +63,7 @@ func (c *UserAuthController) handleUserAuth(
 	}
 
 	c.logger.InfoContext(ctx, "User "+action+" successful")
-	pkg_response.Success(ctx, c.i18n.T(ctx, successMessageKey), result)
+	response.OKWithData(ctx, result, successMessageKey)
 }
 
 // Register handles user registration
@@ -115,7 +111,7 @@ func (c *UserAuthController) Login(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "User login successful")
-	pkg_response.Success(ctx, c.i18n.T(ctx, "user.login_success"), result)
+	response.OKWithData(ctx, result, "user.login_success")
 }
 
 // ForgotPassword handles password reset request
@@ -143,7 +139,7 @@ func (c *UserAuthController) ForgotPassword(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "Forgot password processed successfully")
-	pkg_response.Success(ctx, c.i18n.T(ctx, "user.forgot_password_success"), nil)
+	response.OK(ctx, "user.forgot_password_success")
 }
 
 // ShowResetPasswordForm handles password reset form display (GET request from email link)
@@ -176,7 +172,7 @@ func (c *UserAuthController) ShowResetPasswordForm(ctx *gin.Context) {
 
 	c.logger.InfoContext(ctx, "Reset password token validated successfully")
 	// Return success with token to allow frontend to show reset form
-	pkg_response.Success(ctx, c.i18n.T(ctx, "common.success"), map[string]string{"token": token})
+	response.OKWithData(ctx, map[string]string{"token": token}, "common.success")
 }
 
 // ResetPassword handles password reset with token
@@ -204,7 +200,7 @@ func (c *UserAuthController) ResetPassword(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "Password reset successful")
-	pkg_response.Success(ctx, c.i18n.T(ctx, "user.reset_password_success"), nil)
+	response.OK(ctx, "user.reset_password_success")
 }
 
 // VerifyEmail handles email verification
@@ -240,7 +236,7 @@ func (c *UserAuthController) VerifyEmail(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "Email verification successful")
-	pkg_response.Success(ctx, c.i18n.T(ctx, "user.email_verify_success"), nil)
+	response.OK(ctx, "user.email_verify_success")
 }
 
 // ResendVerificationEmail handles resending verification email
@@ -268,7 +264,7 @@ func (c *UserAuthController) ResendVerificationEmail(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "Verification email resent successfully")
-	pkg_response.Success(ctx, c.i18n.T(ctx, "user.verification_email_sent"), nil)
+	response.OK(ctx, "user.verification_email_sent")
 }
 
 // OAuth2Login handles OAuth2 authentication
@@ -298,7 +294,7 @@ func (c *UserAuthController) OAuth2Login(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "User OAuth2 login successful")
-	pkg_response.Success(ctx, c.i18n.T(ctx, "user.oauth2_login_success"), result)
+	response.OKWithData(ctx, result, "user.oauth2_login_success")
 }
 
 // Logout handles user logout
@@ -341,5 +337,5 @@ func (c *UserAuthController) Logout(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "User logout successful")
-	pkg_response.Success(ctx, c.i18n.T(ctx, "user.logout_success"), nil)
+	response.OK(ctx, "user.logout_success")
 }

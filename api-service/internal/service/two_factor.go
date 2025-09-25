@@ -8,7 +8,6 @@ import (
 	"api-service/internal/model"
 	"api-service/pkg/auth"
 	"api-service/pkg/errors"
-	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
 	"context"
 	"crypto/rand"
@@ -32,7 +31,6 @@ type twoFactorService struct {
 	twoFactorRepo repository.UserTwoFactorRepository
 	db            *gorm.DB
 	logger        logger.Logger
-	i18n          *i18n.I18n
 }
 
 // NewTwoFactorService creates a new two-factor authentication service instance
@@ -40,13 +38,11 @@ func NewTwoFactorService(
 	twoFactorRepo repository.UserTwoFactorRepository,
 	db *gorm.DB,
 	logger logger.Logger,
-	i18n *i18n.I18n,
 ) service.TwoFactorService {
 	return &twoFactorService{
 		twoFactorRepo: twoFactorRepo,
 		db:            db,
 		logger:        logger,
-		i18n:          i18n,
 	}
 }
 

@@ -2,11 +2,11 @@ package controller
 
 import (
 	"api-service/internal/dto/request"
+	"api-service/internal/dto/response"
 	"api-service/internal/interface/service"
 	"api-service/pkg/errors"
 	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
-	pkg_response "api-service/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
@@ -48,7 +48,7 @@ func (c *UserProfileController) GetProfile(ctx *gin.Context) {
 	// Get current user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		response.Unauthorized(ctx, "auth.user_not_authenticated")
 		return
 	}
 
@@ -63,7 +63,7 @@ func (c *UserProfileController) GetProfile(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "User profile retrieved successfully")
-	pkg_response.Success(ctx, c.i18n.T(ctx, "user_profile.get_success"), profile)
+	response.Success(ctx, c.i18n.T(ctx, "user_profile.get_success"), profile)
 }
 
 // UpdateProfile handles requests to update user profile information
@@ -92,7 +92,7 @@ func (c *UserProfileController) UpdateProfile(ctx *gin.Context) {
 	// Get current logged in user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		response.Unauthorized(ctx, "auth.user_not_authenticated")
 		return
 	}
 
@@ -107,7 +107,7 @@ func (c *UserProfileController) UpdateProfile(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "User profile updated successfully")
-	pkg_response.Success(ctx, c.i18n.T(ctx, "user_profile.update_success"), profile)
+	response.Success(ctx, c.i18n.T(ctx, "user_profile.update_success"), profile)
 }
 
 // ChangePassword handles requests to change user password
@@ -135,7 +135,7 @@ func (c *UserProfileController) ChangePassword(ctx *gin.Context) {
 	// Get current logged in user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		response.Unauthorized(ctx, "auth.user_not_authenticated")
 		return
 	}
 
@@ -150,7 +150,7 @@ func (c *UserProfileController) ChangePassword(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "User password changed successfully", logger.Uint("userID", userID.(uint)))
-	pkg_response.Success(ctx, c.i18n.T(ctx, "user_profile.password_change_success"), nil)
+	response.Success(ctx, c.i18n.T(ctx, "user_profile.password_change_success"), nil)
 }
 
 // GetLoginHistories gets login history records
@@ -171,7 +171,7 @@ func (c *UserProfileController) GetLoginHistories(ctx *gin.Context) {
 	// Get current logged in user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		response.Unauthorized(ctx, "auth.user_not_authenticated")
 		return
 	}
 
@@ -194,7 +194,7 @@ func (c *UserProfileController) GetLoginHistories(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "Login histories retrieved successfully", logger.Uint("user_id", userID.(uint)))
-	pkg_response.Success(ctx, c.i18n.T(ctx, "user_profile.login_history_get_success"), result)
+	response.Success(ctx, c.i18n.T(ctx, "user_profile.login_history_get_success"), result)
 }
 
 // GetNotificationSettings gets notification settings
@@ -212,7 +212,7 @@ func (c *UserProfileController) GetNotificationSettings(ctx *gin.Context) {
 	// Get current user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		response.Unauthorized(ctx, "auth.user_not_authenticated")
 		return
 	}
 
@@ -226,7 +226,7 @@ func (c *UserProfileController) GetNotificationSettings(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "Notification settings retrieved successfully", logger.Uint("user_id", userID.(uint)))
-	pkg_response.Success(ctx, c.i18n.T(ctx, "user_profile.notification_settings_get_success"), settings)
+	response.Success(ctx, c.i18n.T(ctx, "user_profile.notification_settings_get_success"), settings)
 }
 
 // UpdateNotificationSettings updates notification settings
@@ -254,7 +254,7 @@ func (c *UserProfileController) UpdateNotificationSettings(ctx *gin.Context) {
 	// Get current logged in user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		response.Unauthorized(ctx, "auth.user_not_authenticated")
 		return
 	}
 
@@ -268,7 +268,7 @@ func (c *UserProfileController) UpdateNotificationSettings(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "Notification settings updated successfully", logger.Uint("user_id", userID.(uint)))
-	pkg_response.Success(ctx, c.i18n.T(ctx, "user_profile.notification_settings_update_success"), nil)
+	response.Success(ctx, c.i18n.T(ctx, "user_profile.notification_settings_update_success"), nil)
 }
 
 // GetSecuritySettings gets security settings
@@ -286,7 +286,7 @@ func (c *UserProfileController) GetSecuritySettings(ctx *gin.Context) {
 	// Get current logged in user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		response.Unauthorized(ctx, "auth.user_not_authenticated")
 		return
 	}
 
@@ -300,7 +300,7 @@ func (c *UserProfileController) GetSecuritySettings(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "Security settings retrieved successfully", logger.Uint("user_id", userID.(uint)))
-	pkg_response.Success(ctx, c.i18n.T(ctx, "user_profile.security_settings_get_success"), settings)
+	response.Success(ctx, c.i18n.T(ctx, "user_profile.security_settings_get_success"), settings)
 }
 
 // UpdateSecuritySettings updates security settings
@@ -328,7 +328,7 @@ func (c *UserProfileController) UpdateSecuritySettings(ctx *gin.Context) {
 	// Get current logged in user ID
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ResponseUnauthorized(ctx, "auth.user_not_authenticated", c.i18n)
+		response.Unauthorized(ctx, "auth.user_not_authenticated")
 		return
 	}
 
@@ -342,5 +342,5 @@ func (c *UserProfileController) UpdateSecuritySettings(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "Security settings updated successfully", logger.Uint("user_id", userID.(uint)))
-	pkg_response.Success(ctx, c.i18n.T(ctx, "user_profile.security_settings_update_success"), nil)
+	response.Success(ctx, c.i18n.T(ctx, "user_profile.security_settings_update_success"), nil)
 }

@@ -2,7 +2,7 @@ package errors
 
 import (
 	"api-service/pkg/i18n"
-	"api-service/pkg/response"
+	"api-service/pkg/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -33,15 +33,15 @@ func ErrorHandlerMiddleware() gin.HandlerFunc {
 // It processes both standard Go errors and custom AppErrors,
 // applying internationalization when available
 func HandleError(c *gin.Context, err error) {
-	// Extract language preference from request context
-	lang := getLanguageFromContext(c)
+	// Extract user language preference from redis
+	lang := utils.GetUserLangFromRedis(c)
 
 	// Check if the error is a custom AppError
 	appErr, ok := err.(*AppError)
 	if !ok {
 		// Handle standard Go errors as internal server errors
 		message := i18n.T("error.internal_error", lang)
-		response.Error(c, http.StatusInternalServerError, message, err.Error())
+		sendErrorResponse(c, http.StatusInternalServerError, message, err.Error())
 		return
 	}
 
@@ -56,19 +56,18 @@ func HandleError(c *gin.Context, err error) {
 		}
 	}
 
-	// Send structured error response with appropriate HTTP status
-	response.Error(c, appErr.HTTPStatus, message, appErr.Details)
+	// Send structured error response
+	sendErrorResponse(c, appErr.Code, message, appErr.Details)
 }
 
-// getLanguageFromContext extracts the language preference from Gin context
-// It returns the default language if no preference is found
-func getLanguageFromContext(c *gin.Context) string {
-	if lang, exists := c.Get("language"); exists {
-		if langStr, ok := lang.(string); ok {
-			return langStr
-		}
-	}
-	return i18n.DefaultLanguage
+// sendErrorResponse sends a structured error response without importing the response package
+// This prevents circular import dependencies
+func sendErrorResponse(c *gin.Context, statusCode int, message, details string) {
+	c.JSON(statusCode, gin.H{
+		"code":    statusCode,
+		"message": message,
+		"error":   details,
+	})
 }
 
 // IsAppError checks if an error is an AppError and returns it

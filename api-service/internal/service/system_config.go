@@ -35,7 +35,7 @@ func NewSystemConfigService(
 ) *SystemConfigService {
 	var emailService email.EmailService
 	if config.Email.SMTP.Host != "" && config.Email.SMTP.Username != "" {
-		emailService = email.NewEmailService(config, logger, i18n)
+		emailService = email.NewEmailService(config, logger)
 	}
 	return &SystemConfigService{
 		systemConfigRepo: systemConfigRepo,
