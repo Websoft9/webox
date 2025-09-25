@@ -44,7 +44,7 @@ type UserCreateRequest struct {
 	Status    *int    `json:"status,omitempty" binding:"omitempty,min=0,max=1" example:"1"`                      // Status: 0-disabled, 1-enabled (optional)
 	Timezone  *string `json:"timezone,omitempty" binding:"omitempty,max=64" example:"Asia/Shanghai"`             // Timezone, default UTC (optional)
 	Language  *string `json:"language,omitempty" binding:"omitempty,max=10" example:"zh-CN"`                     // Language, default zh-CN (optional)
-	RoleIDs   []uint  `json:"role_ids,omitempty" binding:"omitempty,dive,gt=0" example:"[1,2]"`                  // Array of role IDs to assign (optional)
+	RoleIDs   []uint  `json:"role_ids,omitempty" binding:"omitempty,dive,gt=0"`                                  // Array of role IDs to assign (optional)
 }
 
 // UserUpdateRequest 更新用户请求
@@ -58,7 +58,7 @@ type UserUpdateRequest struct {
 	Signature *string `json:"signature,omitempty" binding:"omitempty,max=255" example:"This is my signature"`
 	Timezone  *string `json:"timezone,omitempty" binding:"omitempty,max=64" example:"Asia/Shanghai"`
 	Language  *string `json:"language,omitempty" binding:"omitempty,max=10" example:"zh-CN"`
-	RoleIDs   []uint  `json:"role_ids,omitempty" binding:"omitempty,dive,gt=0" example:"[1,2]"` // Array of role IDs to assign (optional)
+	RoleIDs   []uint  `json:"role_ids,omitempty" binding:"omitempty,dive,gt=0"` // Array of role IDs to assign (optional)
 }
 
 // UserUpdateStatusRequest 用户状态更新请求

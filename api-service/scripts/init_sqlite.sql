@@ -851,10 +851,9 @@ CREATE TABLE IF NOT EXISTS alert_records (
 CREATE TABLE IF NOT EXISTS notification_templates (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name VARCHAR(64) NOT NULL,
-    type VARCHAR(20) NOT NULL,
+    template_type VARCHAR(20) NOT NULL,
     subject VARCHAR(255),
     content TEXT NOT NULL,
-    variables TEXT, -- JSON format
     is_system INTEGER DEFAULT 0,
     status INTEGER DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

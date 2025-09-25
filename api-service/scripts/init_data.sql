@@ -445,9 +445,46 @@ INSERT INTO `system_configs` (`config_key`, `config_value`, `config_type`, `cate
 ('monitor.default_alert_channels', '["email"]', 'JSON', 'monitor', 'Default alert channels', 0, 42);
 
 -- Insert default notification templates
-INSERT INTO `notification_templates` (`name`, `type`, `subject`, `content`, `variables`, `is_system`, `status`) VALUES
-('User Registration Notification', 'EMAIL', 'Welcome to {{system_name}}', 'Dear {{username}},\n\nWelcome to {{system_name}}!\n\nYour account has been successfully created and you can now start using our services.\n\nIf you have any questions, please contact our support team.\n\nEnjoy using our platform!\n\n{{system_name}} Team', '["username", "system_name"]', 1, 1),
-('Password Reset Notification', 'EMAIL', '{{system_name}} Password Reset', 'Dear {{username}},\n\nYour password has been successfully reset.\n\nIf this was not your action, please contact our support team immediately.\n\n{{system_name}} Team', '["username", "system_name"]', 1, 1),
-('System Alert Notification', 'EMAIL', '{{system_name}} System Alert', 'Alert Title: {{alert_title}}\nAlert Description: {{alert_description}}\nTriggered At: {{fired_at}}\nAlert Level: {{alert_level}}\n\nPlease handle this promptly.', '["alert_title", "alert_description", "fired_at", "alert_level", "system_name"]', 1, 1),
-('Application Deployment Success', 'EMAIL', 'Application Deployment Success Notification', 'Dear {{username}},\n\nYour application {{app_name}} has been successfully deployed to server {{server_name}}.\n\nAccess URL: {{app_url}}\nDeployment Time: {{deployed_at}}\n\n{{system_name}} Team', '["username", "app_name", "server_name", "app_url", "deployed_at", "system_name"]', 1, 1),
-('Application Deployment Failure', 'EMAIL', 'Application Deployment Failure Notification', 'Dear {{username}},\n\nYour application {{app_name}} deployment has failed.\n\nError Message: {{error_message}}\nFailure Time: {{failed_at}}\n\nPlease check the configuration and try again.\n\n{{system_name}} Team', '["username", "app_name", "error_message", "failed_at", "system_name"]', 1, 1);
+INSERT INTO `notification_templates` (`name`, `template_type`, `subject`, `content`, `is_system`, `status`) VALUES
+('User Registration Notification', 'EMAIL', 'Welcome to {{system_name}}', 'Dear {{username}},
+
+Welcome to {{system_name}}!
+
+Your account has been successfully created and you can now start using our services.
+
+If you have any questions, please contact our support team.
+
+Enjoy using our platform!
+
+{{system_name}} Team', 1, 1),
+('Password Reset Notification', 'EMAIL', '{{system_name}} Password Reset', 'Dear {{username}},
+
+Your password has been successfully reset.
+
+If this was not your action, please contact our support team immediately.
+
+{{system_name}} Team', 1, 1),
+('System Alert Notification', 'EMAIL', '{{system_name}} System Alert', 'Alert Title: {{alert_title}}
+Alert Description: {{alert_description}}
+Triggered At: {{fired_at}}
+Alert Level: {{alert_level}}
+
+Please handle this promptly.', 1, 1),
+('Application Deployment Success', 'EMAIL', 'Application Deployment Success Notification', 'Dear {{username}},
+
+Your application {{app_name}} has been successfully deployed to server {{server_name}}.
+
+Access URL: {{app_url}}
+Deployment Time: {{deployed_at}}
+
+{{system_name}} Team', 1, 1),
+('Application Deployment Failure', 'EMAIL', 'Application Deployment Failure Notification', 'Dear {{username}},
+
+Your application {{app_name}} deployment has failed.
+
+Error Message: {{error_message}}
+Failure Time: {{failed_at}}
+
+Please check the configuration and try again.
+
+{{system_name}} Team', 1, 1);

@@ -16,17 +16,18 @@ import (
 
 // Controllers controller collection
 type Controllers struct {
-	UserController                *controller.UserController
-	UserAuthController            *controller.UserAuthController
-	I18nController                *controller.I18nController
-	RolePermissionController      *controller.RolePermissionController
-	SecurityController            *controller.SecurityController
-	HealthController              *controller.HealthController
-	AuditLogController            *controller.AuditLogController
-	UserProfileController         *controller.UserProfileController
-	SystemConfigController        *controller.SystemConfigController
-	NotificationRecordController  *controller.NotificationRecordController
-	NotificationChannelController *controller.NotificationChannelController
+	UserController                 *controller.UserController
+	UserAuthController             *controller.UserAuthController
+	I18nController                 *controller.I18nController
+	RolePermissionController       *controller.RolePermissionController
+	SecurityController             *controller.SecurityController
+	HealthController               *controller.HealthController
+	AuditLogController             *controller.AuditLogController
+	UserProfileController          *controller.UserProfileController
+	SystemConfigController         *controller.SystemConfigController
+	NotificationRecordController   *controller.NotificationRecordController
+	NotificationChannelController  *controller.NotificationChannelController
+	NotificationTemplateController *controller.NotificationTemplateController
 
 	// More controllers can be added
 	// AppController  *controller.ApplicationController
@@ -146,7 +147,7 @@ func setupAPIRoutes(v1 *gin.RouterGroup, controllers *Controllers) {
 	setupAuditLogRoutes(protected, controllers.AuditLogController)
 	setupUserProfileRoutes(protected, controllers.UserProfileController)
 	setupSystemConfigRoutes(protected, controllers.SystemConfigController)
-	setupNotificationRoutes(protected, controllers.NotificationRecordController, controllers.NotificationChannelController)
+	setupNotificationRoutes(protected, controllers.NotificationRecordController, controllers.NotificationChannelController, controllers.NotificationTemplateController)
 }
 
 // setupUserRoutes sets up user related routes
@@ -320,6 +321,7 @@ func setupNotificationRoutes(
 	protected *gin.RouterGroup,
 	notificationController *controller.NotificationRecordController,
 	channelController *controller.NotificationChannelController,
+	templateController *controller.NotificationTemplateController,
 ) {
 	notifications := protected.Group("/notifications")
 
@@ -343,5 +345,18 @@ func setupNotificationRoutes(
 		// Channel testing routes
 		notifications.POST("/channels/test/email", channelController.TestEmailChannel)
 		notifications.POST("/channels/test/webhook", channelController.TestWebhookChannel)
+	}
+
+	// Notification template routes
+	if templateController != nil {
+		// Template management routes
+		notifications.GET("/templates", templateController.GetTemplateList)
+		notifications.GET("/templates/:id", templateController.GetTemplate)
+		notifications.POST("/templates", templateController.CreateTemplate)
+		notifications.PUT("/templates/:id", templateController.UpdateTemplate)
+		notifications.DELETE("/templates/:id", templateController.DeleteTemplate)
+
+		// Template test route
+		notifications.POST("/templates/:id/test", templateController.TestTemplate)
 	}
 }

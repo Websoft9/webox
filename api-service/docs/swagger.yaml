@@ -113,6 +113,33 @@ definitions:
     - smtp_security
     - smtp_username
     type: object
+  request.CreateNotificationTemplateRequest:
+    properties:
+      content:
+        example: Dear user, your application {{app_name}} has been successfully deployed
+          on {{deploy_time}}
+        type: string
+      name:
+        example: Application Deployment Success Notification
+        maxLength: 64
+        minLength: 2
+        type: string
+      subject:
+        example: Application {{app_name}} Deployment Successful
+        maxLength: 255
+        type: string
+      template_type:
+        enum:
+        - EMAIL
+        - WEBHOOK
+        - INTERNAL
+        example: EMAIL
+        type: string
+    required:
+    - content
+    - name
+    - template_type
+    type: object
   request.CreatePermissionRequest:
     properties:
       action:
@@ -199,9 +226,6 @@ definitions:
       headers:
         additionalProperties:
           type: string
-        example:
-          '"Authorization"': '"Bearer token"}'
-          '{"Content-Type"': '"application/json"'
         type: object
       method:
         enum:
@@ -521,6 +545,17 @@ definitions:
     - code
     - recipient
     type: object
+  request.TestNotificationTemplateRequest:
+    properties:
+      recipient:
+        example: user@example.com
+        type: string
+      variable_data:
+        additionalProperties: true
+        type: object
+    required:
+    - recipient
+    type: object
   request.TestSMTPRequest:
     properties:
       test_email:
@@ -641,6 +676,22 @@ definitions:
         example: user@example.com
         type: string
     type: object
+  request.UpdateNotificationTemplateRequest:
+    properties:
+      content:
+        example: Dear user, your application {{app_name}} has been successfully deployed
+          on {{deploy_time}}
+        type: string
+      name:
+        example: Application Deployment Success Notification
+        maxLength: 64
+        minLength: 2
+        type: string
+      subject:
+        example: Application {{app_name}} Deployment Successful
+        maxLength: 255
+        type: string
+    type: object
   request.UpdatePermissionRequest:
     properties:
       description:
@@ -722,9 +773,6 @@ definitions:
       headers:
         additionalProperties:
           type: string
-        example:
-          '"Authorization"': '"Bearer token"}'
-          '{"Content-Type"': '"application/json"'
         type: object
       method:
         enum:
@@ -795,6 +843,70 @@ definitions:
         description: Two-factor authentication configuration
     type: object
   request.UserCreateRequest:
+    properties:
+      avatar:
+        description: Avatar URL (optional)
+        example: https://example.com/avatar.jpg
+        type: string
+      email:
+        description: Email address, must be unique
+        example: john@example.com
+        type: string
+      gender:
+        description: 'Gender: 1-male, 2-female, 0-unknown (optional)'
+        example: 1
+        maximum: 2
+        minimum: 0
+        type: integer
+      language:
+        description: Language, default zh-CN (optional)
+        example: zh-CN
+        maxLength: 10
+        type: string
+      nickname:
+        description: User nickname (optional)
+        example: John Doe
+        maxLength: 64
+        type: string
+      password:
+        description: Password, 8-32 characters, must contain uppercase
+        example: password123
+        type: string
+      phone:
+        description: Phone number (optional)
+        example: "+1234567890"
+        maxLength: 20
+        type: string
+      role_ids:
+        description: Array of role IDs to assign (optional)
+        items:
+          type: integer
+        type: array
+      signature:
+        description: Personal signature (optional)
+        example: This is my signature
+        maxLength: 255
+        type: string
+      status:
+        description: 'Status: 0-disabled, 1-enabled (optional)'
+        example: 1
+        maximum: 1
+        minimum: 0
+        type: integer
+      timezone:
+        description: Timezone, default UTC (optional)
+        example: Asia/Shanghai
+        maxLength: 64
+        type: string
+      username:
+        description: Username, 3-32 characters, letters, numbers, underscore
+        example: johndoe
+        maxLength: 64
+        type: string
+    required:
+    - email
+    - password
+    - username
     type: object
   request.UserLoginRequest:
     properties:
@@ -858,6 +970,47 @@ definitions:
     - username
     type: object
   request.UserUpdateRequest:
+    properties:
+      avatar:
+        example: https://example.com/avatar.jpg
+        type: string
+      email:
+        example: newemail@example.com
+        type: string
+      gender:
+        example: 1
+        maximum: 2
+        minimum: 0
+        type: integer
+      language:
+        example: zh-CN
+        maxLength: 10
+        type: string
+      nickname:
+        example: John Doe
+        maxLength: 64
+        type: string
+      phone:
+        example: "+1234567890"
+        maxLength: 20
+        type: string
+      role_ids:
+        description: Array of role IDs to assign (optional)
+        items:
+          type: integer
+        type: array
+      signature:
+        example: This is my signature
+        maxLength: 255
+        type: string
+      timezone:
+        example: Asia/Shanghai
+        maxLength: 64
+        type: string
+      username:
+        example: johndoe
+        maxLength: 64
+        type: string
     type: object
   request.UserUpdateStatusRequest:
     properties:
@@ -1299,6 +1452,60 @@ definitions:
       push_notifications:
         type: boolean
       sms_notifications:
+        type: boolean
+    type: object
+  response.NotificationTemplateListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/response.NotificationTemplateResponse'
+        type: array
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  response.NotificationTemplatePreviewResponse:
+    properties:
+      content:
+        type: string
+      rendered_content:
+        type: string
+      rendered_subject:
+        type: string
+      subject:
+        type: string
+    type: object
+  response.NotificationTemplateResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      is_system:
+        type: integer
+      name:
+        type: string
+      status:
+        type: integer
+      subject:
+        type: string
+      template_type:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  response.NotificationTemplateTestResponse:
+    properties:
+      details:
+        type: string
+      message:
+        type: string
+      success:
         type: boolean
     type: object
   response.OAuth2LoginResponse:
@@ -3058,6 +3265,328 @@ paths:
       summary: Get notification record details
       tags:
       - Notification Management
+  /api/v1/notifications/templates:
+    get:
+      consumes:
+      - application/json
+      description: Get paginated list of notification templates with filtering
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      - description: Template type filter
+        in: query
+        name: type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.NotificationTemplateListResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get notification templates list
+      tags:
+      - Notification Templates
+    post:
+      consumes:
+      - application/json
+      description: Create a new notification template with title, content and variables
+      parameters:
+      - description: Notification template configuration
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CreateNotificationTemplateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.NotificationTemplateResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create notification template
+      tags:
+      - Notification Templates
+  /api/v1/notifications/templates/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an existing notification template by ID
+      parameters:
+      - description: Template ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete notification template
+      tags:
+      - Notification Templates
+    get:
+      consumes:
+      - application/json
+      description: Get detailed information about a specific notification template
+      parameters:
+      - description: Template ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.NotificationTemplateResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get notification template by ID
+      tags:
+      - Notification Templates
+    put:
+      consumes:
+      - application/json
+      description: Update an existing notification template configuration
+      parameters:
+      - description: Template ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated notification template configuration
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.UpdateNotificationTemplateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.NotificationTemplateResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update notification template
+      tags:
+      - Notification Templates
+  /api/v1/notifications/templates/{id}/preview:
+    get:
+      consumes:
+      - application/json
+      description: Preview rendered notification template with sample data
+      parameters:
+      - description: Template ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.NotificationTemplatePreviewResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Preview notification template
+      tags:
+      - Notification Templates
+  /api/v1/notifications/templates/{id}/test:
+    post:
+      consumes:
+      - application/json
+      description: Test a notification template by sending a test notification
+      parameters:
+      - description: Template ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Test template configuration
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.TestNotificationTemplateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.NotificationTemplateTestResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Test notification template
+      tags:
+      - Notification Templates
   /api/v1/permissions:
     get:
       consumes:
