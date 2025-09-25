@@ -1,6 +1,7 @@
 package service
 
 import (
+	"api-service/internal/constants"
 	"api-service/internal/dto/request"
 	"api-service/internal/dto/response"
 	"api-service/internal/interface/repository"
@@ -8,6 +9,9 @@ import (
 	"api-service/internal/model"
 	"api-service/pkg/errors"
 	"api-service/pkg/logger"
+	"api-service/pkg/redis"
+	"api-service/pkg/utils"
+
 	"context"
 	"math"
 
@@ -191,7 +195,10 @@ func (s *permissionService) ListPermissions(ctx context.Context, req *request.Li
 		logger.String("service", "permission"),
 		logger.String("operation", "ListPermissions"))
 
-	permissions, total, err := s.permissionRepo.List(ctx, req)
+	// Extract language from context for translation support
+	lang := s.getLanguageFromContext(ctx)
+
+	permissions, total, err := s.permissionRepo.List(ctx, req, lang)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to list permissions", logger.ErrorField(err))
 		return nil, err
@@ -319,4 +326,18 @@ func (s *permissionService) BatchUpdatePermissionStatus(ctx context.Context, ids
 		logger.Int("count", len(ids)))
 
 	return nil
+}
+
+// getLanguageFromContext extracts language from context
+func (s *permissionService) getLanguageFromContext(ctx context.Context) string {
+	userID, exists := utils.GetUserIDFromContext(ctx)
+	if exists {
+		redisKey := redis.FormatRedisKeyWithID(redis.RK_USER_PREFERENCES, userID)
+		language, err := redis.HGet(ctx, redisKey, constants.UserLanguage)
+
+		if err == nil && language != "" {
+			return language
+		}
+	}
+	return constants.DefaultLanguage
 }
