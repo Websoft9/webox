@@ -69,6 +69,25 @@ func (SecretKey) TableName() string {
 	return "secret_keys"
 }
 
+type UserSecret struct {
+	ID          uint       `gorm:"primaryKey;autoIncrement" json:"id"`
+	UserID      uint       `gorm:"not null;index" json:"user_id"`
+	SecretKeyID uint       `gorm:"not null;index" json:"secret_key_id"`
+	GrantedBy   *uint      `gorm:"index" json:"granted_by,omitempty"`
+	GrantedAt   time.Time  `gorm:"default:CURRENT_TIMESTAMP" json:"granted_at"`
+	ExpiresAt   *time.Time `json:"expires_at,omitempty"`
+	CreatedAt   time.Time  `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
+
+	User          User      `gorm:"foreignKey:UserID;references:ID" json:"user,omitempty"`
+	SecretKey     SecretKey `gorm:"foreignKey:SecretKeyID;references:ID" json:"secret_key,omitempty"`
+	GrantedByUser *User     `gorm:"foreignKey:GrantedBy;references:ID" json:"granted_by_user,omitempty"`
+}
+
+// TableName
+func (UserSecret) TableName() string {
+	return "user_secret"
+}
+
 // BeforeCreate hook for GORM
 func (s *SecretKey) BeforeCreate(tx *gorm.DB) error {
 	if s.Name == "" {

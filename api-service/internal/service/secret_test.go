@@ -65,6 +65,16 @@ func (m *MockSecretKeyRepository) CountByType(ctx context.Context, keyType model
 	return args.Get(0).(int64), args.Error(1)
 }
 
+func (m *MockSecretKeyRepository) CreateUserSecret(ctx context.Context, userSecret *model.UserSecret) error {
+	args := m.Called(ctx, userSecret)
+	return args.Error(0)
+}
+
+func (m *MockSecretKeyRepository) DeleteUserSecretsBySecretKeyID(ctx context.Context, secretKeyID uint) error {
+	args := m.Called(ctx, secretKeyID)
+	return args.Error(0)
+}
+
 // createTestConfig creates a test configuration with RSA keys
 func createTestConfig() *config.Config {
 	// Generate test RSA key pair
@@ -150,7 +160,6 @@ func createTestUpdateRequest() *request.SecretKeyUpdateRequest {
 	}
 }
 
-// Tests for CreateSecretKey
 func TestSecretKeyService_CreateSecretKey_Success(t *testing.T) {
 	service, mockRepo, _ := setupSecretKeyService()
 	ctx := context.Background()
@@ -166,6 +175,11 @@ func TestSecretKeyService_CreateSecretKey_Success(t *testing.T) {
 		secretKey.ID = 1 // Set ID to simulate database auto-increment
 	})
 
+	// Mock CreateUserSecret calls for each authorized user
+	for range req.AuthorizedUsers {
+		mockRepo.On("CreateUserSecret", ctx, mock.AnythingOfType("*model.UserSecret")).Return(nil)
+	}
+
 	// Execute
 	result, err := service.CreateSecretKey(ctx, req, userID)
 
@@ -174,8 +188,6 @@ func TestSecretKeyService_CreateSecretKey_Success(t *testing.T) {
 	assert.NotNil(t, result)
 	assert.Equal(t, req.Name, result.Name)
 	assert.Equal(t, req.KeyType, result.KeyType)
-	// Instead of checking EncryptedValue which doesn't exist in the response
-	// Just verify the ID and Name are set correctly
 	assert.Equal(t, uint(1), result.ID)
 	mockRepo.AssertExpectations(t)
 }
@@ -382,6 +394,9 @@ func TestSecretKeyService_DeleteSecretKey_Success(t *testing.T) {
 	// Mock GetByID call
 	mockRepo.On("GetByID", ctx, keyID).Return(testKey, nil)
 
+	// Mock DeleteUserSecretsBySecretKeyID call
+	mockRepo.On("DeleteUserSecretsBySecretKeyID", ctx, keyID).Return(nil)
+
 	// Mock Delete call
 	mockRepo.On("Delete", ctx, keyID).Return(nil)
 
@@ -573,6 +588,7 @@ func TestSecretKeyService_FullWorkflow(t *testing.T) {
 	assert.Equal(t, int64(1), listResult.Total)
 
 	// Step 5: Delete secret key
+	mockRepo.On("DeleteUserSecretsBySecretKeyID", ctx, uint(1)).Return(nil)
 	mockRepo.On("Delete", ctx, uint(1)).Return(nil)
 
 	err = service.DeleteSecretKey(ctx, 1, userID)

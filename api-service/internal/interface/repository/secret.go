@@ -32,4 +32,10 @@ type SecretKeyRepository interface {
 
 	// CountByType counts secret keys by type for a user
 	CountByType(ctx context.Context, keyType model.SecretKeyType, ownerID uint) (int64, error)
+
+	// CreateUserSecret creates a user secret relationship
+	CreateUserSecret(ctx context.Context, userSecret *model.UserSecret) error
+
+	// DeleteUserSecretsBySecretKeyID deletes all user secret relationships for a secret key
+	DeleteUserSecretsBySecretKeyID(ctx context.Context, secretKeyID uint) error
 }

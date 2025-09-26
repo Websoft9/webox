@@ -129,6 +129,34 @@ func (s *secretKeyService) CreateSecretKey(ctx context.Context, req *request.Sec
 		return nil, errors.WrapError(err, errors.CodeRecordCreateFailed, s.i18n.T(ctx, "secret.create_failed"))
 	}
 
+	if len(req.AuthorizedUsers) > 0 {
+		for _, authorizedUserID := range req.AuthorizedUsers {
+			userSecret := &model.UserSecret{
+				UserID:      authorizedUserID,
+				SecretKeyID: secretKey.ID,
+				GrantedBy:   &userID,
+				GrantedAt:   time.Now(),
+				ExpiresAt:   req.ExpiresAt,
+			}
+
+			if err := s.secretKeyRepo.CreateUserSecret(ctx, userSecret); err != nil {
+				s.logger.ErrorContext(ctx, "Failed to create user secret relationship",
+					logger.Uint("secret_key_id", secretKey.ID),
+					logger.Uint("authorized_user_id", authorizedUserID),
+					logger.ErrorField(err))
+				continue
+			}
+
+			s.logger.InfoContext(ctx, "User secret relationship created",
+				logger.Uint("secret_key_id", secretKey.ID),
+				logger.Uint("authorized_user_id", authorizedUserID))
+		}
+
+		s.logger.InfoContext(ctx, "User secret relationships creation completed",
+			logger.Uint("secret_key_id", secretKey.ID),
+			logger.Int("total_users", len(req.AuthorizedUsers)))
+	}
+
 	s.logger.InfoContext(ctx, "Secret key created successfully",
 		logger.Uint("secret_key_id", secretKey.ID),
 		logger.Uint("user_id", userID))
@@ -275,6 +303,18 @@ func (s *secretKeyService) DeleteSecretKey(ctx context.Context, id, userID uint)
 		return errors.NewAppError(errors.CodeAccessDenied, s.i18n.T(ctx, "secret.access_denied"))
 	}
 
+	// First delete all user_secret relationships for this secret key
+	if err := s.secretKeyRepo.DeleteUserSecretsBySecretKeyID(ctx, id); err != nil {
+		s.logger.ErrorContext(ctx, "Failed to delete user secret relationships",
+			logger.Uint("secret_key_id", id),
+			logger.ErrorField(err))
+		return errors.WrapError(err, errors.CodeRecordDeleteFailed, s.i18n.T(ctx, "secret.delete_failed"))
+	}
+
+	s.logger.InfoContext(ctx, "User secret relationships deleted successfully",
+		logger.Uint("secret_key_id", id))
+
+	// Then delete the secret key itself
 	if err := s.secretKeyRepo.Delete(ctx, id); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to delete secret key",
 			logger.Uint("id", id),

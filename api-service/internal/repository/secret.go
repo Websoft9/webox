@@ -143,3 +143,15 @@ func (r *secretKeyRepository) CountByType(ctx context.Context, keyType model.Sec
 
 	return count, nil
 }
+
+// CreateUserSecret creates a user secret relationship
+func (r *secretKeyRepository) CreateUserSecret(ctx context.Context, userSecret *model.UserSecret) error {
+	return r.db.WithContext(ctx).Create(userSecret).Error
+}
+
+// DeleteUserSecretsBySecretKeyID deletes all user secret relationships for a secret key
+func (r *secretKeyRepository) DeleteUserSecretsBySecretKeyID(ctx context.Context, secretKeyID uint) error {
+	return r.db.WithContext(ctx).
+		Where("secret_key_id = ?", secretKeyID).
+		Delete(&model.UserSecret{}).Error
+}
