@@ -130,7 +130,7 @@ func PermissionMiddleware(permissionService service.PermissionService, apiTokenS
 func authenticateRequest(c *gin.Context) (*auth.Claims, string, error) {
 	authHeader := c.GetHeader("Authorization")
 	if authHeader == "" {
-		return nil, "", errors.NewAppErrorWithMessage(errors.CodeRequiredParameterMissing, "authorization header is empty")
+		return nil, "", errors.NewAppError(errors.CodeRequiredParameterMissing)
 	}
 
 	token, err := auth.ExtractTokenFromHeader(authHeader)

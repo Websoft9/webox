@@ -5,6 +5,7 @@ import (
 	"api-service/internal/controller"
 	serviceInterface "api-service/internal/interface/service"
 	"api-service/internal/middleware"
+	"api-service/pkg/errors"
 	"api-service/pkg/logger"
 	"net/http"
 	"time"
@@ -84,8 +85,7 @@ func setupMiddleware(
 	r.Use(middleware.I18nMiddleware())
 	r.Use(middleware.PermissionMiddleware(permissionService, apiTokenService, cfg, log))
 	r.Use(middleware.AuditLogMiddleware(auditLogService, log))
-	r.Use(middleware.ErrorHandler(log))
-	r.Use(middleware.RequestValidator(log))
+	r.Use(errors.ErrorHandler(log))
 }
 
 // setupHealthCheck sets up health check routes

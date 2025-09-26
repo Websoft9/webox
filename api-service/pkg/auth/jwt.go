@@ -65,7 +65,7 @@ func ParseWithClaims(tokenString, secret string) (*jwt.Token, error) {
 	return jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		// Validate signing method
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errors.NewAppErrorWithMessage(errors.CodeInvalidParameterFormat, "invalid signing method")
+			return nil, errors.NewAppError(errors.CodeInvalidParameterFormat)
 		}
 		return []byte(secret), nil
 	}, jwt.WithLeeway(JWTLeewaySeconds*time.Second))
@@ -74,12 +74,12 @@ func ParseWithClaims(tokenString, secret string) (*jwt.Token, error) {
 // ExtractTokenFromHeader extracts token from Authorization header
 func ExtractTokenFromHeader(authHeader string) (string, error) {
 	if authHeader == "" {
-		return "", errors.NewAppErrorWithMessage(errors.CodeRequiredParameterMissing, "authorization header is empty")
+		return "", errors.NewAppError(errors.CodeRequiredParameterMissing)
 	}
 
 	const bearerPrefix = "Bearer "
 	if len(authHeader) < len(bearerPrefix) || authHeader[:len(bearerPrefix)] != bearerPrefix {
-		return "", errors.NewAppErrorWithMessage(errors.CodeInvalidParameterFormat, "invalid authorization header format")
+		return "", errors.NewAppError(errors.CodeInvalidParameterFormat)
 	}
 
 	return authHeader[len(bearerPrefix):], nil
@@ -120,7 +120,7 @@ func (j *JWTAuth) ValidateToken(tokenString string) (*Claims, error) {
 	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
 		return claims, nil
 	}
-	return nil, errors.NewAppErrorWithMessage(errors.CodeValidationFailed, "invalid token")
+	return nil, errors.NewAppError(errors.CodeValidationFailed)
 }
 
 // RefreshToken refreshes an access token using a refresh token
@@ -131,7 +131,7 @@ func (j *JWTAuth) RefreshToken(tokenString string) (string, time.Time, error) {
 			return j.GenerateTokenWithUserInfo(claims.UserID, claims.Username, claims.Role)
 		}
 	}
-	return "", time.Time{}, errors.NewAppErrorWithMessage(errors.CodeValidationFailed, "invalid token")
+	return "", time.Time{}, errors.NewAppError(errors.CodeValidationFailed)
 }
 
 // GetTokenExpiresInSeconds returns the configured token expiration time in seconds

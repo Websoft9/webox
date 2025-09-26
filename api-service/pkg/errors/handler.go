@@ -2,6 +2,7 @@ package errors
 
 import (
 	"api-service/pkg/i18n"
+	"api-service/pkg/logger"
 	"api-service/pkg/utils"
 	"net/http"
 
@@ -11,18 +12,21 @@ import (
 // ErrorHandlerMiddleware provides unified error handling middleware for Gin
 // It catches panics and converts them into structured error responses
 // This middleware ensures consistent error formatting across the application
-func ErrorHandlerMiddleware() gin.HandlerFunc {
+func ErrorHandler(log logger.Logger) gin.HandlerFunc {
 	return gin.CustomRecovery(func(c *gin.Context, recovered interface{}) {
 		// Handle different types of recovered values
 		switch err := recovered.(type) {
 		case string:
 			// Handle string panics as internal errors
-			HandleError(c, NewAppErrorWithI18n(CodeInternalError, err, "error.unknown_error"))
+			log.ErrorContext(c, err)
+			HandleError(c, NewAppErrorWithI18nDetails(CodeInternalError, "error.unknown_error", err))
 		case error:
 			// Wrap standard errors as internal errors
-			HandleError(c, WrapError(err, CodeInternalError, "error.internal_error"))
+			log.ErrorContext(c, "system panic", logger.ErrorField(err))
+			HandleError(c, NewAppErrorWrapError(err, CodeInternalError))
 		default:
 			// Handle unknown panic types
+			log.ErrorContext(c, "system panic", logger.Any("error", recovered))
 			HandleError(c, ErrInternalError)
 		}
 		c.Abort()
@@ -41,7 +45,7 @@ func HandleError(c *gin.Context, err error) {
 	if !ok {
 		// Handle standard Go errors as internal server errors
 		message := i18n.T("error.internal_error", lang)
-		sendErrorResponse(c, http.StatusInternalServerError, message, err.Error())
+		sendErrorResponse(c, http.StatusInternalServerError, CodeInternalError, message, err.Error())
 		return
 	}
 
@@ -57,14 +61,14 @@ func HandleError(c *gin.Context, err error) {
 	}
 
 	// Send structured error response
-	sendErrorResponse(c, appErr.Code, message, appErr.Details)
+	sendErrorResponse(c, appErr.HTTPStatus, appErr.Code, message, appErr.Details)
 }
 
 // sendErrorResponse sends a structured error response without importing the response package
 // This prevents circular import dependencies
-func sendErrorResponse(c *gin.Context, statusCode int, message, details string) {
-	c.JSON(statusCode, gin.H{
-		"code":    statusCode,
+func sendErrorResponse(c *gin.Context, statusCode HTTPCode, errorCode ErrorCode, message, details string) {
+	c.JSON(int(statusCode), gin.H{
+		"code":    int(errorCode),
 		"message": message,
 		"error":   details,
 	})

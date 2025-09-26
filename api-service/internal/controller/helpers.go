@@ -84,14 +84,14 @@ func GetUserID(ctx *gin.Context) (uint, bool) {
 }
 
 // ParseIDParam parses ID parameter from URL
-func ParseIDParam(ctx *gin.Context, paramName, errorKey string) (uint, bool) {
+func ParseIDParam(ctx *gin.Context, paramName string) (uint, bool) {
 	idStr := ctx.Param(paramName)
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"code":    http.StatusBadRequest,
-			"message": i18n.T(errorKey, utils.GetUserLangFromRedis(ctx)),
+			"message": i18n.T("validation.invalid_query_parameters", utils.GetUserLangFromRedis(ctx)),
 		})
 		return 0, false
 	}

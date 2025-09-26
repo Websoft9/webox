@@ -71,7 +71,7 @@ func (ap *AuthPolicy) ValidateUsername(username string) error {
 	// Check if empty - username is required for all operations
 	if username == "" {
 		ap.logger.Debug("Username validation failed: empty username")
-		return errors.NewAppError(errors.CodeInvalidParameterFormat, "Username cannot be empty")
+		return errors.NewAppError(errors.CodeInvalidParameterFormat)
 	}
 
 	// Check length constraints - enforce minimum security requirements
@@ -80,21 +80,21 @@ func (ap *AuthPolicy) ValidateUsername(username string) error {
 			logger.Int("length", len(username)),
 			logger.Int("min_length", UsernameMinLength),
 			logger.Int("max_length", UsernameMaxLength))
-		return errors.NewAppError(errors.CodeInvalidParameterFormat, "Username length must be between 3-20 characters")
+		return errors.NewAppError(errors.CodeInvalidParameterFormat)
 	}
 
 	// Check character composition - only allow alphanumeric and underscores for security
 	matched, _ := regexp.MatchString("^[a-zA-Z0-9_]+$", username)
 	if !matched {
 		ap.logger.Debug("Username validation failed: invalid characters detected", logger.String("username", username))
-		return errors.NewAppError(errors.CodeInvalidParameterFormat, "Username can only contain letters, numbers, and underscores")
+		return errors.NewAppError(errors.CodeInvalidParameterFormat)
 	}
 
 	// Check starting character requirement - must start with letter for consistency
 	if !unicode.IsLetter(rune(username[0])) {
 		ap.logger.Debug("Username validation failed: does not start with letter",
 			logger.String("first_char", string(username[0])))
-		return errors.NewAppError(errors.CodeInvalidParameterFormat, "Username must start with a letter")
+		return errors.NewAppError(errors.CodeInvalidParameterFormat)
 	}
 
 	ap.logger.Debug("Username validation successful", logger.String("username", username))
@@ -146,7 +146,7 @@ func (ap *AuthPolicy) ValidateEmail(email string) error {
 			ap.logger.Debug("Email validation failed: domain not in whitelist",
 				logger.String("domain", domain),
 				logger.Any("allowed_domains", allowedEmailDomains))
-			return errors.NewAppError(errors.CodeValidationFailed, "This email domain is not allowed")
+			return errors.NewAppError(errors.CodeValidationFailed)
 		}
 
 		ap.logger.Debug("Email domain whitelist check passed", logger.String("domain", domain))
@@ -174,7 +174,7 @@ func (ap *AuthPolicy) ValidateUsernameOrEmail(input string) error {
 
 	if input == "" {
 		ap.logger.Debug("Validation failed: empty input")
-		return errors.NewAppError(errors.CodeRequiredParameterMissing, "Username or email cannot be empty")
+		return errors.NewAppError(errors.CodeRequiredParameterMissing)
 	}
 
 	// Determine input type by checking email pattern
@@ -196,7 +196,7 @@ func (ap *AuthPolicy) ValidatePasswordWithPolicy(ctx context.Context, password s
 
 	if password == "" {
 		ap.logger.WarnContext(ctx, "Password cannot be empty")
-		return errors.NewAppErrorWithMessage(errors.CodeRequiredParameterMissing, "Password cannot be empty")
+		return errors.NewAppError(errors.CodeRequiredParameterMissing)
 	}
 
 	// Check password length constraints
@@ -214,12 +214,12 @@ func (ap *AuthPolicy) validatePasswordLength(ctx context.Context, password strin
 
 	if passwordLen < policy.MinLength {
 		ap.logger.WarnContext(ctx, "Password too short", logger.Int("min_length", policy.MinLength), logger.Int("actual_length", passwordLen))
-		return errors.NewAppErrorWithI18n(errors.CodeValidationFailed, fmt.Sprintf("Password must be at least %d characters long", policy.MinLength), "auth.password_too_short")
+		return errors.NewAppErrorWithI18n(errors.CodeValidationFailed, "auth.password_too_short")
 	}
 
 	if passwordLen > policy.MaxLength {
 		ap.logger.WarnContext(ctx, "Password too long", logger.Int("max_length", policy.MaxLength), logger.Int("actual_length", passwordLen))
-		return errors.NewAppErrorWithI18n(errors.CodeValidationFailed, fmt.Sprintf("Password cannot exceed %d characters", policy.MaxLength), "auth.password_too_long")
+		return errors.NewAppErrorWithI18n(errors.CodeValidationFailed, "auth.password_too_long")
 	}
 
 	return nil
@@ -233,22 +233,22 @@ func (ap *AuthPolicy) validatePasswordComplexity(ctx context.Context, password s
 	// Check each requirement individually
 	if policy.RequireUppercase && !hasUpper {
 		ap.logger.WarnContext(ctx, "Password missing uppercase character")
-		return errors.NewAppErrorWithI18n(errors.CodeValidationFailed, "Password must contain at least one uppercase letter", "auth.password_require_uppercase")
+		return errors.NewAppErrorWithI18n(errors.CodeValidationFailed, "auth.password_require_uppercase")
 	}
 
 	if policy.RequireLowercase && !hasLower {
 		ap.logger.WarnContext(ctx, "Password missing lowercase character")
-		return errors.NewAppErrorWithI18n(errors.CodeValidationFailed, "Password must contain at least one lowercase letter", "auth.password_require_lowercase")
+		return errors.NewAppErrorWithI18n(errors.CodeValidationFailed, "auth.password_require_lowercase")
 	}
 
 	if policy.RequireNumbers && !hasNumber {
 		ap.logger.WarnContext(ctx, "Password missing number")
-		return errors.NewAppErrorWithI18n(errors.CodeValidationFailed, "Password must contain at least one number", "auth.password_require_numbers")
+		return errors.NewAppErrorWithI18n(errors.CodeValidationFailed, "auth.password_require_numbers")
 	}
 
 	if policy.RequireSymbols && !hasSymbol {
 		ap.logger.WarnContext(ctx, "Password missing symbol")
-		return errors.NewAppErrorWithI18n(errors.CodeValidationFailed, "Password must contain at least one symbol", "auth.password_require_symbols")
+		return errors.NewAppErrorWithI18n(errors.CodeValidationFailed, "auth.password_require_symbols")
 	}
 
 	ap.logger.InfoContext(ctx, "Password policy validation successful")
@@ -387,7 +387,7 @@ func (ap *AuthPolicy) ValidatePassword(ctx context.Context, username string, pas
 	if !passwordValid {
 		// Record password validation failure
 		ap.recordLoginFailure(ctx, username, "password_error")
-		return errors.NewAppErrorWithI18n(errors.CodeInvalidCredentials, "Invalid credentials", "auth.invalid_credentials")
+		return errors.NewAppError(errors.CodeInvalidCredentials)
 	}
 
 	// Password is valid, clear login attempts counter
@@ -435,7 +435,7 @@ func (ap *AuthPolicy) checkIPWhitelist(ctx context.Context, username, clientIP s
 		ap.logger.WarnContext(ctx, "Access denied - IP address not in whitelist",
 			logger.String("client_ip", clientIP),
 			logger.String("username", username))
-		return errors.NewAppErrorWithI18n(errors.CodeAccessDenied, "Access denied from this IP address", "auth.ip_not_allowed")
+		return errors.NewAppErrorWithI18n(errors.CodeAccessDenied, "auth.ip_not_allowed")
 	}
 
 	ap.logger.DebugContext(ctx, "IP whitelist validation successful",
@@ -507,7 +507,7 @@ func (ap *AuthPolicy) checkLoginTimeRestrictions(ctx context.Context, username s
 		ap.logger.WarnContext(ctx, "Login attempt outside allowed hours",
 			logger.Int("current_time", currentTime),
 			logger.String("allowed_hours", security.AllowedLoginHours))
-		return errors.NewAppErrorWithI18n(errors.CodeAccessDenied, "Login is not allowed at this time", "auth.login_time_restricted")
+		return errors.NewAppErrorWithI18n(errors.CodeAccessDenied, "auth.login_time_restricted")
 	}
 
 	return nil
@@ -566,9 +566,7 @@ func (ap *AuthPolicy) checkAccountLockout(ctx context.Context, username string) 
 			logger.String("username", username),
 			logger.Duration("remaining_lockout_time", ttl))
 
-		return errors.NewAppErrorWithI18n(errors.CodeLoginAttemptsExceeded,
-			fmt.Sprintf("Account is locked. Try again in %v", ttl.Round(time.Second)),
-			"auth.account_locked")
+		return errors.NewAppErrorWithI18n(errors.CodeLoginAttemptsExceeded, "auth.account_locked")
 	}
 
 	return nil
@@ -773,7 +771,7 @@ func IsEmail(input string) bool {
 // ValidateUsernameOrEmail validates username or email using global policy
 func ValidateUsernameOrEmail(input string) error {
 	if globalAuthPolicy == nil {
-		return errors.NewAppError(errors.CodeRequiredParameterMissing, "Auth policy not initialized")
+		return errors.NewAppError(errors.CodeRequiredParameterMissing)
 	}
 	return globalAuthPolicy.ValidateUsernameOrEmail(input)
 }

@@ -529,7 +529,7 @@ func shutdownServices(ctx context.Context, zapLogger logger.Logger, db *gorm.DB,
 	// 1. Close Redis connection pool
 	zapLogger.Info("Closing Redis connection...")
 	if err := redis.Close(); err != nil {
-		shutdownErr := errors.WrapError(err, errors.CodeInternalError, "failed to close Redis connection")
+		shutdownErr := errors.NewAppErrorWrapError(err, errors.CodeInternalError)
 		shutdownErrors = append(shutdownErrors, shutdownErr)
 		zapLogger.Error("Redis shutdown error", logger.String("error", shutdownErr.Error()))
 	} else {
@@ -548,7 +548,7 @@ func shutdownServices(ctx context.Context, zapLogger logger.Logger, db *gorm.DB,
 		zapLogger.Info("Closing database connection...")
 		sqlDB, err := db.DB()
 		if err != nil {
-			shutdownErr := errors.WrapError(err, errors.CodeInternalError, "failed to get underlying sql.DB instance")
+			shutdownErr := errors.NewAppErrorWrapError(err, errors.CodeInternalError)
 			shutdownErrors = append(shutdownErrors, shutdownErr)
 			zapLogger.Error("Database connection retrieval error", logger.String("error", shutdownErr.Error()))
 		} else {
@@ -565,14 +565,14 @@ func shutdownServices(ctx context.Context, zapLogger logger.Logger, db *gorm.DB,
 			select {
 			case err := <-done:
 				if err != nil {
-					shutdownErr := errors.WrapError(err, errors.CodeInternalError, "failed to close database connection")
+					shutdownErr := errors.NewAppErrorWrapError(err, errors.CodeInternalError)
 					shutdownErrors = append(shutdownErrors, shutdownErr)
 					zapLogger.Error("Database shutdown error", logger.String("error", shutdownErr.Error()))
 				} else {
 					zapLogger.Info("Database connection closed successfully")
 				}
 			case <-dbCloseCtx.Done():
-				shutdownErr := errors.NewAppError(errors.CodeInternalError, "database connection close timed out")
+				shutdownErr := errors.NewAppError(errors.CodeInternalError)
 				shutdownErrors = append(shutdownErrors, shutdownErr)
 				zapLogger.Error("Database shutdown timeout", logger.String("error", shutdownErr.Error()))
 			}

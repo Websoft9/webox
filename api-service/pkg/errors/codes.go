@@ -1,88 +1,98 @@
 package errors
 
+import (
+	"net/http"
+)
+
+// AppError represents a custom application error type
+type ErrorCode int
+
+// HTTPCode represents the HTTP status code for an error
+type HTTPCode int
+
 // Error code constants definition based on API documentation
 // Error codes are organized by category with specific ranges for easy identification
 const (
 	// Success codes (0)
-	CodeSuccess = 0 // Operation completed successfully
+	CodeSuccess ErrorCode = 0 // Operation completed successfully
 
 	// Authentication related error codes (1000-1999)
-	CodeInvalidCredentials      = 1001 // Username or password incorrect
-	CodeTokenExpired            = 1002 // Token has expired
-	CodeInvalidToken            = 1003 // Invalid token
-	CodeAccountDisabled         = 1004 // Account has been disabled
-	CodeAccountLocked           = 1005 // Account has been locked
-	CodePasswordTooWeak         = 1006 // Password strength insufficient
-	CodeInvalidVerificationCode = 1007 // Verification code incorrect
-	CodeLoginAttemptsExceeded   = 1008 // Too many login failures
-	CodeEmailAlreadyExists      = 1009 // Email already exists
-	CodeTokenAlreadyUsed        = 1010 // Token already used
-	CodeUsernameSuported        = 1011 // Username supported
-	CodeEmailSuported           = 1012 // Email supported
+	CodeInvalidCredentials      ErrorCode = 1001 // Username or password incorrect
+	CodeTokenExpired            ErrorCode = 1002 // Token has expired
+	CodeInvalidToken            ErrorCode = 1003 // Invalid token
+	CodeAccountDisabled         ErrorCode = 1004 // Account has been disabled
+	CodeAccountLocked           ErrorCode = 1005 // Account has been locked
+	CodePasswordTooWeak         ErrorCode = 1006 // Password strength insufficient
+	CodeInvalidVerificationCode ErrorCode = 1007 // Verification code incorrect
+	CodeLoginAttemptsExceeded   ErrorCode = 1008 // Too many login failures
+	CodeEmailAlreadyExists      ErrorCode = 1009 // Email already exists
+	CodeTokenAlreadyUsed        ErrorCode = 1010 // Token already used
+	CodeUsernameSuported        ErrorCode = 1011 // Username supported
+	CodeEmailSuported           ErrorCode = 1012 // Email supported
 
 	// Permission related error codes (2000-2999)
-	CodeInsufficientPermissions       = 2001 // Insufficient permissions
-	CodeResourceAccessDenied          = 2002 // Resource access denied
-	CodeOperationPermissionDenied     = 2003 // Operation permission insufficient
-	CodeRolePermissionDenied          = 2004 // Role permission insufficient
-	CodeResourceGroupPermissionDenied = 2005 // Resource group permission insufficient
-	CodeAccessDenied                  = 2006 // Access denied
+	CodeInsufficientPermissions       ErrorCode = 2001 // Insufficient permissions
+	CodeResourceAccessDenied          ErrorCode = 2002 // Resource access denied
+	CodeOperationPermissionDenied     ErrorCode = 2003 // Operation permission insufficient
+	CodeRolePermissionDenied          ErrorCode = 2004 // Role permission insufficient
+	CodeResourceGroupPermissionDenied ErrorCode = 2005 // Resource group permission insufficient
+	CodeAccessDenied                  ErrorCode = 2006 // Access denied
 
 	// Parameter validation error codes (3000-3999)
-	CodeValidationFailed         = 3000 // General validation error
-	CodeRequiredParameterMissing = 3001 // Required parameter missing
-	CodeInvalidParameterFormat   = 3002 // Parameter format error
-	CodeParameterOutOfRange      = 3003 // Parameter value out of range
-	CodeInvalidParameterLength   = 3004 // Parameter length does not meet requirements
-	CodeInvalidEmailFormat       = 3005 // Email format error
-	CodeInvalidPhoneFormat       = 3006 // Phone number format error
-	CodeInvalidURLFormat         = 3007 // URL format error
-	CodeInvalidDateFormat        = 3008 // Date format error
-	CodeEmailNotVerified         = 3009 // Date format error
+	CodeValidationFailed         ErrorCode = 3000 // General validation error
+	CodeRequiredParameterMissing ErrorCode = 3001 // Required parameter missing
+	CodeInvalidParameterFormat   ErrorCode = 3002 // Parameter format error
+	CodeParameterOutOfRange      ErrorCode = 3003 // Parameter value out of range
+	CodeInvalidParameterLength   ErrorCode = 3004 // Parameter length does not meet requirements
+	CodeInvalidEmailFormat       ErrorCode = 3005 // Email format error
+	CodeInvalidPhoneFormat       ErrorCode = 3006 // Phone number format error
+	CodeInvalidURLFormat         ErrorCode = 3007 // URL format error
+	CodeInvalidDateFormat        ErrorCode = 3008 // Date format error
+	CodeEmailNotVerified         ErrorCode = 3009 // Date format error
 
 	// Resource related error codes (4000-4999)
-	CodeRecordNotFound             = 4000 // Record does not exist
-	CodeResourceNotFound           = 4001 // Resource does not exist
-	CodeResourceAlreadyExists      = 4002 // Resource already exists
-	CodeResourceStateNotAllowed    = 4003 // Resource state does not allow operation
-	CodeResourceDependencyConflict = 4004 // Resource dependency conflict
-	CodeResourceQuotaInsufficient  = 4005 // Resource quota insufficient
-	CodeResourceInUse              = 4006 // Resource is in use
-	CodeRecordQueryFailed          = 4007 // Record query failed
-	CodeRecordCreateFailed         = 4008 // Record creation failed
-	CodeRecordUpdateFailed         = 4009 // Record update failed
-	CodeRecordDeleteFailed         = 4010 // Record deletion failed
-	CodeRecordIsDisabled           = 4011 // Record is disabled
-	CodeRecordNoAffected           = 4012 // Record is not affected
-	CodeRecordDeleteDenied         = 4013 // Record delete denied
+	CodeRecordNotFound             ErrorCode = 4000 // Record does not exist
+	CodeResourceNotFound           ErrorCode = 4001 // Resource does not exist
+	CodeResourceAlreadyExists      ErrorCode = 4002 // Resource already exists
+	CodeResourceStateNotAllowed    ErrorCode = 4003 // Resource state does not allow operation
+	CodeResourceDependencyConflict ErrorCode = 4004 // Resource dependency conflict
+	CodeResourceQuotaInsufficient  ErrorCode = 4005 // Resource quota insufficient
+	CodeResourceInUse              ErrorCode = 4006 // Resource is in use
+	CodeRecordQueryFailed          ErrorCode = 4007 // Record query failed
+	CodeRecordCreateFailed         ErrorCode = 4008 // Record creation failed
+	CodeRecordUpdateFailed         ErrorCode = 4009 // Record update failed
+	CodeRecordDeleteFailed         ErrorCode = 4010 // Record deletion failed
+	CodeRecordIsDisabled           ErrorCode = 4011 // Record is disabled
+	CodeRecordNoAffected           ErrorCode = 4012 // Record is not affected
+	CodeRecordDeleteDenied         ErrorCode = 4013 // Record delete denied
 
 	// Business logic error codes (5000-5999)
-	CodeServerOffline                  = 5001 // Server offline, cannot operate
-	CodeAppDeploymentFailed            = 5002 // Application deployment failed
-	CodeWorkflowExecutionFailed        = 5003 // Workflow execution failed
-	CodeCertificateRequestFailed       = 5004 // Certificate request failed
-	CodeBackupOperationFailed          = 5005 // Backup operation failed
-	CodeMonitoringDataCollectionFailed = 5006 // Monitoring data collection failed
-	CodeAppPublishFailed               = 5007 // Application publish failed
-	CodeAppOfflineFailed               = 5008 // Application offline failed
-	CodeHealthCheckFailed              = 5009 // Health check failed
-	CodeGatewayConfigUpdateFailed      = 5010 // Gateway configuration update failed
-	CodeUserAlreadyExists              = 5011 // Username already exists
-	CodePermissionInvalid              = 5012 // Permission invalid
+	CodeServerOffline                  ErrorCode = 5001 // Server offline, cannot operate
+	CodeAppDeploymentFailed            ErrorCode = 5002 // Application deployment failed
+	CodeWorkflowExecutionFailed        ErrorCode = 5003 // Workflow execution failed
+	CodeCertificateRequestFailed       ErrorCode = 5004 // Certificate request failed
+	CodeBackupOperationFailed          ErrorCode = 5005 // Backup operation failed
+	CodeMonitoringDataCollectionFailed ErrorCode = 5006 // Monitoring data collection failed
+	CodeAppPublishFailed               ErrorCode = 5007 // Application publish failed
+	CodeAppOfflineFailed               ErrorCode = 5008 // Application offline failed
+	CodeHealthCheckFailed              ErrorCode = 5009 // Health check failed
+	CodeGatewayConfigUpdateFailed      ErrorCode = 5010 // Gateway configuration update failed
+	CodeUserAlreadyExists              ErrorCode = 5011 // Username already exists
+	CodePermissionInvalid              ErrorCode = 5012 // Permission invalid
 
 	// System related error codes (6000-6999)
-	CodeInternalError                = 6001 // System Internal Error
-	CodeCacheServiceUnavailable      = 6002 // Cache service unavailable
-	CodeFilesystemError              = 6003 // Filesystem error
-	CodeNetworkTimeout               = 6004 // Network connection timeout
-	CodeThirdPartyServiceUnavailable = 6005 // Third party service unavailable
-	CodeSystemMaintenance            = 6006 // System under maintenance
-	CodeDatabaseConnectionFailed     = 6007 // Database connection failed
+	CodeInternalError                ErrorCode = 6001 // System Internal Error
+	CodeCacheServiceUnavailable      ErrorCode = 6002 // Cache service unavailable
+	CodeFilesystemError              ErrorCode = 6003 // Filesystem error
+	CodeNetworkTimeout               ErrorCode = 6004 // Network connection timeout
+	CodeThirdPartyServiceUnavailable ErrorCode = 6005 // Third party service unavailable
+	CodeSystemMaintenance            ErrorCode = 6006 // System under maintenance
+	CodeDatabaseConnectionFailed     ErrorCode = 6007 // Database connection failed
 )
 
 // CodeToI18nKey maps error codes to their i18n message keys
 // These keys should correspond to entries in the i18n locale files
-var CodeToI18nKey = map[int]string{
+var CodeToI18nKey = map[ErrorCode]string{
 	// Success codes
 	CodeSuccess: "common.success",
 
@@ -160,82 +170,80 @@ var CodeToI18nKey = map[int]string{
 	CodeDatabaseConnectionFailed:     "system.database_connection_failed",
 }
 
-// CodeMessages maps error codes to their default English messages
-// These messages serve as fallbacks when internationalization is not available
-var CodeMessages = map[int]string{
-	// Success codes
-	CodeSuccess: "Success",
+// codeToHTTPStatus maps business error codes to HTTP status codes
+// This mapping ensures consistent HTTP responses for different error types
+var CodeToHTTPStatus = map[ErrorCode]HTTPCode{
+	CodeSuccess: http.StatusOK,
 
 	// Authentication related errors (1000-1999)
-	CodeInvalidCredentials:      "Username or password incorrect",
-	CodeTokenExpired:            "Token has expired",
-	CodeInvalidToken:            "Invalid token",
-	CodeAccountDisabled:         "Account has been disabled",
-	CodeAccountLocked:           "Account has been locked",
-	CodePasswordTooWeak:         "Password strength insufficient",
-	CodeInvalidVerificationCode: "Verification code incorrect",
-	CodeLoginAttemptsExceeded:   "Too many login failures",
-	CodeEmailAlreadyExists:      "Email already exists",
-	CodeTokenAlreadyUsed:        "Token has already been used",
-	CodeUsernameSuported:        "Only username login is supported",
-	CodeEmailSuported:           "Only email login is supported",
+	CodeInvalidCredentials:      http.StatusUnauthorized,
+	CodeTokenExpired:            http.StatusUnauthorized,
+	CodeInvalidToken:            http.StatusUnauthorized,
+	CodeAccountDisabled:         http.StatusForbidden,
+	CodeAccountLocked:           http.StatusForbidden,
+	CodePasswordTooWeak:         http.StatusBadRequest,
+	CodeInvalidVerificationCode: http.StatusBadRequest,
+	CodeLoginAttemptsExceeded:   http.StatusTooManyRequests,
+	CodeEmailAlreadyExists:      http.StatusBadRequest,
+	CodeTokenAlreadyUsed:        http.StatusUnauthorized,
+	CodeUsernameSuported:        http.StatusBadRequest,
+	CodeEmailSuported:           http.StatusBadRequest,
 
 	// Permission related errors (2000-2999)
-	CodeInsufficientPermissions:       "Insufficient permissions",
-	CodeResourceAccessDenied:          "Resource access denied",
-	CodeOperationPermissionDenied:     "Operation permission insufficient",
-	CodeRolePermissionDenied:          "Role permission insufficient",
-	CodeResourceGroupPermissionDenied: "Resource group permission insufficient",
-	CodeAccessDenied:                  "Access denied",
+	CodeInsufficientPermissions:       http.StatusForbidden,
+	CodeResourceAccessDenied:          http.StatusForbidden,
+	CodeOperationPermissionDenied:     http.StatusForbidden,
+	CodeRolePermissionDenied:          http.StatusForbidden,
+	CodeResourceGroupPermissionDenied: http.StatusForbidden,
 
 	// Parameter validation errors (3000-3999)
-	CodeValidationFailed:         "Validation failed",
-	CodeRequiredParameterMissing: "Required parameter missing",
-	CodeInvalidParameterFormat:   "Parameter format error",
-	CodeParameterOutOfRange:      "Parameter value out of range",
-	CodeInvalidParameterLength:   "Parameter length does not meet requirements",
-	CodeInvalidEmailFormat:       "Email format error",
-	CodeInvalidPhoneFormat:       "Phone number format error",
-	CodeInvalidURLFormat:         "URL format error",
-	CodeInvalidDateFormat:        "Date format error",
-	CodeEmailNotVerified:         "Email not verified",
+	CodeValidationFailed:         http.StatusBadRequest,
+	CodeRequiredParameterMissing: http.StatusBadRequest,
+	CodeInvalidParameterFormat:   http.StatusBadRequest,
+	CodeParameterOutOfRange:      http.StatusBadRequest,
+	CodeInvalidParameterLength:   http.StatusBadRequest,
+	CodeInvalidEmailFormat:       http.StatusBadRequest,
+	CodeInvalidPhoneFormat:       http.StatusBadRequest,
+	CodeInvalidURLFormat:         http.StatusBadRequest,
+	CodeInvalidDateFormat:        http.StatusBadRequest,
+	CodeEmailNotVerified:         http.StatusBadRequest,
 
 	// Resource related errors (4000-4999)
-	CodeRecordNotFound:             "Record does not exist",
-	CodeResourceNotFound:           "Resource does not exist",
-	CodeResourceAlreadyExists:      "Resource already exists",
-	CodeResourceStateNotAllowed:    "Resource state does not allow operation",
-	CodeResourceDependencyConflict: "Resource dependency conflict",
-	CodeResourceQuotaInsufficient:  "Resource quota insufficient",
-	CodeResourceInUse:              "Resource is in use",
-	CodeRecordQueryFailed:          "Record query failed",
-	CodeRecordCreateFailed:         "Record create failed",
-	CodeRecordUpdateFailed:         "Record update failed",
-	CodeRecordDeleteFailed:         "Record delete failed",
-	CodeRecordIsDisabled:           "Record is disabled",
-	CodeRecordNoAffected:           "No rows affected",
-	CodeRecordDeleteDenied:         "Record delete denied",
+	CodeRecordNotFound:             http.StatusNotFound,
+	CodeResourceNotFound:           http.StatusNotFound,
+	CodeResourceAlreadyExists:      http.StatusConflict,
+	CodeResourceStateNotAllowed:    http.StatusConflict,
+	CodeResourceDependencyConflict: http.StatusConflict,
+	CodeResourceQuotaInsufficient:  http.StatusConflict,
+	CodeResourceInUse:              http.StatusConflict,
+	CodeRecordQueryFailed:          http.StatusConflict,
+	CodeRecordCreateFailed:         http.StatusConflict,
+	CodeRecordUpdateFailed:         http.StatusConflict,
+	CodeRecordDeleteFailed:         http.StatusConflict,
+	CodeRecordIsDisabled:           http.StatusConflict,
+	CodeRecordNoAffected:           http.StatusConflict,
+	CodeRecordDeleteDenied:         http.StatusConflict,
 
 	// Business logic errors (5000-5999)
-	CodeServerOffline:                  "Server offline, cannot operate",
-	CodeAppDeploymentFailed:            "Application deployment failed",
-	CodeWorkflowExecutionFailed:        "Workflow execution failed",
-	CodeCertificateRequestFailed:       "Certificate request failed",
-	CodeBackupOperationFailed:          "Backup operation failed",
-	CodeMonitoringDataCollectionFailed: "Monitoring data collection failed",
-	CodeAppPublishFailed:               "Application publish failed",
-	CodeAppOfflineFailed:               "Application offline failed",
-	CodeHealthCheckFailed:              "Health check failed",
-	CodeGatewayConfigUpdateFailed:      "Gateway configuration update failed",
-	CodeUserAlreadyExists:              "Username already exists",
-	CodePermissionInvalid:              "Permission invalid",
+	CodeServerOffline:                  http.StatusServiceUnavailable,
+	CodeAppDeploymentFailed:            http.StatusUnprocessableEntity,
+	CodeWorkflowExecutionFailed:        http.StatusUnprocessableEntity,
+	CodeCertificateRequestFailed:       http.StatusUnprocessableEntity,
+	CodeBackupOperationFailed:          http.StatusUnprocessableEntity,
+	CodeMonitoringDataCollectionFailed: http.StatusServiceUnavailable,
+	CodeAppPublishFailed:               http.StatusUnprocessableEntity,
+	CodeAppOfflineFailed:               http.StatusUnprocessableEntity,
+	CodeHealthCheckFailed:              http.StatusServiceUnavailable,
+	CodeGatewayConfigUpdateFailed:      http.StatusUnprocessableEntity,
+	CodeUserAlreadyExists:              http.StatusConflict,
+	CodePermissionInvalid:              http.StatusUnprocessableEntity,
 
 	// System related errors (6000-6999)
-	CodeInternalError:                "System Internal Error",
-	CodeCacheServiceUnavailable:      "Cache service unavailable",
-	CodeFilesystemError:              "Filesystem error",
-	CodeNetworkTimeout:               "Network connection timeout",
-	CodeThirdPartyServiceUnavailable: "Third party service unavailable",
-	CodeSystemMaintenance:            "System under maintenance",
-	CodeDatabaseConnectionFailed:     "Database connection failed",
+	CodeInternalError:                http.StatusInternalServerError,
+	CodeDatabaseConnectionFailed:     http.StatusInternalServerError,
+	CodeCacheServiceUnavailable:      http.StatusServiceUnavailable,
+	CodeFilesystemError:              http.StatusInternalServerError,
+	CodeNetworkTimeout:               http.StatusRequestTimeout,
+	CodeThirdPartyServiceUnavailable: http.StatusServiceUnavailable,
+	CodeSystemMaintenance:            http.StatusServiceUnavailable,
 }
