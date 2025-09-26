@@ -21,6 +21,7 @@ import (
 	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
 
+	"github.com/xuri/excelize/v2"
 	"gorm.io/gorm"
 )
 
@@ -327,13 +328,143 @@ func (s *secretKeyService) ExportSecretKeys(ctx context.Context, req *request.Se
 	}
 
 	switch req.Format {
-	case "csv":
+	case constants.ExportFormatCsv:
 		return s.exportToCSV(secretKeys)
-	case "json":
+	case constants.ExportFormatJson:
 		return s.exportToJSON(secretKeys)
+	case constants.ExportFormatExcel:
+		return s.exportToExcel(secretKeys)
 	default:
 		return nil, "", errors.NewAppError(errors.CodeValidationFailed, s.i18n.T(ctx, "secret.invalid_export_format"))
 	}
+}
+
+// exportToExcel exports secret keys to Excel format
+func (s *secretKeyService) exportToExcel(secretKeys []*model.SecretKey) (data []byte, filename string, err error) {
+	s.logger.Info("Starting Excel export", logger.Int("count", len(secretKeys)))
+
+	f := excelize.NewFile()
+	defer func() {
+		if closeErr := f.Close(); closeErr != nil {
+			s.logger.Error("Failed to close Excel file", logger.ErrorField(closeErr))
+		}
+	}()
+
+	sheetName := "SecretKeys"
+	index, err := s.createExcelSheet(f, sheetName)
+	if err != nil {
+		return nil, "", err
+	}
+
+	// Set headers
+	if err := s.setExcelHeaders(f, sheetName); err != nil {
+		return nil, "", err
+	}
+
+	// Set data
+	if err := s.setExcelData(f, sheetName, secretKeys); err != nil {
+		return nil, "", err
+	}
+
+	// Finalize workbook
+	f.SetActiveSheet(index)
+	if err := f.DeleteSheet("Sheet1"); err != nil {
+		s.logger.Warn("Failed to delete default sheet", logger.ErrorField(err))
+		// 这个错误不是致命的，继续执行
+	}
+
+	// Write to buffer
+	var buf bytes.Buffer
+	if err := f.Write(&buf); err != nil {
+		s.logger.Error("Failed to write Excel file to buffer", logger.ErrorField(err))
+		return nil, "", errors.NewAppError(errors.CodeInternalError, "Failed to write Excel file")
+	}
+
+	s.logger.Info("Excel file generated successfully", logger.Int("size", buf.Len()))
+
+	filename = fmt.Sprintf("secret-keys-%s.xlsx", time.Now().Format("20060102"))
+	return buf.Bytes(), filename, nil
+}
+
+// createExcelSheet creates a new Excel sheet
+func (s *secretKeyService) createExcelSheet(f *excelize.File, sheetName string) (int, error) {
+	index, err := f.NewSheet(sheetName)
+	if err != nil {
+		s.logger.Error("Failed to create Excel sheet", logger.ErrorField(err))
+		return 0, errors.NewAppError(errors.CodeInternalError, "Failed to create Excel sheet")
+	}
+
+	s.logger.Info("Excel sheet created successfully", logger.Int("index", index))
+	return index, nil
+}
+
+// setExcelHeaders sets the headers in Excel sheet
+func (s *secretKeyService) setExcelHeaders(f *excelize.File, sheetName string) error {
+	headers := []string{"ID", "Name", "Type", "Description", "Created At", "Updated At", "Expires At"}
+
+	for i, header := range headers {
+		cell := fmt.Sprintf("%s1", string(rune('A'+i)))
+		if err := f.SetCellValue(sheetName, cell, header); err != nil {
+			s.logger.Error("Failed to set header cell",
+				logger.ErrorField(err),
+				logger.String("cell", cell),
+				logger.String("header", header))
+			return errors.NewAppError(errors.CodeInternalError, "Failed to set Excel header")
+		}
+	}
+
+	return nil
+}
+
+// setExcelData sets the data rows in Excel sheet
+func (s *secretKeyService) setExcelData(f *excelize.File, sheetName string, secretKeys []*model.SecretKey) error {
+	const excelDataStartRow = 2 // Data starts from row 2 (row 1 is header)
+
+	for i, sk := range secretKeys {
+		row := i + excelDataStartRow
+		if err := s.setExcelRowData(f, sheetName, row, sk); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// setExcelRowData sets a single row of data in Excel sheet
+func (s *secretKeyService) setExcelRowData(f *excelize.File, sheetName string, row int, sk *model.SecretKey) error {
+	description := ""
+	if sk.Description != nil {
+		description = *sk.Description
+	}
+
+	expiresAt := ""
+	if sk.ExpiresAt != nil {
+		expiresAt = sk.ExpiresAt.Format(time.RFC3339)
+	}
+
+	// Define the data to be set
+	data := []interface{}{
+		sk.ID,
+		sk.Name,
+		string(sk.KeyType),
+		description,
+		sk.CreatedAt.Format(time.RFC3339),
+		sk.UpdatedAt.Format(time.RFC3339),
+		expiresAt,
+	}
+
+	// Set each cell
+	for col, value := range data {
+		cell := fmt.Sprintf("%s%d", string(rune('A'+col)), row)
+		if err := f.SetCellValue(sheetName, cell, value); err != nil {
+			s.logger.Error("Failed to set data cell",
+				logger.ErrorField(err),
+				logger.String("cell", cell),
+				logger.Int("row", row))
+			return errors.NewAppError(errors.CodeInternalError, "Failed to set Excel data")
+		}
+	}
+
+	return nil
 }
 
 // ValidateSecretKeyOwnership checks if user owns the secret key

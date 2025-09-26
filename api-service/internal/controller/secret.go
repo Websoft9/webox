@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"api-service/internal/constants"
 	"api-service/internal/dto/request"
 	"api-service/internal/dto/response"
 	"api-service/internal/interface/service"
@@ -359,24 +358,11 @@ func (c *SecretKeyController) ExportSecretKeys(ctx *gin.Context) {
 	}
 
 	// Set response headers for file download
-	contentType := getContentTypeByFormat(req.Format)
-	ctx.Header("Content-Type", contentType)
+	ctx.Header("Content-Type", "application/octet-stream")
 	ctx.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
 	ctx.Header("Content-Length", strconv.Itoa(len(data)))
 
 	c.logger.InfoContext(ctx, "Secret keys exported successfully", logger.Uint("user_id", userID.(uint)))
 	ctx.Writer.WriteHeader(http.StatusOK)
 	_, _ = ctx.Writer.Write(data)
-}
-
-// getContentTypeByFormat returns the correct content type for the given format
-func getContentTypeByFormat(format string) string {
-	switch format {
-	case constants.ExportFormatJson:
-		return "application/json"
-	case constants.ExportFormatExcel:
-		return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-	default:
-		return "text/csv"
-	}
 }
