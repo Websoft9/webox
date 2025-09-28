@@ -43,13 +43,13 @@ func BuildResponseWithI18n(ctx *gin.Context, success bool, httpCode errors.HTTPC
 // BadRequest sends a HTTP 400 Bad Request response with error details.
 // Used when client request contains invalid parameters or malformed data.
 func BadRequest(ctx *gin.Context, err error) {
-	BuildResponseWithI18n(ctx, false, http.StatusBadRequest, http.StatusBadRequest, nil, err.Error())
+	BuildResponseWithI18n(ctx, false, http.StatusBadRequest, errors.CodeValidationFailed, nil, err.Error())
 }
 
 // SuccessWithData sends a HTTP 200 OK response with the provided data payload.
 // Used when operation completes successfully and needs to return data to client.
 func SuccessWithData(ctx *gin.Context, data any) {
-	BuildResponseWithI18n(ctx, true, http.StatusOK, http.StatusOK, data, "")
+	BuildResponseWithI18n(ctx, true, http.StatusOK, errors.CodeSuccess, data, "")
 }
 
 // Success sends a HTTP 200 OK response without data payload.
@@ -88,20 +88,29 @@ func ServiceUnavailable(ctx *gin.Context, err error) {
 	BuildResponseWithI18n(ctx, false, http.StatusServiceUnavailable, errors.CodeInternalError, nil, err.Error())
 }
 
+// WithErrorAndCode sends an error response using a specific error code and error message.
+func WithErrorAndCode(ctx *gin.Context, errorCode errors.ErrorCode, err error) {
+	errMsg := ""
+	if err != nil {
+		errMsg = err.Error()
+	}
+	BuildResponseWithI18n(ctx, false, errors.CodeToHTTPStatus[errorCode], errorCode, nil, errMsg)
+}
+
 // WithError sends an error response using AppError information.
 // It extracts the HTTP status code and i18n message key from the error,
 // falling back to HTTP 500 Internal Server Error for non-AppError types.
 func WithError(ctx *gin.Context, err error) {
 	appErr, ok := err.(*errors.AppError)
 	if ok {
-		BuildResponseWithI18n(ctx, false, appErr.HTTPStatus, appErr.Code, nil, err.Error())
+		WithErrorAndCode(ctx, appErr.Code, err)
 	} else {
-		BuildResponseWithI18n(ctx, false, http.StatusInternalServerError, errors.CodeInternalError, nil, err.Error())
+		WithErrorAndCode(ctx, errors.CodeInternalError, err)
 	}
 }
 
 // WithErrorCode sends an error response using a specific error code.
 // It maps the error code to corresponding HTTP status and sends a localized error message.
 func WithErrorCode(ctx *gin.Context, errorCode errors.ErrorCode) {
-	BuildResponseWithI18n(ctx, false, errors.CodeToHTTPStatus[errorCode], errorCode, nil, "")
+	WithErrorAndCode(ctx, errorCode, nil)
 }

@@ -1,10 +1,9 @@
 package controller
 
 import (
-	"api-service/pkg/i18n"
+	response "api-service/internal/dto/common"
+	"api-service/pkg/errors"
 	"api-service/pkg/logger"
-	"api-service/pkg/utils"
-	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -16,24 +15,14 @@ func BindAndValidateRequest(ctx *gin.Context, req interface{}, validator *valida
 	// Bind request parameters
 	if err := ctx.ShouldBindJSON(req); err != nil {
 		log.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(err))
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"code":    http.StatusBadRequest,
-			"message": i18n.T("validation.invalid_request_format", utils.GetUserLangFromRedis(ctx)),
-			"error":   err.Error(),
-		})
+		response.WithErrorAndCode(ctx, errors.CodeInvalidParameterFormat, err)
 		return false
 	}
 
 	// Validate request parameters
 	if err := validator.Struct(req); err != nil {
 		log.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(err))
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"code":    http.StatusBadRequest,
-			"message": i18n.T("validation.request_validation_failed", utils.GetUserLangFromRedis(ctx)),
-			"error":   err.Error(),
-		})
+		response.WithErrorAndCode(ctx, errors.CodeValidationFailed, err)
 		return false
 	}
 
@@ -45,24 +34,14 @@ func BindAndValidateQuery(ctx *gin.Context, req interface{}, validator *validato
 	// Bind query parameters
 	if err := ctx.ShouldBindQuery(req); err != nil {
 		log.ErrorContext(ctx.Request.Context(), "Invalid query parameters", logger.ErrorField(err))
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"code":    http.StatusBadRequest,
-			"message": i18n.T("validation.invalid_query_parameters", utils.GetUserLangFromRedis(ctx)),
-			"error":   err.Error(),
-		})
+		response.WithErrorAndCode(ctx, errors.CodeInvalidParameterFormat, err)
 		return false
 	}
 
 	// Validate request parameters
 	if err := validator.Struct(req); err != nil {
 		log.ErrorContext(ctx.Request.Context(), "Query validation failed", logger.ErrorField(err))
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"code":    http.StatusBadRequest,
-			"message": i18n.T("validation.invalid_query_parameters", utils.GetUserLangFromRedis(ctx)),
-			"error":   err.Error(),
-		})
+		response.WithErrorAndCode(ctx, errors.CodeValidationFailed, err)
 		return false
 	}
 
@@ -73,11 +52,7 @@ func BindAndValidateQuery(ctx *gin.Context, req interface{}, validator *validato
 func GetUserID(ctx *gin.Context) (uint, bool) {
 	userID, exists := ctx.Get("user_id")
 	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{
-			"success": false,
-			"code":    http.StatusUnauthorized,
-			"message": i18n.T("auth.user_not_authenticated", utils.GetUserLangFromRedis(ctx)),
-		})
+		response.Unauthorized(ctx)
 		return 0, false
 	}
 	return userID.(uint), true
@@ -88,11 +63,7 @@ func ParseIDParam(ctx *gin.Context, paramName string) (uint, bool) {
 	idStr := ctx.Param(paramName)
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"code":    http.StatusBadRequest,
-			"message": i18n.T("validation.invalid_query_parameters", utils.GetUserLangFromRedis(ctx)),
-		})
+		response.WithErrorAndCode(ctx, errors.CodeInvalidParameterFormat, err)
 		return 0, false
 	}
 	return uint(id), true
