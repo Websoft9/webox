@@ -1,16 +1,16 @@
 package controller
 
 import (
+	response "api-service/internal/dto/common"
 	"api-service/internal/dto/request"
-	"api-service/internal/dto/response"
 	"api-service/internal/interface/service"
 	"api-service/pkg/errors"
 	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
-	"strconv"
 
 	"github.com/expr-lang/expr"
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 // AlertController handles alert related requests
@@ -18,6 +18,7 @@ type AlertController struct {
 	alertService service.AlertService
 	logger       logger.Logger
 	i18n         *i18n.I18n
+	validator    *validator.Validate
 }
 
 // NewAlertController creates a new alert controller
@@ -25,29 +26,14 @@ func NewAlertController(
 	alertService service.AlertService,
 	logger logger.Logger,
 	i18n *i18n.I18n,
+	validator *validator.Validate,
 ) *AlertController {
 	return &AlertController{
 		alertService: alertService,
 		logger:       logger,
 		i18n:         i18n,
+		validator:    validator,
 	}
-}
-
-// bindAndValidateRequest binds and validates request parameters
-func (c *AlertController) bindAndValidateRequest(ctx *gin.Context, req interface{}, action string, isJSON bool) bool {
-	var err error
-	if isJSON {
-		err = ctx.ShouldBindJSON(req)
-	} else {
-		err = ctx.ShouldBindQuery(req)
-	}
-
-	if err != nil {
-		c.logger.WarnContext(ctx, action+" request parameter binding failed", logger.ErrorField(err))
-		errors.HandleError(ctx, errors.ErrValidationFailed)
-		return false
-	}
-	return true
 }
 
 // GetAlertRules handles getting alert rules list
@@ -68,21 +54,21 @@ func (c *AlertController) bindAndValidateRequest(ctx *gin.Context, req interface
 // @Router /api/v1/alert/rules [get]
 func (c *AlertController) GetAlertRules(ctx *gin.Context) {
 	var req request.AlertRuleQueryRequest
-	if err := ctx.ShouldBindQuery(&req); err != nil {
-		c.logger.WarnContext(ctx, "GetAlertRules request parameter binding failed", logger.ErrorField(err))
-		errors.HandleError(ctx, errors.ErrValidationFailed)
+
+	// Bind and validate request
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
 	result, err := c.alertService.ListAlertRules(ctx, &req)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Failed to get alert rules", logger.ErrorField(err))
-		errors.HandleError(ctx, err)
+		response.WithError(ctx, err)
 		return
 	}
 
 	c.logger.InfoContext(ctx, "Alert rule list successful")
-	response.Success(ctx, c.i18n.T(ctx, "alert.rule_list_success"), result)
+	response.SuccessWithData(ctx, result)
 }
 
 // CreateAlertRule handles creating an alert rule
@@ -98,9 +84,9 @@ func (c *AlertController) GetAlertRules(ctx *gin.Context) {
 // @Router /api/v1/alert/rules [post]
 func (c *AlertController) CreateAlertRule(ctx *gin.Context) {
 	var req request.AlertRuleCreateRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		c.logger.WarnContext(ctx, "CreateAlertRule request parameter binding failed", logger.ErrorField(err))
-		errors.HandleError(ctx, errors.ErrValidationFailed)
+
+	// Bind and validate request
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
@@ -108,26 +94,25 @@ func (c *AlertController) CreateAlertRule(ctx *gin.Context) {
 	if !isExpression(req.ConditionExpression) {
 		c.logger.WarnContext(ctx, "Invalid condition expression format",
 			logger.String("expression", req.ConditionExpression))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed,
-			c.i18n.T(ctx, "alert.invalid_condition_expression")))
+		response.BadRequest(ctx, errors.NewAppError(errors.CodeValidationFailed))
 		return
 	}
 
-	currentUserID, exists := ctx.Get("user_id")
-	if !exists {
-		response.Unauthorized(ctx, "auth.user_not_authenticated")
+	// Get current user ID
+	currentUserID, Success := GetUserID(ctx)
+	if !Success {
 		return
 	}
 
-	result, err := c.alertService.CreateAlertRule(ctx, currentUserID.(uint), &req)
+	result, err := c.alertService.CreateAlertRule(ctx, currentUserID, &req)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Failed to create alert rule", logger.String("name", req.Name), logger.ErrorField(err))
-		errors.HandleError(ctx, err)
+		response.WithError(ctx, err)
 		return
 	}
 
 	c.logger.InfoContext(ctx, "Alert rule create successful")
-	response.Success(ctx, c.i18n.T(ctx, "alert.rule_create_success"), result)
+	response.SuccessWithData(ctx, result)
 }
 
 func isExpression(expression string) bool {
@@ -148,14 +133,10 @@ func isExpression(expression string) bool {
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/alert/rules/{id} [get]
 func (c *AlertController) GetAlertRule(ctx *gin.Context) {
-	idStr := ctx.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		c.logger.WarnContext(ctx, "Invalid alert rule ID format",
-			logger.String("id", idStr),
-			logger.ErrorField(err))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed,
-			c.i18n.T(ctx, "alert.rule_invalid_id")))
+
+	// Get alert rule ID from path parameter
+	id, Success := ParseIDParam(ctx, "id")
+	if !Success {
 		return
 	}
 
@@ -164,12 +145,12 @@ func (c *AlertController) GetAlertRule(ctx *gin.Context) {
 		c.logger.ErrorContext(ctx, "Failed to get alert rule",
 			logger.Uint("id", uint(id)),
 			logger.ErrorField(err))
-		errors.HandleError(ctx, err)
+		response.WithError(ctx, err)
 		return
 	}
 
 	c.logger.InfoContext(ctx, "Alert rule retrieved successfully")
-	response.Success(ctx, c.i18n.T(ctx, "alert.rule_get_success"), result)
+	response.SuccessWithData(ctx, result)
 }
 
 // UpdateAlertRule handles updating an alert rule
@@ -186,19 +167,15 @@ func (c *AlertController) GetAlertRule(ctx *gin.Context) {
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/alert/rules/{id} [put]
 func (c *AlertController) UpdateAlertRule(ctx *gin.Context) {
-	idStr := ctx.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		c.logger.WarnContext(ctx, "Invalid alert rule ID format",
-			logger.String("id", idStr),
-			logger.ErrorField(err))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed,
-			c.i18n.T(ctx, "alert.rule_invalid_id")))
+	// Get role ID
+	id, Success := ParseIDParam(ctx, "id")
+	if !Success {
 		return
 	}
 
 	var req request.AlertRuleUpdateRequest
-	if !c.bindAndValidateRequest(ctx, &req, "update", true) {
+	// Bind and validate request
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
@@ -206,8 +183,7 @@ func (c *AlertController) UpdateAlertRule(ctx *gin.Context) {
 	if req.ConditionExpression != nil && !isExpression(*req.ConditionExpression) {
 		c.logger.WarnContext(ctx, "Invalid condition expression format",
 			logger.String("expression", *req.ConditionExpression))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed,
-			c.i18n.T(ctx, "alert.invalid_condition_expression")))
+		response.BadRequest(ctx, errors.NewAppError(errors.CodeValidationFailed))
 		return
 	}
 
@@ -216,12 +192,12 @@ func (c *AlertController) UpdateAlertRule(ctx *gin.Context) {
 		c.logger.ErrorContext(ctx, "Failed to update alert rule",
 			logger.Uint("id", uint(id)),
 			logger.ErrorField(err))
-		errors.HandleError(ctx, err)
+		response.WithError(ctx, err)
 		return
 	}
 
 	c.logger.InfoContext(ctx, "Alert rule updated successfully")
-	response.Success(ctx, c.i18n.T(ctx, "alert.rule_update_success"), result)
+	response.SuccessWithData(ctx, result)
 }
 
 // DeleteAlertRule handles deleting an alert rule
@@ -237,28 +213,23 @@ func (c *AlertController) UpdateAlertRule(ctx *gin.Context) {
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/alert/rules/{id} [delete]
 func (c *AlertController) DeleteAlertRule(ctx *gin.Context) {
-	idStr := ctx.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		c.logger.WarnContext(ctx, "Invalid alert rule ID format",
-			logger.String("id", idStr),
-			logger.ErrorField(err))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed,
-			c.i18n.T(ctx, "alert.rule_invalid_id")))
+
+	id, Success := ParseIDParam(ctx, "id")
+	if !Success {
 		return
 	}
 
-	err = c.alertService.DeleteAlertRule(ctx, uint(id))
+	err := c.alertService.DeleteAlertRule(ctx, id)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Failed to delete alert rule",
 			logger.Uint("id", uint(id)),
 			logger.ErrorField(err))
-		errors.HandleError(ctx, err)
+		response.WithError(ctx, err)
 		return
 	}
 
 	c.logger.InfoContext(ctx, "Alert rule deleted successfully")
-	response.Success(ctx, c.i18n.T(ctx, "alert.rule_delete_success"), nil)
+	response.Success(ctx)
 }
 
 // GetAlertRecords handles getting alert records list
@@ -280,21 +251,20 @@ func (c *AlertController) DeleteAlertRule(ctx *gin.Context) {
 // @Router /api/v1/alert/records [get]
 func (c *AlertController) GetAlertRecords(ctx *gin.Context) {
 	var req request.AlertRecordQueryRequest
-	if err := ctx.ShouldBindQuery(&req); err != nil {
-		c.logger.WarnContext(ctx, "GetAlertRecords request parameter binding failed", logger.ErrorField(err))
-		errors.HandleError(ctx, errors.ErrValidationFailed)
+	// Bind and validate request
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
 	result, err := c.alertService.ListAlertRecords(ctx, &req)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Failed to get alert records", logger.ErrorField(err))
-		errors.HandleError(ctx, err)
+		response.WithError(ctx, err)
 		return
 	}
 
 	c.logger.InfoContext(ctx, "Alert records list successful")
-	response.Success(ctx, c.i18n.T(ctx, "alert.record_list_success"), result)
+	response.SuccessWithData(ctx, result)
 }
 
 // AcknowledgeAlertRecord handles acknowledging an alert record
@@ -311,51 +281,35 @@ func (c *AlertController) GetAlertRecords(ctx *gin.Context) {
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/alert/records/{id}/acknowledge [put]
 func (c *AlertController) AcknowledgeAlertRecord(ctx *gin.Context) {
-	idStr := ctx.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		c.logger.WarnContext(ctx, "Invalid alert record ID format",
-			logger.String("id", idStr),
-			logger.ErrorField(err))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed,
-			c.i18n.T(ctx, "alert.record_invalid_id")))
+
+	id, Success := ParseIDParam(ctx, "id")
+	if !Success {
 		return
 	}
 
 	var req request.AlertAcknowledgeRequest
-	// 使用不同的变量名称避免变量阴影问题
-	if bindErr := ctx.ShouldBindJSON(&req); bindErr != nil {
-		c.logger.WarnContext(ctx, "AcknowledgeAlertRecord request parameter binding failed", logger.ErrorField(bindErr))
-		errors.HandleError(ctx, errors.ErrValidationFailed)
+	// Bind and validate request
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
-	// Get current user ID from context
-	userID, exists := ctx.Get("user_id")
-	if !exists {
-		c.logger.WarnContext(ctx, "User ID not found in context")
-		errors.HandleError(ctx, errors.ErrInvalidToken)
+	// Get current user ID
+	currentUserID, Success := GetUserID(ctx)
+	if !Success {
 		return
 	}
 
-	currentUserID, ok := userID.(uint)
-	if !ok {
-		c.logger.WarnContext(ctx, "Invalid user ID type in context", logger.Any("user_id", userID))
-		errors.HandleError(ctx, errors.ErrInvalidToken)
-		return
-	}
-
-	err = c.alertService.AcknowledgeAlertRecord(ctx, uint(id), currentUserID, &req)
+	err := c.alertService.AcknowledgeAlertRecord(ctx, uint(id), currentUserID, &req)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Failed to acknowledge alert record",
 			logger.Uint("id", uint(id)),
 			logger.ErrorField(err))
-		errors.HandleError(ctx, err)
+		response.WithError(ctx, err)
 		return
 	}
 
 	c.logger.InfoContext(ctx, "Alert record acknowledged successfully")
-	response.Success(ctx, c.i18n.T(ctx, "alert.record_acknowledge_success"), nil)
+	response.Success(ctx)
 }
 
 // ResolveAlertRecord handles resolving an alert record
@@ -372,49 +326,32 @@ func (c *AlertController) AcknowledgeAlertRecord(ctx *gin.Context) {
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/alert/records/{id}/resolve [put]
 func (c *AlertController) ResolveAlertRecord(ctx *gin.Context) {
-	idStr := ctx.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		c.logger.WarnContext(ctx, "Invalid alert record ID format",
-			logger.String("id", idStr),
-			logger.ErrorField(err))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed,
-			c.i18n.T(ctx, "alert.record_invalid_id")))
+	id, Success := ParseIDParam(ctx, "id")
+	if !Success {
 		return
 	}
 
 	var req request.AlertResolveRequest
-	// Use a different variable name to avoid shadowing
-	if bindErr := ctx.ShouldBindJSON(&req); bindErr != nil {
-		c.logger.WarnContext(ctx, "ResolveAlertRecord request parameter binding failed", logger.ErrorField(bindErr))
-		errors.HandleError(ctx, errors.ErrValidationFailed)
+	// Bind and validate request
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
 	// Get current user ID from context
-	userID, exists := ctx.Get("user_id")
-	if !exists {
-		c.logger.WarnContext(ctx, "User ID not found in context")
-		errors.HandleError(ctx, errors.ErrInvalidToken)
+	currentUserID, Success := GetUserID(ctx)
+	if !Success {
 		return
 	}
 
-	currentUserID, ok := userID.(uint)
-	if !ok {
-		c.logger.WarnContext(ctx, "Invalid user ID type in context", logger.Any("user_id", userID))
-		errors.HandleError(ctx, errors.ErrInvalidToken)
-		return
-	}
-
-	err = c.alertService.ResolveAlertRecord(ctx, uint(id), currentUserID, &req)
+	err := c.alertService.ResolveAlertRecord(ctx, uint(id), currentUserID, &req)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Failed to resolve alert record",
 			logger.Uint("id", uint(id)),
 			logger.ErrorField(err))
-		errors.HandleError(ctx, err)
+		response.WithError(ctx, err)
 		return
 	}
 
 	c.logger.InfoContext(ctx, "Alert record resolved successfully")
-	response.Success(ctx, c.i18n.T(ctx, "alert.record_resolve_success"), nil)
+	response.Success(ctx)
 }
