@@ -33,9 +33,9 @@ func (r *apiTokenRepository) GetByID(ctx context.Context, id uint) (*model.APITo
 		First(&token, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.NewAppErrorWithMessage(errors.CodeRecordNotFound, "token not found")
+			return nil, errors.NewAppError(errors.CodeRecordNotFound)
 		}
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to get token by ID")
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 	// Set username
 	if token.User.ID != 0 {
@@ -50,9 +50,9 @@ func (r *apiTokenRepository) GetByToken(ctx context.Context, tokenHash string) (
 	err := r.db.WithContext(ctx).Preload("User").Where("token_hash = ?", tokenHash).First(&token).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.NewAppErrorWithMessage(errors.CodeRecordNotFound, "token not found")
+			return nil, errors.NewAppError(errors.CodeRecordNotFound)
 		}
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to get token by ID")
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 	// Set username
 	if token.User.ID != 0 {
@@ -65,10 +65,10 @@ func (r *apiTokenRepository) GetByToken(ctx context.Context, tokenHash string) (
 func (r *apiTokenRepository) Update(ctx context.Context, token *model.APIToken) error {
 	result := r.db.WithContext(ctx).Save(token)
 	if result.Error != nil {
-		return errors.WrapError(result.Error, errors.CodeRecordUpdateFailed, "failed to update token")
+		return errors.NewAppErrorWrapError(result.Error, errors.CodeRecordUpdateFailed)
 	}
 	if result.RowsAffected == 0 {
-		return errors.NewAppErrorWithMessage(errors.CodeRecordNoAffected, "no rows affected")
+		return errors.NewAppError(errors.CodeRecordNoAffected)
 	}
 	return nil
 }
@@ -77,10 +77,10 @@ func (r *apiTokenRepository) Update(ctx context.Context, token *model.APIToken) 
 func (r *apiTokenRepository) Delete(ctx context.Context, id uint) error {
 	result := r.db.WithContext(ctx).Delete(&model.APIToken{}, id)
 	if result.Error != nil {
-		return errors.WrapError(result.Error, errors.CodeRecordDeleteFailed, "failed to delete token")
+		return errors.NewAppErrorWrapError(result.Error, errors.CodeRecordDeleteFailed)
 	}
 	if result.RowsAffected == 0 {
-		return errors.NewAppErrorWithMessage(errors.CodeRecordNoAffected, "no rows affected")
+		return errors.NewAppError(errors.CodeRecordNoAffected)
 	}
 	return nil
 }
@@ -116,9 +116,9 @@ func (r *apiTokenRepository) GetActiveTokenByUserID(ctx context.Context, userID 
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.NewAppErrorWithMessage(errors.CodeRecordNotFound, "no active token found for user")
+			return nil, errors.NewAppError(errors.CodeRecordNotFound)
 		}
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to get active token by user ID")
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	// Set username

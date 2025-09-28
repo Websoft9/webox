@@ -22,15 +22,6 @@ type RoleResponse struct {
 	Users           []UserSimpleResponse `json:"users,omitempty"`
 }
 
-// RoleListResponse role list response
-type RoleListResponse struct {
-	Items      []RoleResponse `json:"items"`
-	Total      int64          `json:"total"`
-	Page       int            `json:"page"`
-	PageSize   int            `json:"page_size"`
-	TotalPages int            `json:"total_pages"`
-}
-
 // PermissionResponse permission response
 type PermissionResponse struct {
 	ID          uint                 `json:"id"`
@@ -52,15 +43,6 @@ type PermissionResponse struct {
 	UpdatedAt   time.Time            `json:"updated_at"`
 	Children    []PermissionResponse `json:"children,omitempty"`
 	Roles       []RoleSimpleResponse `json:"roles,omitempty"`
-}
-
-// PermissionListResponse permission list response
-type PermissionListResponse struct {
-	Items      []PermissionResponse `json:"items"`
-	Total      int64                `json:"total"`
-	Page       int                  `json:"page"`
-	PageSize   int                  `json:"page_size"`
-	TotalPages int                  `json:"total_pages"`
 }
 
 // PermissionTreeResponse represents permission tree structure

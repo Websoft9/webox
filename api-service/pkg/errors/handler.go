@@ -19,24 +19,24 @@ func ErrorHandler(log logger.Logger) gin.HandlerFunc {
 		case string:
 			// Handle string panics as internal errors
 			log.ErrorContext(c, err)
-			HandleError(c, NewAppErrorWithI18nDetails(CodeInternalError, "error.unknown_error", err))
+			processes(c, NewAppErrorWithI18nDetails(CodeInternalError, "error.unknown_error", err))
 		case error:
 			// Wrap standard errors as internal errors
 			log.ErrorContext(c, "system panic", logger.ErrorField(err))
-			HandleError(c, NewAppErrorWrapError(err, CodeInternalError))
+			processes(c, NewAppErrorWrapError(err, CodeInternalError))
 		default:
 			// Handle unknown panic types
 			log.ErrorContext(c, "system panic", logger.Any("error", recovered))
-			HandleError(c, ErrInternalError)
+			processes(c, ErrInternalError)
 		}
 		c.Abort()
 	})
 }
 
-// HandleError provides unified error handling for HTTP responses
+// Processes provides unified error handling for HTTP responses
 // It processes both standard Go errors and custom AppErrors,
 // applying internationalization when available
-func HandleError(c *gin.Context, err error) {
+func processes(c *gin.Context, err error) {
 	// Extract user language preference from redis
 	lang := utils.GetUserLangFromRedis(c)
 
@@ -72,14 +72,4 @@ func sendErrorResponse(c *gin.Context, statusCode HTTPCode, errorCode ErrorCode,
 		"message": message,
 		"error":   details,
 	})
-}
-
-// IsAppError checks if an error is an AppError and returns it
-// This utility function helps with type assertion and error handling
-// Returns the AppError and a boolean indicating success
-func IsAppError(err error) (*AppError, bool) {
-	if appErr, ok := err.(*AppError); ok {
-		return appErr, true
-	}
-	return nil, false
 }

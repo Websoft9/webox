@@ -1,8 +1,8 @@
 package controller
 
 import (
+	response "api-service/internal/dto/common"
 	"api-service/internal/dto/request"
-	"api-service/internal/dto/response"
 	"api-service/internal/interface/service"
 	"api-service/pkg/errors"
 	"api-service/pkg/logger"
@@ -10,33 +10,27 @@ import (
 	"context"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 // UserAuthController handles user authentication related requests
 type UserAuthController struct {
 	userAuthService service.UserAuthService
+	validator       *validator.Validate
 	logger          logger.Logger
 }
 
 // NewUserAuthController creates a new user authentication controller
 func NewUserAuthController(
 	userAuthService service.UserAuthService,
+	validator *validator.Validate,
 	logger logger.Logger,
 ) *UserAuthController {
 	return &UserAuthController{
 		userAuthService: userAuthService,
+		validator:       validator,
 		logger:          logger,
 	}
-}
-
-// bindAndValidateRequest binds and validates request parameters
-func (c *UserAuthController) bindAndValidateRequest(ctx *gin.Context, req interface{}, action string) bool {
-	if err := ctx.ShouldBindJSON(req); err != nil {
-		c.logger.WarnContext(ctx, action+" request parameter binding failed", logger.ErrorField(err))
-		errors.HandleError(ctx, errors.ErrValidationFailed)
-		return false
-	}
-	return true
 }
 
 // handleUserAuth handles user authentication related requests with unified error handling
@@ -45,9 +39,9 @@ func (c *UserAuthController) handleUserAuth(
 	req interface{},
 	action string,
 	serviceFunc func(context.Context, interface{}) (interface{}, error),
-	successMessageKey string,
 ) {
-	if !c.bindAndValidateRequest(ctx, req, action) {
+
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
@@ -58,12 +52,12 @@ func (c *UserAuthController) handleUserAuth(
 		} else {
 			c.logger.ErrorContext(ctx, "User "+action+" failed", logger.ErrorField(err))
 		}
-		errors.HandleError(ctx, err)
+		response.WithError(ctx, err)
 		return
 	}
 
 	c.logger.InfoContext(ctx, "User "+action+" successful")
-	response.OKWithData(ctx, result, successMessageKey)
+	response.SuccessWithData(ctx, result)
 }
 
 // Register handles user registration
@@ -81,7 +75,7 @@ func (c *UserAuthController) Register(ctx *gin.Context) {
 	var req request.UserRegisterRequest
 	c.handleUserAuth(ctx, &req, "registration", func(ctx context.Context, r interface{}) (interface{}, error) {
 		return c.userAuthService.Register(ctx, r.(*request.UserRegisterRequest))
-	}, "user.register_success")
+	})
 }
 
 // Login handles user authentication
@@ -98,7 +92,7 @@ func (c *UserAuthController) Register(ctx *gin.Context) {
 // @Router /api/v1/auth/login [post]
 func (c *UserAuthController) Login(ctx *gin.Context) {
 	var req request.UserLoginRequest
-	if !c.bindAndValidateRequest(ctx, &req, "login") {
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
@@ -106,12 +100,12 @@ func (c *UserAuthController) Login(ctx *gin.Context) {
 	result, err := c.userAuthService.Login(ctx, &req, clientIP)
 	if err != nil {
 		c.logger.WarnContext(ctx, "User login failed", logger.ErrorField(err))
-		errors.HandleError(ctx, err)
+		response.WithError(ctx, err)
 		return
 	}
 
 	c.logger.InfoContext(ctx, "User login successful")
-	response.OKWithData(ctx, result, "user.login_success")
+	response.SuccessWithData(ctx, result)
 }
 
 // ForgotPassword handles password reset request
@@ -127,19 +121,19 @@ func (c *UserAuthController) Login(ctx *gin.Context) {
 // @Router /api/v1/auth/forgot-password [post]
 func (c *UserAuthController) ForgotPassword(ctx *gin.Context) {
 	var req request.ForgotPasswordRequest
-	if !c.bindAndValidateRequest(ctx, &req, "forgot password") {
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
 	err := c.userAuthService.ForgotPassword(ctx, &req)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Failed to process forgot password", logger.ErrorField(err))
-		errors.HandleError(ctx, err)
+		response.WithError(ctx, err)
 		return
 	}
 
 	c.logger.InfoContext(ctx, "Forgot password processed successfully")
-	response.OK(ctx, "user.forgot_password_success")
+	response.Success(ctx)
 }
 
 // ShowResetPasswordForm handles password reset form display (GET request from email link)
@@ -158,7 +152,7 @@ func (c *UserAuthController) ShowResetPasswordForm(ctx *gin.Context) {
 	token := ctx.Query("token")
 	if token == "" {
 		c.logger.WarnContext(ctx, "Password reset token missing")
-		errors.HandleError(ctx, errors.ErrValidationFailed)
+		response.WithError(ctx, errors.ErrValidationFailed)
 		return
 	}
 
@@ -166,13 +160,13 @@ func (c *UserAuthController) ShowResetPasswordForm(ctx *gin.Context) {
 	err := c.userAuthService.ValidateResetToken(ctx, token)
 	if err != nil {
 		c.logger.WarnContext(ctx, "Invalid or expired reset token", logger.ErrorField(err))
-		errors.HandleError(ctx, err)
+		response.WithError(ctx, err)
 		return
 	}
 
 	c.logger.InfoContext(ctx, "Reset password token validated successfully")
 	// Return success with token to allow frontend to show reset form
-	response.OKWithData(ctx, map[string]string{"token": token}, "common.success")
+	response.SuccessWithData(ctx, map[string]string{"token": token})
 }
 
 // ResetPassword handles password reset with token
@@ -188,19 +182,19 @@ func (c *UserAuthController) ShowResetPasswordForm(ctx *gin.Context) {
 // @Router /api/v1/auth/reset-password [post]
 func (c *UserAuthController) ResetPassword(ctx *gin.Context) {
 	var req request.ResetPasswordRequest
-	if !c.bindAndValidateRequest(ctx, &req, "reset password") {
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
 	err := c.userAuthService.ResetPassword(ctx, &req)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Failed to reset password", logger.ErrorField(err))
-		errors.HandleError(ctx, err)
+		response.WithError(ctx, err)
 		return
 	}
 
 	c.logger.InfoContext(ctx, "Password reset successful")
-	response.OK(ctx, "user.reset_password_success")
+	response.Success(ctx)
 }
 
 // VerifyEmail handles email verification
@@ -219,7 +213,7 @@ func (c *UserAuthController) VerifyEmail(ctx *gin.Context) {
 	token := ctx.Query("token")
 	if token == "" {
 		c.logger.WarnContext(ctx, "Email verification token missing")
-		errors.HandleError(ctx, errors.ErrValidationFailed)
+		response.WithError(ctx, errors.ErrValidationFailed)
 		return
 	}
 
@@ -231,12 +225,12 @@ func (c *UserAuthController) VerifyEmail(ctx *gin.Context) {
 	err := c.userAuthService.VerifyEmail(ctx, &req)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Failed to verify email", logger.ErrorField(err))
-		errors.HandleError(ctx, err)
+		response.WithError(ctx, err)
 		return
 	}
 
 	c.logger.InfoContext(ctx, "Email verification successful")
-	response.OK(ctx, "user.email_verify_success")
+	response.Success(ctx)
 }
 
 // ResendVerificationEmail handles resending verification email
@@ -252,19 +246,19 @@ func (c *UserAuthController) VerifyEmail(ctx *gin.Context) {
 // @Router /api/v1/auth/resend-verification [post]
 func (c *UserAuthController) ResendVerificationEmail(ctx *gin.Context) {
 	var req request.ResendVerificationRequest
-	if !c.bindAndValidateRequest(ctx, &req, "resend verification email") {
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
 	err := c.userAuthService.ResendVerificationEmail(ctx, &req)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Failed to resend verification email", logger.ErrorField(err))
-		errors.HandleError(ctx, err)
+		response.WithError(ctx, err)
 		return
 	}
 
 	c.logger.InfoContext(ctx, "Verification email resent successfully")
-	response.OK(ctx, "user.verification_email_sent")
+	response.Success(ctx)
 }
 
 // OAuth2Login handles OAuth2 authentication
@@ -281,7 +275,7 @@ func (c *UserAuthController) ResendVerificationEmail(ctx *gin.Context) {
 // @Router /api/v1/auth/oauth2/login [post]
 func (c *UserAuthController) OAuth2Login(ctx *gin.Context) {
 	var req request.OAuth2LoginRequest
-	if !c.bindAndValidateRequest(ctx, &req, "OAuth2 login") {
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
@@ -289,12 +283,12 @@ func (c *UserAuthController) OAuth2Login(ctx *gin.Context) {
 	result, err := c.userAuthService.OAuth2Login(ctx, &req, clientIP)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "User OAuth2 login failed", logger.ErrorField(err))
-		errors.HandleError(ctx, err)
+		response.WithError(ctx, err)
 		return
 	}
 
 	c.logger.InfoContext(ctx, "User OAuth2 login successful")
-	response.OKWithData(ctx, result, "user.oauth2_login_success")
+	response.SuccessWithData(ctx, result)
 }
 
 // Logout handles user logout
@@ -314,7 +308,7 @@ func (c *UserAuthController) Logout(ctx *gin.Context) {
 	authHeader := ctx.GetHeader("Authorization")
 	if authHeader == "" {
 		c.logger.WarnContext(ctx, "Authorization header missing during logout")
-		errors.HandleError(ctx, errors.ErrInvalidToken)
+		response.WithError(ctx, errors.ErrInvalidToken)
 		return
 	}
 
@@ -324,7 +318,7 @@ func (c *UserAuthController) Logout(ctx *gin.Context) {
 		token = authHeader[7:]
 	} else {
 		c.logger.WarnContext(ctx, "Invalid authorization header format during logout")
-		errors.HandleError(ctx, errors.ErrInvalidToken)
+		response.WithError(ctx, errors.ErrInvalidToken)
 		return
 	}
 
@@ -332,10 +326,10 @@ func (c *UserAuthController) Logout(ctx *gin.Context) {
 	err := c.userAuthService.Logout(ctx, token)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "User logout failed", logger.ErrorField(err))
-		errors.HandleError(ctx, err)
+		response.WithError(ctx, err)
 		return
 	}
 
 	c.logger.InfoContext(ctx, "User logout successful")
-	response.OK(ctx, "user.logout_success")
+	response.Success(ctx)
 }

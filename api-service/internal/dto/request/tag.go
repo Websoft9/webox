@@ -22,21 +22,21 @@ type TagListRequest struct {
 
 // TagAssignRequest represents a request to assign tags to a resource
 type TagAssignRequest struct {
-	ResourceID uint64   `json:"resourceId" binding:"required" example:"123"`
-	TagIDs     []uint64 `json:"tagIds"`
+	ResourceID uint     `json:"resourceId" binding:"required" example:"123"`
+	TagIDs     []uint   `json:"tagIds"`
 	TagNames   []string `json:"tagNames"`
 	ReplaceAll bool     `json:"replaceAll" example:"false"`
 }
 
 // TagUnassignRequest represents a request to unassign tags from a resource
 type TagUnassignRequest struct {
-	ResourceID uint64   `json:"resourceId" binding:"required" example:"123"`
-	TagIDs     []uint64 `json:"tagIds" binding:"required"`
+	ResourceID uint   `json:"resourceId" binding:"required" example:"123"`
+	TagIDs     []uint `json:"tagIds" binding:"required"`
 }
 
 // TagSearchRequest represents a request to search resources by tags
 type TagSearchRequest struct {
-	TagIDs    []uint64 `form:"tagIds" binding:"omitempty"`
+	TagIDs    []uint   `form:"tagIds" binding:"omitempty"`
 	TagNames  []string `form:"tagNames" binding:"omitempty"`
 	Operation string   `form:"operation" binding:"omitempty,oneof=AND OR" example:"AND"`
 	Page      int      `form:"page" binding:"omitempty,min=1" example:"1"`
@@ -45,7 +45,7 @@ type TagSearchRequest struct {
 
 // TaggingListRequest represents a request to get resource tags
 type TaggingListRequest struct {
-	ResourceID uint64 `form:"resourceId" binding:"required" example:"123"`
+	ResourceID uint `form:"resourceId" binding:"required" example:"123"`
 }
 
 // TagNameSearchRequest represents a request to search tags by name

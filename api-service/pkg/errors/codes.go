@@ -14,7 +14,7 @@ type HTTPCode int
 // Error codes are organized by category with specific ranges for easy identification
 const (
 	// Success codes (0)
-	CodeSuccess ErrorCode = 0 // Operation completed successfully
+	CodeSuccess ErrorCode = 200 // Operation completed successfully
 
 	// Authentication related error codes (1000-1999)
 	CodeInvalidCredentials      ErrorCode = 1001 // Username or password incorrect

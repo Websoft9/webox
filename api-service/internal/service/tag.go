@@ -40,7 +40,7 @@ func NewTagService(
 }
 
 // CreateTag creates a new tag
-func (s *tagService) CreateTag(ctx context.Context, req *request.TagCreateRequest, userID uint64) (*response.TagResponse, error) {
+func (s *tagService) CreateTag(ctx context.Context, req *request.TagCreateRequest, userID uint) (*response.TagResponse, error) {
 	s.logger.InfoContext(ctx, "Creating tag",
 		logger.String("operation", "CreateTag"),
 		logger.String("tag_name", req.Name),
@@ -50,11 +50,11 @@ func (s *tagService) CreateTag(ctx context.Context, req *request.TagCreateReques
 	exists, err := s.tagRepo.ExistsTagByName(ctx, req.Name)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to check tag existence", logger.ErrorField(err))
-		return nil, errors.NewAppError(errors.CodeInternalError, "failed to check tag existence")
+		return nil, err
 	}
 	if exists {
 		s.logger.WarnContext(ctx, "Tag name already exists", logger.String("tag_name", req.Name))
-		return nil, errors.NewAppError(errors.CodeResourceAlreadyExists, "tag name already exists")
+		return nil, errors.NewAppError(errors.CodeResourceAlreadyExists)
 	}
 
 	// Create tag entity
@@ -68,7 +68,7 @@ func (s *tagService) CreateTag(ctx context.Context, req *request.TagCreateReques
 	// Save to database
 	if err := s.tagRepo.CreateTag(ctx, tag); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to create tag", logger.ErrorField(err))
-		return nil, errors.NewAppError(errors.CodeInternalError, "failed to create tag")
+		return nil, err
 	}
 
 	s.logger.InfoContext(ctx, "Tag created successfully", logger.Uint("tag_id", uint(tag.ID)))
@@ -76,23 +76,20 @@ func (s *tagService) CreateTag(ctx context.Context, req *request.TagCreateReques
 }
 
 // GetTag retrieves a tag by ID
-func (s *tagService) GetTag(ctx context.Context, id uint64) (*response.TagResponse, error) {
+func (s *tagService) GetTag(ctx context.Context, id uint) (*response.TagResponse, error) {
 	s.logger.InfoContext(ctx, "Getting tag", logger.Uint("tag_id", uint(id)))
 
 	tag, err := s.tagRepo.GetTagByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.NewAppError(errors.CodeResourceNotFound, "tag not found")
-		}
 		s.logger.ErrorContext(ctx, "Failed to get tag", logger.ErrorField(err))
-		return nil, errors.NewAppError(errors.CodeInternalError, "failed to get tag")
+		return nil, err
 	}
 
 	return s.convertTagToResponse(tag), nil
 }
 
 // UpdateTag updates an existing tag
-func (s *tagService) UpdateTag(ctx context.Context, id uint64, req *request.TagUpdateRequest, userID uint64) (*response.TagResponse, error) {
+func (s *tagService) UpdateTag(ctx context.Context, id uint, req *request.TagUpdateRequest, userID uint) (*response.TagResponse, error) {
 	s.logger.InfoContext(ctx, "Updating tag",
 		logger.Uint("tag_id", uint(id)),
 		logger.String("tag_name", req.Name),
@@ -101,11 +98,8 @@ func (s *tagService) UpdateTag(ctx context.Context, id uint64, req *request.TagU
 	// Get existing tag
 	tag, err := s.tagRepo.GetTagByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.NewAppError(errors.CodeResourceNotFound, "tag not found")
-		}
 		s.logger.ErrorContext(ctx, "Failed to get tag", logger.ErrorField(err))
-		return nil, errors.NewAppError(errors.CodeInternalError, "failed to get tag")
+		return nil, err
 	}
 
 	// Validate name uniqueness if changed
@@ -113,10 +107,10 @@ func (s *tagService) UpdateTag(ctx context.Context, id uint64, req *request.TagU
 		exists, err := s.tagRepo.ExistsTagByNameExcludeID(ctx, req.Name, id)
 		if err != nil {
 			s.logger.ErrorContext(ctx, "Failed to check tag existence", logger.ErrorField(err))
-			return nil, errors.NewAppError(errors.CodeInternalError, "failed to check tag existence")
+			return nil, err
 		}
 		if exists {
-			return nil, errors.NewAppError(errors.CodeResourceAlreadyExists, "tag name already exists")
+			return nil, errors.NewAppError(errors.CodeResourceAlreadyExists)
 		}
 	}
 
@@ -128,7 +122,7 @@ func (s *tagService) UpdateTag(ctx context.Context, id uint64, req *request.TagU
 	// Save changes
 	if err := s.tagRepo.UpdateTag(ctx, tag); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to update tag", logger.ErrorField(err))
-		return nil, errors.NewAppError(errors.CodeInternalError, "failed to update tag")
+		return nil, err
 	}
 
 	s.logger.InfoContext(ctx, "Tag updated successfully", logger.Uint("tag_id", uint(id)))
@@ -136,7 +130,7 @@ func (s *tagService) UpdateTag(ctx context.Context, id uint64, req *request.TagU
 }
 
 // DeleteTag deletes a tag
-func (s *tagService) DeleteTag(ctx context.Context, id, userID uint64) error {
+func (s *tagService) DeleteTag(ctx context.Context, id, userID uint) error {
 	s.logger.InfoContext(ctx, "Deleting tag",
 		logger.Uint("tag_id", uint(id)),
 		logger.Uint("user_id", uint(userID)))
@@ -144,17 +138,14 @@ func (s *tagService) DeleteTag(ctx context.Context, id, userID uint64) error {
 	// Check if tag exists
 	_, err := s.tagRepo.GetTagByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.NewAppError(errors.CodeResourceNotFound, "tag not found")
-		}
 		s.logger.ErrorContext(ctx, "Failed to get tag", logger.ErrorField(err))
-		return errors.NewAppError(errors.CodeInternalError, "failed to get tag")
+		return err
 	}
 
 	// Delete tag (cascades to taggings due to foreign key)
 	if err := s.tagRepo.DeleteTag(ctx, id); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to delete tag", logger.ErrorField(err))
-		return errors.NewAppError(errors.CodeInternalError, "failed to delete tag")
+		return err
 	}
 
 	s.logger.InfoContext(ctx, "Tag deleted successfully", logger.Uint("tag_id", uint(id)))
@@ -166,12 +157,12 @@ func (s *tagService) ListTags(ctx context.Context, req *request.TagListRequest) 
 	s.logger.InfoContext(ctx, "Listing tags", logger.String("search", req.Search))
 
 	// Parse exclude IDs
-	var excludeIDs []uint64
+	var excludeIDs []uint
 	if req.ExcludeIDs != "" {
 		idStrings := strings.Split(req.ExcludeIDs, ",")
 		for _, idStr := range idStrings {
-			if id, err := strconv.ParseUint(strings.TrimSpace(idStr), 10, 64); err == nil {
-				excludeIDs = append(excludeIDs, id)
+			if id, err := strconv.ParseUint(strings.TrimSpace(idStr), 10, 32); err == nil {
+				excludeIDs = append(excludeIDs, uint(id))
 			}
 		}
 	}
@@ -180,7 +171,7 @@ func (s *tagService) ListTags(ctx context.Context, req *request.TagListRequest) 
 	tags, err := s.tagRepo.ListTags(ctx, req.Search, excludeIDs)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to list tags", logger.ErrorField(err))
-		return nil, errors.NewAppError(errors.CodeInternalError, "failed to list tags")
+		return nil, err
 	}
 
 	// Convert to response
@@ -193,13 +184,13 @@ func (s *tagService) ListTags(ctx context.Context, req *request.TagListRequest) 
 }
 
 // AssignTags assigns tags to a resource
-func (s *tagService) AssignTags(ctx context.Context, req *request.TagAssignRequest, userID uint64) (*response.TagAssignResponse, error) {
+func (s *tagService) AssignTags(ctx context.Context, req *request.TagAssignRequest, userID uint) (*response.TagAssignResponse, error) {
 	s.logger.InfoContext(ctx, "Assigning tags",
 		logger.Uint("resource_id", uint(req.ResourceID)),
 		logger.Uint("user_id", uint(userID)))
 
 	var allResults []response.TagAssignResult
-	var allTagIDs []uint64
+	var allTagIDs []uint
 
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// Process tag IDs
@@ -248,7 +239,7 @@ func (s *tagService) AssignTags(ctx context.Context, req *request.TagAssignReque
 }
 
 // ReplaceTags replaces all tags for a resource
-func (s *tagService) ReplaceTags(ctx context.Context, req *request.TagAssignRequest, userID uint64) (*response.TagAssignResponse, error) {
+func (s *tagService) ReplaceTags(ctx context.Context, req *request.TagAssignRequest, userID uint) (*response.TagAssignResponse, error) {
 	s.logger.InfoContext(ctx, "Replacing tags",
 		logger.Uint("resource_id", uint(req.ResourceID)),
 		logger.Uint("user_id", uint(userID)))
@@ -256,7 +247,7 @@ func (s *tagService) ReplaceTags(ctx context.Context, req *request.TagAssignRequ
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// Remove all existing tags using transaction
 		if err := tx.Where("resource_id = ?", req.ResourceID).Delete(&model.Tagging{}).Error; err != nil {
-			return errors.NewAppError(errors.CodeInternalError, "failed to remove existing tags")
+			return err
 		}
 		return nil
 	})
@@ -270,7 +261,7 @@ func (s *tagService) ReplaceTags(ctx context.Context, req *request.TagAssignRequ
 }
 
 // UnassignTags removes tag associations from a resource
-func (s *tagService) UnassignTags(ctx context.Context, req *request.TagUnassignRequest, userID uint64) (*response.TagUnassignResponse, error) {
+func (s *tagService) UnassignTags(ctx context.Context, req *request.TagUnassignRequest, userID uint) (*response.TagUnassignResponse, error) {
 	s.logger.InfoContext(ctx, "Unassigning tags",
 		logger.Uint("resource_id", uint(req.ResourceID)),
 		logger.Uint("user_id", uint(userID)))
@@ -278,7 +269,7 @@ func (s *tagService) UnassignTags(ctx context.Context, req *request.TagUnassignR
 	// Remove specified tag associations
 	if err := s.tagRepo.DeleteTaggingsByTagIDs(ctx, req.ResourceID, req.TagIDs); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to remove tag associations", logger.ErrorField(err))
-		return nil, errors.NewAppError(errors.CodeInternalError, "failed to remove tag associations")
+		return nil, err
 	}
 
 	return &response.TagUnassignResponse{
@@ -294,7 +285,7 @@ func (s *tagService) GetResourceTags(ctx context.Context, req *request.TaggingLi
 	taggings, err := s.tagRepo.GetTaggingsByResourceID(ctx, req.ResourceID)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to get resource tags", logger.ErrorField(err))
-		return nil, errors.NewAppError(errors.CodeInternalError, "failed to get resource tags")
+		return nil, err
 	}
 
 	responses := make([]*response.TagSimpleResponse, 0, len(taggings))
@@ -348,7 +339,7 @@ func (s *tagService) SearchResourcesByTags(ctx context.Context, req *request.Tag
 	taggings, total, err := s.tagRepo.SearchResourcesByTags(ctx, allTagIDs, req.Operation, offset, req.PageSize)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to search resources by tags", logger.ErrorField(err))
-		return nil, errors.NewAppError(errors.CodeInternalError, "failed to search resources by tags")
+		return nil, err
 	}
 
 	// Build resource map
@@ -369,8 +360,8 @@ func (s *tagService) SearchResourcesByTags(ctx context.Context, req *request.Tag
 }
 
 // buildSimpleResourceMap builds a simple resource map from taggings
-func (s *tagService) buildSimpleResourceMap(taggings []*model.Tagging) map[uint64]*response.TaggedResource {
-	resourceMap := make(map[uint64]*response.TaggedResource)
+func (s *tagService) buildSimpleResourceMap(taggings []*model.Tagging) map[uint]*response.TaggedResource {
+	resourceMap := make(map[uint]*response.TaggedResource)
 
 	for _, tagging := range taggings {
 		if resource, exists := resourceMap[tagging.ResourceID]; exists {
@@ -388,7 +379,7 @@ func (s *tagService) buildSimpleResourceMap(taggings []*model.Tagging) map[uint6
 				ResourceID:   tagging.ResourceID,
 				ResourceName: fmt.Sprintf("Resource %d", tagging.ResourceID),
 				Tags:         []response.TagSimpleResponse{},
-				MatchedTags:  []uint64{},
+				MatchedTags:  []uint{},
 				CreatedAt:    tagging.CreatedAt,
 			}
 			if tagging.Tag != nil {
@@ -410,7 +401,7 @@ func (s *tagService) SearchTags(ctx context.Context, req *request.TagNameSearchR
 	tags, err := s.tagRepo.SearchTagsByName(ctx, req.Q)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to search tags", logger.String("query", req.Q), logger.ErrorField(err))
-		return nil, errors.NewAppError(errors.CodeInternalError, "failed to search tags")
+		return nil, err
 	}
 
 	tagResponses := make([]*response.TagResponse, len(tags))
@@ -442,9 +433,9 @@ func (s *tagService) convertTagToResponse(tag *model.Tag) *response.TagResponse 
 }
 
 // processTagIDsForAssignment processes existing tag IDs and creates associations
-func (s *tagService) processTagIDsForAssignment(tx *gorm.DB, tagIDs []uint64, resourceID, userID uint64) ([]response.TagAssignResult, []uint64, error) {
+func (s *tagService) processTagIDsForAssignment(tx *gorm.DB, tagIDs []uint, resourceID, userID uint) ([]response.TagAssignResult, []uint, error) {
 	results := make([]response.TagAssignResult, 0, len(tagIDs))
-	processedTagIDs := make([]uint64, 0, len(tagIDs))
+	processedTagIDs := make([]uint, 0, len(tagIDs))
 
 	for _, tagID := range tagIDs {
 		// Check if tag exists using transaction
@@ -454,7 +445,7 @@ func (s *tagService) processTagIDsForAssignment(tx *gorm.DB, tagIDs []uint64, re
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				continue // Skip non-existent tags
 			}
-			return nil, nil, errors.NewAppError(errors.CodeInternalError, "failed to get tag")
+			return nil, nil, err
 		}
 
 		// Check if already associated using transaction
@@ -463,7 +454,7 @@ func (s *tagService) processTagIDsForAssignment(tx *gorm.DB, tagIDs []uint64, re
 			Where("tag_id = ? AND resource_id = ?", tagID, resourceID).
 			Count(&count).Error
 		if err != nil {
-			return nil, nil, errors.NewAppError(errors.CodeInternalError, "failed to check tagging existence")
+			return nil, nil, err
 		}
 
 		if count == 0 {
@@ -474,7 +465,7 @@ func (s *tagService) processTagIDsForAssignment(tx *gorm.DB, tagIDs []uint64, re
 				CreatedBy:  userID,
 			}
 			if err := tx.Create(tagging).Error; err != nil {
-				return nil, nil, errors.NewAppError(errors.CodeInternalError, "failed to create tagging")
+				return nil, nil, err
 			}
 		}
 
@@ -491,16 +482,16 @@ func (s *tagService) processTagIDsForAssignment(tx *gorm.DB, tagIDs []uint64, re
 }
 
 // processTagNamesForAssignment processes tag names and creates new tags if needed
-func (s *tagService) processTagNamesForAssignment(tx *gorm.DB, tagNames []string, resourceID, userID uint64) ([]response.TagAssignResult, []uint64, error) {
+func (s *tagService) processTagNamesForAssignment(tx *gorm.DB, tagNames []string, resourceID, userID uint) ([]response.TagAssignResult, []uint, error) {
 	results := make([]response.TagAssignResult, 0, len(tagNames))
-	processedTagIDs := make([]uint64, 0, len(tagNames))
+	processedTagIDs := make([]uint, 0, len(tagNames))
 
 	for _, tagName := range tagNames {
 		// Try to get existing tag using transaction
 		var tag model.Tag
 		err := tx.Where("name = ?", tagName).First(&tag).Error
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil, errors.NewAppError(errors.CodeInternalError, "failed to get tag by name")
+			return nil, nil, err
 		}
 
 		// Create tag if not exists
@@ -510,7 +501,7 @@ func (s *tagService) processTagNamesForAssignment(tx *gorm.DB, tagNames []string
 				CreatedBy: userID,
 			}
 			if createErr := tx.Create(&tag).Error; createErr != nil {
-				return nil, nil, errors.NewAppError(errors.CodeInternalError, "failed to create tag")
+				return nil, nil, createErr
 			}
 			results = append(results, response.TagAssignResult{
 				Name:    tagName,
@@ -533,7 +524,7 @@ func (s *tagService) processTagNamesForAssignment(tx *gorm.DB, tagNames []string
 			Where("tag_id = ? AND resource_id = ?", tag.ID, resourceID).
 			Count(&count).Error
 		if err != nil {
-			return nil, nil, errors.NewAppError(errors.CodeInternalError, "failed to check tagging existence")
+			return nil, nil, err
 		}
 
 		if count == 0 {
@@ -543,7 +534,7 @@ func (s *tagService) processTagNamesForAssignment(tx *gorm.DB, tagNames []string
 				CreatedBy:  userID,
 			}
 			if err := tx.Create(tagging).Error; err != nil {
-				return nil, nil, errors.NewAppError(errors.CodeInternalError, "failed to create tagging")
+				return nil, nil, err
 			}
 		}
 
@@ -554,15 +545,15 @@ func (s *tagService) processTagNamesForAssignment(tx *gorm.DB, tagNames []string
 }
 
 // collectTagIDs collects all tag IDs from request and tag names
-func (s *tagService) collectTagIDs(ctx context.Context, req *request.TagSearchRequest) ([]uint64, error) {
-	allTagIDs := make([]uint64, 0, len(req.TagIDs)+len(req.TagNames))
+func (s *tagService) collectTagIDs(ctx context.Context, req *request.TagSearchRequest) ([]uint, error) {
+	allTagIDs := make([]uint, 0, len(req.TagIDs)+len(req.TagNames))
 	allTagIDs = append(allTagIDs, req.TagIDs...)
 
 	for _, tagName := range req.TagNames {
 		tag, err := s.tagRepo.GetTagByName(ctx, tagName)
 		if err != nil {
 			if !errors.Is(err, gorm.ErrRecordNotFound) {
-				return nil, errors.NewAppError(errors.CodeInternalError, "failed to get tag by name")
+				return nil, err
 			}
 			// Skip non-existent tags
 			continue

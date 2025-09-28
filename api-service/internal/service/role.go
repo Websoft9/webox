@@ -1,6 +1,7 @@
 package service
 
 import (
+	"api-service/internal/dto/common"
 	"api-service/internal/dto/request"
 	"api-service/internal/dto/response"
 	"api-service/internal/interface/repository"
@@ -9,7 +10,6 @@ import (
 	"api-service/pkg/errors"
 	"api-service/pkg/logger"
 	"context"
-	"math"
 
 	"gorm.io/gorm"
 )
@@ -68,7 +68,7 @@ func (s *roleService) validateRoleForCreation(ctx context.Context, req *request.
 	}
 	if existingRole != nil {
 		s.logger.WarnContext(ctx, "Role code already exists", logger.String("role_code", req.Code))
-		return errors.NewAppError(errors.CodeResourceAlreadyExists, "role code already exists")
+		return errors.NewAppError(errors.CodeResourceAlreadyExists)
 	}
 
 	// Validate permission IDs if provided
@@ -90,7 +90,7 @@ func (s *roleService) validatePermissionIDs(ctx context.Context, permissionIDs [
 		s.logger.WarnContext(ctx, "Some permission IDs are invalid",
 			logger.Int("requested", len(permissionIDs)),
 			logger.Int("found", len(permissions)))
-		return errors.NewAppErrorWithMessage(errors.CodePermissionInvalid, "some permission IDs are invalid")
+		return errors.NewAppError(errors.CodePermissionInvalid)
 	}
 	return nil
 }
@@ -184,7 +184,7 @@ func (s *roleService) getRoleForUpdate(ctx context.Context, id uint) (*model.Rol
 	// Check if it's a system role
 	if role.IsSystem {
 		s.logger.WarnContext(ctx, "Attempt to update system role", logger.Uint("role_id", id))
-		return nil, errors.NewAppErrorWithMessage(errors.CodeRecordUpdateFailed, "cannot update system role")
+		return nil, errors.NewAppError(errors.CodeRecordUpdateFailed)
 	}
 
 	return role, nil
@@ -237,7 +237,7 @@ func (s *roleService) DeleteRole(ctx context.Context, id uint) error {
 }
 
 // ListRoles gets role list
-func (s *roleService) ListRoles(ctx context.Context, req *request.ListRolesRequest) (*response.RoleListResponse, error) {
+func (s *roleService) ListRoles(ctx context.Context, req *request.ListRolesRequest) (*common.PaginationResponse, error) {
 	roles, total, err := s.roleRepo.List(ctx, req)
 	if err != nil {
 		return nil, err
@@ -249,16 +249,12 @@ func (s *roleService) ListRoles(ctx context.Context, req *request.ListRolesReque
 		items[i] = *response.ConvertToRoleResponse(role)
 	}
 
-	// Calculate total pages
-	totalPages := int(math.Ceil(float64(total) / float64(req.GetPageSize())))
-
-	return &response.RoleListResponse{
-		Items:      items,
-		Total:      total,
-		Page:       req.GetPage(),
-		PageSize:   req.GetPageSize(),
-		TotalPages: totalPages,
-	}, nil
+	return common.NewPaginationResponse(
+		req.GetOffset(),
+		req.GetPageSize(),
+		total,
+		items,
+	), nil
 }
 
 // GetRoleWithPermissions gets role with its permissions
@@ -272,7 +268,7 @@ func (s *roleService) GetRoleWithPermissions(ctx context.Context, id uint) (*res
 }
 
 // GetRoleUsers gets role users
-func (s *roleService) GetRoleUsers(ctx context.Context, id uint, page, pageSize int) (*response.RoleListResponse, error) {
+func (s *roleService) GetRoleUsers(ctx context.Context, id uint, page, pageSize int) (*common.PaginationResponse, error) {
 	users, total, err := s.roleRepo.GetUsers(ctx, id, page, pageSize)
 	if err != nil {
 		return nil, err
@@ -288,16 +284,12 @@ func (s *roleService) GetRoleUsers(ctx context.Context, id uint, page, pageSize 
 		}
 	}
 
-	// Calculate total pages
-	totalPages := int(math.Ceil(float64(total) / float64(pageSize)))
-
-	return &response.RoleListResponse{
-		Items:      items,
-		Total:      total,
-		Page:       page,
-		PageSize:   pageSize,
-		TotalPages: totalPages,
-	}, nil
+	return common.NewPaginationResponse(
+		page,
+		pageSize,
+		total,
+		items,
+	), nil
 }
 
 // AssignPermissions assigns permissions to a role
@@ -318,7 +310,7 @@ func (s *roleService) AssignPermissions(ctx context.Context, roleID uint, req *r
 		// Check if it's a system role
 		if role.IsSystem {
 			s.logger.WarnContext(ctx, "Attempt to modify system role permissions", logger.Uint("role_id", roleID))
-			return errors.NewAppErrorWithMessage(errors.CodeRecordUpdateFailed, "cannot modify system role permissions")
+			return errors.NewAppError(errors.CodeRecordUpdateFailed)
 		}
 
 		// Validate permission IDs
@@ -331,7 +323,7 @@ func (s *roleService) AssignPermissions(ctx context.Context, roleID uint, req *r
 			s.logger.WarnContext(ctx, "Some permission IDs are invalid during assignment",
 				logger.Int("requested", len(req.PermissionIDs)),
 				logger.Int("found", len(permissions)))
-			return errors.NewAppErrorWithMessage(errors.CodePermissionInvalid, "some permission IDs are invalid")
+			return errors.NewAppError(errors.CodePermissionInvalid)
 		}
 
 		// Assign permissions
@@ -363,7 +355,7 @@ func (s *roleService) RemovePermissions(ctx context.Context, roleID uint, req *r
 	// Check if it's a system role
 	if role.IsSystem {
 		s.logger.WarnContext(ctx, "Attempt to modify system role permissions", logger.Uint("role_id", roleID))
-		return errors.NewAppErrorWithMessage(errors.CodeRecordDeleteFailed, "cannot modify system role permissions")
+		return errors.NewAppError(errors.CodeRecordDeleteFailed)
 	}
 
 	// Remove permissions

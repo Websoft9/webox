@@ -1,6 +1,7 @@
 package service
 
 import (
+	"api-service/internal/dto/common"
 	"api-service/internal/dto/request"
 	"api-service/internal/dto/response"
 	"context"
@@ -15,7 +16,7 @@ type AlertService interface {
 	GetAlertRuleByID(ctx context.Context, id uint) (*response.AlertRuleResponse, error)
 
 	// ListAlertRules retrieves a list of alert rules.
-	ListAlertRules(ctx context.Context, req *request.AlertRuleQueryRequest) (*response.AlertRuleListResponse, error)
+	ListAlertRules(ctx context.Context, req *request.AlertRuleQueryRequest) (*common.PaginationResponse, error)
 
 	// UpdateAlertRule updates an alert rule.
 	UpdateAlertRule(ctx context.Context, id uint, req *request.AlertRuleUpdateRequest) (*response.AlertRuleResponse, error)
@@ -24,7 +25,7 @@ type AlertService interface {
 	DeleteAlertRule(ctx context.Context, id uint) error
 
 	// ListAlertRecords retrieves a list of alert records.
-	ListAlertRecords(ctx context.Context, req *request.AlertRecordQueryRequest) (*response.AlertRecordListResponse, error)
+	ListAlertRecords(ctx context.Context, req *request.AlertRecordQueryRequest) (*common.PaginationResponse, error)
 
 	// AcknowledgeAlertRecord acknowledges an alert record.
 	AcknowledgeAlertRecord(ctx context.Context, id, userID uint, req *request.AlertAcknowledgeRequest) error

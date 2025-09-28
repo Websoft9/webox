@@ -1,5 +1,7 @@
 package request
 
+import "api-service/internal/dto/common"
+
 // CreateRoleRequest creates role request
 type CreateRoleRequest struct {
 	Name          string `json:"name" validate:"required,min=2,max=64"`
@@ -25,11 +27,11 @@ type RolePermissionRequest struct {
 
 // ListRolesRequest role list query request
 type ListRolesRequest struct {
-	PaginationRequest
-	Search    string `form:"search"`
-	Status    *int   `form:"status" validate:"omitempty,oneof=-1 0 1"`
-	StartTime string `form:"start_time" validate:"omitempty,rfc3339"`
-	EndTime   string `form:"end_time" validate:"omitempty,rfc3339"`
+	common.PaginationRequest
+	Search string `form:"search"`
+	Status *int   `form:"status" validate:"omitempty,oneof=-1 0 1"`
+	common.TimeRangeRequest
+	common.SortRequest
 }
 
 // CreatePermissionRequest creates permission request
@@ -56,13 +58,13 @@ type UpdatePermissionRequest struct {
 
 // ListPermissionsRequest permission list query request
 type ListPermissionsRequest struct {
-	PaginationRequest
-	Search    string `form:"search"`
-	Module    string `form:"module"`
-	Scope     string `form:"scope" validate:"omitempty,oneof=platform project"`
-	Status    *int   `form:"status" validate:"omitempty,oneof=-1 0 1"`
-	StartTime string `form:"start_time" validate:"omitempty,rfc3339"`
-	EndTime   string `form:"end_time" validate:"omitempty,rfc3339"`
+	common.PaginationRequest
+	Search string `form:"search"`
+	Module string `form:"module"`
+	Scope  string `form:"scope" validate:"omitempty,oneof=platform project"`
+	Status *int   `form:"status" validate:"omitempty,oneof=-1 0 1"`
+	common.TimeRangeRequest
+	common.SortRequest
 }
 
 // PermissionTreeRequest permission tree query request
@@ -217,41 +219,6 @@ type LoginSecurityRequest struct {
 type EnableTwoFactorRequest struct {
 	Method string `json:"method" validate:"required,oneof=TOTP EMAIL"`
 	Code   string `json:"code" validate:"required"`
-}
-
-// PaginationRequest pagination request base structure
-type PaginationRequest struct {
-	Page     int `form:"page" validate:"min=1"`
-	PageSize int `form:"page_size" validate:"min=1,max=100"`
-}
-
-// GetPage gets page number, defaults to 1
-func (p *PaginationRequest) GetPage() int {
-	if p.Page <= 0 {
-		return 1
-	}
-	return p.Page
-}
-
-const (
-	DefaultPageSize = 20
-	MaxPageSize     = 100
-)
-
-// GetPageSize gets page size, defaults to 20
-func (p *PaginationRequest) GetPageSize() int {
-	if p.PageSize <= 0 {
-		return DefaultPageSize
-	}
-	if p.PageSize > MaxPageSize {
-		return MaxPageSize
-	}
-	return p.PageSize
-}
-
-// GetOffset gets offset
-func (p *PaginationRequest) GetOffset() int {
-	return (p.GetPage() - 1) * p.GetPageSize()
 }
 
 // RevokeAPITokenRequest API token revoke request

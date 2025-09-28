@@ -1,6 +1,7 @@
 package service
 
 import (
+	"api-service/internal/dto/common"
 	"api-service/internal/dto/request"
 	"api-service/internal/dto/response"
 	"context"
@@ -13,7 +14,7 @@ type UserProfileService interface {
 
 	ChangeProfilePassword(ctx context.Context, userID uint, req *request.ProfileChangePasswordRequest) error
 
-	GetLoginHistories(ctx context.Context, userID uint, req *request.LoginHistoryRequest) (*response.LoginHistoryResponse, error)
+	GetLoginHistories(ctx context.Context, userID uint, req *request.LoginHistoryRequest) (*common.PaginationResponse, error)
 
 	GetNotificationSettings(ctx context.Context, userID uint) (*response.NotificationSettingsResponse, error)
 

@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"api-service/internal/constants"
 	"api-service/internal/dto/request"
 	"api-service/internal/interface/repository"
 	"api-service/internal/model"
@@ -23,7 +24,7 @@ func NewRoleRepository(db *gorm.DB) repository.RoleRepository {
 // Create creates a role
 func (r *roleRepository) Create(ctx context.Context, role *model.Role) error {
 	if err := r.db.WithContext(ctx).Create(role).Error; err != nil {
-		return errors.WrapError(err, errors.CodeRecordCreateFailed, "failed to create role")
+		return errors.NewAppErrorWrapError(err, errors.CodeRecordCreateFailed)
 	}
 	return nil
 }
@@ -34,9 +35,9 @@ func (r *roleRepository) GetByID(ctx context.Context, id uint) (*model.Role, err
 	err := r.db.WithContext(ctx).Where("status != -1").First(&role, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.NewAppErrorWithMessage(errors.CodeRecordNotFound, "role not found")
+			return nil, errors.NewAppError(errors.CodeRecordNotFound)
 		}
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to get role by ID")
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 	return &role, nil
 }
@@ -47,9 +48,9 @@ func (r *roleRepository) GetByCode(ctx context.Context, code string) (*model.Rol
 	err := r.db.WithContext(ctx).Where("code = ? AND status != -1", code).First(&role).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.NewAppErrorWithMessage(errors.CodeRecordNotFound, "role not found")
+			return nil, errors.NewAppError(errors.CodeRecordNotFound)
 		}
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to get role by code")
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 	return &role, nil
 }
@@ -60,14 +61,14 @@ func (r *roleRepository) Update(ctx context.Context, role *model.Role) error {
 	var existingRole model.Role
 	if err := r.db.WithContext(ctx).Where("status != -1").First(&existingRole, role.ID).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.NewAppErrorWithMessage(errors.CodeRecordNotFound, "role not found")
+			return errors.NewAppError(errors.CodeRecordNotFound)
 		}
-		return errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to get role for update")
+		return errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	// Check if role is disabled
 	if existingRole.Status == 0 {
-		return errors.NewAppErrorWithMessage(errors.CodeRecordIsDisabled, "cannot update disabled role")
+		return errors.NewAppError(errors.CodeRecordIsDisabled)
 	}
 
 	result := r.db.WithContext(ctx).Model(role).
@@ -75,11 +76,11 @@ func (r *roleRepository) Update(ctx context.Context, role *model.Role) error {
 		Updates(role)
 
 	if result.Error != nil {
-		return errors.WrapError(result.Error, errors.CodeRecordUpdateFailed, "failed to update role")
+		return errors.NewAppErrorWrapError(result.Error, errors.CodeRecordUpdateFailed)
 	}
 
 	if result.RowsAffected == 0 {
-		return errors.NewAppErrorWithMessage(errors.CodeRecordNoAffected, "no rows affected")
+		return errors.NewAppError(errors.CodeRecordNoAffected)
 	}
 
 	return nil
@@ -91,29 +92,29 @@ func (r *roleRepository) Delete(ctx context.Context, id uint) error {
 	var role model.Role
 	if err := r.db.WithContext(ctx).First(&role, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.NewAppErrorWithMessage(errors.CodeRecordNotFound, "role not found")
+			return errors.NewAppError(errors.CodeRecordNotFound)
 		}
-		return errors.WrapError(err, errors.CodeRecordDeleteFailed, "failed to get role")
+		return errors.NewAppErrorWrapError(err, errors.CodeRecordDeleteFailed)
 	}
 
 	// Check if already deleted
 	if role.Status == -1 {
-		return errors.NewAppErrorWithMessage(errors.CodeRecordDeleteFailed, "role already deleted")
+		return errors.NewAppError(errors.CodeRecordDeleteFailed)
 	}
 
 	// Check if there are associated users
 	var userCount int64
 	if err := r.db.WithContext(ctx).Model(&model.UserRole{}).
 		Where("role_id = ?", id).Count(&userCount).Error; err != nil {
-		return errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to check role users")
+		return errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	if userCount > 0 {
-		return errors.NewAppErrorWithMessage(errors.CodeRecordDeleteFailed, "cannot delete role with associated users")
+		return errors.NewAppError(errors.CodeRecordDeleteFailed)
 	}
 
 	if role.IsSystem {
-		return errors.NewAppErrorWithMessage(errors.CodeRecordDeleteDenied, "cannot delete system role")
+		return errors.NewAppError(errors.CodeRecordDeleteDenied)
 	}
 
 	// Perform soft delete by setting status to -1
@@ -122,11 +123,11 @@ func (r *roleRepository) Delete(ctx context.Context, id uint) error {
 		Update("status", -1)
 
 	if result.Error != nil {
-		return errors.WrapError(result.Error, errors.CodeRecordDeleteFailed, "failed to delete role")
+		return errors.NewAppErrorWrapError(result.Error, errors.CodeRecordDeleteFailed)
 	}
 
 	if result.RowsAffected == 0 {
-		return errors.NewAppErrorWithMessage(errors.CodeRecordNoAffected, "no rows affected")
+		return errors.NewAppError(errors.CodeRecordNoAffected)
 	}
 
 	return nil
@@ -150,26 +151,26 @@ func (r *roleRepository) List(ctx context.Context, req *request.ListRolesRequest
 	}
 
 	if req.StartTime != "" && req.EndTime != "" {
-		startTime, _ := time.Parse("2006-01-02 15:04:05", req.StartTime)
-		endTime, _ := time.Parse("2006-01-02 15:04:05", req.EndTime)
+		startTime, _ := time.Parse(constants.DefaultTimeFormat, req.StartTime)
+		endTime, _ := time.Parse(constants.DefaultTimeFormat, req.EndTime)
 		query = query.Where("updated_at BETWEEN ? AND ?", startTime, endTime)
 	}
 
 	// Get total count
 	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to count roles")
+		return nil, 0, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	// Paginated query
 	offset := req.GetOffset()
 	limit := req.GetPageSize()
 
-	err := query.Order("created_at DESC").
+	err := query.Order(req.GetSortOrder()).
 		Offset(offset).Limit(limit).
 		Find(&roles).Error
 
 	if err != nil {
-		return nil, 0, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to list roles")
+		return nil, 0, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	// Get statistical information
@@ -199,9 +200,9 @@ func (r *roleRepository) GetWithPermissions(ctx context.Context, id uint) (*mode
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.NewAppErrorWithMessage(errors.CodeRecordNotFound, "role not found")
+			return nil, errors.NewAppError(errors.CodeRecordNotFound)
 		}
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to get role with permissions")
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	return &role, nil
@@ -216,9 +217,9 @@ func (r *roleRepository) GetWithUsers(ctx context.Context, id uint) (*model.Role
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.NewAppErrorWithMessage(errors.CodeRecordNotFound, "role not found")
+			return nil, errors.NewAppError(errors.CodeRecordNotFound)
 		}
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to get role with users")
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	return &role, nil
@@ -232,13 +233,13 @@ func (r *roleRepository) AssignPermissionsWithTx(ctx context.Context, tx *gorm.D
 
 	// Delete existing permission associations
 	if err := tx.Where("role_id = ?", roleID).Delete(&model.RolePermission{}).Error; err != nil {
-		return errors.WrapError(err, errors.CodeRecordDeleteFailed, "failed to remove existing permissions")
+		return errors.NewAppErrorWrapError(err, errors.CodeRecordDeleteFailed)
 	}
 
 	// Get permission codes first
 	var permissions []*model.Permission
 	if err := tx.Where("id IN ?", permissionIDs).Find(&permissions).Error; err != nil {
-		return errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to get permission codes")
+		return errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	// Create new permission associations
@@ -254,7 +255,7 @@ func (r *roleRepository) AssignPermissionsWithTx(ctx context.Context, tx *gorm.D
 	}
 
 	if err := tx.Create(&rolePermissions).Error; err != nil {
-		return errors.WrapError(err, errors.CodeRecordCreateFailed, "failed to assign permissions")
+		return errors.NewAppErrorWrapError(err, errors.CodeRecordCreateFailed)
 	}
 
 	return nil
@@ -271,7 +272,7 @@ func (r *roleRepository) RemovePermissions(ctx context.Context, roleID uint, per
 		Delete(&model.RolePermission{})
 
 	if result.Error != nil {
-		return errors.WrapError(result.Error, errors.CodeRecordDeleteFailed, "failed to remove permissions")
+		return errors.NewAppErrorWrapError(result.Error, errors.CodeRecordDeleteFailed)
 	}
 
 	return nil
@@ -287,7 +288,7 @@ func (r *roleRepository) GetPermissions(ctx context.Context, roleID uint) ([]mod
 		Find(&permissions).Error
 
 	if err != nil {
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to get role permissions")
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	return permissions, nil
@@ -305,7 +306,7 @@ func (r *roleRepository) CountPermissions(ctx context.Context, roleID uint) (int
 		Where("role_id = ? AND status = 1", roleID).Count(&count).Error
 
 	if err != nil {
-		return 0, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to count role permissions")
+		return 0, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	return count, nil
@@ -318,7 +319,7 @@ func (r *roleRepository) CountUsers(ctx context.Context, roleID uint) (int64, er
 		Where("role_id = ? AND status = 1", roleID).Count(&count).Error
 
 	if err != nil {
-		return 0, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to count role users")
+		return 0, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	return count, nil
@@ -335,7 +336,7 @@ func (r *roleRepository) BatchUpdateStatus(ctx context.Context, ids []uint, stat
 		Update("status", status)
 
 	if result.Error != nil {
-		return errors.WrapError(result.Error, errors.CodeRecordUpdateFailed, "failed to batch update role status")
+		return errors.NewAppErrorWrapError(result.Error, errors.CodeRecordUpdateFailed)
 	}
 
 	return nil
@@ -344,7 +345,7 @@ func (r *roleRepository) BatchUpdateStatus(ctx context.Context, ids []uint, stat
 // CreateWithTx creates a role within a transaction
 func (r *roleRepository) CreateWithTx(ctx context.Context, tx *gorm.DB, role *model.Role) error {
 	if err := tx.WithContext(ctx).Create(role).Error; err != nil {
-		return errors.WrapError(err, errors.CodeRecordCreateFailed, "failed to create role in transaction")
+		return errors.NewAppErrorWrapError(err, errors.CodeRecordCreateFailed)
 	}
 	return nil
 }
@@ -355,14 +356,14 @@ func (r *roleRepository) UpdateWithTx(ctx context.Context, tx *gorm.DB, role *mo
 	var existingRole model.Role
 	if err := tx.WithContext(ctx).Where("status != -1").First(&existingRole, role.ID).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.NewAppErrorWithMessage(errors.CodeRecordNotFound, "role not found")
+			return errors.NewAppError(errors.CodeRecordNotFound)
 		}
-		return errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to get role for update in transaction")
+		return errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	// Check if role is disabled
 	if existingRole.Status == 0 {
-		return errors.NewAppErrorWithMessage(errors.CodeRecordIsDisabled, "cannot update disabled role")
+		return errors.NewAppError(errors.CodeRecordIsDisabled)
 	}
 
 	result := tx.WithContext(ctx).Model(role).
@@ -370,11 +371,11 @@ func (r *roleRepository) UpdateWithTx(ctx context.Context, tx *gorm.DB, role *mo
 		Updates(role)
 
 	if result.Error != nil {
-		return errors.WrapError(result.Error, errors.CodeRecordUpdateFailed, "failed to update role in transaction")
+		return errors.NewAppErrorWrapError(result.Error, errors.CodeRecordUpdateFailed)
 	}
 
 	if result.RowsAffected == 0 {
-		return errors.NewAppErrorWithMessage(errors.CodeRecordNoAffected, "no rows affected in transaction")
+		return errors.NewAppError(errors.CodeRecordNoAffected)
 	}
 
 	return nil

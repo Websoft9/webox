@@ -1,6 +1,7 @@
 package service
 
 import (
+	"api-service/internal/dto/common"
 	"api-service/internal/dto/request"
 	"api-service/internal/model"
 	"api-service/pkg/errors"
@@ -515,7 +516,7 @@ func TestRoleService_ListRoles_Success(t *testing.T) {
 	ctx := context.Background()
 
 	req := &request.ListRolesRequest{
-		PaginationRequest: request.PaginationRequest{
+		PaginationRequest: common.PaginationRequest{
 			Page:     1,
 			PageSize: 10,
 		},
@@ -544,9 +545,11 @@ func TestRoleService_ListRoles_Success(t *testing.T) {
 	// Assert
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
-	assert.Equal(t, len(roles), len(result.Items))
+	items, ok := result.Items.([]interface{})
+	assert.True(t, ok, "Items should be a slice")
+	assert.Equal(t, len(roles), len(items))
 	assert.Equal(t, total, result.Total)
-	assert.Equal(t, req.GetPage(), result.Page)
+	assert.Equal(t, req.GetOffset(), result.Page)
 	assert.Equal(t, req.GetPageSize(), result.PageSize)
 	assert.Equal(t, 1, result.TotalPages)
 

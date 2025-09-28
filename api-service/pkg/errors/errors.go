@@ -95,6 +95,8 @@ func getI18nKeyByCode(code ErrorCode) string {
 // This provides a fallback mechanism for unmapped error codes
 func getDefaultStatusByCodeRange(code ErrorCode) HTTPCode {
 	switch {
+	case code == 200: // Default case
+		return http.StatusOK
 	case code >= 1000 && code < 2000: // Authentication errors
 		return http.StatusUnauthorized
 	case code >= 2000 && code < 3000: // Permission errors

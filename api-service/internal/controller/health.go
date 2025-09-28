@@ -2,8 +2,9 @@ package controller
 
 import (
 	"api-service/internal/config"
-	"api-service/internal/dto/response"
+	response "api-service/internal/dto/common"
 	"api-service/pkg/database"
+	"api-service/pkg/errors"
 	"api-service/pkg/redis"
 	"net/http"
 	"time"
@@ -41,14 +42,14 @@ func (hc *HealthController) DatabaseHealth(c *gin.Context) {
 	duration := time.Since(start).Milliseconds()
 
 	if err != nil {
-		response.Error(c, http.StatusServiceUnavailable, "Database connection failed", err.Error())
+		response.ServiceUnavailable(c, err)
 		return
 	}
 
 	// Get database info
 	dbInfo, err := database.GetDatabaseInfo(hc.config)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to get database info", err.Error())
+		response.WithErrorCode(c, errors.CodeDatabaseConnectionFailed)
 		return
 	}
 
@@ -56,7 +57,7 @@ func (hc *HealthController) DatabaseHealth(c *gin.Context) {
 	dbInfo["response_time"] = duration
 	dbInfo["timestamp"] = start.Unix()
 
-	response.Success(c, "Database is healthy", dbInfo)
+	response.SuccessWithData(c, dbInfo)
 }
 
 // SystemHealth performs comprehensive system health check
@@ -216,11 +217,10 @@ func (hc *HealthController) finalizeHealthResponse(c *gin.Context, healthData ma
 func (hc *HealthController) DatabaseStats(c *gin.Context) {
 	dbInfo, err := database.GetDatabaseInfo(hc.config)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to get database statistics", err.Error())
+		response.WithError(c, err)
 		return
 	}
-
-	response.Success(c, "Database statistics retrieved successfully", dbInfo)
+	response.SuccessWithData(c, dbInfo)
 }
 
 // Ping is a simple ping endpoint

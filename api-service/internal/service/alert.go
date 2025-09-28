@@ -2,6 +2,7 @@ package service
 
 import (
 	"api-service/internal/constants"
+	"api-service/internal/dto/common"
 	"api-service/internal/dto/request"
 	"api-service/internal/dto/response"
 	"api-service/internal/interface/repository"
@@ -11,8 +12,6 @@ import (
 	"api-service/pkg/logger"
 	"context"
 	"time"
-
-	"gorm.io/gorm"
 )
 
 // alertService implements the alert service.
@@ -64,8 +63,7 @@ func (s *alertService) CreateAlertRule(ctx context.Context, currentUserID uint, 
 		s.logger.ErrorContext(ctx, "Failed to create alert rule",
 			logger.String("name", req.Name),
 			logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeRecordCreateFailed,
-			s.i18n.T(ctx, "alert.rule_create_failed"))
+		return nil, err
 	}
 
 	// Build response
@@ -78,23 +76,17 @@ func (s *alertService) GetAlertRuleByID(ctx context.Context, id uint) (*response
 
 	rule, err := s.alertRepo.GetAlertRuleByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			s.logger.WarnContext(ctx, "Alert rule not found", logger.Uint("id", id))
-			return nil, errors.NewAppError(errors.CodeRecordNotFound,
-				s.i18n.T(ctx, "alert.rule_not_found"))
-		}
 		s.logger.ErrorContext(ctx, "Failed to get alert rule",
 			logger.Uint("id", id),
 			logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed,
-			s.i18n.T(ctx, "alert.rule_get_failed"))
+		return nil, err
 	}
 
 	return s.buildAlertRuleResponse(rule), nil
 }
 
 // ListAlertRules retrieves a list of alert rules.
-func (s *alertService) ListAlertRules(ctx context.Context, req *request.AlertRuleQueryRequest) (*response.AlertRuleListResponse, error) {
+func (s *alertService) ListAlertRules(ctx context.Context, req *request.AlertRuleQueryRequest) (*common.PaginationResponse, error) {
 	s.logger.InfoContext(ctx, "Listing alert rules",
 		logger.Int("page", req.Page),
 		logger.Int("pageSize", req.PageSize))
@@ -118,8 +110,7 @@ func (s *alertService) ListAlertRules(ctx context.Context, req *request.AlertRul
 	rules, total, err := s.alertRepo.ListAlertRules(ctx, params, req.Page, req.PageSize)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to list alert rules", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed,
-			s.i18n.T(ctx, "alert.rule_list_failed"))
+		return nil, err
 	}
 
 	// Build response
@@ -128,10 +119,12 @@ func (s *alertService) ListAlertRules(ctx context.Context, req *request.AlertRul
 		items = append(items, *s.buildAlertRuleResponse(rule))
 	}
 
-	return &response.AlertRuleListResponse{
-		Total: total,
-		Items: items,
-	}, nil
+	return common.NewPaginationResponse(
+		req.Page,
+		req.PageSize,
+		total,
+		items,
+	), nil
 }
 
 // UpdateAlertRule updates an alert rule.
@@ -142,16 +135,10 @@ func (s *alertService) UpdateAlertRule(ctx context.Context, id uint, req *reques
 	_, err := s.alertRepo.GetAlertRuleByID(ctx, id)
 
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			s.logger.WarnContext(ctx, "Alert rule not found for update", logger.Uint("id", id))
-			return nil, errors.NewAppError(errors.CodeRecordNotFound,
-				s.i18n.T(ctx, "alert.rule_not_found"))
-		}
 		s.logger.ErrorContext(ctx, "Failed to get alert rule for update",
 			logger.Uint("id", id),
 			logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed,
-			s.i18n.T(ctx, "alert.rule_update_failed"))
+		return nil, err
 	}
 
 	// Build update data
@@ -181,8 +168,7 @@ func (s *alertService) UpdateAlertRule(ctx context.Context, id uint, req *reques
 			s.logger.ErrorContext(ctx, "Failed to update alert rule",
 				logger.Uint("id", id),
 				logger.ErrorField(updateErr))
-			return nil, errors.WrapError(updateErr, errors.CodeRecordUpdateFailed,
-				s.i18n.T(ctx, "alert.rule_update_failed"))
+			return nil, updateErr
 		}
 	}
 
@@ -192,8 +178,7 @@ func (s *alertService) UpdateAlertRule(ctx context.Context, id uint, req *reques
 		s.logger.ErrorContext(ctx, "Failed to get updated alert rule",
 			logger.Uint("id", id),
 			logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed,
-			s.i18n.T(ctx, "alert.rule_get_failed"))
+		return nil, err
 	}
 
 	return s.buildAlertRuleResponse(updatedRule), nil
@@ -206,16 +191,10 @@ func (s *alertService) DeleteAlertRule(ctx context.Context, id uint) error {
 	// Check if the rule exists
 	_, err := s.alertRepo.GetAlertRuleByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			s.logger.WarnContext(ctx, "Alert rule not found for deletion", logger.Uint("id", id))
-			return errors.NewAppError(errors.CodeRecordNotFound,
-				s.i18n.T(ctx, "alert.rule_not_found"))
-		}
 		s.logger.ErrorContext(ctx, "Failed to get alert rule for deletion",
 			logger.Uint("id", id),
 			logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeRecordQueryFailed,
-			s.i18n.T(ctx, "alert.rule_delete_failed"))
+		return err
 	}
 
 	// Delete rule
@@ -223,8 +202,7 @@ func (s *alertService) DeleteAlertRule(ctx context.Context, id uint) error {
 		s.logger.ErrorContext(ctx, "Failed to delete alert rule",
 			logger.Uint("id", id),
 			logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeRecordDeleteFailed,
-			s.i18n.T(ctx, "alert.rule_delete_failed"))
+		return err
 	}
 
 	return nil
@@ -249,7 +227,7 @@ func (s *alertService) buildAlertRuleResponse(rule *model.AlertRule) *response.A
 }
 
 // ListAlertRecords retrieves a paginated list of alert records
-func (s *alertService) ListAlertRecords(ctx context.Context, req *request.AlertRecordQueryRequest) (*response.AlertRecordListResponse, error) {
+func (s *alertService) ListAlertRecords(ctx context.Context, req *request.AlertRecordQueryRequest) (*common.PaginationResponse, error) {
 	s.logger.InfoContext(ctx, "Listing alert records",
 		logger.Int("page", req.Page),
 		logger.Int("page_size", req.PageSize))
@@ -287,7 +265,7 @@ func (s *alertService) ListAlertRecords(ctx context.Context, req *request.AlertR
 	records, total, err := s.alertRepo.ListAlertRecords(ctx, offset, req.PageSize, filters)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to list alert records", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, s.i18n.T(ctx, "alert.record_list_failed"))
+		return nil, err
 	}
 
 	// Convert to DTOs
@@ -304,7 +282,13 @@ func (s *alertService) ListAlertRecords(ctx context.Context, req *request.AlertR
 
 	s.logger.InfoContext(ctx, "Alert records retrieved successfully",
 		logger.Int64("total", total))
-	return result, nil
+	//return result, nil
+	return common.NewPaginationResponse(
+		req.Page,
+		req.PageSize,
+		total,
+		result.Records,
+	), nil
 }
 
 // AcknowledgeAlertRecord acknowledges an alert record
@@ -316,23 +300,20 @@ func (s *alertService) AcknowledgeAlertRecord(ctx context.Context, id, userID ui
 	// Get the record
 	record, err := s.alertRepo.GetAlertRecordByID(ctx, id)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return errors.NewAppError(errors.CodeRecordNotFound, s.i18n.T(ctx, "alert.record_not_found"))
-		}
 		s.logger.ErrorContext(ctx, "Failed to get alert record",
 			logger.Uint("id", id),
 			logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeRecordQueryFailed, s.i18n.T(ctx, "alert.record_acknowledge_failed"))
+		return err
 	}
 
 	// Validate status
 	if record.AcknowledgedAt != nil {
-		return errors.NewAppError(errors.CodeResourceStateNotAllowed, s.i18n.T(ctx, "alert.record_already_acknowledged"))
+		return errors.NewAppError(errors.CodeResourceStateNotAllowed)
 	}
 
 	// Check if already resolved
 	if record.Status == constants.AlertStatusResolved || record.Status == constants.AlertStatusConfirmed {
-		return errors.NewAppError(errors.CodeResourceStateNotAllowed, s.i18n.T(ctx, "alert.record_already_resolved"))
+		return errors.NewAppError(errors.CodeResourceStateNotAllowed)
 	}
 
 	// Prepare update data
@@ -354,7 +335,7 @@ func (s *alertService) AcknowledgeAlertRecord(ctx context.Context, id, userID ui
 		s.logger.ErrorContext(ctx, "Failed to update alert record for acknowledgement",
 			logger.Uint("id", id),
 			logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeRecordUpdateFailed, s.i18n.T(ctx, "alert.record_acknowledge_failed"))
+		return err
 	}
 
 	s.logger.InfoContext(ctx, "Alert record acknowledged successfully",
@@ -372,18 +353,15 @@ func (s *alertService) ResolveAlertRecord(ctx context.Context, id, userID uint, 
 	// Get the record
 	record, err := s.alertRepo.GetAlertRecordByID(ctx, id)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return errors.NewAppError(errors.CodeRecordNotFound, s.i18n.T(ctx, "alert.record_not_found"))
-		}
 		s.logger.ErrorContext(ctx, "Failed to get alert record",
 			logger.Uint("id", id),
 			logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeRecordUpdateFailed, s.i18n.T(ctx, "alert.record_resolve_failed"))
+		return err
 	}
 
 	// Validate status
 	if record.Status == constants.AlertStatusResolved || record.Status == constants.AlertStatusConfirmed {
-		return errors.NewAppError(errors.CodeResourceStateNotAllowed, s.i18n.T(ctx, "alert.record_already_resolved"))
+		return errors.NewAppError(errors.CodeResourceStateNotAllowed)
 	}
 
 	// Prepare update data
@@ -405,7 +383,7 @@ func (s *alertService) ResolveAlertRecord(ctx context.Context, id, userID uint, 
 		s.logger.ErrorContext(ctx, "Failed to update alert record for resolution",
 			logger.Uint("id", id),
 			logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeRecordUpdateFailed, s.i18n.T(ctx, "alert.record_resolve_failed"))
+		return err
 	}
 
 	s.logger.InfoContext(ctx, "Alert record resolved successfully",
