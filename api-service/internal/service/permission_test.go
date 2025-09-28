@@ -172,7 +172,9 @@ func (suite *PermissionServiceTestSuite) TestListPermissions_Success() {
 	// Assert
 	suite.NoError(err)
 	suite.NotNil(result)
-	suite.Equal(2, len(result.Items))
+	items, ok := result.Items.([]interface{})
+	suite.True(ok, "Items should be a slice")
+	suite.Equal(2, len(items))
 	suite.Equal(total, result.Total)
 	suite.Equal(req.GetPage(), result.Page)
 	suite.Equal(req.GetPageSize(), result.PageSize)

@@ -27,55 +27,70 @@ type APIResponse struct {
 	Error   string `json:"error,omitempty" example:"Error message"`
 }
 
-// BuildResponseWithI18n builds a response with localized message
-func BuildResponseWithI18n(ctx *gin.Context, success bool, httpCode errors.HTTPCode, bizCode errors.ErrorCode, data any, errMsg string) {
+// BuildResponseWithI18n builds a standardized API response with internationalized message.
+// It takes success status, HTTP status code, error code, response data, and error message,
+// then sends a JSON response with localized message based on user's language preference.
+func BuildResponseWithI18n(ctx *gin.Context, success bool, httpCode errors.HTTPCode, errorCode errors.ErrorCode, data any, errMsg string) {
 	ctx.JSON(int(httpCode), Response{
 		Success: success,
-		Code:    int(bizCode),
-		Message: i18n.T(errors.CodeToI18nKey[bizCode], utils.GetUserLangFromRedis(ctx)),
+		Code:    int(errorCode),
+		Message: i18n.T(errors.CodeToI18nKey[errorCode], utils.GetUserLangFromRedis(ctx)),
 		Data:    data,
 		Error:   errMsg,
 	})
 }
 
-// BadRequest sends a bad request response
+// BadRequest sends a HTTP 400 Bad Request response with error details.
+// Used when client request contains invalid parameters or malformed data.
 func BadRequest(ctx *gin.Context, err error) {
 	BuildResponseWithI18n(ctx, false, http.StatusBadRequest, http.StatusBadRequest, nil, err.Error())
 }
 
-// SuccessWithData sends a success response
+// SuccessWithData sends a HTTP 200 OK response with the provided data payload.
+// Used when operation completes successfully and needs to return data to client.
 func SuccessWithData(ctx *gin.Context, data any) {
 	BuildResponseWithI18n(ctx, true, http.StatusOK, http.StatusOK, data, "")
 }
 
-// Success sends a success response with a localized message
+// Success sends a HTTP 200 OK response without data payload.
+// Used when operation completes successfully but doesn't need to return specific data.
 func Success(ctx *gin.Context) {
 	SuccessWithData(ctx, nil)
 }
 
-// DataNotFound sends a not found response
+// DataNotFound sends a HTTP 404 Not Found response.
+// Used when requested resource or data record doesn't exist in the system.
 func DataNotFound(ctx *gin.Context) {
 	BuildResponseWithI18n(ctx, false, http.StatusNotFound, errors.CodeRecordNotFound, nil, "")
 }
 
-// Unauthorized sends an unauthorized response
+// Unauthorized sends a HTTP 401 Unauthorized response.
+// Used when client request lacks valid authentication credentials.
 func Unauthorized(ctx *gin.Context) {
 	BuildResponseWithI18n(ctx, false, http.StatusUnauthorized, errors.CodeInsufficientPermissions, nil, "")
 }
 
-// AccessForbidden sends a forbidden response
+// AccessForbidden sends a HTTP 403 Forbidden response.
+// Used when client has valid credentials but lacks permission to access the resource.
 func AccessForbidden(ctx *gin.Context) {
 	BuildResponseWithI18n(ctx, false, http.StatusForbidden, errors.CodeResourceAccessDenied, nil, "")
 }
 
-// InternalError sends an internal server error response
+// InternalError sends a HTTP 500 Internal Server Error response.
+// Used when server encounters an unexpected condition that prevents fulfilling the request.
 func InternalError(ctx *gin.Context, err error) {
 	BuildResponseWithI18n(ctx, false, http.StatusInternalServerError, errors.CodeInternalError, nil, err.Error())
 }
 
-// WithError sends an error response using AppError information
-// It extracts the HTTP status code and i18n message key from the error
-// and logs the error with appropriate context
+// ServiceUnavailable sends a HTTP 503 Service Unavailable response.
+// Used when server is temporarily overloaded or under maintenance.
+func ServiceUnavailable(ctx *gin.Context, err error) {
+	BuildResponseWithI18n(ctx, false, http.StatusServiceUnavailable, errors.CodeInternalError, nil, err.Error())
+}
+
+// WithError sends an error response using AppError information.
+// It extracts the HTTP status code and i18n message key from the error,
+// falling back to HTTP 500 Internal Server Error for non-AppError types.
 func WithError(ctx *gin.Context, err error) {
 	appErr, ok := err.(*errors.AppError)
 	if ok {
@@ -83,4 +98,10 @@ func WithError(ctx *gin.Context, err error) {
 	} else {
 		BuildResponseWithI18n(ctx, false, http.StatusInternalServerError, errors.CodeInternalError, nil, err.Error())
 	}
+}
+
+// WithErrorCode sends an error response using a specific error code.
+// It maps the error code to corresponding HTTP status and sends a localized error message.
+func WithErrorCode(ctx *gin.Context, errorCode errors.ErrorCode) {
+	BuildResponseWithI18n(ctx, false, errors.CodeToHTTPStatus[errorCode], errorCode, nil, "")
 }

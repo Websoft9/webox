@@ -619,12 +619,12 @@ func (s *userAuthService) findOrCreateOAuth2User(ctx context.Context, userInfo *
 				logger.String("provider", provider))
 			return user, nil
 		} else if err != gorm.ErrRecordNotFound {
-			return nil, errors.WrapError(err, errors.CodeInternalError, "Failed to find user")
+			return nil, errors.NewAppError(errors.CodeRecordNotFound)
 		}
 	}
 
 	if !authConfig.UserAuth.OAuth2.AutoRegister {
-		return nil, errors.NewAppErrorWithI18n(errors.CodeRecordNotFound, "User not found and auto-registration disabled", "user.auto_registration_disabled")
+		return nil, errors.NewAppError(errors.CodeRecordNotFound)
 	}
 
 	// 3. 创建新用户
@@ -648,7 +648,7 @@ func (s *userAuthService) findOrCreateOAuth2User(ctx context.Context, userInfo *
 
 	if err := s.userRepo.Create(ctx, user); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to create OAuth2 user", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, "Failed to create user")
+		return nil, errors.NewAppError(errors.CodeRecordCreateFailed)
 	}
 
 	s.logger.InfoContext(ctx, "Created new OAuth2 user",

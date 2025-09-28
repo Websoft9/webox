@@ -236,7 +236,7 @@ func (s *OAuth2Service) mapUserInfo(providerName string, provider *config.OAuth2
 
 	// Validate required fields
 	if userInfo.ID == "" {
-		return nil, errors.NewAppError(errors.CodeRequiredParameterMissing, "user ID not found in OAuth2 response")
+		return nil, errors.NewAppError(errors.CodeRequiredParameterMissing)
 	}
 
 	// Use ID as username if username is not mapped
@@ -326,14 +326,14 @@ func (s *OAuth2Service) mapGenericUserID(rawUserInfo map[string]interface{}, use
 // ValidateState validates OAuth2 state parameter to prevent CSRF attacks
 func (s *OAuth2Service) ValidateState(ctx context.Context, receivedState, expectedState string) error {
 	if receivedState == "" {
-		return errors.NewAppError(errors.CodeRequiredParameterMissing, "OAuth2 state parameter is missing")
+		return errors.NewAppError(errors.CodeRequiredParameterMissing)
 	}
 
 	if receivedState != expectedState {
 		s.logger.WarnContext(ctx, "OAuth2 state validation failed",
 			logger.String("received", receivedState),
 			logger.String("expected", expectedState))
-		return errors.NewAppError(errors.CodeValidationFailed, "OAuth2 state validation failed")
+		return errors.NewAppError(errors.CodeValidationFailed)
 	}
 
 	return nil

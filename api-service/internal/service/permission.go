@@ -2,6 +2,7 @@ package service
 
 import (
 	"api-service/internal/constants"
+	"api-service/internal/dto/common"
 	"api-service/internal/dto/request"
 	"api-service/internal/dto/response"
 	"api-service/internal/interface/repository"
@@ -13,7 +14,6 @@ import (
 	"api-service/pkg/utils"
 
 	"context"
-	"math"
 
 	"gorm.io/gorm"
 )
@@ -51,7 +51,7 @@ func (s *permissionService) CreatePermission(ctx context.Context, req *request.C
 		return nil, err
 	}
 	if existing != nil {
-		return nil, errors.NewAppErrorWithMessage(errors.CodeResourceAlreadyExists, "permission code already exists")
+		return nil, errors.NewAppError(errors.CodeResourceAlreadyExists)
 	}
 
 	// Get parent code if ParentID is provided
@@ -125,7 +125,7 @@ func (s *permissionService) UpdatePermission(ctx context.Context, id uint, req *
 
 	// Check if it's a system permission
 	if permission.IsSystem {
-		return nil, errors.NewAppErrorWithMessage(errors.CodeRecordUpdateFailed, "cannot update system permission")
+		return nil, errors.NewAppError(errors.CodeRecordUpdateFailed)
 	}
 
 	// Update fields
@@ -166,7 +166,7 @@ func (s *permissionService) DeletePermission(ctx context.Context, id uint) error
 
 	// Check if it's a system permission
 	if permission.IsSystem {
-		return errors.NewAppErrorWithMessage(errors.CodeRecordDeleteFailed, "cannot delete system permission")
+		return errors.NewAppError(errors.CodeRecordDeleteFailed)
 	}
 
 	// Check if permission has associated roles
@@ -175,7 +175,7 @@ func (s *permissionService) DeletePermission(ctx context.Context, id uint) error
 		return err
 	}
 	if roleCount > 0 {
-		return errors.NewAppErrorWithMessage(errors.CodeResourceInUse, "permission has associated roles and cannot be deleted")
+		return errors.NewAppError(errors.CodeResourceInUse)
 	}
 
 	if err := s.permissionRepo.Delete(ctx, id); err != nil {
@@ -190,7 +190,7 @@ func (s *permissionService) DeletePermission(ctx context.Context, id uint) error
 }
 
 // ListPermissions lists permissions with pagination
-func (s *permissionService) ListPermissions(ctx context.Context, req *request.ListPermissionsRequest) (*response.PermissionListResponse, error) {
+func (s *permissionService) ListPermissions(ctx context.Context, req *request.ListPermissionsRequest) (*common.PaginationResponse, error) {
 	s.logger.InfoContext(ctx, "Listing permissions",
 		logger.String("service", "permission"),
 		logger.String("operation", "ListPermissions"))
@@ -210,16 +210,12 @@ func (s *permissionService) ListPermissions(ctx context.Context, req *request.Li
 		items[i] = *response.ConvertToPermissionResponse(permission)
 	}
 
-	// Calculate total pages
-	totalPages := int(math.Ceil(float64(total) / float64(req.GetPageSize())))
-
-	return &response.PermissionListResponse{
-		Items:      items,
-		Total:      total,
-		Page:       req.GetPage(),
-		PageSize:   req.GetPageSize(),
-		TotalPages: totalPages,
-	}, nil
+	return common.NewPaginationResponse(
+		req.GetPage(),
+		req.GetPageSize(),
+		total,
+		items,
+	), nil
 }
 
 // GetPermissionTree retrieves permissions in tree structure
@@ -239,7 +235,7 @@ func (s *permissionService) GetPermissionTree(ctx context.Context, req *request.
 }
 
 // GetPermissionRoles retrieves roles associated with a permission
-func (s *permissionService) GetPermissionRoles(ctx context.Context, id uint, page, pageSize int) (*response.RoleListResponse, error) {
+func (s *permissionService) GetPermissionRoles(ctx context.Context, id uint, page, pageSize int) (*common.PaginationResponse, error) {
 	s.logger.InfoContext(ctx, "Getting permission roles",
 		logger.String("service", "permission"),
 		logger.String("operation", "GetPermissionRoles"),
@@ -257,16 +253,12 @@ func (s *permissionService) GetPermissionRoles(ctx context.Context, id uint, pag
 		items[i] = *response.ConvertToRoleResponse(&roles[i])
 	}
 
-	// Calculate total pages
-	totalPages := int(math.Ceil(float64(total) / float64(pageSize)))
-
-	return &response.RoleListResponse{
-		Items:      items,
-		Total:      total,
-		Page:       page,
-		PageSize:   pageSize,
-		TotalPages: totalPages,
-	}, nil
+	return common.NewPaginationResponse(
+		page,
+		pageSize,
+		total,
+		items,
+	), nil
 }
 
 // CheckUserPermission checks if user has specific permission

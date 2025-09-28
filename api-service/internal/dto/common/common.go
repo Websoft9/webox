@@ -46,12 +46,6 @@ type PaginationResponse struct {
 	Items      interface{} `json:"items"`       // 数据列表
 }
 
-// ListResponse 通用列表响应结构（包含分页信息和数据列表）
-type ListResponse struct {
-	Items      interface{}         `json:"items"`      // 数据列表
-	Pagination *PaginationResponse `json:"pagination"` // 分页信息
-}
-
 // NewPaginationResponse 创建分页响应
 func NewPaginationResponse(page, pageSize int, total int64, items interface{}) *PaginationResponse {
 	totalPages := int((total + int64(pageSize) - 1) / int64(pageSize))
@@ -65,24 +59,6 @@ func NewPaginationResponse(page, pageSize int, total int64, items interface{}) *
 		Total:      total,
 		TotalPages: totalPages,
 		Items:      items,
-	}
-}
-
-// NewListResponse 创建列表响应（包含分页信息）
-func NewListResponse(page, pageSize int, total int64, items interface{}) *ListResponse {
-	pagination := &PaginationResponse{
-		Page:       page,
-		PageSize:   pageSize,
-		Total:      total,
-		TotalPages: int((total + int64(pageSize) - 1) / int64(pageSize)),
-	}
-	if pagination.TotalPages == 0 {
-		pagination.TotalPages = 1
-	}
-
-	return &ListResponse{
-		Items:      items,
-		Pagination: pagination,
 	}
 }
 

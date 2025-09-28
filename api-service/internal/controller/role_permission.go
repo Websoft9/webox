@@ -6,7 +6,6 @@ import (
 	"api-service/internal/interface/service"
 	"api-service/pkg/logger"
 	"api-service/pkg/utils"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -120,16 +119,7 @@ func (c *RolePermissionController) ListRoles(ctx *gin.Context) {
 	var req request.ListRolesRequest
 
 	// Bind query parameters
-	if err := ctx.ShouldBindQuery(&req); err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Invalid query parameters", logger.ErrorField(err))
-		response.BadRequest(ctx, err)
-		return
-	}
-
-	// Validate request parameters
-	if err := c.validator.Struct(&req); err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Query validation failed", logger.ErrorField(err))
-		response.BadRequest(ctx, err)
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
@@ -157,38 +147,26 @@ func (c *RolePermissionController) ListRoles(ctx *gin.Context) {
 // @Router /api/v1/roles/{id} [put]
 func (c *RolePermissionController) UpdateRole(ctx *gin.Context) {
 	// Get role ID
-	idStr := ctx.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		response.BadRequest(ctx, err)
+	id, Success := ParseIDParam(ctx, "id")
+	if !Success {
 		return
 	}
 
 	var req request.UpdateRoleRequest
 
 	// Bind request parameters
-	if bindErr := ctx.ShouldBindJSON(&req); bindErr != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(bindErr))
-		response.BadRequest(ctx, bindErr)
-		return
-	}
-
-	// Validate request parameters
-	if validateErr := c.validator.Struct(&req); validateErr != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(validateErr))
-		response.BadRequest(ctx, validateErr)
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
 	// Get current user ID
-	userID, exists := ctx.Get("user_id")
+	userID, exists := GetUserID(ctx)
 	if !exists {
-		response.Unauthorized(ctx)
 		return
 	}
 
 	// Update role
-	role, err := c.roleService.UpdateRole(utils.ContextWithUserID(ctx), uint(id), &req, userID.(uint))
+	role, err := c.roleService.UpdateRole(utils.ContextWithUserID(ctx), uint(id), &req, userID)
 	if err != nil {
 		response.WithError(ctx, err)
 		return
@@ -211,15 +189,13 @@ func (c *RolePermissionController) UpdateRole(ctx *gin.Context) {
 // @Router /api/v1/roles/{id} [delete]
 func (c *RolePermissionController) DeleteRole(ctx *gin.Context) {
 	// Get role ID
-	idStr := ctx.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		response.BadRequest(ctx, err)
+	id, Success := ParseIDParam(ctx, "id")
+	if !Success {
 		return
 	}
 
 	// Delete role
-	err = c.roleService.DeleteRole(utils.ContextWithUserID(ctx), uint(id))
+	err := c.roleService.DeleteRole(utils.ContextWithUserID(ctx), uint(id))
 	if err != nil {
 		response.WithError(ctx, err)
 		return
@@ -242,38 +218,26 @@ func (c *RolePermissionController) DeleteRole(ctx *gin.Context) {
 // @Router /api/v1/roles/{id}/permissions [post]
 func (c *RolePermissionController) AssignPermissions(ctx *gin.Context) {
 	// Get role ID
-	idStr := ctx.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		response.BadRequest(ctx, err)
+	id, Success := ParseIDParam(ctx, "id")
+	if !Success {
 		return
 	}
 
 	var req request.RolePermissionRequest
 
 	// Bind request parameters
-	if bindErr := ctx.ShouldBindJSON(&req); bindErr != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(bindErr))
-		response.BadRequest(ctx, bindErr)
-		return
-	}
-
-	// Validate request parameters
-	if validateErr := c.validator.Struct(&req); validateErr != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(validateErr))
-		response.BadRequest(ctx, validateErr)
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
 	// Get current user ID
-	userID, exists := ctx.Get("user_id")
+	userID, exists := GetUserID(ctx)
 	if !exists {
-		response.Unauthorized(ctx)
 		return
 	}
 
 	// Assign permissions
-	err = c.roleService.AssignPermissions(utils.ContextWithUserID(ctx), uint(id), &req, userID.(uint))
+	err := c.roleService.AssignPermissions(utils.ContextWithUserID(ctx), uint(id), &req, userID)
 	if err != nil {
 		response.WithError(ctx, err)
 		return
@@ -296,31 +260,20 @@ func (c *RolePermissionController) AssignPermissions(ctx *gin.Context) {
 // @Router /api/v1/roles/{id}/permissions [delete]
 func (c *RolePermissionController) RemovePermissions(ctx *gin.Context) {
 	// Get role ID
-	idStr := ctx.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		response.BadRequest(ctx, err)
+	id, Success := ParseIDParam(ctx, "id")
+	if !Success {
 		return
 	}
 
 	var req request.RolePermissionRequest
 
 	// Bind request parameters
-	if bindErr := ctx.ShouldBindJSON(&req); bindErr != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(bindErr))
-		response.BadRequest(ctx, bindErr)
-		return
-	}
-
-	// Validate request parameters
-	if validateErr := c.validator.Struct(&req); validateErr != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(validateErr))
-		response.BadRequest(ctx, validateErr)
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
 	// Remove permissions
-	err = c.roleService.RemovePermissions(utils.ContextWithUserID(ctx), uint(id), &req)
+	err := c.roleService.RemovePermissions(utils.ContextWithUserID(ctx), uint(id), &req)
 	if err != nil {
 		response.WithError(ctx, err)
 		return
@@ -439,38 +392,26 @@ func (c *RolePermissionController) GetPermission(ctx *gin.Context) {
 // @Router /api/v1/permissions/{id} [put]
 func (c *RolePermissionController) UpdatePermission(ctx *gin.Context) {
 	// Get permission ID
-	idStr := ctx.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		response.BadRequest(ctx, err)
+	id, Success := ParseIDParam(ctx, "id")
+	if !Success {
 		return
 	}
 
 	var req request.UpdatePermissionRequest
 
 	// Bind request parameters
-	if bindErr := ctx.ShouldBindJSON(&req); bindErr != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(bindErr))
-		response.BadRequest(ctx, bindErr)
-		return
-	}
-
-	// Validate request parameters
-	if validateErr := c.validator.Struct(&req); validateErr != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(validateErr))
-		response.BadRequest(ctx, validateErr)
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
 	// Get current user ID
-	userID, exists := ctx.Get("user_id")
+	userID, exists := GetUserID(ctx)
 	if !exists {
-		response.Unauthorized(ctx)
 		return
 	}
 
 	// Update permission
-	permission, err := c.permissionService.UpdatePermission(utils.ContextWithUserID(ctx), uint(id), &req, userID.(uint))
+	permission, err := c.permissionService.UpdatePermission(utils.ContextWithUserID(ctx), uint(id), &req, userID)
 	if err != nil {
 		response.WithError(ctx, err)
 		return
@@ -492,15 +433,13 @@ func (c *RolePermissionController) UpdatePermission(ctx *gin.Context) {
 // @Router /api/v1/permissions/{id} [delete]
 func (c *RolePermissionController) DeletePermission(ctx *gin.Context) {
 	// Get permission ID
-	idStr := ctx.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		response.BadRequest(ctx, err)
+	id, Success := ParseIDParam(ctx, "id")
+	if !Success {
 		return
 	}
 
 	// Delete permission
-	err = c.permissionService.DeletePermission(utils.ContextWithUserID(ctx), uint(id))
+	err := c.permissionService.DeletePermission(utils.ContextWithUserID(ctx), uint(id))
 	if err != nil {
 		response.WithError(ctx, err)
 		return
@@ -530,16 +469,7 @@ func (c *RolePermissionController) ListPermissions(ctx *gin.Context) {
 	var req request.ListPermissionsRequest
 
 	// Bind query parameters
-	if err := ctx.ShouldBindQuery(&req); err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Invalid query parameters", logger.ErrorField(err))
-		response.BadRequest(ctx, err)
-		return
-	}
-
-	// Validate request parameters
-	if err := c.validator.Struct(&req); err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Query validation failed", logger.ErrorField(err))
-		response.BadRequest(ctx, err)
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
@@ -568,16 +498,7 @@ func (c *RolePermissionController) GetPermissionTree(ctx *gin.Context) {
 	var req request.PermissionTreeRequest
 
 	// Bind query parameters
-	if err := ctx.ShouldBindQuery(&req); err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Invalid query parameters", logger.ErrorField(err))
-		response.BadRequest(ctx, err)
-		return
-	}
-
-	// Validate request parameters
-	if err := c.validator.Struct(&req); err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "Query validation failed", logger.ErrorField(err))
-		response.BadRequest(ctx, err)
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
@@ -606,28 +527,13 @@ func (c *RolePermissionController) GetPermissionTree(ctx *gin.Context) {
 // @Router /api/v1/permissions/{id}/roles [get]
 func (c *RolePermissionController) GetPermissionRoles(ctx *gin.Context) {
 	// Get permission ID
-	idStr := ctx.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		response.BadRequest(ctx, err)
+	id, Success := ParseIDParam(ctx, "id")
+	if !Success {
 		return
 	}
 
 	// Get pagination parameters
-	page := 1
-	pageSize := 20
-
-	if pageStr := ctx.Query("page"); pageStr != "" {
-		if p, parseErr := strconv.Atoi(pageStr); parseErr == nil && p > 0 {
-			page = p
-		}
-	}
-
-	if pageSizeStr := ctx.Query("page_size"); pageSizeStr != "" {
-		if ps, parseErr := strconv.Atoi(pageSizeStr); parseErr == nil && ps > 0 && ps <= 100 {
-			pageSize = ps
-		}
-	}
+	page, pageSize := GetPaginationParams(ctx)
 
 	// Get permission roles
 	roles, err := c.permissionService.GetPermissionRoles(utils.ContextWithUserID(ctx), uint(id), page, pageSize)

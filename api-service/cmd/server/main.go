@@ -484,7 +484,7 @@ func initControllers(
 
 	return &router.Controllers{
 		UserController:     controller.NewUserController(services.userService, zapLogger, i18nInstance),
-		UserAuthController: controller.NewUserAuthController(services.userAuthService, zapLogger),
+		UserAuthController: controller.NewUserAuthController(services.userAuthService, validatorInstance, zapLogger),
 		I18nController:     controller.NewI18nController(),
 		RolePermissionController: controller.NewRolePermissionController(
 			services.roleService,

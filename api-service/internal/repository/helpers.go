@@ -26,7 +26,7 @@ func GetRolesByPermissionID(
 		Where("permissions.id = ? AND role_permissions.status != -1 AND roles.status != -1", permissionID)
 
 	if err := countQuery.Count(&total).Error; err != nil {
-		return nil, 0, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to count permission roles")
+		return nil, 0, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	// Paginated query
@@ -39,7 +39,7 @@ func GetRolesByPermissionID(
 		Find(&roles).Error
 
 	if err != nil {
-		return nil, 0, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to get permission roles")
+		return nil, 0, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	return roles, total, nil
@@ -61,7 +61,7 @@ func GetUsersByRoleID(
 		Where("user_roles.role_id = ? AND user_roles.status != -1 AND users.status != -1", roleID)
 
 	if err := countQuery.Count(&total).Error; err != nil {
-		return nil, 0, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to count role users")
+		return nil, 0, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	// Paginated query
@@ -73,7 +73,7 @@ func GetUsersByRoleID(
 		Find(&users).Error
 
 	if err != nil {
-		return nil, 0, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to get role users")
+		return nil, 0, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	return users, total, nil
