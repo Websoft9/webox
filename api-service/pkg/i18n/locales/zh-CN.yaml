@@ -1,32 +1,13 @@
-# 用户模块消息
 user:
   not_found: "用户不存在"
   created_success: "用户创建成功"
   updated_success: "用户更新成功"
   deleted_success: "用户删除成功"
-  invalid_credentials: "用户名或密码错误"
   login_success: "登录成功"
   logout_success: "登出成功"
-  already_exists: "用户已存在"
-  username_required: "用户名为必填项"
-  password_required: "密码为必填项"
-  email_required: "邮箱为必填项"
-  invalid_email: "邮箱格式不正确"
-  password_too_short: "密码长度至少8位"
-  register_success: "注册成功！请检查您的邮箱以验证账户。"
-  profile_get_success: "个人资料获取成功"
-  profile_update_success: "个人资料更新成功"
-  password_change_success: "密码修改成功"
   list_get_success: "用户列表获取成功"
   status_update_success: "用户状态更新成功"
   password_update_success: "用户密码更新成功"
-  email_already_exists: "邮箱已存在"
-  forgot_password_success: "密码重置说明已发送到您的邮箱"
-  reset_password_success: "密码重置成功"
-  email_verify_success: "邮箱验证成功"
-  verification_email_sent: "验证邮件已发送"
-  oauth2_login_success: "OAuth2登录成功"
-
 user_profile:
   get_success: "获取用户个人资料成功"
   update_success: "更新用户个人资料成功"
@@ -41,7 +22,6 @@ user_profile:
   password_mismatch: "两次输入的密码不一致"
   password_verification_failed: "旧密码验证失败"
   password_update_failed: "密码更新失败"
-
 alert:
   rule_create_success: "告警规则创建成功"
   rule_create_failed: "创建告警规则失败"
@@ -66,205 +46,27 @@ alert:
   record_already_acknowledged: "告警记录已经被确认"
   record_already_resolved: "告警记录已经被解决"
   invalid_condition_expression: "条件表达式格式无效，请检查并重新输入"
-
-# 角色模块消息
-role:
-  not_found: "角色不存在"
-  created_success: "角色创建成功"
-  updated_success: "角色更新成功"
-  deleted_success: "角色删除成功"
-  already_exists: "角色代码已存在"
-  cannot_update_system: "无法更新系统角色"
-  cannot_delete_system: "无法删除系统角色"
-  cannot_modify_system_permissions: "无法修改系统角色权限"
-  has_users: "角色有关联用户，无法删除"
-  list_get_success: "角色列表获取成功"
-  permissions_assigned_success: "权限分配成功"
-  permissions_removed_success: "权限移除成功"
-  status_update_success: "角色状态更新成功"
-  invalid_permission_ids: "部分权限ID无效"
-  name_required: "角色名称为必填项"
-  code_required: "角色代码为必填项"
-
-# 权限模块消息
-permission:
-  not_found: "权限不存在"
-  created_success: "权限创建成功"
-  updated_success: "权限更新成功"
-  deleted_success: "权限删除成功"
-  already_exists: "权限代码已存在"
-  cannot_update_system: "无法更新系统权限"
-  cannot_delete_system: "无法删除系统权限"
-  has_roles: "权限有关联角色，无法删除"
-  list_get_success: "权限列表获取成功"
-  tree_get_success: "权限树获取成功"
-  name_required: "权限名称为必填项"
-  code_required: "权限代码为必填项"
-  module_required: "模块为必填项"
-  action_required: "操作为必填项"
-  create_failed: "权限创建失败"
-  update_failed: "权限更新失败"
-  delete_failed: "权限删除失败"
-  get_failed: "权限获取失败"
-  list_failed: "权限列表获取失败"
-  tree_failed: "权限树获取失败"
-  roles_failed: "权限关联角色获取失败"
-
-# API令牌模块消息
-api_token:
-  not_found: "API令牌不存在"
-  created_success: "API令牌创建成功"
-  updated_success: "API令牌更新成功"
-  deleted_success: "API令牌删除成功"
-  revoked_success: "API令牌撤销成功"
-  refreshed_success: "API令牌刷新成功"
-  invalid_token: "无效的API令牌"
-  expired_token: "API令牌已过期"
-  list_get_success: "API令牌列表获取成功"
-  name_required: "令牌名称为必填项"
-  scopes_required: "令牌权限范围为必填项"
-  invalid_scopes: "部分令牌权限范围无效"
-  create_failed: "API令牌创建失败"
-  update_failed: "API令牌更新失败"
-  revoke_failed: "API令牌撤销失败"
-  refresh_failed: "API令牌刷新失败"
-  get_failed: "API令牌获取失败"
-  list_failed: "API令牌列表获取失败"
-  validate_success: "API令牌验证成功"
-  validate_failed: "API令牌验证失败"
-
-# 双因子认证消息
-two_factor:
-  enabled_success: "双因子认证启用成功"
-  disabled_success: "双因子认证禁用成功"
-  invalid_code: "验证码无效"
-  totp_secret_generated: "TOTP密钥生成成功"
-  backup_codes_generated: "备用码生成成功"
-  method_not_supported: "不支持的双因子认证方式"
-  already_enabled: "双因子认证已启用"
-  not_enabled: "双因子认证未启用"
-  enable_totp_success: "TOTP双因子认证启用成功"
-  enable_totp_failed: "TOTP双因子认证启用失败"
-  confirm_totp_success: "TOTP设置确认成功"
-  confirm_totp_failed: "TOTP设置确认失败"
-  disable_totp_success: "TOTP双因子认证禁用成功"
-  disable_totp_failed: "TOTP双因子认证禁用失败"
-  enable_email_success: "邮箱双因子认证启用成功"
-  enable_email_failed: "邮箱双因子认证启用失败"
-  disable_email_success: "邮箱双因子认证禁用成功"
-  disable_email_failed: "邮箱双因子认证禁用失败"
-  send_email_code_success: "验证码已发送到您的邮箱"
-  send_email_code_failed: "验证码发送失败"
-  verify_success: "双因子认证验证成功"
-  verify_failed: "双因子认证验证失败"
-  status_failed: "双因子认证状态获取失败"
-  backup_codes_success: "备用码生成成功"
-  backup_codes_failed: "备用码生成失败"
-
-# 认证配置消息
-auth_config:
-  not_found: "认证配置不存在"
-  get_failed: "获取认证配置失败"
-  update_failed: "更新认证配置失败"
-  update_success: "认证配置更新成功"
-  oauth2_providers_failed: "获取OAuth2提供商失败"
-  password_policy_min_length: "密码长度至少%d位"
-  password_policy_max_length: "密码长度不能超过%d位"
-  password_policy_require_uppercase: "密码必须包含至少一个大写字母"
-  password_policy_require_lowercase: "密码必须包含至少一个小写字母"
-  password_policy_require_numbers: "密码必须包含至少一个数字"
-  password_policy_require_symbols: "密码必须包含至少一个特殊字符"
-  login_security_ip_not_allowed: "不允许从此IP地址登录"
-  login_security_time_not_allowed: "当前时间不允许登录"
-
-# 认证消息
 auth:
   token_invalid: "无效的令牌"
   token_expired: "令牌已过期"
-  token_missing: "缺少授权令牌"
   permission_denied: "权限不足"
   unauthorized: "未授权访问"
   user_not_authenticated: "用户未认证"
   username_supported: "仅支持用户名登录"
   email_supported: "仅支持邮箱登录"
-
-# 通用消息
 common:
   success: "操作成功"
   validation_failed: "验证失败"
-
-# 错误消息
 error:
   database_error: "数据库操作失败"
-  network_error: "网络连接错误"
-  timeout_error: "请求超时"
   unknown_error: "未知错误"
-
-# 邮件模板
 email:
-  verification_template: |
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <title>Websoft9 - 邮箱验证</title>
-    </head>
-    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h2 style="color: #2c3e50;">欢迎使用 Websoft9</h2>
-            <p>感谢您注册 Websoft9 账户！</p>
-            <p>请点击下面的链接验证您的邮箱地址：</p>
-            <div style="text-align: center; margin: 30px 0;">
-                <a href="${VerifyURL}" style="background-color: #3498db; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">验证邮箱</a>
-            </div>
-            <p>或者复制以下链接到浏览器地址栏：</p>
-            <p style="word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 3px;">${VerifyURL}</p>
-            <p style="color: #7f8c8d; font-size: 14px;">此链接将在 ${Expires} 分钟后过期。</p>
-            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-            <p style="color: #7f8c8d; font-size: 12px;">
-                如果您没有注册 Websoft9 账户，请忽略此邮件。<br>
-                此邮件由系统自动发送，请勿回复。
-            </p>
-        </div>
-    </body>
-    </html>
-  password_reset_template: |
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <title>Websoft9 - 密码重置</title>
-    </head>
-    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h2 style="color: #2c3e50;">Websoft9 密码重置</h2>
-            <p>您好！</p>
-            <p>我们收到了您的密码重置请求。请点击下面的链接重置您的密码：</p>
-            <div style="text-align: center; margin: 30px 0;">
-                <a href="${ResetURL}" style="background-color: #e74c3c; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">重置密码</a>
-            </div>
-            <p>或者复制以下链接到浏览器地址栏：</p>
-            <p style="word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 3px;">${ResetURL}</p>
-            <p style="color: #7f8c8d; font-size: 14px;">此链接将在 ${Expires} 分钟后过期。</p>
-            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-            <p style="color: #7f8c8d; font-size: 12px;">
-                如果您没有请求密码重置，请忽略此邮件，您的密码不会被更改。<br>
-                此邮件由系统自动发送，请勿回复。
-            </p>
-        </div>
-    </body>
-    </html>
+  verification_template: "<!DOCTYPE html>\n<html>\n<head>\n    <meta charset=\"UTF-8\">\n    <title>Websoft9 - 邮箱验证</title>\n</head>\n<body style=\"font-family: Arial, sans-serif; line-height: 1.6; color: #333;\">\n    <div style=\"max-width: 600px; margin: 0 auto; padding: 20px;\">\n        <h2 style=\"color: #2c3e50;\">欢迎使用 Websoft9</h2>\n        <p>感谢您注册 Websoft9 账户！</p>\n        <p>请点击下面的链接验证您的邮箱地址：</p>\n        <div style=\"text-align: center; margin: 30px 0;\">\n            <a href=\"${VerifyURL}\" style=\"background-color: #3498db; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;\">验证邮箱</a>\n        </div>\n        <p>或者复制以下链接到浏览器地址栏：</p>\n        <p style=\"word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 3px;\">${VerifyURL}</p>\n        <p style=\"color: #7f8c8d; font-size: 14px;\">此链接将在 ${Expires} 分钟后过期。</p>\n        <hr style=\"border: none; border-top: 1px solid #eee; margin: 30px 0;\">\n        <p style=\"color: #7f8c8d; font-size: 12px;\">\n            如果您没有注册 Websoft9 账户，请忽略此邮件。<br>\n            此邮件由系统自动发送，请勿回复。\n        </p>\n    </div>\n</body>\n</html>\n"
+  password_reset_template: "<!DOCTYPE html>\n<html>\n<head>\n    <meta charset=\"UTF-8\">\n    <title>Websoft9 - 密码重置</title>\n</head>\n<body style=\"font-family: Arial, sans-serif; line-height: 1.6; color: #333;\">\n    <div style=\"max-width: 600px; margin: 0 auto; padding: 20px;\">\n        <h2 style=\"color: #2c3e50;\">Websoft9 密码重置</h2>\n        <p>您好！</p>\n        <p>我们收到了您的密码重置请求。请点击下面的链接重置您的密码：</p>\n        <div style=\"text-align: center; margin: 30px 0;\">\n            <a href=\"${ResetURL}\" style=\"background-color: #e74c3c; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;\">重置密码</a>\n        </div>\n        <p>或者复制以下链接到浏览器地址栏：</p>\n        <p style=\"word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 3px;\">${ResetURL}</p>\n        <p style=\"color: #7f8c8d; font-size: 14px;\">此链接将在 ${Expires} 分钟后过期。</p>\n        <hr style=\"border: none; border-top: 1px solid #eee; margin: 30px 0;\">\n        <p style=\"color: #7f8c8d; font-size: 12px;\">\n            如果您没有请求密码重置，请忽略此邮件，您的密码不会被更改。<br>\n            此邮件由系统自动发送，请勿回复。\n        </p>\n    </div>\n</body>\n</html>\n"
   verification_subject: "Websoft9 - 邮箱验证"
   password_reset_subject: "Websoft9 - 密码重置"
-
-# 验证消息
 validation:
-  invalid_request_format: "请求格式无效"
-  request_validation_failed: "请求验证失败"
   invalid_query_parameters: "查询参数无效"
-  query_validation_failed: "查询验证失败"
-  invalid_permission_id: "权限ID无效"
-  invalid_token_id: "令牌ID无效"
   validation_failed: "验证失败"
   required_parameter_missing: "必填参数缺失"
   invalid_parameter_format: "参数格式错误"
@@ -275,8 +77,6 @@ validation:
   invalid_url_format: "URL格式错误"
   invalid_date_format: "日期格式错误"
   email_not_verified: "邮箱未验证"
-
-# 资源管理消息
 resource:
   record_not_found: "数据库记录不存在"
   not_found: "资源不存在"
@@ -292,8 +92,6 @@ resource:
   record_is_disabled: "资源被禁用"
   record_no_affected: "没有资源被更新"
   record_delete_denied: "不允许删除"
-
-# 业务逻辑消息
 business:
   server_offline: "服务器离线无法操作"
   app_deployment_failed: "应用部署失败"
@@ -307,8 +105,6 @@ business:
   gateway_config_update_failed: "网关配置更新失败"
   user_already_exists: "用户名已经存在"
   permission_invalid: "权限验证无效"
-
-# 系统错误消息
 system:
   internal_error: "服务器内部错误"
   cache_service_unavailable: "缓存服务不可用"
@@ -318,8 +114,6 @@ system:
   system_maintenance: "系统维护中"
   database_connection_failed: "数据库连接失败"
   unknown_error: "未知错误"
-
-# UI界面文本
 ui:
   platform: "Websoft9"
   home: "主页"
