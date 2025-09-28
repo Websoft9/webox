@@ -250,7 +250,7 @@ func (s *roleService) ListRoles(ctx context.Context, req *request.ListRolesReque
 	}
 
 	return common.NewPaginationResponse(
-		req.GetPage(),
+		req.GetOffset(),
 		req.GetPageSize(),
 		total,
 		items,
