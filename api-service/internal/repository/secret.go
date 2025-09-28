@@ -155,3 +155,17 @@ func (r *secretKeyRepository) DeleteUserSecretsBySecretKeyID(ctx context.Context
 		Where("secret_key_id = ?", secretKeyID).
 		Delete(&model.UserSecret{}).Error
 }
+
+// CheckUserSecretAccess checks if a user has access to a secret key
+func (r *secretKeyRepository) CheckUserSecretAccess(ctx context.Context, userID, secretKeyID uint) (bool, error) {
+	var count int64
+	err := r.db.WithContext(ctx).Model(&model.UserSecret{}).
+		Where("user_id = ? AND secret_key_id = ?", userID, secretKeyID).
+		Count(&count).Error
+
+	if err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
+}

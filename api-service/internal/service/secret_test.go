@@ -75,6 +75,11 @@ func (m *MockSecretKeyRepository) DeleteUserSecretsBySecretKeyID(ctx context.Con
 	return args.Error(0)
 }
 
+func (m *MockSecretKeyRepository) CheckUserSecretAccess(ctx context.Context, secretKeyID uint, userID uint) (bool, error) {
+	args := m.Called(ctx, secretKeyID, userID)
+	return args.Bool(0), args.Error(1)
+}
+
 // createTestConfig creates a test configuration with RSA keys
 func createTestConfig() *config.Config {
 	// Generate test RSA key pair
@@ -285,6 +290,9 @@ func TestSecretKeyService_GetSecretKey_AccessDenied(t *testing.T) {
 
 	// Mock GetByID call
 	mockRepo.On("GetByID", ctx, keyID).Return(testKey, nil)
+
+	// Mock CheckUserSecretAccess call returning false (no shared access)
+	mockRepo.On("CheckUserSecretAccess", ctx, keyID, wrongUserID).Return(false, nil)
 
 	// Execute
 	result, err := service.GetSecretKey(ctx, keyID, wrongUserID)
@@ -532,6 +540,9 @@ func TestSecretKeyService_ValidateSecretKeyOwnership_AccessDenied(t *testing.T) 
 
 	// Mock GetByID call
 	mockRepo.On("GetByID", ctx, keyID).Return(testKey, nil)
+
+	// Mock CheckUserSecretAccess call returning false (no shared access)
+	mockRepo.On("CheckUserSecretAccess", ctx, keyID, wrongUserID).Return(false, nil)
 
 	// Execute
 	err := service.ValidateSecretKeyOwnership(ctx, keyID, wrongUserID)

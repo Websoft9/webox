@@ -181,9 +181,21 @@ func (s *secretKeyService) GetSecretKey(ctx context.Context, id, userID uint) (*
 		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, s.i18n.T(ctx, "secret.get_failed"))
 	}
 
-	// Check ownership
+	// Check ownership or user access permission
 	if secretKey.OwnerID != userID {
-		return nil, errors.NewAppError(errors.CodeAccessDenied, s.i18n.T(ctx, "secret.access_denied"))
+		// If not owner, check if user has access permission in user_secret table
+		hasAccess, err := s.secretKeyRepo.CheckUserSecretAccess(ctx, userID, id)
+		if err != nil {
+			s.logger.ErrorContext(ctx, "Failed to check user secret access",
+				logger.Uint("secret_key_id", id),
+				logger.Uint("user_id", userID),
+				logger.ErrorField(err))
+			return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, s.i18n.T(ctx, "secret.get_failed"))
+		}
+
+		if !hasAccess {
+			return nil, errors.NewAppError(errors.CodeAccessDenied, s.i18n.T(ctx, "secret.access_denied"))
+		}
 	}
 
 	return response.ToSecretKeyResponse(secretKey), nil
@@ -206,9 +218,21 @@ func (s *secretKeyService) GetSecretKeyValue(ctx context.Context, id, userID uin
 		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, s.i18n.T(ctx, "secret.get_failed"))
 	}
 
-	// Check ownership
+	// Check ownership or user access permission
 	if secretKey.OwnerID != userID {
-		return nil, errors.NewAppError(errors.CodeAccessDenied, s.i18n.T(ctx, "secret.access_denied"))
+		// If not owner, check if user has access permission in user_secret table
+		hasAccess, accessErr := s.secretKeyRepo.CheckUserSecretAccess(ctx, userID, id)
+		if accessErr != nil {
+			s.logger.ErrorContext(ctx, "Failed to check user secret access",
+				logger.Uint("secret_key_id", id),
+				logger.Uint("user_id", userID),
+				logger.ErrorField(accessErr))
+			return nil, errors.WrapError(accessErr, errors.CodeRecordQueryFailed, s.i18n.T(ctx, "secret.get_failed"))
+		}
+
+		if !hasAccess {
+			return nil, errors.NewAppError(errors.CodeAccessDenied, s.i18n.T(ctx, "secret.access_denied"))
+		}
 	}
 
 	// Check if expired

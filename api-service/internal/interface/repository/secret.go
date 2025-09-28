@@ -38,4 +38,7 @@ type SecretKeyRepository interface {
 
 	// DeleteUserSecretsBySecretKeyID deletes all user secret relationships for a secret key
 	DeleteUserSecretsBySecretKeyID(ctx context.Context, secretKeyID uint) error
+
+	// CheckUserSecretAccess checks if a user has access to a secret key
+	CheckUserSecretAccess(ctx context.Context, userID, secretKeyID uint) (bool, error)
 }
