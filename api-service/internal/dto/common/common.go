@@ -2,14 +2,14 @@ package common
 
 // 分页相关常量
 const (
-	DefaultPageSize int = 10  // 默认每页数量
-	MaxPageSize     int = 100 // 最大每页数量
+	DEFAULT_PAGE_SIZE int = 10  // 默认每页数量
+	MAX_PAGE_SIZE     int = 100 // 最大每页数量
 )
 
 // 排序相关常量
 const (
-	SortOrderAsc  = "asc"
-	SortOrderDesc = "desc"
+	SORT_ORDER_ASC  = "ASC"
+	SORT_ORDER_DESC = "DESC"
 )
 
 // PaginationRequest 分页请求结构
@@ -29,10 +29,10 @@ func (p *PaginationRequest) GetOffset() int {
 // GetPageSize 获取每页数量
 func (p *PaginationRequest) GetPageSize() int {
 	if p.PageSize <= 0 {
-		p.PageSize = DefaultPageSize
+		p.PageSize = DEFAULT_PAGE_SIZE
 	}
-	if p.PageSize > MaxPageSize {
-		p.PageSize = MaxPageSize
+	if p.PageSize > MAX_PAGE_SIZE {
+		p.PageSize = MAX_PAGE_SIZE
 	}
 	return p.PageSize
 }
@@ -64,19 +64,19 @@ func NewPaginationResponse(page, pageSize int, total int64, items interface{}) *
 
 // SortRequest 排序请求结构
 type SortRequest struct {
-	Field string `form:"sort_field" json:"sort_field"` // 排序字段
-	Order string `form:"sort_order" json:"sort_order"` // 排序方向: asc, desc
+	Field string `form:"sort_field" json:"sort_field" validate:"omitempty"`                // 排序字段
+	Order string `form:"sort_order" json:"sort_order" validate:"omitempty,oneof=asc desc"` // 排序方向: asc, desc
 }
 
 // GetSortOrder 获取排序SQL片段
 func (s *SortRequest) GetSortOrder() string {
 	if s.Field == "" {
-		return "id desc" // 默认按ID降序
+		return "created_at desc" // 默认按创建时间降序
 	}
 
-	order := SortOrderAsc
-	if s.Order == SortOrderDesc {
-		order = SortOrderDesc
+	order := SORT_ORDER_ASC
+	if s.Order == SORT_ORDER_DESC {
+		order = SORT_ORDER_DESC
 	}
 
 	return s.Field + " " + order
@@ -84,7 +84,13 @@ func (s *SortRequest) GetSortOrder() string {
 
 // SearchRequest 搜索请求结构
 type SearchRequest struct {
-	Keyword string `form:"keyword" json:"keyword"` // 搜索关键词
+	Keyword string `form:"keyword" json:"keyword" validate:"omitempty"` // 搜索关键词
+}
+
+// TimeRangeRequest 时间范围请求结构
+type TimeRangeRequest struct {
+	StartTime string `form:"start_time" validate:"omitempty,rfc3339"`
+	EndTime   string `form:"end_time" validate:"omitempty,rfc3339"`
 }
 
 // BaseListRequest 基础列表请求（包含分页、排序、搜索）

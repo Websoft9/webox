@@ -1,6 +1,7 @@
 package service
 
 import (
+	"api-service/internal/dto/common"
 	"api-service/internal/dto/request"
 	"api-service/internal/model"
 	"api-service/pkg/errors"
@@ -143,7 +144,7 @@ func (suite *PermissionServiceTestSuite) TestGetPermissionTree_Success() {
 func (suite *PermissionServiceTestSuite) TestListPermissions_Success() {
 	ctx := context.Background()
 	req := &request.ListPermissionsRequest{
-		PaginationRequest: request.PaginationRequest{
+		PaginationRequest: common.PaginationRequest{
 			Page:     1,
 			PageSize: 10,
 		},
@@ -176,7 +177,7 @@ func (suite *PermissionServiceTestSuite) TestListPermissions_Success() {
 	suite.True(ok, "Items should be a slice")
 	suite.Equal(2, len(items))
 	suite.Equal(total, result.Total)
-	suite.Equal(req.GetPage(), result.Page)
+	suite.Equal(req.GetOffset(), result.Page)
 	suite.Equal(req.GetPageSize(), result.PageSize)
 
 	suite.mockPermissionRepo.AssertExpectations(suite.T())

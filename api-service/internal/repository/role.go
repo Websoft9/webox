@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"api-service/internal/constants"
 	"api-service/internal/dto/request"
 	"api-service/internal/interface/repository"
 	"api-service/internal/model"
@@ -150,8 +151,8 @@ func (r *roleRepository) List(ctx context.Context, req *request.ListRolesRequest
 	}
 
 	if req.StartTime != "" && req.EndTime != "" {
-		startTime, _ := time.Parse("2006-01-02 15:04:05", req.StartTime)
-		endTime, _ := time.Parse("2006-01-02 15:04:05", req.EndTime)
+		startTime, _ := time.Parse(constants.DefaultTimeFormat, req.StartTime)
+		endTime, _ := time.Parse(constants.DefaultTimeFormat, req.EndTime)
 		query = query.Where("updated_at BETWEEN ? AND ?", startTime, endTime)
 	}
 
@@ -164,7 +165,7 @@ func (r *roleRepository) List(ctx context.Context, req *request.ListRolesRequest
 	offset := req.GetOffset()
 	limit := req.GetPageSize()
 
-	err := query.Order("created_at DESC").
+	err := query.Order(req.GetSortOrder()).
 		Offset(offset).Limit(limit).
 		Find(&roles).Error
 

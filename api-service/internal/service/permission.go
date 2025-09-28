@@ -211,7 +211,7 @@ func (s *permissionService) ListPermissions(ctx context.Context, req *request.Li
 	}
 
 	return common.NewPaginationResponse(
-		req.GetPage(),
+		req.GetOffset(),
 		req.GetPageSize(),
 		total,
 		items,
