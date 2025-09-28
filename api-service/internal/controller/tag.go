@@ -1,13 +1,11 @@
 package controller
 
 import (
+	response "api-service/internal/dto/common"
 	"api-service/internal/dto/request"
-	"api-service/internal/dto/response"
 	"api-service/internal/interface/service"
-	"api-service/pkg/errors"
 	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -31,21 +29,6 @@ func NewTagController(tagService service.TagService, validator *validator.Valida
 	}
 }
 
-// getCurrentUserID64 gets current user ID as uint64
-func (tc *TagController) getCurrentUserID64(c *gin.Context) uint64 {
-	userID, exists := c.Get("user_id")
-	if !exists {
-		return 0
-	}
-	if id, ok := userID.(uint); ok {
-		return uint64(id)
-	}
-	if id, ok := userID.(uint64); ok {
-		return id
-	}
-	return 0
-}
-
 // CreateTag creates a new tag
 // @Summary Create a new tag
 // @Description Create a new tag
@@ -60,30 +43,28 @@ func (tc *TagController) getCurrentUserID64(c *gin.Context) uint64 {
 // @Failure 403 {object} response.APIResponse
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/tags [post]
-func (tc *TagController) CreateTag(c *gin.Context) {
+func (c *TagController) CreateTag(ctx *gin.Context) {
 	var req request.TagCreateRequest
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		tc.logger.WarnContext(c, "Create tag request parameter binding failed", logger.ErrorField(err))
-		errors.HandleError(c, errors.ErrValidationFailed)
+	// Bind and validate request
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
-	userID := tc.getCurrentUserID64(c)
-	if userID == 0 {
-		errors.HandleError(c, errors.ErrInvalidToken)
+	// Get current user ID
+	currentUserID, Success := GetUserID(ctx)
+	if !Success {
 		return
 	}
 
-	tag, err := tc.tagService.CreateTag(c, &req, userID)
+	tag, err := c.tagService.CreateTag(ctx, &req, currentUserID)
 	if err != nil {
-		tc.logger.ErrorContext(c, "Failed to create tag", logger.String("tag_name", req.Name), logger.ErrorField(err))
-		errors.HandleError(c, err)
+		c.logger.ErrorContext(ctx, "Failed to create tag", logger.String("tag_name", req.Name), logger.ErrorField(err))
+		response.WithError(ctx, err)
 		return
 	}
 
-	tc.logger.InfoContext(c, "Tag created successfully", logger.Uint("tag_id", uint(tag.ID)))
-	response.Success(c, tc.i18n.T(c, "tag.create.success"), tag)
+	c.logger.InfoContext(ctx, "Tag created successfully", logger.Uint("tag_id", uint(tag.ID)))
+	response.SuccessWithData(ctx, tag)
 }
 
 // GetTag retrieves a tag by ID
@@ -99,23 +80,20 @@ func (tc *TagController) CreateTag(c *gin.Context) {
 // @Failure 404 {object} response.APIResponse
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/tags/{id} [get]
-func (tc *TagController) GetTag(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 64)
-	if err != nil {
-		tc.logger.WarnContext(c, "Invalid tag ID parameter", logger.String("id", idStr))
-		errors.HandleError(c, errors.ErrValidationFailed)
+func (c *TagController) GetTag(ctx *gin.Context) {
+	id, Success := ParseIDParam(ctx, "id")
+	if !Success {
 		return
 	}
 
-	tag, err := tc.tagService.GetTag(c, id)
+	tag, err := c.tagService.GetTag(ctx, id)
 	if err != nil {
-		tc.logger.ErrorContext(c, "Failed to get tag", logger.Uint("tag_id", uint(id)), logger.ErrorField(err))
-		errors.HandleError(c, err)
+		c.logger.ErrorContext(ctx, "Failed to get tag", logger.Uint("tag_id", id), logger.ErrorField(err))
+		response.WithError(ctx, err)
 		return
 	}
 
-	response.Success(c, tc.i18n.T(c, "tag.get.success"), tag)
+	response.SuccessWithData(ctx, tag)
 }
 
 // UpdateTag updates an existing tag
@@ -134,37 +112,32 @@ func (tc *TagController) GetTag(c *gin.Context) {
 // @Failure 404 {object} response.APIResponse
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/tags/{id} [put]
-func (tc *TagController) UpdateTag(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 64)
-	if err != nil {
-		tc.logger.WarnContext(c, "Invalid tag ID parameter", logger.String("id", idStr))
-		errors.HandleError(c, errors.ErrValidationFailed)
+func (c *TagController) UpdateTag(ctx *gin.Context) {
+	id, Success := ParseIDParam(ctx, "id")
+	if !Success {
 		return
 	}
-
 	var req request.TagUpdateRequest
-	if bindErr := c.ShouldBindJSON(&req); bindErr != nil {
-		tc.logger.WarnContext(c, "Update tag request parameter binding failed", logger.ErrorField(bindErr))
-		errors.HandleError(c, errors.ErrValidationFailed)
+	// Bind and validate request
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
-	userID := tc.getCurrentUserID64(c)
-	if userID == 0 {
-		errors.HandleError(c, errors.ErrInvalidToken)
+	// Get current user ID
+	currentUserID, Success := GetUserID(ctx)
+	if !Success {
 		return
 	}
 
-	tag, err := tc.tagService.UpdateTag(c, id, &req, userID)
+	tag, err := c.tagService.UpdateTag(ctx, id, &req, currentUserID)
 	if err != nil {
-		tc.logger.ErrorContext(c, "Failed to update tag", logger.Uint("tag_id", uint(id)), logger.ErrorField(err))
-		errors.HandleError(c, err)
+		c.logger.ErrorContext(ctx, "Failed to update tag", logger.Uint("tag_id", uint(id)), logger.ErrorField(err))
+		response.WithError(ctx, err)
 		return
 	}
 
-	tc.logger.InfoContext(c, "Tag updated successfully", logger.Uint("tag_id", uint(id)))
-	response.Success(c, tc.i18n.T(c, "tag.update.success"), tag)
+	c.logger.InfoContext(ctx, "Tag updated successfully", logger.Uint("tag_id", uint(id)))
+	response.SuccessWithData(ctx, tag)
 }
 
 // DeleteTag deletes a tag
@@ -181,30 +154,27 @@ func (tc *TagController) UpdateTag(c *gin.Context) {
 // @Failure 404 {object} response.APIResponse
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/tags/{id} [delete]
-func (tc *TagController) DeleteTag(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 64)
+func (c *TagController) DeleteTag(ctx *gin.Context) {
+	id, Success := ParseIDParam(ctx, "id")
+	if !Success {
+		return
+	}
+
+	// Get current user ID
+	currentUserID, Success := GetUserID(ctx)
+	if !Success {
+		return
+	}
+
+	err := c.tagService.DeleteTag(ctx, id, currentUserID)
 	if err != nil {
-		tc.logger.WarnContext(c, "Invalid tag ID parameter", logger.String("id", idStr))
-		errors.HandleError(c, errors.ErrValidationFailed)
+		c.logger.ErrorContext(ctx, "Failed to delete tag", logger.Uint("tag_id", uint(id)), logger.ErrorField(err))
+		response.WithError(ctx, err)
 		return
 	}
 
-	userID := tc.getCurrentUserID64(c)
-	if userID == 0 {
-		errors.HandleError(c, errors.ErrInvalidToken)
-		return
-	}
-
-	err = tc.tagService.DeleteTag(c, id, userID)
-	if err != nil {
-		tc.logger.ErrorContext(c, "Failed to delete tag", logger.Uint("tag_id", uint(id)), logger.ErrorField(err))
-		errors.HandleError(c, err)
-		return
-	}
-
-	tc.logger.InfoContext(c, "Tag deleted successfully", logger.Uint("tag_id", uint(id)))
-	response.Success(c, tc.i18n.T(c, "tag.delete.success"), nil)
+	c.logger.InfoContext(ctx, "Tag deleted successfully", logger.Uint("tag_id", uint(id)))
+	response.Success(ctx)
 }
 
 // ListTags lists tags with optional filtering
@@ -220,22 +190,21 @@ func (tc *TagController) DeleteTag(c *gin.Context) {
 // @Failure 401 {object} response.APIResponse
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/tags [get]
-func (tc *TagController) ListTags(c *gin.Context) {
+func (c *TagController) ListTags(ctx *gin.Context) {
 	var req request.TagListRequest
-	if err := c.ShouldBindQuery(&req); err != nil {
-		tc.logger.WarnContext(c, "List tags request parameter binding failed", logger.ErrorField(err))
-		errors.HandleError(c, errors.ErrValidationFailed)
+	// Bind and validate request
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
-	tags, err := tc.tagService.ListTags(c, &req)
+	tags, err := c.tagService.ListTags(ctx, &req)
 	if err != nil {
-		tc.logger.ErrorContext(c, "Failed to list tags", logger.ErrorField(err))
-		errors.HandleError(c, err)
+		c.logger.ErrorContext(ctx, "Failed to list tags", logger.ErrorField(err))
+		response.WithError(ctx, err)
 		return
 	}
 
-	response.Success(c, tc.i18n.T(c, "tag.list.success"), tags)
+	response.SuccessWithData(ctx, tags)
 }
 
 // AssignTags assigns tags to resources
@@ -252,31 +221,30 @@ func (tc *TagController) ListTags(c *gin.Context) {
 // @Failure 403 {object} response.APIResponse
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/tags/assign [post]
-func (tc *TagController) AssignTags(c *gin.Context) {
+func (c *TagController) AssignTags(ctx *gin.Context) {
 	var req request.TagAssignRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		tc.logger.WarnContext(c, "Assign tags request parameter binding failed", logger.ErrorField(err))
-		errors.HandleError(c, errors.ErrValidationFailed)
+	// Bind and validate request
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
-	userID := tc.getCurrentUserID64(c)
-	if userID == 0 {
-		errors.HandleError(c, errors.ErrInvalidToken)
+	// Get current user ID
+	currentUserID, Success := GetUserID(ctx)
+	if !Success {
 		return
 	}
 
-	result, err := tc.tagService.AssignTags(c, &req, userID)
+	result, err := c.tagService.AssignTags(ctx, &req, currentUserID)
 	if err != nil {
-		tc.logger.ErrorContext(c, "Failed to assign tags", logger.ErrorField(err))
-		errors.HandleError(c, err)
+		c.logger.ErrorContext(ctx, "Failed to assign tags", logger.ErrorField(err))
+		response.WithError(ctx, err)
 		return
 	}
 
-	tc.logger.InfoContext(c, "Tags assigned successfully",
+	c.logger.InfoContext(ctx, "Tags assigned successfully",
 		logger.Uint("resource_id", uint(req.ResourceID)),
 		logger.Int("tag_count", len(req.TagNames)))
-	response.Success(c, tc.i18n.T(c, "tag.assign.success"), result)
+	response.SuccessWithData(ctx, result)
 }
 
 // ReplaceTags replaces all tags for resources
@@ -293,31 +261,30 @@ func (tc *TagController) AssignTags(c *gin.Context) {
 // @Failure 403 {object} response.APIResponse
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/tags/replace [post]
-func (tc *TagController) ReplaceTags(c *gin.Context) {
+func (c *TagController) ReplaceTags(ctx *gin.Context) {
 	var req request.TagAssignRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		tc.logger.WarnContext(c, "Replace tags request parameter binding failed", logger.ErrorField(err))
-		errors.HandleError(c, errors.ErrValidationFailed)
+	// Bind and validate request
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
-	userID := tc.getCurrentUserID64(c)
-	if userID == 0 {
-		errors.HandleError(c, errors.ErrInvalidToken)
+	// Get current user ID
+	currentUserID, Success := GetUserID(ctx)
+	if !Success {
 		return
 	}
 
-	result, err := tc.tagService.ReplaceTags(c, &req, userID)
+	result, err := c.tagService.ReplaceTags(ctx, &req, currentUserID)
 	if err != nil {
-		tc.logger.ErrorContext(c, "Failed to replace tags", logger.ErrorField(err))
-		errors.HandleError(c, err)
+		c.logger.ErrorContext(ctx, "Failed to replace tags", logger.ErrorField(err))
+		response.WithError(ctx, err)
 		return
 	}
 
-	tc.logger.InfoContext(c, "Tags replaced successfully",
+	c.logger.InfoContext(ctx, "Tags replaced successfully",
 		logger.Uint("resource_id", uint(req.ResourceID)),
 		logger.Int("tag_count", len(req.TagNames)))
-	response.Success(c, tc.i18n.T(c, "tag.replace.success"), result)
+	response.SuccessWithData(ctx, result)
 }
 
 // UnassignTags removes tags from resources
@@ -334,31 +301,30 @@ func (tc *TagController) ReplaceTags(c *gin.Context) {
 // @Failure 403 {object} response.APIResponse
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/tags/unassign [post]
-func (tc *TagController) UnassignTags(c *gin.Context) {
+func (c *TagController) UnassignTags(ctx *gin.Context) {
 	var req request.TagUnassignRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		tc.logger.WarnContext(c, "Unassign tags request parameter binding failed", logger.ErrorField(err))
-		errors.HandleError(c, errors.ErrValidationFailed)
+	// Bind and validate request
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
-	userID := tc.getCurrentUserID64(c)
-	if userID == 0 {
-		errors.HandleError(c, errors.ErrInvalidToken)
+	// Get current user ID
+	currentUserID, Success := GetUserID(ctx)
+	if !Success {
 		return
 	}
 
-	result, err := tc.tagService.UnassignTags(c, &req, userID)
+	result, err := c.tagService.UnassignTags(ctx, &req, currentUserID)
 	if err != nil {
-		tc.logger.ErrorContext(c, "Failed to unassign tags", logger.ErrorField(err))
-		errors.HandleError(c, err)
+		c.logger.ErrorContext(ctx, "Failed to unassign tags", logger.ErrorField(err))
+		response.WithError(ctx, err)
 		return
 	}
 
-	tc.logger.InfoContext(c, "Tags unassigned successfully",
+	c.logger.InfoContext(ctx, "Tags unassigned successfully",
 		logger.Uint("resource_id", uint(req.ResourceID)),
 		logger.Int("tag_count", len(req.TagIDs)))
-	response.Success(c, tc.i18n.T(c, "tag.unassign.success"), result)
+	response.SuccessWithData(ctx, result)
 }
 
 // SearchTags searches for tags
@@ -373,25 +339,24 @@ func (tc *TagController) UnassignTags(c *gin.Context) {
 // @Failure 401 {object} response.APIResponse
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/tags/search [get]
-func (tc *TagController) SearchTags(c *gin.Context) {
+func (c *TagController) SearchTags(ctx *gin.Context) {
 	var req request.TagNameSearchRequest
-	if err := c.ShouldBindQuery(&req); err != nil {
-		tc.logger.WarnContext(c, "Search tags request parameter binding failed", logger.ErrorField(err))
-		errors.HandleError(c, errors.ErrValidationFailed)
+	// Bind and validate request
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
-	tags, err := tc.tagService.SearchTags(c, &req)
+	tags, err := c.tagService.SearchTags(ctx, &req)
 	if err != nil {
-		tc.logger.ErrorContext(c, "Failed to search tags", logger.String("query", req.Q), logger.ErrorField(err))
-		errors.HandleError(c, err)
+		c.logger.ErrorContext(ctx, "Failed to search tags", logger.String("query", req.Q), logger.ErrorField(err))
+		response.WithError(ctx, err)
 		return
 	}
 
-	tc.logger.InfoContext(c, "Tags searched successfully",
+	c.logger.InfoContext(ctx, "Tags searched successfully",
 		logger.String("query", req.Q),
 		logger.Int("result_count", len(tags)))
-	response.Success(c, tc.i18n.T(c, "tag.search.success"), tags)
+	response.SuccessWithData(ctx, tags)
 }
 
 // GetResourceTags gets tags for a specific resource
@@ -406,25 +371,24 @@ func (tc *TagController) SearchTags(c *gin.Context) {
 // @Failure 401 {object} response.APIResponse
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/tags/taggings [get]
-func (tc *TagController) GetResourceTags(c *gin.Context) {
+func (c *TagController) GetResourceTags(ctx *gin.Context) {
 	var req request.TaggingListRequest
-	if err := c.ShouldBindQuery(&req); err != nil {
-		tc.logger.WarnContext(c, "Get resource tags request parameter binding failed", logger.ErrorField(err))
-		errors.HandleError(c, errors.ErrValidationFailed)
+	// Bind and validate request
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
-	tags, err := tc.tagService.GetResourceTags(c, &req)
+	tags, err := c.tagService.GetResourceTags(ctx, &req)
 	if err != nil {
-		tc.logger.ErrorContext(c, "Failed to get resource tags", logger.Uint("resource_id", uint(req.ResourceID)), logger.ErrorField(err))
-		errors.HandleError(c, err)
+		c.logger.ErrorContext(ctx, "Failed to get resource tags", logger.Uint("resource_id", uint(req.ResourceID)), logger.ErrorField(err))
+		response.WithError(ctx, err)
 		return
 	}
 
-	tc.logger.InfoContext(c, "Resource tags retrieved successfully",
+	c.logger.InfoContext(ctx, "Resource tags retrieved successfully",
 		logger.Uint("resource_id", uint(req.ResourceID)),
 		logger.Int("tag_count", len(tags)))
-	response.Success(c, tc.i18n.T(c, "tag.resource.success"), tags)
+	response.SuccessWithData(ctx, tags)
 }
 
 // SearchResourcesByTags searches for resources by tags
@@ -443,24 +407,23 @@ func (tc *TagController) GetResourceTags(c *gin.Context) {
 // @Failure 401 {object} response.APIResponse
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/tags/taggings/search [get]
-func (tc *TagController) SearchResourcesByTags(c *gin.Context) {
+func (c *TagController) SearchResourcesByTags(ctx *gin.Context) {
 	var req request.TagSearchRequest
-	if err := c.ShouldBindQuery(&req); err != nil {
-		tc.logger.WarnContext(c, "Search resources by tags request parameter binding failed", logger.ErrorField(err))
-		errors.HandleError(c, errors.ErrValidationFailed)
+	// Bind and validate request
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
-	result, err := tc.tagService.SearchResourcesByTags(c, &req)
+	result, err := c.tagService.SearchResourcesByTags(ctx, &req)
 	if err != nil {
-		tc.logger.ErrorContext(c, "Failed to search resources by tags", logger.ErrorField(err))
-		errors.HandleError(c, err)
+		c.logger.ErrorContext(ctx, "Failed to search resources by tags", logger.ErrorField(err))
+		response.WithError(ctx, err)
 		return
 	}
 
-	tc.logger.InfoContext(c, "Resources searched by tags successfully",
+	c.logger.InfoContext(ctx, "Resources searched by tags successfully",
 		logger.Int("tag_id_count", len(req.TagIDs)),
 		logger.Int("tag_name_count", len(req.TagNames)),
 		logger.String("operation", req.Operation))
-	response.Success(c, tc.i18n.T(c, "tag.search.resources.success"), result)
+	response.SuccessWithData(ctx, result)
 }

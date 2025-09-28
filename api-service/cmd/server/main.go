@@ -483,7 +483,7 @@ func initControllers(
 	var oauth2ServiceForSecurity *serviceImpl.OAuth2Service
 
 	return &router.Controllers{
-		UserController:     controller.NewUserController(services.userService, zapLogger, i18nInstance),
+		UserController:     controller.NewUserController(services.userService, zapLogger, i18nInstance, validatorInstance),
 		UserAuthController: controller.NewUserAuthController(services.userAuthService, validatorInstance, zapLogger),
 		I18nController:     controller.NewI18nController(),
 		RolePermissionController: controller.NewRolePermissionController(
@@ -502,14 +502,14 @@ func initControllers(
 		),
 		HealthController:      controller.NewHealthController(cfg),
 		AuditLogController:    controller.NewAuditLogController(services.auditLogService, validatorInstance, zapLogger, i18nInstance),
-		UserProfileController: controller.NewUserProfileController(services.userProfileService, zapLogger, i18nInstance),
+		UserProfileController: controller.NewUserProfileController(services.userProfileService, zapLogger, i18nInstance, validatorInstance),
 		SystemConfigController: controller.NewSystemConfigController(
 			services.systemConfigService,
 			validatorInstance,
 			zapLogger,
 			i18nInstance,
 		),
-		AlertController: controller.NewAlertController(services.alertServices, zapLogger, i18nInstance),
+		AlertController: controller.NewAlertController(services.alertServices, zapLogger, i18nInstance, validatorInstance),
 		TagController: controller.NewTagController(
 			services.tagService,
 			validatorInstance,

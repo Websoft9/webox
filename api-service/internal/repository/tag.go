@@ -24,7 +24,7 @@ func (r *tagRepository) CreateTag(ctx context.Context, tag *model.Tag) error {
 }
 
 // GetTagByID retrieves a tag by ID
-func (r *tagRepository) GetTagByID(ctx context.Context, id uint64) (*model.Tag, error) {
+func (r *tagRepository) GetTagByID(ctx context.Context, id uint) (*model.Tag, error) {
 	var tag model.Tag
 	err := r.db.WithContext(ctx).First(&tag, id).Error
 	if err != nil {
@@ -49,12 +49,12 @@ func (r *tagRepository) UpdateTag(ctx context.Context, tag *model.Tag) error {
 }
 
 // DeleteTag deletes a tag by ID
-func (r *tagRepository) DeleteTag(ctx context.Context, id uint64) error {
+func (r *tagRepository) DeleteTag(ctx context.Context, id uint) error {
 	return r.db.WithContext(ctx).Delete(&model.Tag{}, id).Error
 }
 
 // ListTags retrieves tags with optional search and exclusion
-func (r *tagRepository) ListTags(ctx context.Context, search string, excludeIDs []uint64) ([]*model.Tag, error) {
+func (r *tagRepository) ListTags(ctx context.Context, search string, excludeIDs []uint) ([]*model.Tag, error) {
 	var tags []*model.Tag
 	query := r.db.WithContext(ctx)
 
@@ -71,7 +71,7 @@ func (r *tagRepository) ListTags(ctx context.Context, search string, excludeIDs 
 }
 
 // ListTagsWithUsageCount retrieves tags with usage count
-func (r *tagRepository) ListTagsWithUsageCount(ctx context.Context, search string, excludeIDs []uint64) ([]*model.Tag, error) {
+func (r *tagRepository) ListTagsWithUsageCount(ctx context.Context, search string, excludeIDs []uint) ([]*model.Tag, error) {
 	var tags []*model.Tag
 	query := r.db.WithContext(ctx).
 		Select("tags.*, COUNT(taggings.id) as usage_count").
@@ -112,7 +112,7 @@ func (r *tagRepository) ExistsTagByName(ctx context.Context, name string) (bool,
 }
 
 // ExistsTagByNameExcludeID checks if a tag exists by name excluding a specific ID
-func (r *tagRepository) ExistsTagByNameExcludeID(ctx context.Context, name string, excludeID uint64) (bool, error) {
+func (r *tagRepository) ExistsTagByNameExcludeID(ctx context.Context, name string, excludeID uint) (bool, error) {
 	var count int64
 	err := r.db.WithContext(ctx).Model(&model.Tag{}).
 		Where("name = ? AND id != ?", name, excludeID).Count(&count).Error
@@ -125,7 +125,7 @@ func (r *tagRepository) CreateTagging(ctx context.Context, tagging *model.Taggin
 }
 
 // GetTaggingsByResourceID retrieves all taggings for a resource
-func (r *tagRepository) GetTaggingsByResourceID(ctx context.Context, resourceID uint64) ([]*model.Tagging, error) {
+func (r *tagRepository) GetTaggingsByResourceID(ctx context.Context, resourceID uint) ([]*model.Tagging, error) {
 	var taggings []*model.Tagging
 	err := r.db.WithContext(ctx).
 		Preload("Tag").
@@ -135,28 +135,28 @@ func (r *tagRepository) GetTaggingsByResourceID(ctx context.Context, resourceID 
 }
 
 // GetTaggingsByTagID retrieves all taggings for a tag
-func (r *tagRepository) GetTaggingsByTagID(ctx context.Context, tagID uint64) ([]*model.Tagging, error) {
+func (r *tagRepository) GetTaggingsByTagID(ctx context.Context, tagID uint) ([]*model.Tagging, error) {
 	var taggings []*model.Tagging
 	err := r.db.WithContext(ctx).Where("tag_id = ?", tagID).Find(&taggings).Error
 	return taggings, err
 }
 
 // DeleteTagging deletes a specific tag-resource association
-func (r *tagRepository) DeleteTagging(ctx context.Context, tagID, resourceID uint64) error {
+func (r *tagRepository) DeleteTagging(ctx context.Context, tagID, resourceID uint) error {
 	return r.db.WithContext(ctx).
 		Where("tag_id = ? AND resource_id = ?", tagID, resourceID).
 		Delete(&model.Tagging{}).Error
 }
 
 // DeleteTaggingsByResourceID deletes all taggings for a resource
-func (r *tagRepository) DeleteTaggingsByResourceID(ctx context.Context, resourceID uint64) error {
+func (r *tagRepository) DeleteTaggingsByResourceID(ctx context.Context, resourceID uint) error {
 	return r.db.WithContext(ctx).
 		Where("resource_id = ?", resourceID).
 		Delete(&model.Tagging{}).Error
 }
 
 // DeleteTaggingsByTagIDs deletes specific tag associations for a resource
-func (r *tagRepository) DeleteTaggingsByTagIDs(ctx context.Context, resourceID uint64, tagIDs []uint64) error {
+func (r *tagRepository) DeleteTaggingsByTagIDs(ctx context.Context, resourceID uint, tagIDs []uint) error {
 	return r.db.WithContext(ctx).
 		Where("resource_id = ? AND tag_id IN ?", resourceID, tagIDs).
 		Delete(&model.Tagging{}).Error
@@ -171,7 +171,7 @@ func (r *tagRepository) CreateTaggingsBatch(ctx context.Context, taggings []*mod
 }
 
 // ExistsTagging checks if a tag-resource association exists
-func (r *tagRepository) ExistsTagging(ctx context.Context, tagID, resourceID uint64) (bool, error) {
+func (r *tagRepository) ExistsTagging(ctx context.Context, tagID, resourceID uint) (bool, error) {
 	var count int64
 	err := r.db.WithContext(ctx).Model(&model.Tagging{}).
 		Where("tag_id = ? AND resource_id = ?", tagID, resourceID).Count(&count).Error
@@ -179,19 +179,19 @@ func (r *tagRepository) ExistsTagging(ctx context.Context, tagID, resourceID uin
 }
 
 // SearchResourcesByTags searches resources by tags with AND/OR operation
-func (r *tagRepository) SearchResourcesByTags(ctx context.Context, tagIDs []uint64, operation string, offset, limit int) ([]*model.Tagging, int64, error) {
+func (r *tagRepository) SearchResourcesByTags(ctx context.Context, tagIDs []uint, operation string, offset, limit int) ([]*model.Tagging, int, error) {
 	var taggings []*model.Tagging
-	var total int64
+	var total int64 // 修改为 int64 类型
 
 	if len(tagIDs) == 0 {
-		return taggings, total, nil
+		return taggings, int(total), nil
 	}
 
 	query := r.db.WithContext(ctx).Model(&model.Tagging{}).Preload("Tag")
 
 	if operation == "AND" {
 		// For AND operation, find resources that have all specified tags
-		resourceIDs := []uint64{}
+		resourceIDs := []uint{}
 		subQuery := r.db.WithContext(ctx).Model(&model.Tagging{}).
 			Select("resource_id").
 			Where("tag_id IN ?", tagIDs).
@@ -221,5 +221,5 @@ func (r *tagRepository) SearchResourcesByTags(ctx context.Context, tagIDs []uint
 
 	// Get paginated results
 	err = query.Offset(offset).Limit(limit).Find(&taggings).Error
-	return taggings, total, err
+	return taggings, int(total), err
 }

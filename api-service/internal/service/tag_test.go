@@ -27,7 +27,7 @@ func (m *MockTagRepository) CreateTag(ctx context.Context, tag *model.Tag) error
 	return args.Error(0)
 }
 
-func (m *MockTagRepository) GetTagByID(ctx context.Context, id uint64) (*model.Tag, error) {
+func (m *MockTagRepository) GetTagByID(ctx context.Context, id uint) (*model.Tag, error) {
 	args := m.Called(ctx, id)
 	return args.Get(0).(*model.Tag), args.Error(1)
 }
@@ -45,12 +45,12 @@ func (m *MockTagRepository) UpdateTag(ctx context.Context, tag *model.Tag) error
 	return args.Error(0)
 }
 
-func (m *MockTagRepository) DeleteTag(ctx context.Context, id uint64) error {
+func (m *MockTagRepository) DeleteTag(ctx context.Context, id uint) error {
 	args := m.Called(ctx, id)
 	return args.Error(0)
 }
 
-func (m *MockTagRepository) ListTags(ctx context.Context, search string, excludeIDs []uint64) ([]*model.Tag, error) {
+func (m *MockTagRepository) ListTags(ctx context.Context, search string, excludeIDs []uint) ([]*model.Tag, error) {
 	args := m.Called(ctx, search, excludeIDs)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -58,7 +58,7 @@ func (m *MockTagRepository) ListTags(ctx context.Context, search string, exclude
 	return args.Get(0).([]*model.Tag), args.Error(1)
 }
 
-func (m *MockTagRepository) ListTagsWithUsageCount(ctx context.Context, search string, excludeIDs []uint64) ([]*model.Tag, error) {
+func (m *MockTagRepository) ListTagsWithUsageCount(ctx context.Context, search string, excludeIDs []uint) ([]*model.Tag, error) {
 	args := m.Called(ctx, search, excludeIDs)
 	return args.Get(0).([]*model.Tag), args.Error(1)
 }
@@ -68,7 +68,7 @@ func (m *MockTagRepository) ExistsTagByName(ctx context.Context, name string) (b
 	return args.Bool(0), args.Error(1)
 }
 
-func (m *MockTagRepository) ExistsTagByNameExcludeID(ctx context.Context, name string, excludeID uint64) (bool, error) {
+func (m *MockTagRepository) ExistsTagByNameExcludeID(ctx context.Context, name string, excludeID uint) (bool, error) {
 	args := m.Called(ctx, name, excludeID)
 	return args.Bool(0), args.Error(1)
 }
@@ -78,7 +78,7 @@ func (m *MockTagRepository) CreateTagging(ctx context.Context, tagging *model.Ta
 	return args.Error(0)
 }
 
-func (m *MockTagRepository) GetTaggingsByResourceID(ctx context.Context, resourceID uint64) ([]*model.Tagging, error) {
+func (m *MockTagRepository) GetTaggingsByResourceID(ctx context.Context, resourceID uint) ([]*model.Tagging, error) {
 	args := m.Called(ctx, resourceID)
 	var taggings []*model.Tagging
 	if args.Get(0) != nil {
@@ -87,22 +87,22 @@ func (m *MockTagRepository) GetTaggingsByResourceID(ctx context.Context, resourc
 	return taggings, args.Error(1)
 }
 
-func (m *MockTagRepository) GetTaggingsByTagID(ctx context.Context, tagID uint64) ([]*model.Tagging, error) {
+func (m *MockTagRepository) GetTaggingsByTagID(ctx context.Context, tagID uint) ([]*model.Tagging, error) {
 	args := m.Called(ctx, tagID)
 	return args.Get(0).([]*model.Tagging), args.Error(1)
 }
 
-func (m *MockTagRepository) DeleteTagging(ctx context.Context, tagID, resourceID uint64) error {
+func (m *MockTagRepository) DeleteTagging(ctx context.Context, tagID, resourceID uint) error {
 	args := m.Called(ctx, tagID, resourceID)
 	return args.Error(0)
 }
 
-func (m *MockTagRepository) DeleteTaggingsByResourceID(ctx context.Context, resourceID uint64) error {
+func (m *MockTagRepository) DeleteTaggingsByResourceID(ctx context.Context, resourceID uint) error {
 	args := m.Called(ctx, resourceID)
 	return args.Error(0)
 }
 
-func (m *MockTagRepository) DeleteTaggingsByTagIDs(ctx context.Context, resourceID uint64, tagIDs []uint64) error {
+func (m *MockTagRepository) DeleteTaggingsByTagIDs(ctx context.Context, resourceID uint, tagIDs []uint) error {
 	args := m.Called(ctx, resourceID, tagIDs)
 	return args.Error(0)
 }
@@ -112,14 +112,14 @@ func (m *MockTagRepository) CreateTaggingsBatch(ctx context.Context, taggings []
 	return args.Error(0)
 }
 
-func (m *MockTagRepository) ExistsTagging(ctx context.Context, tagID, resourceID uint64) (bool, error) {
+func (m *MockTagRepository) ExistsTagging(ctx context.Context, tagID, resourceID uint) (bool, error) {
 	args := m.Called(ctx, tagID, resourceID)
 	return args.Bool(0), args.Error(1)
 }
 
-func (m *MockTagRepository) SearchResourcesByTags(ctx context.Context, tagIDs []uint64, operation string, offset, limit int) ([]*model.Tagging, int64, error) {
+func (m *MockTagRepository) SearchResourcesByTags(ctx context.Context, tagIDs []uint, operation string, offset, limit int) ([]*model.Tagging, int, error) {
 	args := m.Called(ctx, tagIDs, operation, offset, limit)
-	return args.Get(0).([]*model.Tagging), args.Get(1).(int64), args.Error(2)
+	return args.Get(0).([]*model.Tagging), args.Get(1).(int), args.Error(2)
 }
 
 func (m *MockTagRepository) SearchTagsByName(ctx context.Context, query string) ([]*model.Tag, error) {
@@ -154,7 +154,7 @@ func TestTagService_CreateTag(t *testing.T) {
 	tests := []struct {
 		name        string
 		req         *request.TagCreateRequest
-		userID      uint64
+		userID      uint
 		setupMocks  func()
 		expectedErr error
 	}{
@@ -183,7 +183,7 @@ func TestTagService_CreateTag(t *testing.T) {
 			setupMocks: func() {
 				mockRepo.On("ExistsTagByName", ctx, "existing-tag").Return(true, nil)
 			},
-			expectedErr: errors.NewAppError(errors.CodeResourceAlreadyExists, "tag name already exists"),
+			expectedErr: errors.NewAppError(errors.CodeResourceAlreadyExists),
 		},
 		{
 			name: "database error on check existence",
@@ -196,7 +196,7 @@ func TestTagService_CreateTag(t *testing.T) {
 			setupMocks: func() {
 				mockRepo.On("ExistsTagByName", ctx, "test-tag").Return(false, gorm.ErrInvalidDB)
 			},
-			expectedErr: errors.NewAppError(errors.CodeInternalError, "failed to check tag existence"),
+			expectedErr: errors.NewAppError(errors.CodeInternalError),
 		},
 	}
 
@@ -249,7 +249,7 @@ func TestTagService_GetTag(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		tagID       uint64
+		tagID       uint
 		setupMocks  func()
 		expectedErr error
 		expectedTag *response.TagResponse
@@ -258,7 +258,7 @@ func TestTagService_GetTag(t *testing.T) {
 			name:  "successful tag retrieval",
 			tagID: 1,
 			setupMocks: func() {
-				mockRepo.On("GetTagByID", ctx, uint64(1)).Return(expectedTag, nil)
+				mockRepo.On("GetTagByID", ctx, uint(1)).Return(expectedTag, nil)
 			},
 			expectedErr: nil,
 			expectedTag: &response.TagResponse{
@@ -275,9 +275,9 @@ func TestTagService_GetTag(t *testing.T) {
 			name:  "tag not found",
 			tagID: 999,
 			setupMocks: func() {
-				mockRepo.On("GetTagByID", ctx, uint64(999)).Return((*model.Tag)(nil), gorm.ErrRecordNotFound)
+				mockRepo.On("GetTagByID", ctx, uint(999)).Return((*model.Tag)(nil), gorm.ErrRecordNotFound)
 			},
-			expectedErr: errors.NewAppError(errors.CodeResourceNotFound, "tag not found"),
+			expectedErr: errors.NewAppError(errors.CodeResourceNotFound),
 			expectedTag: nil,
 		},
 	}
@@ -331,9 +331,9 @@ func TestTagService_UpdateTag(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		tagID       uint64
+		tagID       uint
 		req         *request.TagUpdateRequest
-		userID      uint64
+		userID      uint
 		setupMocks  func()
 		expectedErr error
 	}{
@@ -347,8 +347,8 @@ func TestTagService_UpdateTag(t *testing.T) {
 			},
 			userID: 1,
 			setupMocks: func() {
-				mockRepo.On("GetTagByID", ctx, uint64(1)).Return(existingTag, nil)
-				mockRepo.On("ExistsTagByNameExcludeID", ctx, "new-name", uint64(1)).Return(false, nil)
+				mockRepo.On("GetTagByID", ctx, uint(1)).Return(existingTag, nil)
+				mockRepo.On("ExistsTagByNameExcludeID", ctx, "new-name", uint(1)).Return(false, nil)
 				mockRepo.On("UpdateTag", ctx, mock.AnythingOfType("*model.Tag")).Return(nil)
 			},
 			expectedErr: nil,
@@ -363,9 +363,9 @@ func TestTagService_UpdateTag(t *testing.T) {
 			},
 			userID: 1,
 			setupMocks: func() {
-				mockRepo.On("GetTagByID", ctx, uint64(999)).Return((*model.Tag)(nil), gorm.ErrRecordNotFound)
+				mockRepo.On("GetTagByID", ctx, uint(999)).Return((*model.Tag)(nil), gorm.ErrRecordNotFound)
 			},
-			expectedErr: errors.NewAppError(errors.CodeResourceNotFound, "tag not found"),
+			expectedErr: errors.NewAppError(errors.CodeResourceNotFound),
 		},
 		{
 			name:  "name conflict",
@@ -377,10 +377,10 @@ func TestTagService_UpdateTag(t *testing.T) {
 			},
 			userID: 1,
 			setupMocks: func() {
-				mockRepo.On("GetTagByID", ctx, uint64(1)).Return(existingTag, nil)
-				mockRepo.On("ExistsTagByNameExcludeID", ctx, "conflicting-name", uint64(1)).Return(true, nil)
+				mockRepo.On("GetTagByID", ctx, uint(1)).Return(existingTag, nil)
+				mockRepo.On("ExistsTagByNameExcludeID", ctx, "conflicting-name", uint(1)).Return(true, nil)
 			},
-			expectedErr: errors.NewAppError(errors.CodeResourceAlreadyExists, "tag name already exists"),
+			expectedErr: errors.NewAppError(errors.CodeResourceAlreadyExists),
 		},
 	}
 
@@ -432,8 +432,8 @@ func TestTagService_DeleteTag(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		tagID       uint64
-		userID      uint64
+		tagID       uint
+		userID      uint
 		setupMocks  func()
 		expectedErr error
 	}{
@@ -442,8 +442,8 @@ func TestTagService_DeleteTag(t *testing.T) {
 			tagID:  1,
 			userID: 1,
 			setupMocks: func() {
-				mockRepo.On("GetTagByID", ctx, uint64(1)).Return(existingTag, nil)
-				mockRepo.On("DeleteTag", ctx, uint64(1)).Return(nil)
+				mockRepo.On("GetTagByID", ctx, uint(1)).Return(existingTag, nil)
+				mockRepo.On("DeleteTag", ctx, uint(1)).Return(nil)
 			},
 			expectedErr: nil,
 		},
@@ -452,9 +452,9 @@ func TestTagService_DeleteTag(t *testing.T) {
 			tagID:  999,
 			userID: 1,
 			setupMocks: func() {
-				mockRepo.On("GetTagByID", ctx, uint64(999)).Return((*model.Tag)(nil), gorm.ErrRecordNotFound)
+				mockRepo.On("GetTagByID", ctx, uint(999)).Return((*model.Tag)(nil), gorm.ErrRecordNotFound)
 			},
-			expectedErr: errors.NewAppError(errors.CodeResourceNotFound, "tag not found"),
+			expectedErr: errors.NewAppError(errors.CodeResourceNotFound),
 		},
 	}
 
@@ -524,7 +524,7 @@ func TestTagService_ListTags(t *testing.T) {
 				ExcludeIDs: "",
 			},
 			setupMocks: func() {
-				mockRepo.On("ListTags", ctx, "", mock.AnythingOfType("[]uint64")).Return(expectedTags, nil)
+				mockRepo.On("ListTags", ctx, "", mock.AnythingOfType("[]uint")).Return(expectedTags, nil)
 			},
 			expectedErr: nil,
 			expectedLen: 2,
@@ -536,7 +536,7 @@ func TestTagService_ListTags(t *testing.T) {
 				ExcludeIDs: "",
 			},
 			setupMocks: func() {
-				mockRepo.On("ListTags", ctx, "tag1", mock.AnythingOfType("[]uint64")).Return([]*model.Tag{expectedTags[0]}, nil)
+				mockRepo.On("ListTags", ctx, "tag1", mock.AnythingOfType("[]uint")).Return([]*model.Tag{expectedTags[0]}, nil)
 			},
 			expectedErr: nil,
 			expectedLen: 1,
@@ -549,7 +549,7 @@ func TestTagService_ListTags(t *testing.T) {
 			},
 			setupMocks: func() {
 				emptyTags := []*model.Tag{}
-				mockRepo.On("ListTags", ctx, "", []uint64{1, 2}).Return(emptyTags, nil)
+				mockRepo.On("ListTags", ctx, "", []uint{1, 2}).Return(emptyTags, nil)
 			},
 			expectedErr: nil,
 			expectedLen: 0,
@@ -632,7 +632,7 @@ func TestTagService_GetResourceTags(t *testing.T) {
 				ResourceID: 123,
 			},
 			setupMocks: func() {
-				mockRepo.On("GetTaggingsByResourceID", ctx, uint64(123)).Return(expectedTaggings, nil)
+				mockRepo.On("GetTaggingsByResourceID", ctx, uint(123)).Return(expectedTaggings, nil)
 			},
 			expectedErr: nil,
 			expectedLen: 2,
@@ -643,7 +643,7 @@ func TestTagService_GetResourceTags(t *testing.T) {
 				ResourceID: 456,
 			},
 			setupMocks: func() {
-				mockRepo.On("GetTaggingsByResourceID", ctx, uint64(456)).Return([]*model.Tagging{}, nil)
+				mockRepo.On("GetTaggingsByResourceID", ctx, uint(456)).Return([]*model.Tagging{}, nil)
 			},
 			expectedErr: nil,
 			expectedLen: 0,
@@ -727,7 +727,7 @@ func TestTagService_SearchTags(t *testing.T) {
 			setupMocks: func() {
 				mockRepo.On("SearchTagsByName", ctx, "test").Return(nil, stderrors.New("database error"))
 			},
-			expectedErr: errors.NewAppError(errors.CodeInternalError, "failed to search tags"),
+			expectedErr: errors.NewAppError(errors.CodeInternalError),
 			expectedLen: 0,
 		},
 	}
@@ -811,7 +811,7 @@ func TestTagService_AssignTags_Logic(t *testing.T) {
 			// We can't test the full AssignTags method due to transactions,
 			// but we can validate the request structure and basic logic
 			assert.NotNil(t, tt.req)
-			assert.Greater(t, tt.req.ResourceID, uint64(0))
+			assert.Greater(t, tt.req.ResourceID, uint(0))
 			assert.NotNil(t, tt.req.TagNames)
 		})
 	}
@@ -822,7 +822,7 @@ func TestTagService_GetResourceTags_Extended(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		resourceID  uint64
+		resourceID  uint
 		setupMocks  func()
 		expectedErr error
 		expectedLen int
@@ -831,7 +831,7 @@ func TestTagService_GetResourceTags_Extended(t *testing.T) {
 			name:       "resource with multiple tags",
 			resourceID: 456,
 			setupMocks: func() {
-				mockRepo.On("GetTaggingsByResourceID", ctx, uint64(456)).Return([]*model.Tagging{
+				mockRepo.On("GetTaggingsByResourceID", ctx, uint(456)).Return([]*model.Tagging{
 					{TagID: 1, ResourceID: 456, Tag: &model.Tag{ID: 1, Name: "production"}},
 					{TagID: 2, ResourceID: 456, Tag: &model.Tag{ID: 2, Name: "mysql"}},
 					{TagID: 3, ResourceID: 456, Tag: &model.Tag{ID: 3, Name: "backend"}},
@@ -844,9 +844,9 @@ func TestTagService_GetResourceTags_Extended(t *testing.T) {
 			name:       "database error scenario",
 			resourceID: 789,
 			setupMocks: func() {
-				mockRepo.On("GetTaggingsByResourceID", ctx, uint64(789)).Return(nil, stderrors.New("connection failed"))
+				mockRepo.On("GetTaggingsByResourceID", ctx, uint(789)).Return(nil, stderrors.New("connection failed"))
 			},
-			expectedErr: errors.NewAppError(errors.CodeInternalError, "failed to get resource tags"),
+			expectedErr: errors.NewAppError(errors.CodeInternalError),
 			expectedLen: 0,
 		},
 	}
