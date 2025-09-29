@@ -1,6 +1,7 @@
 package service
 
 import (
+	"api-service/internal/dto/common"
 	"api-service/internal/dto/request"
 	"api-service/internal/dto/response"
 	"api-service/internal/interface/repository"
@@ -64,7 +65,7 @@ func (s *userService) ChangePassword(ctx context.Context, userID uint, req *requ
 
 // ListUsers gets the user list
 func (s *userService) ListUsers(ctx context.Context,
-	req *request.UserListRequest) (*response.UserListResponse, int64, error) {
+	req *request.UserListRequest) (*common.PaginationResponse, error) {
 	s.logger.InfoContext(ctx, "Getting user list",
 		logger.Int("page", req.Page),
 		logger.Int("pageSize", req.PageSize))
@@ -92,7 +93,7 @@ func (s *userService) ListUsers(ctx context.Context,
 	users, total, err := s.userRepo.ListWithRelations(ctx, req.GetOffset(), req.GetPageSize(), filters)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to get user list", logger.ErrorField(err))
-		return nil, 0, err
+		return nil, err
 	}
 
 	// Convert to response format
@@ -101,10 +102,12 @@ func (s *userService) ListUsers(ctx context.Context,
 		userList = append(userList, *s.buildUserResponse(user))
 	}
 
-	return &response.UserListResponse{
-		Users: userList,
-		Total: total,
-	}, total, nil
+	return common.NewPaginationResponse(
+		req.Page,
+		req.PageSize,
+		total,
+		userList,
+	), nil
 }
 
 // GetUser gets user details
