@@ -171,7 +171,6 @@ type APIResponse struct {
     Message   string      `json:"message"`
     Data      interface{} `json:"data,omitempty"`
     Error     *APIError   `json:"error,omitempty"`
-    Timestamp int64       `json:"timestamp"`
 }
 
 type PaginatedResponse struct {
@@ -187,23 +186,102 @@ type PaginatedResponse struct {
 
 - Use standard error interface
 - Error messages should be clear and specific
-- Use `api-service/pkg/i18n` to add internationalization
 - Use `api-service/pkg/errors` to add context information
 
 ```go
 import "api-service/pkg/errors"
 
-// GetByID retrieves a permission by ID
+// Demo: GetByID retrieves a permission by ID
 func (r *permissionRepository) GetByID(ctx context.Context, id uint) (*model.Permission, error) {
     var permission model.Permission
     err := r.db.WithContext(ctx).Where("status != -1").First(&permission, id).Error
     if err != nil {
         if errors.Is(err, gorm.ErrRecordNotFound) {
-            return nil, errors.NewAppErrorWithMessage(errors.CodeRecordNotFound, "permission not found")
+            return nil, errors.NewAppError(errors.CodeRecordNotFound)
         }
-        return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to get permission by ID")
+        return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
     }
     return &permission, nil
+}
+```
+
+### Error Definition
+
+- Use `api-service/pkg/errors/codes` to define error codes, internationalization handling (i18n message keys), and HTTP status codes
+
+```go
+// Error code constants definition based on API documentation
+// Error codes are organized by category with specific ranges for easy identification
+const (
+    // System related error codes (6000-6999)
+    CodeInternalError ErrorCode = 6001 // System Internal Error
+)
+
+// CodeToI18nKey maps error codes to their i18n message keys
+// These keys should correspond to entries in the i18n locale files
+var CodeToI18nKey = map[ErrorCode]string{
+    // System related errors (6000-6999)
+    CodeInternalError: "system.internal_error",
+}
+
+// codeToHTTPStatus maps business error codes to HTTP status codes
+// This mapping ensures consistent HTTP responses for different error types
+var CodeToHTTPStatus = map[ErrorCode]HTTPCode{
+    // System related errors (6000-6999)
+    CodeInternalError: http.StatusInternalServerError,
+}
+```
+
+- Use `api-service/pkg/errors/errors` to create error objects
+
+```go
+// Predefined common errors with internationalization support
+// These errors can be reused throughout the application for consistency
+var (
+    // System related errors (6000-6999)
+    ErrInternalError = NewAppErrorWithI18n(CodeInternalError, CodeToI18nKey[CodeInternalError])
+)
+```
+
+- Follow the `error handling specifications` for exception error handling:
+
+```go
+    // Example 1: Create an error message and include the original error
+    err := errors.NewAppErrorWrapError(err, errors.ErrInternalError)
+    return err
+
+    // Example 2: Create an error message
+    err := errors.NewAppError(errors.CodeRecordNotFound)
+    return err
+
+    // Example 3: Use error message directly
+    return errors.ErrInternalError
+```
+
+### Internationalization (i18n) Handling
+
+- Use `api-service/configs/lang/<LANGUAGE>.yaml` to define multilingual translations and unified naming
+- Use `pkg/i18n` for multilingual support
+
+```go
+// Use pkg/i18n for multilingual support
+import (
+    "api-service/pkg/errors"
+    "api-service/pkg/logger"
+)
+
+func (s *userService) CreateUser(ctx *gin.Context) error {
+    var req request.CreateUserRequest
+
+    if req.Email == "" {
+        logger.ErrorContext(ctx.Request.Context(), "Email cannot be empty", logger.ErrorField(err))
+        // Use custom multilingual translation
+        return errors.NewAppErrorWithI18n(errors.CodeInvalidEmailFormat, "user.email_required")
+
+        // Use predefined multilingual translation from error definition
+        // return errors.NewAppError(errors.CodeInvalidEmailFormat)
+    }
+    // Business logic
 }
 ```
 
