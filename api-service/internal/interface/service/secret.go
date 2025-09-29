@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 
+	"api-service/internal/dto/common"
 	"api-service/internal/dto/request"
 	"api-service/internal/dto/response"
 )
@@ -25,7 +26,7 @@ type SecretKeyService interface {
 	DeleteSecretKey(ctx context.Context, id, userID uint) error
 
 	// ListSecretKeys retrieves secret keys with pagination and filtering
-	ListSecretKeys(ctx context.Context, req *request.SecretKeyQueryRequest, userID uint) (*response.SecretKeyListResponse, error)
+	ListSecretKeys(ctx context.Context, req *request.SecretKeyQueryRequest, userID uint) (*common.PaginationResponse, error)
 
 	// ExportSecretKeys exports secret keys in specified format
 	ExportSecretKeys(ctx context.Context, req *request.SecretKeyExportRequest, userID uint) ([]byte, string, error)

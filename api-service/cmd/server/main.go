@@ -509,7 +509,7 @@ func initControllers(
 		AuditLogController:    controller.NewAuditLogController(services.auditLogService, validatorInstance, zapLogger, i18nInstance),
 		UserProfileController: controller.NewUserProfileController(services.userProfileService, zapLogger, i18nInstance, validatorInstance),
 		AlertController:       controller.NewAlertController(services.alertServices, zapLogger, i18nInstance, validatorInstance),
-		SecretKeyController:   controller.NewSecretKeyController(services.secretKeyService, zapLogger, i18nInstance),
+		SecretKeyController:   controller.NewSecretKeyController(services.secretKeyService, zapLogger, i18nInstance, validatorInstance),
 		SystemConfigController: controller.NewSystemConfigController(
 			services.systemConfigService,
 			validatorInstance,

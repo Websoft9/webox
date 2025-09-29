@@ -1,6 +1,7 @@
 package response
 
 import (
+	"api-service/internal/dto/common"
 	"api-service/internal/model"
 	"time"
 )
@@ -69,7 +70,8 @@ func ToSecretKeyResponse(secretKey *model.SecretKey) *SecretKeyResponse {
 }
 
 // ToSecretKeyListResponse converts a slice of SecretKey models to SecretKeyListResponse
-func ToSecretKeyListResponse(secretKeys []*model.SecretKey, total int64, page, pageSize int) *SecretKeyListResponse {
+// ToSecretKeyListResponse converts a slice of SecretKey models to PaginationResponse
+func ToSecretKeyListResponse(secretKeys []*model.SecretKey, total int64, page, pageSize int) *common.PaginationResponse {
 	items := make([]SecretKeyResponse, 0, len(secretKeys))
 	for _, secretKey := range secretKeys {
 		if response := ToSecretKeyResponse(secretKey); response != nil {
@@ -77,12 +79,12 @@ func ToSecretKeyListResponse(secretKeys []*model.SecretKey, total int64, page, p
 		}
 	}
 
-	return &SecretKeyListResponse{
-		Items:    items,
-		Total:    total,
-		Page:     page,
-		PageSize: pageSize,
-	}
+	return common.NewPaginationResponse(
+		page,
+		pageSize,
+		total,
+		items,
+	)
 }
 
 // ToSecretKeyValueResponse creates a value response

@@ -3,6 +3,7 @@ package service
 import (
 	"api-service/internal/constants"
 	"api-service/internal/dto/request"
+	"api-service/internal/dto/response"
 	"api-service/internal/model"
 	"api-service/pkg/auth"
 	"api-service/pkg/i18n"
@@ -338,16 +339,20 @@ func TestGetLoginHistories(t *testing.T) {
 		mockRepo.On("GetLoginHistories", ctx, userID, 1, 10).Return(expectedHistories, int64(1), nil).Once()
 
 		// Call service method
-		response, err := service.GetLoginHistories(ctx, userID, req)
+		result, err := service.GetLoginHistories(ctx, userID, req)
 
 		// Assert
 		assert.NoError(t, err)
-		assert.NotNil(t, response)
-		assert.Len(t, response.Items, 1)
-		// assert.Equal(t, uint(1), response.Items[0].ID)
-		// assert.Equal(t, "192.168.1.1", response.Items[0].IPAddress)
-		// assert.Equal(t, loginTime, response.Items[0].LoginTime)
-		// assert.Equal(t, logoutTime, *response.Items[0].LogoutTime)
+		assert.NotNil(t, result)
+		assert.Equal(t, int64(1), result.Total)
+
+		items, ok := result.Items.([]response.LoginHistoryItem)
+		assert.True(t, ok, "Items should be of type []response.LoginHistoryItem")
+		assert.Len(t, items, 1)
+		assert.Equal(t, uint(1), items[0].ID)
+		assert.Equal(t, "192.168.1.1", items[0].IPAddress)
+		assert.Equal(t, loginTime, items[0].LoginTime)
+		assert.Equal(t, logoutTime, *items[0].LogoutTime)
 		mockRepo.AssertExpectations(t)
 	})
 
@@ -362,12 +367,16 @@ func TestGetLoginHistories(t *testing.T) {
 		mockRepo.On("GetLoginHistories", ctx, userID, 1, 20).Return([]model.UserLoginHistory{}, int64(0), nil).Once()
 
 		// Call service method
-		response, err := service.GetLoginHistories(ctx, userID, req)
-
+		result, err := service.GetLoginHistories(ctx, userID, req)
 		// Assert
 		assert.NoError(t, err)
-		assert.NotNil(t, response)
-		assert.Empty(t, response.Items)
+		assert.NotNil(t, result)
+		assert.Equal(t, int64(0), result.Total)
+
+		// 类型断言：将 interface{} 转换为具体的切片类型
+		items, ok := result.Items.([]response.LoginHistoryItem) // 改为 LoginHistoryItem
+		assert.True(t, ok, "Items should be of type []response.LoginHistoryItem")
+		assert.Empty(t, items)
 		mockRepo.AssertExpectations(t)
 	})
 }

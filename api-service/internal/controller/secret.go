@@ -1,10 +1,9 @@
 package controller
 
 import (
+	response "api-service/internal/dto/common"
 	"api-service/internal/dto/request"
-	"api-service/internal/dto/response"
 	"api-service/internal/interface/service"
-	"api-service/pkg/errors"
 	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
 	"fmt"
@@ -12,6 +11,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 // SecretKeyController handles secret key related HTTP requests
@@ -19,6 +19,7 @@ type SecretKeyController struct {
 	secretKeyService service.SecretKeyService
 	logger           logger.Logger
 	i18n             *i18n.I18n
+	validator        *validator.Validate
 }
 
 // NewSecretKeyController creates a new secret key controller
@@ -26,11 +27,13 @@ func NewSecretKeyController(
 	secretKeyService service.SecretKeyService,
 	logger logger.Logger,
 	i18n *i18n.I18n,
+	validator *validator.Validate,
 ) *SecretKeyController {
 	return &SecretKeyController{
 		secretKeyService: secretKeyService,
 		logger:           logger,
 		i18n:             i18n,
+		validator:        validator,
 	}
 }
 
@@ -51,31 +54,29 @@ func NewSecretKeyController(
 func (c *SecretKeyController) CreateSecretKey(ctx *gin.Context) {
 	// Parse request parameters
 	var req request.SecretKeyCreateRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		c.logger.WarnContext(ctx, "Invalid request parameters", logger.ErrorField(err))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed, c.i18n.T(ctx, "common.validation_failed")))
+	// Bind and validate request
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
-	// Get current logged in user ID
-	userID, exists := ctx.Get("user_id")
-	if !exists {
-		response.Unauthorized(ctx, "auth.user_not_authenticated")
+	// Get current user ID
+	currentUserID, Success := GetUserID(ctx)
+	if !Success {
 		return
 	}
 
-	c.logger.InfoContext(ctx, "Handling create secret key request", logger.Uint("userID", userID.(uint)))
+	c.logger.InfoContext(ctx, "Handling create secret key request", logger.Uint("userID", currentUserID))
 
 	// Call service layer to create secret key
-	secretKey, err := c.secretKeyService.CreateSecretKey(ctx.Request.Context(), &req, userID.(uint))
+	secretKey, err := c.secretKeyService.CreateSecretKey(ctx.Request.Context(), &req, currentUserID)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Failed to create secret key", logger.ErrorField(err))
-		errors.HandleError(ctx, err)
+		response.WithError(ctx, err)
 		return
 	}
 
-	c.logger.InfoContext(ctx, "Secret key created successfully", logger.Uint("userID", userID.(uint)))
-	response.OKWithData(ctx, secretKey, "secret_key.create_success")
+	c.logger.InfoContext(ctx, "Secret key created successfully", logger.Uint("userID", currentUserID))
+	response.SuccessWithData(ctx, secretKey)
 }
 
 // GetSecretKey retrieves a secret key by ID
@@ -95,33 +96,29 @@ func (c *SecretKeyController) CreateSecretKey(ctx *gin.Context) {
 // @Router /api/v1/secret-keys/{id} [get]
 func (c *SecretKeyController) GetSecretKey(ctx *gin.Context) {
 	// Parse path parameter
-	idStr := ctx.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		c.logger.WarnContext(ctx, "Invalid secret key ID", logger.ErrorField(err))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed, c.i18n.T(ctx, "common.validation_failed")))
+	id, Success := ParseIDParam(ctx, "id")
+	if !Success {
 		return
 	}
 
-	// Get current logged in user ID
-	userID, exists := ctx.Get("user_id")
-	if !exists {
-		response.Unauthorized(ctx, "auth.user_not_authenticated")
+	// Get current user ID
+	currentUserID, Success := GetUserID(ctx)
+	if !Success {
 		return
 	}
 
-	c.logger.InfoContext(ctx, "Handling get secret key request", logger.Uint("userID", userID.(uint)), logger.Uint("secretKeyID", uint(id)))
+	c.logger.InfoContext(ctx, "Handling get secret key request", logger.Uint("userID", currentUserID), logger.Uint("secretKeyID", id))
 
 	// Call service layer to get secret key
-	secretKey, err := c.secretKeyService.GetSecretKey(ctx.Request.Context(), uint(id), userID.(uint))
+	secretKey, err := c.secretKeyService.GetSecretKey(ctx.Request.Context(), id, currentUserID)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Failed to get secret key", logger.ErrorField(err))
-		errors.HandleError(ctx, err)
+		response.WithError(ctx, err)
 		return
 	}
 
-	c.logger.InfoContext(ctx, "Secret key retrieved successfully", logger.Uint("userID", userID.(uint)))
-	response.OKWithData(ctx, secretKey, "secret_key.get_success")
+	c.logger.InfoContext(ctx, "Secret key retrieved successfully", logger.Uint("userID", currentUserID))
+	response.SuccessWithData(ctx, secretKey)
 }
 
 // GetSecretKeyValue retrieves the decrypted value of a secret key
@@ -141,34 +138,31 @@ func (c *SecretKeyController) GetSecretKey(ctx *gin.Context) {
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/secret-keys/{id}/value [get]
 func (c *SecretKeyController) GetSecretKeyValue(ctx *gin.Context) {
+
 	// Parse path parameter
-	idStr := ctx.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		c.logger.WarnContext(ctx, "Invalid secret key ID", logger.ErrorField(err))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed, c.i18n.T(ctx, "common.validation_failed")))
+	id, Success := ParseIDParam(ctx, "id")
+	if !Success {
 		return
 	}
 
-	// Get current logged in user ID
-	userID, exists := ctx.Get("user_id")
-	if !exists {
-		response.Unauthorized(ctx, "auth.user_not_authenticated")
+	// Get current user ID
+	currentUserID, Success := GetUserID(ctx)
+	if !Success {
 		return
 	}
 
-	c.logger.InfoContext(ctx, "Handling get secret key value request", logger.Uint("userID", userID.(uint)), logger.Uint("secretKeyID", uint(id)))
+	c.logger.InfoContext(ctx, "Handling get secret key value request", logger.Uint("userID", currentUserID), logger.Uint("secretKeyID", id))
 
 	// Call service layer to get secret key value
-	secretKeyValue, err := c.secretKeyService.GetSecretKeyValue(ctx.Request.Context(), uint(id), userID.(uint))
+	secretKeyValue, err := c.secretKeyService.GetSecretKeyValue(ctx.Request.Context(), id, currentUserID)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Failed to get secret key value", logger.ErrorField(err))
-		errors.HandleError(ctx, err)
+		response.WithError(ctx, err)
 		return
 	}
 
-	c.logger.InfoContext(ctx, "Secret key value retrieved successfully", logger.Uint("userID", userID.(uint)))
-	response.OKWithData(ctx, secretKeyValue, "secret_key.get_value_success")
+	c.logger.InfoContext(ctx, "Secret key value retrieved successfully", logger.Uint("userID", currentUserID))
+	response.SuccessWithData(ctx, secretKeyValue)
 }
 
 // UpdateSecretKey updates an existing secret key
@@ -190,41 +184,35 @@ func (c *SecretKeyController) GetSecretKeyValue(ctx *gin.Context) {
 // @Router /api/v1/secret-keys/{id} [put]
 func (c *SecretKeyController) UpdateSecretKey(ctx *gin.Context) {
 	// Parse path parameter
-	idStr := ctx.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		c.logger.WarnContext(ctx, "Invalid secret key ID", logger.ErrorField(err))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed, c.i18n.T(ctx, "common.validation_failed")))
+	id, Success := ParseIDParam(ctx, "id")
+	if !Success {
 		return
 	}
 
 	// Parse request parameters
 	var req request.SecretKeyUpdateRequest
-	if bindErr := ctx.ShouldBindJSON(&req); bindErr != nil {
-		c.logger.WarnContext(ctx, "Invalid request parameters", logger.ErrorField(bindErr))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed, c.i18n.T(ctx, "common.validation_failed")))
+	// Bind and validate request
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
-	// Get current logged in user ID
-	userID, exists := ctx.Get("user_id")
-	if !exists {
-		response.Unauthorized(ctx, "auth.user_not_authenticated")
+	// Get current user ID
+	currentUserID, Success := GetUserID(ctx)
+	if !Success {
 		return
 	}
-
-	c.logger.InfoContext(ctx, "Handling update secret key request", logger.Uint("userID", userID.(uint)), logger.Uint("secretKeyID", uint(id)))
+	c.logger.InfoContext(ctx, "Handling update secret key request", logger.Uint("userID", currentUserID), logger.Uint("secretKeyID", id))
 
 	// Call service layer to update secret key
-	secretKey, err := c.secretKeyService.UpdateSecretKey(ctx.Request.Context(), uint(id), userID.(uint), &req)
+	secretKey, err := c.secretKeyService.UpdateSecretKey(ctx.Request.Context(), id, currentUserID, &req)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Failed to update secret key", logger.ErrorField(err))
-		errors.HandleError(ctx, err)
+		response.WithError(ctx, err)
 		return
 	}
 
-	c.logger.InfoContext(ctx, "Secret key updated successfully", logger.Uint("userID", userID.(uint)))
-	response.OKWithData(ctx, secretKey, "secret_key.update_success")
+	c.logger.InfoContext(ctx, "Secret key updated successfully", logger.Uint("userID", currentUserID))
+	response.SuccessWithData(ctx, secretKey)
 }
 
 // DeleteSecretKey deletes a secret key
@@ -244,33 +232,29 @@ func (c *SecretKeyController) UpdateSecretKey(ctx *gin.Context) {
 // @Router /api/v1/secret-keys/{id} [delete]
 func (c *SecretKeyController) DeleteSecretKey(ctx *gin.Context) {
 	// Parse path parameter
-	idStr := ctx.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		c.logger.WarnContext(ctx, "Invalid secret key ID", logger.ErrorField(err))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed, c.i18n.T(ctx, "common.validation_failed")))
+	id, Success := ParseIDParam(ctx, "id")
+	if !Success {
 		return
 	}
 
-	// Get current logged in user ID
-	userID, exists := ctx.Get("user_id")
-	if !exists {
-		response.Unauthorized(ctx, "auth.user_not_authenticated")
+	// Get current user ID
+	currentUserID, Success := GetUserID(ctx)
+	if !Success {
 		return
 	}
 
-	c.logger.InfoContext(ctx, "Handling delete secret key request", logger.Uint("userID", userID.(uint)), logger.Uint("secretKeyID", uint(id)))
+	c.logger.InfoContext(ctx, "Handling delete secret key request", logger.Uint("userID", currentUserID), logger.Uint("secretKeyID", id))
 
 	// Call service layer to delete secret key
-	err = c.secretKeyService.DeleteSecretKey(ctx.Request.Context(), uint(id), userID.(uint))
+	err := c.secretKeyService.DeleteSecretKey(ctx.Request.Context(), id, currentUserID)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Failed to delete secret key", logger.ErrorField(err))
-		errors.HandleError(ctx, err)
+		response.WithError(ctx, err)
 		return
 	}
 
-	c.logger.InfoContext(ctx, "Secret key deleted successfully", logger.Uint("userID", userID.(uint)))
-	response.OK(ctx, "secret_key.delete_success")
+	c.logger.InfoContext(ctx, "Secret key deleted successfully", logger.Uint("userID", currentUserID))
+	response.Success(ctx)
 }
 
 // ListSecretKeys retrieves secret keys with pagination and filtering
@@ -291,31 +275,29 @@ func (c *SecretKeyController) DeleteSecretKey(ctx *gin.Context) {
 func (c *SecretKeyController) ListSecretKeys(ctx *gin.Context) {
 	// Bind request parameters
 	var req request.SecretKeyQueryRequest
-	if err := ctx.ShouldBindQuery(&req); err != nil {
-		c.logger.WarnContext(ctx, "Secret key list request parameter binding failed", logger.ErrorField(err))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed, c.i18n.T(ctx, "common.validation_failed")))
+	// Bind and validate request
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
-	// Get current logged in user ID
-	userID, exists := ctx.Get("user_id")
-	if !exists {
-		response.Unauthorized(ctx, "auth.user_not_authenticated")
+	// Get current user ID
+	currentUserID, Success := GetUserID(ctx)
+	if !Success {
 		return
 	}
 
-	c.logger.InfoContext(ctx, "Handling list secret keys request", logger.Uint("userID", userID.(uint)))
+	c.logger.InfoContext(ctx, "Handling list secret keys request", logger.Uint("userID", currentUserID))
 
 	// Call service layer to get secret keys
-	secretKeys, err := c.secretKeyService.ListSecretKeys(ctx.Request.Context(), &req, userID.(uint))
+	secretKeys, err := c.secretKeyService.ListSecretKeys(ctx.Request.Context(), &req, currentUserID)
 	if err != nil {
-		c.logger.ErrorContext(ctx, "Failed to list secret keys", logger.Uint("user_id", userID.(uint)), logger.ErrorField(err))
-		errors.HandleError(ctx, err)
+		c.logger.ErrorContext(ctx, "Failed to list secret keys", logger.Uint("user_id", currentUserID), logger.ErrorField(err))
+		response.WithError(ctx, err)
 		return
 	}
 
-	c.logger.InfoContext(ctx, "Secret keys retrieved successfully", logger.Uint("user_id", userID.(uint)))
-	response.OKWithData(ctx, secretKeys, "secret_key.list_success")
+	c.logger.InfoContext(ctx, "Secret keys retrieved successfully", logger.Uint("user_id", currentUserID))
+	response.SuccessWithData(ctx, secretKeys)
 }
 
 // ExportSecretKeys exports secret keys in specified format
@@ -334,26 +316,24 @@ func (c *SecretKeyController) ListSecretKeys(ctx *gin.Context) {
 func (c *SecretKeyController) ExportSecretKeys(ctx *gin.Context) {
 	// Bind request parameters
 	var req request.SecretKeyExportRequest
-	if err := ctx.ShouldBindQuery(&req); err != nil {
-		c.logger.WarnContext(ctx, "Secret key export request parameter binding failed", logger.ErrorField(err))
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed, c.i18n.T(ctx, "common.validation_failed")))
+	// Bind and validate request
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
-	// Get current logged in user ID
-	userID, exists := ctx.Get("user_id")
-	if !exists {
-		response.Unauthorized(ctx, "auth.user_not_authenticated")
+	// Get current user ID
+	currentUserID, Success := GetUserID(ctx)
+	if !Success {
 		return
 	}
 
-	c.logger.InfoContext(ctx, "Handling export secret keys request", logger.Uint("userID", userID.(uint)))
+	c.logger.InfoContext(ctx, "Handling export secret keys request", logger.Uint("userID", currentUserID))
 
 	// Call service layer to export secret keys
-	data, filename, err := c.secretKeyService.ExportSecretKeys(ctx.Request.Context(), &req, userID.(uint))
+	data, filename, err := c.secretKeyService.ExportSecretKeys(ctx.Request.Context(), &req, currentUserID)
 	if err != nil {
-		c.logger.ErrorContext(ctx, "Failed to export secret keys", logger.Uint("user_id", userID.(uint)), logger.ErrorField(err))
-		errors.HandleError(ctx, err)
+		c.logger.ErrorContext(ctx, "Failed to export secret keys", logger.Uint("user_id", currentUserID), logger.ErrorField(err))
+		response.WithError(ctx, err)
 		return
 	}
 
@@ -362,7 +342,7 @@ func (c *SecretKeyController) ExportSecretKeys(ctx *gin.Context) {
 	ctx.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
 	ctx.Header("Content-Length", strconv.Itoa(len(data)))
 
-	c.logger.InfoContext(ctx, "Secret keys exported successfully", logger.Uint("user_id", userID.(uint)))
+	c.logger.InfoContext(ctx, "Secret keys exported successfully", logger.Uint("user_id", currentUserID))
 	ctx.Writer.WriteHeader(http.StatusOK)
 	_, _ = ctx.Writer.Write(data)
 }

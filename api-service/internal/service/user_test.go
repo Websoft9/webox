@@ -2,6 +2,7 @@ package service
 
 import (
 	"api-service/internal/dto/request"
+	"api-service/internal/dto/response"
 	"api-service/internal/interface/repository"
 	"api-service/internal/model"
 	"api-service/pkg/auth"
@@ -181,7 +182,6 @@ func createTestUserFixed() *model.User {
 }
 
 // ===== ListUsers Tests =====
-
 func TestUserService_ListUsers_Success(t *testing.T) {
 	service, mockRepo := setupUserServiceTestFixed()
 	ctx := context.Background()
@@ -198,12 +198,16 @@ func TestUserService_ListUsers_Success(t *testing.T) {
 
 	mockRepo.On("ListWithRelations", ctx, 0, 10, mock.AnythingOfType("map[string]interface {}")).Return(users, total, nil)
 
-	result, totalCount, err := service.ListUsers(ctx, req)
+	result, err := service.ListUsers(ctx, req) // 注意：这里移除了 totalCount 返回值
 
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
-	assert.Equal(t, len(users), len(result.Users))
-	assert.Equal(t, total, totalCount)
+	assert.Equal(t, total, result.Total)
+
+	// 类型断言：将 interface{} 转换为具体的切片类型
+	items, ok := result.Items.([]response.UserResponse)
+	assert.True(t, ok, "Items should be of type []response.UserResponse")
+	assert.Equal(t, len(users), len(items))
 
 	mockRepo.AssertExpectations(t)
 }

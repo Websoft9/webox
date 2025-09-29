@@ -11,6 +11,7 @@ import (
 
 	"api-service/internal/config"
 	"api-service/internal/dto/request"
+	"api-service/internal/dto/response"
 	"api-service/internal/interface/service"
 	"api-service/internal/model"
 	"api-service/pkg/crypto"
@@ -437,8 +438,13 @@ func TestSecretKeyService_ListSecretKeys_Success(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, int64(1), result.Total)
-	assert.Equal(t, 1, len(result.Items))
-	assert.Equal(t, testKeys[0].Name, result.Items[0].Name)
+
+	// 类型断言：将 interface{} 转换为具体的切片类型
+	items, ok := result.Items.([]response.SecretKeyResponse)
+	assert.True(t, ok, "Items should be of type []response.SecretKeyResponse")
+	assert.Equal(t, 1, len(items))
+	assert.Equal(t, testKeys[0].Name, items[0].Name)
+
 	mockRepo.AssertExpectations(t)
 }
 
@@ -597,6 +603,9 @@ func TestSecretKeyService_FullWorkflow(t *testing.T) {
 	listResult, err := service.ListSecretKeys(ctx, listReq, userID)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1), listResult.Total)
+	items, ok := listResult.Items.([]response.SecretKeyResponse)
+	assert.True(t, ok)
+	assert.Equal(t, 1, len(items))
 
 	// Step 5: Delete secret key
 	mockRepo.On("DeleteUserSecretsBySecretKeyID", ctx, uint(1)).Return(nil)

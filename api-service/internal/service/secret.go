@@ -11,6 +11,7 @@ import (
 
 	"api-service/internal/config"
 	"api-service/internal/constants"
+	"api-service/internal/dto/common"
 	"api-service/internal/dto/request"
 	"api-service/internal/dto/response"
 	"api-service/internal/interface/repository"
@@ -93,11 +94,11 @@ func (s *secretKeyService) CreateSecretKey(ctx context.Context, req *request.Sec
 			logger.String("name", req.Name),
 			logger.Uint("user_id", userID),
 			logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, s.i18n.T(ctx, "secret.create_failed"))
+		return nil, err
 	}
 
 	if exists {
-		return nil, errors.NewAppError(errors.CodeResourceAlreadyExists, s.i18n.T(ctx, "secret.name_already_exists"))
+		return nil, errors.NewAppError(errors.CodeResourceAlreadyExists)
 	}
 
 	encryptedValue, err := s.rsaCrypto.EncryptString(req.EncryptedValue)
@@ -105,7 +106,7 @@ func (s *secretKeyService) CreateSecretKey(ctx context.Context, req *request.Sec
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to encrypt secret key value",
 			logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeEncryptFailed, s.i18n.T(ctx, "business.encrypt_failed"))
+		return nil, errors.NewAppError(errors.CodeEncryptFailed)
 	}
 
 	// Create the secret key model
@@ -126,7 +127,7 @@ func (s *secretKeyService) CreateSecretKey(ctx context.Context, req *request.Sec
 			logger.String("name", req.Name),
 			logger.Uint("user_id", userID),
 			logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeRecordCreateFailed, s.i18n.T(ctx, "secret.create_failed"))
+		return nil, err
 	}
 
 	if len(req.AuthorizedUsers) > 0 {
@@ -172,13 +173,10 @@ func (s *secretKeyService) GetSecretKey(ctx context.Context, id, userID uint) (*
 
 	secretKey, err := s.secretKeyRepo.GetByID(ctx, id)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, errors.NewAppError(errors.CodeRecordNotFound, s.i18n.T(ctx, "secret.not_found"))
-		}
 		s.logger.ErrorContext(ctx, "Failed to get secret key",
 			logger.Uint("id", id),
 			logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, s.i18n.T(ctx, "secret.get_failed"))
+		return nil, err
 	}
 
 	// Check ownership or user access permission
@@ -190,11 +188,11 @@ func (s *secretKeyService) GetSecretKey(ctx context.Context, id, userID uint) (*
 				logger.Uint("secret_key_id", id),
 				logger.Uint("user_id", userID),
 				logger.ErrorField(err))
-			return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, s.i18n.T(ctx, "secret.get_failed"))
+			return nil, err
 		}
 
 		if !hasAccess {
-			return nil, errors.NewAppError(errors.CodeAccessDenied, s.i18n.T(ctx, "secret.access_denied"))
+			return nil, errors.NewAppError(errors.CodeAccessDenied)
 		}
 	}
 
@@ -209,13 +207,10 @@ func (s *secretKeyService) GetSecretKeyValue(ctx context.Context, id, userID uin
 
 	secretKey, err := s.secretKeyRepo.GetByID(ctx, id)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, errors.NewAppError(errors.CodeRecordNotFound, s.i18n.T(ctx, "secret.not_found"))
-		}
 		s.logger.ErrorContext(ctx, "Failed to get secret key",
 			logger.Uint("id", id),
 			logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, s.i18n.T(ctx, "secret.get_failed"))
+		return nil, err
 	}
 
 	// Check ownership or user access permission
@@ -227,17 +222,17 @@ func (s *secretKeyService) GetSecretKeyValue(ctx context.Context, id, userID uin
 				logger.Uint("secret_key_id", id),
 				logger.Uint("user_id", userID),
 				logger.ErrorField(accessErr))
-			return nil, errors.WrapError(accessErr, errors.CodeRecordQueryFailed, s.i18n.T(ctx, "secret.get_failed"))
+			return nil, err
 		}
 
 		if !hasAccess {
-			return nil, errors.NewAppError(errors.CodeAccessDenied, s.i18n.T(ctx, "secret.access_denied"))
+			return nil, errors.NewAppError(errors.CodeAccessDenied)
 		}
 	}
 
 	// Check if expired
 	if secretKey.IsExpired() {
-		return nil, errors.NewAppError(errors.CodeValidationFailed, s.i18n.T(ctx, "secret.expired"))
+		return nil, errors.NewAppError(errors.CodeValidationFailed)
 	}
 
 	s.logger.InfoContext(ctx, "Secret key value accessed",
@@ -249,7 +244,7 @@ func (s *secretKeyService) GetSecretKeyValue(ctx context.Context, id, userID uin
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to decrypt secret key value",
 			logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeDecryptFailed, s.i18n.T(ctx, "business.decrypt_failed"))
+		return nil, err
 	}
 
 	return response.ToSecretKeyValueResponse(decryptedValue, secretKey.ExpiresAt), nil
@@ -263,18 +258,15 @@ func (s *secretKeyService) UpdateSecretKey(ctx context.Context, id, userID uint,
 
 	secretKey, err := s.secretKeyRepo.GetByID(ctx, id)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, errors.NewAppError(errors.CodeRecordNotFound, s.i18n.T(ctx, "secret.not_found"))
-		}
 		s.logger.ErrorContext(ctx, "Failed to get secret key",
 			logger.Uint("id", id),
 			logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, s.i18n.T(ctx, "secret.update_failed"))
+		return nil, err
 	}
 
 	// Check ownership
 	if secretKey.OwnerID != userID {
-		return nil, errors.NewAppError(errors.CodeAccessDenied, s.i18n.T(ctx, "secret.access_denied"))
+		return nil, errors.NewAppError(errors.CodeAccessDenied)
 	}
 
 	// Encrypt the secret value using RSA
@@ -283,7 +275,7 @@ func (s *secretKeyService) UpdateSecretKey(ctx context.Context, id, userID uint,
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to encrypt secret key value",
 			logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeEncryptFailed, s.i18n.T(ctx, "business.encrypt_failed"))
+		return nil, errors.NewAppError(errors.CodeEncryptFailed)
 	}
 
 	// Update fields based on the simplified SecretKeyUpdateRequest
@@ -295,7 +287,7 @@ func (s *secretKeyService) UpdateSecretKey(ctx context.Context, id, userID uint,
 		s.logger.ErrorContext(ctx, "Failed to update secret key",
 			logger.Uint("id", id),
 			logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeRecordUpdateFailed, s.i18n.T(ctx, "secret.update_failed"))
+		return nil, err
 	}
 
 	s.logger.InfoContext(ctx, "Secret key updated successfully",
@@ -313,18 +305,15 @@ func (s *secretKeyService) DeleteSecretKey(ctx context.Context, id, userID uint)
 
 	secretKey, err := s.secretKeyRepo.GetByID(ctx, id)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return errors.NewAppError(errors.CodeRecordNotFound, s.i18n.T(ctx, "secret.not_found"))
-		}
 		s.logger.ErrorContext(ctx, "Failed to get secret key",
 			logger.Uint("id", id),
 			logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeRecordQueryFailed, s.i18n.T(ctx, "secret.delete_failed"))
+		return err
 	}
 
 	// Check ownership
 	if secretKey.OwnerID != userID {
-		return errors.NewAppError(errors.CodeAccessDenied, s.i18n.T(ctx, "secret.access_denied"))
+		return errors.NewAppError(errors.CodeAccessDenied)
 	}
 
 	// First delete all user_secret relationships for this secret key
@@ -332,7 +321,7 @@ func (s *secretKeyService) DeleteSecretKey(ctx context.Context, id, userID uint)
 		s.logger.ErrorContext(ctx, "Failed to delete user secret relationships",
 			logger.Uint("secret_key_id", id),
 			logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeRecordDeleteFailed, s.i18n.T(ctx, "secret.delete_failed"))
+		return errors.NewAppError(errors.CodeRecordDeleteFailed)
 	}
 
 	s.logger.InfoContext(ctx, "User secret relationships deleted successfully",
@@ -343,7 +332,7 @@ func (s *secretKeyService) DeleteSecretKey(ctx context.Context, id, userID uint)
 		s.logger.ErrorContext(ctx, "Failed to delete secret key",
 			logger.Uint("id", id),
 			logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeRecordDeleteFailed, s.i18n.T(ctx, "secret.delete_failed"))
+		return err
 	}
 
 	s.logger.InfoContext(ctx, "Secret key deleted successfully",
@@ -354,7 +343,7 @@ func (s *secretKeyService) DeleteSecretKey(ctx context.Context, id, userID uint)
 }
 
 // ListSecretKeys retrieves secret keys with pagination and filtering
-func (s *secretKeyService) ListSecretKeys(ctx context.Context, req *request.SecretKeyQueryRequest, userID uint) (*response.SecretKeyListResponse, error) {
+func (s *secretKeyService) ListSecretKeys(ctx context.Context, req *request.SecretKeyQueryRequest, userID uint) (*common.PaginationResponse, error) {
 	s.logger.InfoContext(ctx, "Listing secret keys",
 		logger.Uint("user_id", userID),
 		logger.Int("page", req.Page),
@@ -365,7 +354,7 @@ func (s *secretKeyService) ListSecretKeys(ctx context.Context, req *request.Secr
 		s.logger.ErrorContext(ctx, "Failed to list secret keys",
 			logger.Uint("user_id", userID),
 			logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, s.i18n.T(ctx, "secret.list_failed"))
+		return nil, err
 	}
 
 	return response.ToSecretKeyListResponse(secretKeys, total, req.Page, req.PageSize), nil
@@ -388,7 +377,7 @@ func (s *secretKeyService) ExportSecretKeys(ctx context.Context, req *request.Se
 		s.logger.ErrorContext(ctx, "Failed to get secret keys for export",
 			logger.Uint("user_id", userID),
 			logger.ErrorField(err))
-		return nil, "", errors.WrapError(err, errors.CodeRecordQueryFailed, s.i18n.T(ctx, "secret.export_failed"))
+		return nil, "", err
 	}
 
 	switch req.Format {
@@ -399,7 +388,7 @@ func (s *secretKeyService) ExportSecretKeys(ctx context.Context, req *request.Se
 	case constants.ExportFormatExcel:
 		return s.exportToExcel(secretKeys)
 	default:
-		return nil, "", errors.NewAppError(errors.CodeValidationFailed, s.i18n.T(ctx, "secret.invalid_export_format"))
+		return nil, "", errors.NewAppError(errors.CodeValidationFailed)
 	}
 }
 
@@ -441,7 +430,7 @@ func (s *secretKeyService) exportToExcel(secretKeys []*model.SecretKey) (data []
 	var buf bytes.Buffer
 	if err := f.Write(&buf); err != nil {
 		s.logger.Error("Failed to write Excel file to buffer", logger.ErrorField(err))
-		return nil, "", errors.NewAppError(errors.CodeInternalError, "Failed to write Excel file")
+		return nil, "", err
 	}
 
 	s.logger.Info("Excel file generated successfully", logger.Int("size", buf.Len()))
@@ -455,7 +444,7 @@ func (s *secretKeyService) createExcelSheet(f *excelize.File, sheetName string) 
 	index, err := f.NewSheet(sheetName)
 	if err != nil {
 		s.logger.Error("Failed to create Excel sheet", logger.ErrorField(err))
-		return 0, errors.NewAppError(errors.CodeInternalError, "Failed to create Excel sheet")
+		return 0, err
 	}
 
 	s.logger.Info("Excel sheet created successfully", logger.Int("index", index))
@@ -473,7 +462,7 @@ func (s *secretKeyService) setExcelHeaders(f *excelize.File, sheetName string) e
 				logger.ErrorField(err),
 				logger.String("cell", cell),
 				logger.String("header", header))
-			return errors.NewAppError(errors.CodeInternalError, "Failed to set Excel header")
+			return err
 		}
 	}
 
@@ -524,7 +513,7 @@ func (s *secretKeyService) setExcelRowData(f *excelize.File, sheetName string, r
 				logger.ErrorField(err),
 				logger.String("cell", cell),
 				logger.Int("row", row))
-			return errors.NewAppError(errors.CodeInternalError, "Failed to set Excel data")
+			return err
 		}
 	}
 
@@ -536,13 +525,13 @@ func (s *secretKeyService) ValidateSecretKeyOwnership(ctx context.Context, secre
 	secretKey, err := s.secretKeyRepo.GetByID(ctx, secretKeyID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return errors.NewAppError(errors.CodeRecordNotFound, s.i18n.T(ctx, "secret.not_found"))
+			return errors.NewAppError(errors.CodeRecordNotFound)
 		}
-		return errors.WrapError(err, errors.CodeRecordQueryFailed, s.i18n.T(ctx, "secret.validation_failed"))
+		return err
 	}
 
 	if secretKey.OwnerID != userID {
-		return errors.NewAppError(errors.CodeAccessDenied, s.i18n.T(ctx, "secret.access_denied"))
+		return errors.NewAppError(errors.CodeAccessDenied)
 	}
 
 	return nil
@@ -556,7 +545,7 @@ func (s *secretKeyService) exportToCSV(secretKeys []*model.SecretKey) (data []by
 	// Write header
 	header := []string{"ID", "Name", "Type", "Description", "Created At", "Updated At", "Expires At"}
 	if err := writer.Write(header); err != nil {
-		return nil, "", errors.NewAppError(errors.CodeInternalError, "Failed to export CSV")
+		return nil, "", err
 	}
 
 	// Write data
@@ -582,13 +571,13 @@ func (s *secretKeyService) exportToCSV(secretKeys []*model.SecretKey) (data []by
 		}
 
 		if err := writer.Write(record); err != nil {
-			return nil, "", errors.NewAppError(errors.CodeInternalError, "Failed to export CSV")
+			return nil, "", err
 		}
 	}
 
 	writer.Flush()
 	if err := writer.Error(); err != nil {
-		return nil, "", errors.NewAppError(errors.CodeInternalError, "Failed to export CSV")
+		return nil, "", err
 	}
 
 	filename = fmt.Sprintf("secret-keys-%s.csv", time.Now().Format("20060102"))
@@ -604,7 +593,7 @@ func (s *secretKeyService) exportToJSON(secretKeys []*model.SecretKey) (data []b
 
 	data, err = json.MarshalIndent(responses, "", "  ")
 	if err != nil {
-		return nil, "", errors.NewAppError(errors.CodeInternalError, "Failed to export JSON")
+		return nil, "", err
 	}
 
 	filename = fmt.Sprintf("secret-keys-%s.json", time.Now().Format("20060102"))
