@@ -507,8 +507,8 @@ func initControllers(
 		),
 		HealthController:      controller.NewHealthController(cfg),
 		AuditLogController:    controller.NewAuditLogController(services.auditLogService, validatorInstance, zapLogger, i18nInstance),
-		UserProfileController: controller.NewUserProfileController(services.userProfileService, zapLogger, i18nInstance),
-		AlertController:       controller.NewAlertController(services.alertServices, zapLogger, i18nInstance),
+		UserProfileController: controller.NewUserProfileController(services.userProfileService, zapLogger, i18nInstance, validatorInstance),
+		AlertController:       controller.NewAlertController(services.alertServices, zapLogger, i18nInstance, validatorInstance),
 		SecretKeyController:   controller.NewSecretKeyController(services.secretKeyService, zapLogger, i18nInstance),
 		SystemConfigController: controller.NewSystemConfigController(
 			services.systemConfigService,
