@@ -320,6 +320,18 @@ CREATE TABLE IF NOT EXISTS secret_keys (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- User secret access table (many-to-many relationship between users and secret_keys)
+CREATE TABLE IF NOT EXISTS user_secret (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    secret_key_id INTEGER NOT NULL REFERENCES secret_keys(id) ON DELETE CASCADE,
+    granted_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    granted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    expires_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, secret_key_id)
+);
+
 -- Application gateways table
 CREATE TABLE IF NOT EXISTS app_gateways (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
