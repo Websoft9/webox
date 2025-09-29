@@ -27,9 +27,8 @@ type Controllers struct {
 	UserProfileController    *controller.UserProfileController
 	SystemConfigController   *controller.SystemConfigController
 	AlertController          *controller.AlertController
-	SecretKeyController      *controller.SecretKeyController
 	TagController            *controller.TagController
-
+	SecretKeyController      *controller.SecretKeyController
 	// More controllers can be added
 	// AppController  *controller.ApplicationController
 }
@@ -137,7 +136,7 @@ func setupAPIRoutes(v1 *gin.RouterGroup, controllers *Controllers) {
 	// Routes requiring JWT authentication
 	protected := v1.Group("/")
 	setupUserAuthRoutes(v1, controllers.UserAuthController)
-	setupI18nRoutes(v1, controllers.I18nController)
+	setupI18nRoutes(v1, protected, controllers.I18nController)
 	setupUserRoutes(protected, controllers.UserController)
 	setupRoleRoutes(protected, controllers.RolePermissionController)
 	setupPermissionRoutes(protected, controllers.RolePermissionController)
@@ -168,7 +167,7 @@ func setupUserAuthRoutes(v1 *gin.RouterGroup, userAuthController *controller.Use
 }
 
 // setupI18nRoutes sets up internationalization routes
-func setupI18nRoutes(v1 *gin.RouterGroup, i18nController *controller.I18nController) {
+func setupI18nRoutes(v1 *gin.RouterGroup, protected *gin.RouterGroup, i18nController *controller.I18nController) {
 	if i18nController == nil {
 		return
 	}
@@ -176,8 +175,10 @@ func setupI18nRoutes(v1 *gin.RouterGroup, i18nController *controller.I18nControl
 	// i18n related routes (no JWT verification required)
 	i18nGroup := v1.Group("/i18n")
 	i18nGroup.GET("/languages", i18nController.GetLanguages)
-	i18nGroup.GET("/translations/:lang", i18nController.GetTranslations)
-	i18nGroup.GET("/test", i18nController.TestI18n)
+
+	// Protected i18n routes (JWT verification required)
+	protectedI18n := protected.Group("/i18n")
+	protectedI18n.POST("/switch-language", i18nController.SwitchLanguage)
 }
 
 // setupUserRoutes sets up user management routes

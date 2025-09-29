@@ -166,7 +166,7 @@ func (c *RolePermissionController) UpdateRole(ctx *gin.Context) {
 	}
 
 	// Update role
-	role, err := c.roleService.UpdateRole(utils.ContextWithUserID(ctx), uint(id), &req, userID)
+	role, err := c.roleService.UpdateRole(utils.ContextWithUserID(ctx), id, &req, userID)
 	if err != nil {
 		response.WithError(ctx, err)
 		return
@@ -195,7 +195,7 @@ func (c *RolePermissionController) DeleteRole(ctx *gin.Context) {
 	}
 
 	// Delete role
-	err := c.roleService.DeleteRole(utils.ContextWithUserID(ctx), uint(id))
+	err := c.roleService.DeleteRole(utils.ContextWithUserID(ctx), id)
 	if err != nil {
 		response.WithError(ctx, err)
 		return
@@ -237,7 +237,7 @@ func (c *RolePermissionController) AssignPermissions(ctx *gin.Context) {
 	}
 
 	// Assign permissions
-	err := c.roleService.AssignPermissions(utils.ContextWithUserID(ctx), uint(id), &req, userID)
+	err := c.roleService.AssignPermissions(utils.ContextWithUserID(ctx), id, &req, userID)
 	if err != nil {
 		response.WithError(ctx, err)
 		return
@@ -273,7 +273,7 @@ func (c *RolePermissionController) RemovePermissions(ctx *gin.Context) {
 	}
 
 	// Remove permissions
-	err := c.roleService.RemovePermissions(utils.ContextWithUserID(ctx), uint(id), &req)
+	err := c.roleService.RemovePermissions(utils.ContextWithUserID(ctx), id, &req)
 	if err != nil {
 		response.WithError(ctx, err)
 		return
@@ -411,7 +411,7 @@ func (c *RolePermissionController) UpdatePermission(ctx *gin.Context) {
 	}
 
 	// Update permission
-	permission, err := c.permissionService.UpdatePermission(utils.ContextWithUserID(ctx), uint(id), &req, userID)
+	permission, err := c.permissionService.UpdatePermission(utils.ContextWithUserID(ctx), id, &req, userID)
 	if err != nil {
 		response.WithError(ctx, err)
 		return
@@ -439,7 +439,7 @@ func (c *RolePermissionController) DeletePermission(ctx *gin.Context) {
 	}
 
 	// Delete permission
-	err := c.permissionService.DeletePermission(utils.ContextWithUserID(ctx), uint(id))
+	err := c.permissionService.DeletePermission(utils.ContextWithUserID(ctx), id)
 	if err != nil {
 		response.WithError(ctx, err)
 		return
@@ -536,7 +536,7 @@ func (c *RolePermissionController) GetPermissionRoles(ctx *gin.Context) {
 	page, pageSize := GetPaginationParams(ctx)
 
 	// Get permission roles
-	roles, err := c.permissionService.GetPermissionRoles(utils.ContextWithUserID(ctx), uint(id), page, pageSize)
+	roles, err := c.permissionService.GetPermissionRoles(utils.ContextWithUserID(ctx), id, page, pageSize)
 	if err != nil {
 		response.WithError(ctx, err)
 		return

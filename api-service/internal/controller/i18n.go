@@ -1,106 +1,107 @@
 package controller
 
 import (
-	"api-service/internal/dto/response"
-	"api-service/internal/middleware"
-	"api-service/pkg/i18n"
-	"net/http"
+	response "api-service/internal/dto/common"
+	"api-service/internal/dto/request"
+	"api-service/internal/interface/service"
+	"api-service/pkg/logger"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 // I18nController i18n控制器
-type I18nController struct{}
+type I18nController struct {
+	i18nService service.I18nService
+	validator   *validator.Validate
+	logger      logger.Logger
+}
 
 // NewI18nController 创建新的i18n控制器
-func NewI18nController() *I18nController {
-	return &I18nController{}
+func NewI18nController(
+	i18nService service.I18nService,
+	validator *validator.Validate,
+	logger logger.Logger,
+) *I18nController {
+	return &I18nController{
+		i18nService: i18nService,
+		validator:   validator,
+		logger:      logger,
+	}
 }
 
 // GetLanguages get supported languages
 // @Summary Get supported languages
-// @Description Get list of supported languages
+// @Description Get list of supported languages from configuration
 // @Tags Internationalization
 // @Accept json
 // @Produce json
-// @Success 200 {object} response.APIResponse{data=object}
+// @Success 200 {object} response.APIResponse{data=response.SupportedLanguagesResponse}
+// @Failure 500 {object} response.APIResponse
 // @Router /api/v1/i18n/languages [get]
 func (c *I18nController) GetLanguages(ctx *gin.Context) {
-	languages := make([]map[string]interface{}, 0)
+	c.logger.InfoContext(ctx.Request.Context(), "Getting supported languages")
 
-	for _, lang := range i18n.GetSupportedLanguages() {
-		info := i18n.GetLanguageInfo(lang)
-		languages = append(languages, info)
+	result, err := c.i18nService.GetSupportedLanguages(ctx.Request.Context())
+	if err != nil {
+		c.logger.ErrorContext(ctx.Request.Context(), "Failed to get supported languages",
+			logger.ErrorField(err))
+		response.WithError(ctx, err)
+		return
 	}
 
-	response.Success(ctx, middleware.T(ctx, "common.success"), gin.H{
-		"languages": languages,
-		"default":   i18n.DefaultLanguage,
-	})
+	c.logger.InfoContext(ctx.Request.Context(), "Successfully retrieved supported languages",
+		logger.Int("languages_count", len(result.Languages)))
+
+	response.SuccessWithData(ctx, result)
 }
 
-// GetTranslations get translations for specified language
-// @Summary Get translations
-// @Description Get translations for specified language
+// SwitchLanguage switches user's language preference
+// @Summary Switch user language
+// @Description Switch user's language preference and update cache
 // @Tags Internationalization
 // @Accept json
 // @Produce json
-// @Param lang path string true "Language code"
-// @Success 200 {object} response.APIResponse{data=object}
-// @Router /api/v1/i18n/translations/{lang} [get]
-func (c *I18nController) GetTranslations(ctx *gin.Context) {
-	lang := ctx.Param("lang")
-	if lang == "" {
-		lang = middleware.GetLanguage(ctx)
+// @Param request body request.SwitchLanguageRequest true "Language switch request"
+// @Success 200 {object} response.APIResponse
+// @Failure 400 {object} response.APIResponse
+// @Failure 401 {object} response.APIResponse
+// @Failure 500 {object} response.APIResponse
+// @Security BearerAuth
+// @Router /api/v1/i18n/switch-language [post]
+func (c *I18nController) SwitchLanguage(ctx *gin.Context) {
+	c.logger.InfoContext(ctx.Request.Context(), "Switching user language")
+
+	// Get user ID from JWT token
+	userID, exists := GetUserID(ctx)
+	if !exists {
+		return // GetUserID already handles the response
 	}
 
-	// 返回一些示例翻译用于测试
-	translations := map[string]string{
-		"user.not_found":           i18n.T("user.not_found", lang),
-		"user.created_success":     i18n.T("user.created_success", lang),
-		"user.login_success":       i18n.T("user.login_success", lang),
-		"auth.unauthorized":        i18n.T("auth.unauthorized", lang),
-		"common.success":           i18n.T("common.success", lang),
-		"common.validation_failed": i18n.T("common.validation_failed", lang),
-		"error.internal_error":     i18n.T("error.internal_error", lang),
+	// Parse request
+	var req request.SwitchLanguageRequest
+	// Bind request parameters
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
+		return
 	}
 
-	response.Success(ctx, middleware.T(ctx, "common.success"), gin.H{
-		"language":     lang,
-		"translations": translations,
-	})
-}
+	c.logger.InfoContext(ctx.Request.Context(), "Switching language for user",
+		logger.Uint("user_id", userID),
+		logger.String("new_language", req.Language))
 
-// TestI18n test internationalization functionality
-// @Summary Test i18n functionality
-// @Description Test internationalization functionality with current language
-// @Tags Internationalization
-// @Accept json
-// @Produce json
-// @Success 200 {object} response.APIResponse{data=object}
-// @Router /api/v1/i18n/test [get]
-func (c *I18nController) TestI18n(ctx *gin.Context) {
-	lang := middleware.GetLanguage(ctx)
-
-	// 测试各种翻译
-	testResults := gin.H{
-		"current_language": lang,
-		"messages": gin.H{
-			"welcome":          middleware.T(ctx, "user.login_success"),
-			"error":            middleware.T(ctx, "user.not_found"),
-			"validation_error": middleware.T(ctx, "common.validation_failed"),
-			"success":          middleware.T(ctx, "common.success"),
-		},
-		"user_flows": gin.H{
-			"register_success": middleware.T(ctx, "user.created_success"),
-			"login_success":    middleware.T(ctx, "user.login_success"),
-			"logout_success":   middleware.T(ctx, "user.logout_success"),
-		},
+	// Switch language
+	if err := c.i18nService.SwitchUserLanguage(ctx.Request.Context(), userID, &req); err != nil {
+		c.logger.ErrorContext(ctx.Request.Context(), "Failed to switch user language",
+			logger.ErrorField(err),
+			logger.Uint("user_id", userID),
+			logger.String("language", req.Language))
+		response.WithError(ctx, err)
+		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"code":    http.StatusOK,
-		"message": middleware.T(ctx, "common.success"),
-		"data":    testResults,
-	})
+	c.logger.InfoContext(ctx.Request.Context(), "Successfully switched user language",
+		logger.Uint("user_id", userID),
+		logger.String("language", req.Language))
+
+	response.Success(ctx)
 }

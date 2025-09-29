@@ -434,6 +434,7 @@ type businessServices struct {
 	tagService          serviceInterface.TagService
 	alertServices       serviceInterface.AlertService
 	secretKeyService    serviceInterface.SecretKeyService
+	i18nService         serviceInterface.I18nService
 }
 
 // initBusinessServices creates and initializes all service instances with their dependencies
@@ -472,6 +473,7 @@ func initBusinessServices(
 		tagService:          serviceImpl.NewTagService(repos.tagRepo, db, zapLogger, i18nInstance),
 		alertServices:       serviceImpl.NewAlertService(repos.alertRepo, zapLogger, i18nInstance),
 		secretKeyService:    serviceImpl.NewSecretKeyService(repos.secretKeyRepo, zapLogger, i18nInstance, cfg),
+		i18nService:         serviceImpl.NewI18nService(repos.userProfileRepo, zapLogger),
 	}
 }
 
@@ -490,7 +492,7 @@ func initControllers(
 	return &router.Controllers{
 		UserController:     controller.NewUserController(services.userService, zapLogger, i18nInstance, validatorInstance),
 		UserAuthController: controller.NewUserAuthController(services.userAuthService, validatorInstance, zapLogger),
-		I18nController:     controller.NewI18nController(),
+		I18nController:     controller.NewI18nController(services.i18nService, validatorInstance, zapLogger),
 		RolePermissionController: controller.NewRolePermissionController(
 			services.roleService,
 			services.permissionService,
@@ -508,20 +510,20 @@ func initControllers(
 		HealthController:      controller.NewHealthController(cfg),
 		AuditLogController:    controller.NewAuditLogController(services.auditLogService, validatorInstance, zapLogger, i18nInstance),
 		UserProfileController: controller.NewUserProfileController(services.userProfileService, zapLogger, i18nInstance, validatorInstance),
-		AlertController:       controller.NewAlertController(services.alertServices, zapLogger, i18nInstance, validatorInstance),
-		SecretKeyController:   controller.NewSecretKeyController(services.secretKeyService, zapLogger, i18nInstance, validatorInstance),
 		SystemConfigController: controller.NewSystemConfigController(
 			services.systemConfigService,
 			validatorInstance,
 			zapLogger,
 			i18nInstance,
 		),
+		AlertController: controller.NewAlertController(services.alertServices, zapLogger, i18nInstance, validatorInstance),
 		TagController: controller.NewTagController(
 			services.tagService,
 			validatorInstance,
 			zapLogger,
 			i18nInstance,
 		),
+		SecretKeyController: controller.NewSecretKeyController(services.secretKeyService, zapLogger, i18nInstance, validatorInstance),
 	}
 }
 
