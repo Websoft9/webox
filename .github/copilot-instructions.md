@@ -48,6 +48,7 @@ make vet           # 代码检查
 make lint          # 代码静态分析 (golangci-lint)
 
 # 构建和部署
+make init-swag     # 生成 swagger 文档
 make build         # 构建二进制文件
 make docker-build  # 构建 Docker 镜像
 make docker-run    # 运行 Docker 容器
@@ -150,12 +151,13 @@ api-service/
 │   └── service/             # 业务逻辑层
 ├── pkg/                     # 可被外部应用使用的库代码
 │   ├── auth/                # 全局认证模块 (JWT)
+│   ├── database/            # 数据库模块
+│   ├── email/               # 通用邮件模块
 │   ├── errors/              # 全局错误处理模块
 │   ├── i18n/                # 国际化模块
 │   ├── logger/              # 结构化日志模块 (Zap)
-│   ├── response/            # 全局响应格式
+│   ├── redis/               # 缓存数据库模块（Redis）
 │   ├── utils/               # 通用工具模块
-│   └── validator/           # 全局参数验证模块
 ├── scripts/                 # 部署和初始化脚本
 ├── configs/                 # 配置文件模板
 └── docs/                    # API文档目录
@@ -236,7 +238,7 @@ websoft9-agent/
 
 5. **魔法值处理**: 多次重复出现的魔法值，始终使用`internal/constants` 添加`const`常量定义，局部出现的魔法值，在go模块头部添加`const`常量定义
 
-6. **国际化（i18n）**: 使用`pkg/i18n`对需要输出给用户的业务日志或信息进行国际化翻译，包括多语言`pkg/i18n/locales`的翻译和命名统一
+6. **国际化（i18n）**: 使用`pkg/i18n`对需要输出给用户的业务日志或信息进行国际化翻译，包括多语言文件`api-service/configs/lang`的翻译和命名统一
 
 7. **测试**: 遵循表驱动测试模式
 
@@ -301,7 +303,7 @@ websoft9-agent/
 6. **创建控制器** 在 `internal/controller/`
 7. **注册路由** 在 `internal/router/router.go`
 8. **编写测试** 为 service 和 repository 层
-9. **API 文档** 使用 Swagger/OpenAPI/Apifox
+9. **API 文档** 使用 `make init-swag` 更新 API 文档
 
 **添加新前端组件时：**
 
@@ -319,6 +321,10 @@ websoft9-agent/
 - **Agent**: `configs/agent.yaml`
 - **网关服务**: Nginx 配置文件
 - **前端**: 环境变量和 Vite 配置
+
+**i18n国际化配置：**
+
+- **多语言**: `api-service/configs/lang/<LANGUAGE>.yaml`
 
 **环境支持：**
 
