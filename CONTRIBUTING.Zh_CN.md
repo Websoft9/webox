@@ -179,7 +179,6 @@ type APIResponse struct {
     Message   string      `json:"message"`
     Data      interface{} `json:"data,omitempty"`
     Error     *APIError   `json:"error,omitempty"`
-    Timestamp int64       `json:"timestamp"`
 }
 
 type PaginatedResponse struct {
@@ -195,23 +194,102 @@ type PaginatedResponse struct {
 
 - 使用标准的 error 接口
 - 错误信息应该清晰、具体
-- 使用 `api-service/pkg/i18n` 添加错误信息的国际化处理
 - 使用 `api-service/pkg/errors` 添加上下文信息
 
 ```go
 import "api-service/pkg/errors"
 
-// GetByID retrieves a permission by ID
+// Demo: GetByID retrieves a permission by ID
 func (r *permissionRepository) GetByID(ctx context.Context, id uint) (*model.Permission, error) {
     var permission model.Permission
     err := r.db.WithContext(ctx).Where("status != -1").First(&permission, id).Error
     if err != nil {
         if errors.Is(err, gorm.ErrRecordNotFound) {
-            return nil, errors.NewAppErrorWithMessage(errors.CodeRecordNotFound, "permission not found")
+            return nil, errors.NewAppError(errors.CodeRecordNotFound)
         }
-        return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to get permission by ID")
+        return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
     }
     return &permission, nil
+}
+```
+
+### 错误定义
+
+- 使用 `api-service/pkg/errors/codes` 定义错误代码、国际化处理（i18n messages key）、HTTP状态码
+
+```go
+// Error code constants definition based on API documentation
+// Error codes are organized by category with specific ranges for easy identification
+const (
+    // System related error codes (6000-6999)
+    CodeInternalError ErrorCode = 6001 // System Internal Error
+)
+
+// CodeToI18nKey maps error codes to their i18n message keys
+// These keys should correspond to entries in the i18n locale files
+var CodeToI18nKey = map[ErrorCode]string{
+    // System related errors (6000-6999)
+    CodeInternalError: "system.internal_error",
+}
+
+// codeToHTTPStatus maps business error codes to HTTP status codes
+// This mapping ensures consistent HTTP responses for different error types
+var CodeToHTTPStatus = map[ErrorCode]HTTPCode{
+    // System related errors (6000-6999)
+    CodeInternalError: http.StatusInternalServerError,
+}
+```
+
+- 使用 `api-service/pkg/errors/errors` 创建错误对象
+
+```go
+// Predefined common errors with internationalization support
+// These errors can be reused throughout the application for consistency
+var (
+    // System related errors (6000-6999)
+    ErrInternalError = NewAppErrorWithI18n(CodeInternalError, CodeToI18nKey[CodeInternalError])
+)
+```
+
+- 遵循`错误处理规范`进行异常错误的处理：
+
+```go
+    //示例1: 创建一个错误信息并包含原始错误
+    err := errors.NewAppErrorWrapError(err, errors.ErrInternalError)
+    return err
+
+    //示例2: 创建一个错误信息
+    err := errors.NewAppError(errors.CodeRecordNotFound)
+    return err
+
+    //示例3: 直接使用错误信息
+    return errors.ErrInternalError
+```
+
+### 国际化处理
+
+- 使用 `api-service/configs/lang/<LANGUAGE>.yaml` 定义多语言的翻译和命名统一
+- 使用 `pkg/i18n` 进行多语言支持
+
+```go
+// 使用 pkg/i18n 进行多语言支持
+import (
+    "api-service/pkg/errors"
+    "api-service/pkg/logger"
+)
+
+func (s *userService) CreateUser(ctx *gin.Context) error {
+    var req request.CreateUserRequest
+
+    if req.Email == "" {
+        logger.ErrorContext(ctx.Request.Context(), "Email cannot be empty", logger.ErrorField(err))
+        // 使用自定义的多语言翻译
+        return errors.NewAppErrorWithI18n(errors.CodeInvalidEmailFormat, "user.email_required")
+
+        // 使用错误定义预置的多语言翻译
+        // return errors.NewAppError(errors.CodeInvalidEmailFormat)
+    }
+    // 业务逻辑
 }
 ```
 
