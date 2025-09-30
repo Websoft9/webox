@@ -140,48 +140,7 @@ func (p *TimezonePlugin) afterQueryCallback(db *gorm.DB) {
 // shouldSkipConversion determines whether timezone conversion should be skipped
 // It checks for explicit skip flags, write operations, and aggregate queries
 func (p *TimezonePlugin) shouldSkipConversion(db *gorm.DB) bool {
-	// Check for explicit skip flag set by SkipTimezoneConversion helper
-	if skip, exists := db.Get("timezone:skip"); exists && skip.(bool) {
-		p.logger.Debug("Skipping: timezone:skip flag is set")
-		return true
-	}
-
-	// Skip if there's no SQL statement (shouldn't happen in normal cases)
-	if db.Statement.SQL.String() == "" {
-		p.logger.Debug("Skipping: empty SQL statement")
-		return true
-	}
-
-	// Analyze the SQL statement to determine if conversion is needed
-	sql := strings.ToUpper(strings.TrimSpace(db.Statement.SQL.String()))
-	sqlToLog := sql
-	if len(sql) > constants.MaxSQLLogLength {
-		sqlToLog = sql[:constants.MaxSQLLogLength] + "..."
-	}
-	p.logger.Debug("Checking SQL statement", logger.String("sql", sqlToLog))
-
-	// Skip write operations (INSERT, UPDATE, DELETE)
-	// These operations don't return data that needs timezone conversion
-	if strings.HasPrefix(sql, "INSERT") || strings.HasPrefix(sql, "UPDATE") || strings.HasPrefix(sql, "DELETE") {
-		p.logger.Debug("Skipping: write operation detected")
-		return true
-	}
-
-	// Skip COUNT queries as they don't return time field data
-	if strings.Contains(sql, "SELECT COUNT(") || strings.Contains(sql, "SELECT COUNT *") {
-		p.logger.Debug("Skipping: COUNT query detected")
-		return true
-	}
-
-	// Skip other aggregate function queries that don't return individual records
-	if strings.Contains(sql, "SELECT SUM(") || strings.Contains(sql, "SELECT AVG(") ||
-		strings.Contains(sql, "SELECT MAX(") || strings.Contains(sql, "SELECT MIN(") {
-		p.logger.Debug("Skipping: aggregate function query detected")
-		return true
-	}
-
-	p.logger.Debug("Not skipping conversion - proceeding with timezone conversion")
-	return false
+	return shouldSkipQuery(db, "timezone:skip", p.logger)
 }
 
 // getUserTimezone retrieves the user's preferred timezone from Redis cache first, then database
@@ -287,44 +246,9 @@ func (p *TimezonePlugin) getSystemTimezone(ctx context.Context) string {
 // convertTimezoneInResult processes the query result and converts time fields
 // It handles both single struct results and slice results (collections)
 func (p *TimezonePlugin) convertTimezoneInResult(db *gorm.DB, targetTZ *time.Location) {
-	if db.Statement.Dest == nil {
-		p.logger.Debug("No destination to convert - Statement.Dest is nil")
-		return
-	}
-
-	// Get the reflection value of the destination
-	destValue := reflect.ValueOf(db.Statement.Dest)
-	p.logger.Debug("Processing result for timezone conversion",
-		logger.String("destType", destValue.Type().String()),
-		logger.String("destKind", destValue.Kind().String()))
-
-	// Dereference pointer if necessary
-	if destValue.Kind() == reflect.Ptr {
-		destValue = destValue.Elem()
-		p.logger.Debug("Dereferenced pointer",
-			logger.String("actualType", destValue.Type().String()),
-			logger.String("actualKind", destValue.Kind().String()))
-	}
-
-	// Handle different result types
-	switch destValue.Kind() {
-	case reflect.Slice:
-		// Handle slice results (typically from Find operations)
-		// Iterate through each item in the slice and convert its time fields
-		p.logger.Debug("Processing slice result", logger.Int("length", destValue.Len()))
-		for i := 0; i < destValue.Len(); i++ {
-			item := destValue.Index(i)
-			p.logger.Debug("Converting slice item", logger.Int("index", i))
-			p.convertStructTimezone(item, targetTZ)
-		}
-	case reflect.Struct:
-		// Handle single struct results (typically from First, Take, etc.)
-		p.logger.Debug("Processing single struct result")
-		p.convertStructTimezone(destValue, targetTZ)
-	default:
-		p.logger.Debug("Unsupported result type for timezone conversion",
-			logger.String("kind", destValue.Kind().String()))
-	}
+	processQueryResult(db, p.logger, func(item reflect.Value) {
+		p.convertStructTimezone(item, targetTZ)
+	})
 }
 
 // convertStructTimezone processes a single struct and converts its time fields

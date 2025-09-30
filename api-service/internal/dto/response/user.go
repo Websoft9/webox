@@ -1,6 +1,9 @@
 package response
 
-import "time"
+import (
+	"api-service/internal/model"
+	"time"
+)
 
 // UserResponse 用户响应结构
 type UserResponse struct {
@@ -35,4 +38,41 @@ type UserLoginResponse struct {
 type UserListResponse struct {
 	Users []UserResponse `json:"users"`
 	Total int64          `json:"total" example:"100"`
+}
+
+// BuildUserResponse builds a user response from a user model
+
+func BuildUserResponse(user *model.User) *UserResponse {
+	resp := &UserResponse{
+		ID:          user.ID,
+		Username:    user.Username,
+		Email:       user.Email,
+		Nickname:    user.Nickname,
+		Phone:       user.Phone,
+		Avatar:      user.Avatar,
+		Gender:      user.Gender,
+		Signature:   user.Signature,
+		Status:      user.Status,
+		LastLoginAt: user.LastLoginAt,
+		LastLoginIP: user.LastLoginIP,
+		Timezone:    user.Timezone,
+		Language:    user.Language,
+		CreatedAt:   user.CreatedAt,
+		UpdatedAt:   user.UpdatedAt,
+	}
+
+	if len(user.Roles) > 0 {
+		resp.Roles = make([]RoleResponse, len(user.Roles))
+		for i := range user.Roles {
+			role := &user.Roles[i]
+			resp.Roles[i] = RoleResponse{
+				ID:          role.ID,
+				Name:        role.Name,
+				Code:        role.Code,
+				Description: role.Description,
+			}
+		}
+	}
+
+	return resp
 }

@@ -33,6 +33,23 @@ func NewUserAuthController(
 	}
 }
 
+// handleLoginRequest handles login-type requests with unified error handling
+func (c *UserAuthController) handleLoginRequest(ctx *gin.Context, req interface{}, action string, loginFunc func() (interface{}, error)) {
+	if !BindAndValidateRequest(ctx, req, c.validator, c.logger) {
+		return
+	}
+
+	result, err := loginFunc()
+	if err != nil {
+		c.logger.WarnContext(ctx, "User "+action+" failed", logger.ErrorField(err))
+		response.WithError(ctx, err)
+		return
+	}
+
+	c.logger.InfoContext(ctx, "User "+action+" successful")
+	response.SuccessWithData(ctx, result)
+}
+
 // handleUserAuth handles user authentication related requests with unified error handling
 func (c *UserAuthController) handleUserAuth(
 	ctx *gin.Context,
@@ -91,20 +108,10 @@ func (c *UserAuthController) Register(ctx *gin.Context) {
 // @Router /api/v1/auth/login [post]
 func (c *UserAuthController) Login(ctx *gin.Context) {
 	var req request.UserLoginRequest
-	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
-		return
-	}
-
-	clientIP := utils.GetRealIP(ctx)
-	result, err := c.userAuthService.Login(ctx, &req, clientIP)
-	if err != nil {
-		c.logger.WarnContext(ctx, "User login failed", logger.ErrorField(err))
-		response.WithError(ctx, err)
-		return
-	}
-
-	c.logger.InfoContext(ctx, "User login successful")
-	response.SuccessWithData(ctx, result)
+	c.handleLoginRequest(ctx, &req, "login", func() (interface{}, error) {
+		clientIP := utils.GetRealIP(ctx)
+		return c.userAuthService.Login(ctx, &req, clientIP)
+	})
 }
 
 // ForgotPassword handles password reset request
@@ -274,20 +281,10 @@ func (c *UserAuthController) ResendVerificationEmail(ctx *gin.Context) {
 // @Router /api/v1/auth/oauth2/login [post]
 func (c *UserAuthController) OAuth2Login(ctx *gin.Context) {
 	var req request.OAuth2LoginRequest
-	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
-		return
-	}
-
-	clientIP := utils.GetRealIP(ctx)
-	result, err := c.userAuthService.OAuth2Login(ctx, &req, clientIP)
-	if err != nil {
-		c.logger.ErrorContext(ctx, "User OAuth2 login failed", logger.ErrorField(err))
-		response.WithError(ctx, err)
-		return
-	}
-
-	c.logger.InfoContext(ctx, "User OAuth2 login successful")
-	response.SuccessWithData(ctx, result)
+	c.handleLoginRequest(ctx, &req, "OAuth2 login", func() (interface{}, error) {
+		clientIP := utils.GetRealIP(ctx)
+		return c.userAuthService.OAuth2Login(ctx, &req, clientIP)
+	})
 }
 
 // Logout handles user logout

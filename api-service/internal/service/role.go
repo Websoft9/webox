@@ -109,21 +109,7 @@ func (s *roleService) buildRoleEntity(req *request.CreateRoleRequest) *model.Rol
 
 // createRoleWithPermissions creates role and assigns permissions in transaction
 func (s *roleService) createRoleWithPermissions(ctx context.Context, role *model.Role, permissionIDs []uint, createdBy uint) error {
-	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		// Create role
-		if err := s.roleRepo.CreateWithTx(ctx, tx, role); err != nil {
-			return err
-		}
-
-		// Assign permissions if provided
-		if len(permissionIDs) > 0 {
-			if err := s.roleRepo.AssignPermissionsWithTx(ctx, tx, role.ID, permissionIDs, createdBy); err != nil {
-				return err
-			}
-		}
-
-		return nil
-	})
+	return s.saveRoleWithPermissions(ctx, role, permissionIDs, createdBy, true)
 }
 
 // GetRole gets a role
@@ -204,15 +190,27 @@ func (s *roleService) updateRoleFields(role *model.Role, req *request.UpdateRole
 
 // updateRoleWithPermissions updates role and permissions in transaction
 func (s *roleService) updateRoleWithPermissions(ctx context.Context, role *model.Role, permissionIDs []uint, updatedBy uint) error {
+	return s.saveRoleWithPermissions(ctx, role, permissionIDs, updatedBy, false)
+}
+
+// saveRoleWithPermissions saves role and assigns permissions in transaction
+// isCreate determines whether to create or update the role
+func (s *roleService) saveRoleWithPermissions(ctx context.Context, role *model.Role, permissionIDs []uint, operatorID uint, isCreate bool) error {
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		// Update role
-		if err := s.roleRepo.UpdateWithTx(ctx, tx, role); err != nil {
+		// Save role (create or update)
+		var err error
+		if isCreate {
+			err = s.roleRepo.CreateWithTx(ctx, tx, role)
+		} else {
+			err = s.roleRepo.UpdateWithTx(ctx, tx, role)
+		}
+		if err != nil {
 			return err
 		}
 
-		// Update permission assignments if provided
+		// Assign permissions if provided
 		if len(permissionIDs) > 0 {
-			if err := s.roleRepo.AssignPermissionsWithTx(ctx, tx, role.ID, permissionIDs, updatedBy); err != nil {
+			if err := s.roleRepo.AssignPermissionsWithTx(ctx, tx, role.ID, permissionIDs, operatorID); err != nil {
 				return err
 			}
 		}

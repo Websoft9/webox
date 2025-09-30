@@ -12,35 +12,33 @@ import (
 
 // BindAndValidateRequest binds JSON request and validates it
 func BindAndValidateRequest(ctx *gin.Context, req interface{}, validator *validator.Validate, log logger.Logger) bool {
-	// Bind request parameters
-	if err := ctx.ShouldBindJSON(req); err != nil {
-		log.ErrorContext(ctx.Request.Context(), "Invalid request format", logger.ErrorField(err))
-		response.WithErrorAndCode(ctx, errors.CodeInvalidParameterFormat, err)
-		return false
-	}
-
-	// Validate request parameters
-	if err := validator.Struct(req); err != nil {
-		log.ErrorContext(ctx.Request.Context(), "Request validation failed", logger.ErrorField(err))
-		response.WithErrorAndCode(ctx, errors.CodeValidationFailed, err)
-		return false
-	}
-
-	return true
+	return bindAndValidate(ctx, req, validator, log, ctx.ShouldBindJSON, "Invalid request format", "Request validation failed")
 }
 
 // BindAndValidateQuery binds query parameters and validates them
 func BindAndValidateQuery(ctx *gin.Context, req interface{}, validator *validator.Validate, log logger.Logger) bool {
-	// Bind query parameters
-	if err := ctx.ShouldBindQuery(req); err != nil {
-		log.ErrorContext(ctx.Request.Context(), "Invalid query parameters", logger.ErrorField(err))
+	return bindAndValidate(ctx, req, validator, log, ctx.ShouldBindQuery, "Invalid query parameters", "Query validation failed")
+}
+
+// bindAndValidate is a helper function that binds and validates request/query parameters
+func bindAndValidate(
+	ctx *gin.Context,
+	req interface{},
+	validator *validator.Validate,
+	log logger.Logger,
+	bindFunc func(interface{}) error,
+	bindErrMsg, validateErrMsg string,
+) bool {
+	// Bind parameters
+	if err := bindFunc(req); err != nil {
+		log.ErrorContext(ctx.Request.Context(), bindErrMsg, logger.ErrorField(err))
 		response.WithErrorAndCode(ctx, errors.CodeInvalidParameterFormat, err)
 		return false
 	}
 
-	// Validate request parameters
+	// Validate parameters
 	if err := validator.Struct(req); err != nil {
-		log.ErrorContext(ctx.Request.Context(), "Query validation failed", logger.ErrorField(err))
+		log.ErrorContext(ctx.Request.Context(), validateErrMsg, logger.ErrorField(err))
 		response.WithErrorAndCode(ctx, errors.CodeValidationFailed, err)
 		return false
 	}

@@ -165,7 +165,7 @@ func (s *userAuthService) Register(ctx context.Context, req *request.UserRegiste
 		logger.Uint("user_id", user.ID),
 		logger.String("email", req.Username))
 
-	return s.buildUserResponse(user), nil
+	return response.BuildUserResponse(user), nil
 }
 
 // Login handles user authentication with username/email and password
@@ -257,7 +257,7 @@ func (s *userAuthService) Login(ctx context.Context, req *request.UserLoginReque
 	return &response.UserLoginResponse{
 		Token:     token,
 		ExpiresAt: expiresAt,
-		User:      *s.buildUserResponse(user),
+		User:      *response.BuildUserResponse(user),
 	}, nil
 }
 
@@ -582,7 +582,7 @@ func (s *userAuthService) OAuth2Login(ctx context.Context, req *request.OAuth2Lo
 	return &response.UserLoginResponse{
 		Token:     token,
 		ExpiresAt: expiresAt,
-		User:      *s.buildUserResponse(user),
+		User:      *response.BuildUserResponse(user),
 	}, nil
 }
 
@@ -657,42 +657,6 @@ func (s *userAuthService) findOrCreateOAuth2User(ctx context.Context, userInfo *
 		logger.String("provider", provider))
 
 	return user, nil
-}
-
-// buildUserResponse 构建用户响应
-func (s *userAuthService) buildUserResponse(user *model.User) *response.UserResponse {
-	resp := &response.UserResponse{
-		ID:          user.ID,
-		Username:    user.Username,
-		Email:       user.Email,
-		Nickname:    user.Nickname,
-		Phone:       user.Phone,
-		Avatar:      user.Avatar,
-		Gender:      user.Gender,
-		Signature:   user.Signature,
-		Status:      user.Status,
-		LastLoginAt: user.LastLoginAt,
-		LastLoginIP: user.LastLoginIP,
-		Timezone:    user.Timezone,
-		Language:    user.Language,
-		CreatedAt:   user.CreatedAt,
-		UpdatedAt:   user.UpdatedAt,
-	}
-
-	if len(user.Roles) > 0 {
-		resp.Roles = make([]response.RoleResponse, len(user.Roles))
-		for i := range user.Roles {
-			role := &user.Roles[i]
-			resp.Roles[i] = response.RoleResponse{
-				ID:          role.ID,
-				Name:        role.Name,
-				Code:        role.Code,
-				Description: role.Description,
-			}
-		}
-	}
-
-	return resp
 }
 
 // setEmailVerificationLock sets email verification lock in Redis

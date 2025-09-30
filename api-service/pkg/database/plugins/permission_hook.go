@@ -8,7 +8,6 @@ import (
 	"api-service/pkg/utils"
 	"context"
 	"reflect"
-	"strings"
 
 	"gorm.io/gorm"
 )
@@ -98,48 +97,7 @@ func (h *PermissionI18nHook) isPermissionQuery(db *gorm.DB) bool {
 // shouldSkipTranslation determines whether i18n translation should be skipped
 // It checks for explicit skip flags, write operations, and aggregate queries
 func (h *PermissionI18nHook) shouldSkipTranslation(db *gorm.DB) bool {
-	// Check for explicit skip flag set by SkipPermissionI18n helper
-	if skip, exists := db.Get("permission:skip_i18n"); exists && skip.(bool) {
-		h.logger.Debug("Skipping: permission:skip_i18n flag is set")
-		return true
-	}
-
-	// Skip if there's no SQL statement (shouldn't happen in normal cases)
-	if db.Statement.SQL.String() == "" {
-		h.logger.Debug("Skipping: empty SQL statement")
-		return true
-	}
-
-	// Analyze the SQL statement to determine if translation is needed
-	sql := strings.ToUpper(strings.TrimSpace(db.Statement.SQL.String()))
-	sqlToLog := sql
-	if len(sql) > constants.MaxSQLLogLength {
-		sqlToLog = sql[:constants.MaxSQLLogLength] + "..."
-	}
-	h.logger.Debug("Checking SQL statement", logger.String("sql", sqlToLog))
-
-	// Skip write operations (INSERT, UPDATE, DELETE)
-	// These operations don't return data that needs translation
-	if strings.HasPrefix(sql, "INSERT") || strings.HasPrefix(sql, "UPDATE") || strings.HasPrefix(sql, "DELETE") {
-		h.logger.Debug("Skipping: write operation detected")
-		return true
-	}
-
-	// Skip COUNT queries as they don't return Name field data
-	if strings.Contains(sql, "SELECT COUNT(") || strings.Contains(sql, "SELECT COUNT *") {
-		h.logger.Debug("Skipping: COUNT query detected")
-		return true
-	}
-
-	// Skip other aggregate function queries that don't return individual records
-	if strings.Contains(sql, "SELECT SUM(") || strings.Contains(sql, "SELECT AVG(") ||
-		strings.Contains(sql, "SELECT MAX(") || strings.Contains(sql, "SELECT MIN(") {
-		h.logger.Debug("Skipping: aggregate function query detected")
-		return true
-	}
-
-	h.logger.Debug("Not skipping translation - proceeding with Permission.Name translation")
-	return false
+	return shouldSkipQuery(db, "permission:skip_i18n", h.logger)
 }
 
 // getUserLanguage retrieves the user's preferred language from Redis cache first, then database
@@ -233,44 +191,9 @@ func (h *PermissionI18nHook) getSystemLanguage(ctx context.Context) string {
 // translatePermissionNames processes the query result and translates Permission.Name fields
 // It handles both single struct results and slice results (collections)
 func (h *PermissionI18nHook) translatePermissionNames(db *gorm.DB, language string) {
-	if db.Statement.Dest == nil {
-		h.logger.Debug("No destination to translate - Statement.Dest is nil")
-		return
-	}
-
-	// Get the reflection value of the destination
-	destValue := reflect.ValueOf(db.Statement.Dest)
-	h.logger.Debug("Processing result for Permission.Name translation",
-		logger.String("destType", destValue.Type().String()),
-		logger.String("destKind", destValue.Kind().String()))
-
-	// Dereference pointer if necessary
-	if destValue.Kind() == reflect.Ptr {
-		destValue = destValue.Elem()
-		h.logger.Debug("Dereferenced pointer",
-			logger.String("actualType", destValue.Type().String()),
-			logger.String("actualKind", destValue.Kind().String()))
-	}
-
-	// Handle different result types
-	switch destValue.Kind() {
-	case reflect.Slice:
-		// Handle slice results (typically from Find operations)
-		// Iterate through each item in the slice and translate its Name field
-		h.logger.Debug("Processing slice result", logger.Int("length", destValue.Len()))
-		for i := 0; i < destValue.Len(); i++ {
-			item := destValue.Index(i)
-			h.logger.Debug("Translating slice item", logger.Int("index", i))
-			h.translatePermissionName(item, language)
-		}
-	case reflect.Struct:
-		// Handle single struct results (typically from First, Take, etc.)
-		h.logger.Debug("Processing single struct result")
-		h.translatePermissionName(destValue, language)
-	default:
-		h.logger.Debug("Unsupported result type for Permission.Name translation",
-			logger.String("kind", destValue.Kind().String()))
-	}
+	processQueryResult(db, h.logger, func(item reflect.Value) {
+		h.translatePermissionName(item, language)
+	})
 }
 
 // translatePermissionName processes a single Permission struct and translates its Name field
