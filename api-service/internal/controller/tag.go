@@ -63,7 +63,7 @@ func (c *TagController) CreateTag(ctx *gin.Context) {
 		return
 	}
 
-	c.logger.InfoContext(ctx, "Tag created successfully", logger.Uint("tag_id", uint(tag.ID)))
+	c.logger.InfoContext(ctx, "Tag created successfully", logger.Uint("tag_id", tag.ID))
 	response.SuccessWithData(ctx, tag)
 }
 
@@ -131,12 +131,12 @@ func (c *TagController) UpdateTag(ctx *gin.Context) {
 
 	tag, err := c.tagService.UpdateTag(ctx, id, &req, currentUserID)
 	if err != nil {
-		c.logger.ErrorContext(ctx, "Failed to update tag", logger.Uint("tag_id", uint(id)), logger.ErrorField(err))
+		c.logger.ErrorContext(ctx, "Failed to update tag", logger.Uint("tag_id", id), logger.ErrorField(err))
 		response.WithError(ctx, err)
 		return
 	}
 
-	c.logger.InfoContext(ctx, "Tag updated successfully", logger.Uint("tag_id", uint(id)))
+	c.logger.InfoContext(ctx, "Tag updated successfully", logger.Uint("tag_id", id))
 	response.SuccessWithData(ctx, tag)
 }
 
@@ -168,12 +168,12 @@ func (c *TagController) DeleteTag(ctx *gin.Context) {
 
 	err := c.tagService.DeleteTag(ctx, id, currentUserID)
 	if err != nil {
-		c.logger.ErrorContext(ctx, "Failed to delete tag", logger.Uint("tag_id", uint(id)), logger.ErrorField(err))
+		c.logger.ErrorContext(ctx, "Failed to delete tag", logger.Uint("tag_id", id), logger.ErrorField(err))
 		response.WithError(ctx, err)
 		return
 	}
 
-	c.logger.InfoContext(ctx, "Tag deleted successfully", logger.Uint("tag_id", uint(id)))
+	c.logger.InfoContext(ctx, "Tag deleted successfully", logger.Uint("tag_id", id))
 	response.Success(ctx)
 }
 
@@ -242,7 +242,7 @@ func (c *TagController) AssignTags(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "Tags assigned successfully",
-		logger.Uint("resource_id", uint(req.ResourceID)),
+		logger.Uint("resource_id", req.ResourceID),
 		logger.Int("tag_count", len(req.TagNames)))
 	response.SuccessWithData(ctx, result)
 }
@@ -282,7 +282,7 @@ func (c *TagController) ReplaceTags(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "Tags replaced successfully",
-		logger.Uint("resource_id", uint(req.ResourceID)),
+		logger.Uint("resource_id", req.ResourceID),
 		logger.Int("tag_count", len(req.TagNames)))
 	response.SuccessWithData(ctx, result)
 }
@@ -322,7 +322,7 @@ func (c *TagController) UnassignTags(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "Tags unassigned successfully",
-		logger.Uint("resource_id", uint(req.ResourceID)),
+		logger.Uint("resource_id", req.ResourceID),
 		logger.Int("tag_count", len(req.TagIDs)))
 	response.SuccessWithData(ctx, result)
 }
@@ -380,13 +380,13 @@ func (c *TagController) GetResourceTags(ctx *gin.Context) {
 
 	tags, err := c.tagService.GetResourceTags(ctx, &req)
 	if err != nil {
-		c.logger.ErrorContext(ctx, "Failed to get resource tags", logger.Uint("resource_id", uint(req.ResourceID)), logger.ErrorField(err))
+		c.logger.ErrorContext(ctx, "Failed to get resource tags", logger.Uint("resource_id", req.ResourceID), logger.ErrorField(err))
 		response.WithError(ctx, err)
 		return
 	}
 
 	c.logger.InfoContext(ctx, "Resource tags retrieved successfully",
-		logger.Uint("resource_id", uint(req.ResourceID)),
+		logger.Uint("resource_id", req.ResourceID),
 		logger.Int("tag_count", len(tags)))
 	response.SuccessWithData(ctx, tags)
 }

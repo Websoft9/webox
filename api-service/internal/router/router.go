@@ -167,7 +167,7 @@ func setupUserAuthRoutes(v1 *gin.RouterGroup, userAuthController *controller.Use
 }
 
 // setupI18nRoutes sets up internationalization routes
-func setupI18nRoutes(v1 *gin.RouterGroup, protected *gin.RouterGroup, i18nController *controller.I18nController) {
+func setupI18nRoutes(v1, protected *gin.RouterGroup, i18nController *controller.I18nController) {
 	if i18nController == nil {
 		return
 	}

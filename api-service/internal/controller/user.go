@@ -238,7 +238,6 @@ func (c *UserController) DeleteUser(ctx *gin.Context) {
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/users/{id}/status [put]
 func (c *UserController) UpdateUserStatus(ctx *gin.Context) {
-
 	// Get ID
 	id, Success := ParseIDParam(ctx, "id")
 	if !Success {
@@ -279,7 +278,6 @@ func (c *UserController) UpdateUserStatus(ctx *gin.Context) {
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/users/{id}/password [put]
 func (c *UserController) UpdateUserPassword(ctx *gin.Context) {
-
 	// Get ID
 	id, Success := ParseIDParam(ctx, "id")
 	if !Success {

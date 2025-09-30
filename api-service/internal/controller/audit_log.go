@@ -2,7 +2,7 @@ package controller
 
 import (
 	"api-service/internal/constants"
-	"api-service/internal/dto/response"
+	response "api-service/internal/dto/common"
 	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
 	"fmt"
@@ -52,20 +52,18 @@ func NewAuditLogController(
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/audit-logs/{id} [get]
 func (c *AuditLogController) GetAuditLog(ctx *gin.Context) {
-	idStr := ctx.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		response.BadRequest(ctx, err, "validation.invalid_query_parameters")
+	id, Success := ParseIDParam(ctx, "id")
+	if !Success {
 		return
 	}
 
-	auditLog, err := c.auditLogService.GetAuditLog(ctx.Request.Context(), uint(id))
+	auditLog, err := c.auditLogService.GetAuditLog(ctx.Request.Context(), id)
 	if err != nil {
-		response.WithError(ctx, err, c.logger)
+		response.WithError(ctx, err)
 		return
 	}
 
-	response.OKWithData(ctx, auditLog, "common.success")
+	response.SuccessWithData(ctx, auditLog)
 }
 
 // ListAuditLogs get audit log list
@@ -95,11 +93,11 @@ func (c *AuditLogController) ListAuditLogs(ctx *gin.Context) {
 
 	result, err := c.auditLogService.ListAuditLogs(ctx.Request.Context(), &req)
 	if err != nil {
-		response.WithError(ctx, err, c.logger)
+		response.WithError(ctx, err)
 		return
 	}
 
-	response.OKWithData(ctx, result, "common.success")
+	response.SuccessWithData(ctx, result)
 }
 
 // GetAuditLogStatistics get audit log statistics
@@ -123,11 +121,11 @@ func (c *AuditLogController) GetAuditLogStatistics(ctx *gin.Context) {
 
 	statistics, err := c.auditLogService.GetStatistics(ctx.Request.Context(), &req)
 	if err != nil {
-		response.WithError(ctx, err, c.logger)
+		response.WithError(ctx, err)
 		return
 	}
 
-	response.OKWithData(ctx, statistics, "common.success")
+	response.SuccessWithData(ctx, statistics)
 }
 
 // ExportAuditLogs export audit logs
@@ -152,7 +150,7 @@ func (c *AuditLogController) ExportAuditLogs(ctx *gin.Context) {
 
 	data, contentType, err := c.auditLogService.ExportAuditLogs(ctx.Request.Context(), ctx, &req)
 	if err != nil {
-		response.WithError(ctx, err, c.logger)
+		response.WithError(ctx, err)
 		return
 	}
 

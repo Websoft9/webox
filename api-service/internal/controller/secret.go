@@ -138,7 +138,6 @@ func (c *SecretKeyController) GetSecretKey(ctx *gin.Context) {
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/secret-keys/{id}/value [get]
 func (c *SecretKeyController) GetSecretKeyValue(ctx *gin.Context) {
-
 	// Parse path parameter
 	id, Success := ParseIDParam(ctx, "id")
 	if !Success {

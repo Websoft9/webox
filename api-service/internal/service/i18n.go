@@ -31,9 +31,10 @@ func NewI18nService(userProfileRepo repository.UserProfileRepository, logger log
 func (s *i18nService) GetSupportedLanguages(ctx context.Context) (*response.SupportedLanguagesResponse, error) {
 	s.logger.InfoContext(ctx, "Getting supported languages")
 
-	var languages []response.LanguageInfo
+	supportedLangs := i18n.GetSupportedLanguages()
+	languages := make([]response.LanguageInfo, 0, len(supportedLangs))
 
-	for _, lang := range i18n.GetSupportedLanguages() {
+	for _, lang := range supportedLangs {
 		info := i18n.GetLanguageInfo(lang)
 
 		languageInfo := response.LanguageInfo{

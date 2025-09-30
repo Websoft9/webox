@@ -57,7 +57,7 @@ func (s *SystemConfigService) ListSystemConfigs(ctx context.Context, req *reques
 	systemConfigs, err := s.systemConfigRepo.List(ctx, filter)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "failed to list system configs", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to list system configs")
+		return nil, err
 	}
 
 	// Decrypt encrypted values
@@ -89,13 +89,13 @@ func (s *SystemConfigService) ListSystemConfigs(ctx context.Context, req *reques
 // TestSMTP tests the SMTP configuration by sending a test email
 func (s *SystemConfigService) TestSMTP(ctx context.Context, req *request.TestSMTPRequest) error {
 	if s.emailService == nil {
-		return errors.NewAppError(errors.CodeRecordCreateFailed, "SMTP service not configured")
+		return errors.NewAppError(errors.CodeRecordCreateFailed)
 	}
 
 	err := s.emailService.SendEmail(ctx, req.TestEmail, "Test Email", "This is a test email from Websoft9.")
 	if err != nil {
 		s.logger.ErrorContext(ctx, "failed to send test email", logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeRecordCreateFailed, "failed to send test email")
+		return err
 	}
 
 	return nil

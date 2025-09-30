@@ -223,7 +223,6 @@ func (s *userProfileService) GetLoginHistories(ctx context.Context, userID uint,
 		int64(len(records)),
 		result.Items,
 	), nil
-
 }
 
 // GetNotificationSettings retrieves notification settings

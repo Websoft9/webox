@@ -1,8 +1,8 @@
 package controller
 
 import (
+	response "api-service/internal/dto/common"
 	"api-service/internal/dto/request"
-	"api-service/internal/dto/response"
 	"api-service/internal/interface/service"
 	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
@@ -52,11 +52,11 @@ func (c *SystemConfigController) ListSystemConfigs(ctx *gin.Context) {
 
 	result, err := c.SystemConfigService.ListSystemConfigs(ctx.Request.Context(), &req)
 	if err != nil {
-		response.WithError(ctx, err, c.logger)
+		response.WithError(ctx, err)
 		return
 	}
 
-	response.OKWithData(ctx, result, "common.success")
+	response.SuccessWithData(ctx, result)
 }
 
 // TestSMTP tests the SMTP configuration by sending a test email
@@ -78,11 +78,11 @@ func (c *SystemConfigController) TestSMTP(ctx *gin.Context) {
 
 	err := c.SystemConfigService.TestSMTP(ctx.Request.Context(), &req)
 	if err != nil {
-		response.WithError(ctx, err, c.logger)
+		response.WithError(ctx, err)
 		return
 	}
 
-	response.OK(ctx, "common.success")
+	response.Success(ctx)
 }
 
 // ListBasicConfigs lists basic category system configurations
@@ -105,11 +105,11 @@ func (c *SystemConfigController) ListBasicConfigs(ctx *gin.Context) {
 
 	result, err := c.SystemConfigService.ListSystemConfigs(ctx.Request.Context(), &req)
 	if err != nil {
-		response.WithError(ctx, err, c.logger)
+		response.WithError(ctx, err)
 		return
 	}
 
-	response.OKWithData(ctx, result, "common.success")
+	response.SuccessWithData(ctx, result)
 }
 
 // ListSecurityConfigs lists security category system configurations
@@ -133,11 +133,11 @@ func (c *SystemConfigController) ListSecurityConfigs(ctx *gin.Context) {
 
 	result, err := c.SystemConfigService.ListSystemConfigs(ctx.Request.Context(), &req)
 	if err != nil {
-		response.WithError(ctx, err, c.logger)
+		response.WithError(ctx, err)
 		return
 	}
 
-	response.OKWithData(ctx, result, "common.success")
+	response.SuccessWithData(ctx, result)
 }
 
 // ListEmailConfigs lists email category system configurations
@@ -161,11 +161,11 @@ func (c *SystemConfigController) ListEmailConfigs(ctx *gin.Context) {
 
 	result, err := c.SystemConfigService.ListSystemConfigs(ctx.Request.Context(), &req)
 	if err != nil {
-		response.WithError(ctx, err, c.logger)
+		response.WithError(ctx, err)
 		return
 	}
 
-	response.OKWithData(ctx, result, "common.success")
+	response.SuccessWithData(ctx, result)
 }
 
 // BatchUpdateSystemConfigs batch updates system configurations
@@ -189,9 +189,9 @@ func (c *SystemConfigController) BatchUpdateSystemConfigs(ctx *gin.Context) {
 
 	err := c.SystemConfigService.BatchUpdateSystemConfigs(ctx.Request.Context(), &req)
 	if err != nil {
-		response.WithError(ctx, err, c.logger)
+		response.WithError(ctx, err)
 		return
 	}
 
-	response.OK(ctx, "common.success")
+	response.Success(ctx)
 }

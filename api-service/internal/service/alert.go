@@ -282,7 +282,7 @@ func (s *alertService) ListAlertRecords(ctx context.Context, req *request.AlertR
 
 	s.logger.InfoContext(ctx, "Alert records retrieved successfully",
 		logger.Int64("total", total))
-	//return result, nil
+
 	return common.NewPaginationResponse(
 		req.Page,
 		req.PageSize,

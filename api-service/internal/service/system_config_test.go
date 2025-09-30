@@ -259,7 +259,7 @@ func (suite *SystemConfigServiceTestSuite) TestTestSMTP_EmailSendFailed() {
 		TestEmail: "test@example.com",
 	}
 
-	suite.mockEmailService.On("SendEmail", ctx, "test@example.com", "Test Email", "This is a test email from Websoft9.").Return(errors.NewAppError(errors.CodeRecordCreateFailed, "SMTP connection failed"))
+	suite.mockEmailService.On("SendEmail", ctx, "test@example.com", "Test Email", "This is a test email from Websoft9.").Return(errors.NewAppError(errors.CodeRecordCreateFailed))
 
 	err := suite.service.TestSMTP(ctx, req)
 
