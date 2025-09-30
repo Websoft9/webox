@@ -214,7 +214,7 @@ func (suite *SystemConfigServiceTestSuite) TestListSystemConfigs_RepositoryError
 
 	suite.Error(err)
 	suite.Nil(result)
-	suite.Contains(err.Error(), "failed to list system configs")
+	suite.Contains(err.Error(), "record not found")
 }
 
 // TestTestSMTP tests the TestSMTP method
@@ -250,7 +250,7 @@ func (suite *SystemConfigServiceTestSuite) TestTestSMTP_EmailServiceNotConfigure
 	err := serviceWithoutEmail.TestSMTP(ctx, req)
 
 	suite.Error(err)
-	suite.Contains(err.Error(), "SMTP service not configured")
+	suite.Contains(err.Error(), "4008")
 }
 
 func (suite *SystemConfigServiceTestSuite) TestTestSMTP_EmailSendFailed() {
@@ -259,12 +259,13 @@ func (suite *SystemConfigServiceTestSuite) TestTestSMTP_EmailSendFailed() {
 		TestEmail: "test@example.com",
 	}
 
-	suite.mockEmailService.On("SendEmail", ctx, "test@example.com", "Test Email", "This is a test email from Websoft9.").Return(errors.NewAppError(errors.CodeRecordCreateFailed, "SMTP connection failed"))
+	suite.mockEmailService.On("SendEmail", ctx, "test@example.com", "Test Email", "This is a test email from Websoft9.").Return(errors.NewAppError(errors.CodeRecordCreateFailed))
 
 	err := suite.service.TestSMTP(ctx, req)
 
 	suite.Error(err)
-	suite.Contains(err.Error(), "failed to send test email")
+
+	suite.Contains(err.Error(), "4008")
 }
 
 // TestEncryptConfigValue tests the encryptConfigValue method with simplified testing

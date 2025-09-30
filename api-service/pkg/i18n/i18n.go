@@ -1,17 +1,15 @@
 package i18n
 
 import (
-	"embed"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"golang.org/x/text/language"
 	"gopkg.in/yaml.v3"
 )
-
-//go:embed locales/*.yaml
-var localeFS embed.FS
 
 // Language constants
 const (
@@ -28,12 +26,14 @@ var SupportedLanguages []string
 // DefaultLanguage is the fallback language (will be initialized from config)
 var DefaultLanguage string
 
-// Init initializes the i18n bundle
+// Init initializes the i18n bundle with default configuration
 func Init() error {
+	//TODO: 从`config.yaml`配置文件初始化
 	return InitWithConfig(LangEnUS, []string{LangEnUS, LangZhCN})
 }
 
 // InitWithConfig initializes the i18n bundle with custom configuration
+// This function loads language files from configs/lang/ directory
 func InitWithConfig(defaultLang string, supportedLangs []string) error {
 	// Set configuration
 	DefaultLanguage = defaultLang
@@ -42,18 +42,34 @@ func InitWithConfig(defaultLang string, supportedLangs []string) error {
 	Bundle = i18n.NewBundle(language.AmericanEnglish)
 	Bundle.RegisterUnmarshalFunc("yaml", yaml.Unmarshal)
 
-	// Load all locale files from embedded filesystem
+	// Load all locale files from configs/lang/ directory
 	for _, lang := range SupportedLanguages {
-		filename := fmt.Sprintf("locales/%s.yaml", lang)
-		data, err := localeFS.ReadFile(filename)
-		if err != nil {
-			return fmt.Errorf("failed to read locale file %s: %w", filename, err)
+		filename := fmt.Sprintf("configs/lang/%s.yaml", lang)
+		if err := loadLanguageFile(filename); err != nil {
+			return fmt.Errorf("failed to load language file %s: %w", filename, err)
 		}
+	}
 
-		_, err = Bundle.ParseMessageFileBytes(data, filename)
-		if err != nil {
-			return fmt.Errorf("failed to parse locale file %s: %w", filename, err)
-		}
+	return nil
+}
+
+// loadLanguageFile loads a language file from the filesystem
+func loadLanguageFile(filename string) error {
+	// Check if file exists
+	if _, err := os.Stat(filename); os.IsNotExist(err) {
+		return fmt.Errorf("language file does not exist: %s", filename)
+	}
+
+	// Read file content
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		return fmt.Errorf("failed to read language file: %w", err)
+	}
+
+	// Parse the file
+	_, err = Bundle.ParseMessageFileBytes(data, filepath.Base(filename))
+	if err != nil {
+		return fmt.Errorf("failed to parse language file: %w", err)
 	}
 
 	return nil
@@ -277,14 +293,4 @@ func NewI18n() *I18n {
 	return &I18n{
 		defaultLang: DefaultLanguage,
 	}
-}
-
-// T translates a message using gin context to detect language
-func (i *I18n) T(ctx interface{}, key string, templateData ...map[string]interface{}) string {
-	// Try to extract language from gin context
-	lang := i.defaultLang
-
-	// For now, use default language - in a real implementation,
-	// you would extract the language from the gin context
-	return T(key, lang, templateData...)
 }

@@ -400,3 +400,11 @@ const (
 	// Maximum length of SQL log
 	MaxSQLLogLength = 100
 )
+
+const (
+	// Default limit for exporting all secret keys
+	DefaultExportPageSize = 1000
+	ExportFormatExcel     = "excel"
+	ExportFormatJson      = "json"
+	ExportFormatCsv       = "csv"
+)

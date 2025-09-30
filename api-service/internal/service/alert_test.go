@@ -2,6 +2,7 @@ package service
 
 import (
 	"api-service/internal/dto/request"
+	"api-service/internal/dto/response"
 	"api-service/internal/model"
 	"api-service/pkg/i18n"
 	"context"
@@ -274,7 +275,10 @@ func TestListAlertRules(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, result)
 		assert.Equal(t, int64(0), result.Total)
-		assert.Empty(t, result.Items)
+
+		items, ok := result.Items.([]response.AlertRuleResponse)
+		assert.True(t, ok, "Items should be of type []response.AlertRuleResponse")
+		assert.Empty(t, items)
 		mockRepo.AssertExpectations(t)
 	})
 
@@ -331,9 +335,12 @@ func TestListAlertRules(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, result)
 		assert.Equal(t, int64(2), result.Total)
-		assert.Len(t, result.Items, 2)
-		// assert.Equal(t, "CPU High Alert", result.Items[0].Name)
-		// assert.Equal(t, "CPU Load Alert", result.Items[1].Name)
+
+		items, ok := result.Items.([]response.AlertRuleResponse)
+		assert.True(t, ok, "Items should be of type []response.AlertRuleResponse")
+		assert.Len(t, items, 2)
+		assert.Equal(t, "CPU High Alert", items[0].Name)
+		assert.Equal(t, "CPU Load Alert", items[1].Name)
 		mockRepo.AssertExpectations(t)
 	})
 }

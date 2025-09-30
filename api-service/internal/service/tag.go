@@ -44,7 +44,7 @@ func (s *tagService) CreateTag(ctx context.Context, req *request.TagCreateReques
 	s.logger.InfoContext(ctx, "Creating tag",
 		logger.String("operation", "CreateTag"),
 		logger.String("tag_name", req.Name),
-		logger.Uint("user_id", uint(userID)))
+		logger.Uint("user_id", userID))
 
 	// Validate tag name uniqueness
 	exists, err := s.tagRepo.ExistsTagByName(ctx, req.Name)
@@ -71,13 +71,13 @@ func (s *tagService) CreateTag(ctx context.Context, req *request.TagCreateReques
 		return nil, err
 	}
 
-	s.logger.InfoContext(ctx, "Tag created successfully", logger.Uint("tag_id", uint(tag.ID)))
+	s.logger.InfoContext(ctx, "Tag created successfully", logger.Uint("tag_id", tag.ID))
 	return s.convertTagToResponse(tag), nil
 }
 
 // GetTag retrieves a tag by ID
 func (s *tagService) GetTag(ctx context.Context, id uint) (*response.TagResponse, error) {
-	s.logger.InfoContext(ctx, "Getting tag", logger.Uint("tag_id", uint(id)))
+	s.logger.InfoContext(ctx, "Getting tag", logger.Uint("tag_id", id))
 
 	tag, err := s.tagRepo.GetTagByID(ctx, id)
 	if err != nil {
@@ -91,9 +91,9 @@ func (s *tagService) GetTag(ctx context.Context, id uint) (*response.TagResponse
 // UpdateTag updates an existing tag
 func (s *tagService) UpdateTag(ctx context.Context, id uint, req *request.TagUpdateRequest, userID uint) (*response.TagResponse, error) {
 	s.logger.InfoContext(ctx, "Updating tag",
-		logger.Uint("tag_id", uint(id)),
+		logger.Uint("tag_id", id),
 		logger.String("tag_name", req.Name),
-		logger.Uint("user_id", uint(userID)))
+		logger.Uint("user_id", userID))
 
 	// Get existing tag
 	tag, err := s.tagRepo.GetTagByID(ctx, id)
@@ -125,15 +125,15 @@ func (s *tagService) UpdateTag(ctx context.Context, id uint, req *request.TagUpd
 		return nil, err
 	}
 
-	s.logger.InfoContext(ctx, "Tag updated successfully", logger.Uint("tag_id", uint(id)))
+	s.logger.InfoContext(ctx, "Tag updated successfully", logger.Uint("tag_id", id))
 	return s.convertTagToResponse(tag), nil
 }
 
 // DeleteTag deletes a tag
 func (s *tagService) DeleteTag(ctx context.Context, id, userID uint) error {
 	s.logger.InfoContext(ctx, "Deleting tag",
-		logger.Uint("tag_id", uint(id)),
-		logger.Uint("user_id", uint(userID)))
+		logger.Uint("tag_id", id),
+		logger.Uint("user_id", userID))
 
 	// Check if tag exists
 	_, err := s.tagRepo.GetTagByID(ctx, id)
@@ -148,7 +148,7 @@ func (s *tagService) DeleteTag(ctx context.Context, id, userID uint) error {
 		return err
 	}
 
-	s.logger.InfoContext(ctx, "Tag deleted successfully", logger.Uint("tag_id", uint(id)))
+	s.logger.InfoContext(ctx, "Tag deleted successfully", logger.Uint("tag_id", id))
 	return nil
 }
 
@@ -186,8 +186,8 @@ func (s *tagService) ListTags(ctx context.Context, req *request.TagListRequest) 
 // AssignTags assigns tags to a resource
 func (s *tagService) AssignTags(ctx context.Context, req *request.TagAssignRequest, userID uint) (*response.TagAssignResponse, error) {
 	s.logger.InfoContext(ctx, "Assigning tags",
-		logger.Uint("resource_id", uint(req.ResourceID)),
-		logger.Uint("user_id", uint(userID)))
+		logger.Uint("resource_id", req.ResourceID),
+		logger.Uint("user_id", userID))
 
 	var allResults []response.TagAssignResult
 	var allTagIDs []uint
@@ -241,8 +241,8 @@ func (s *tagService) AssignTags(ctx context.Context, req *request.TagAssignReque
 // ReplaceTags replaces all tags for a resource
 func (s *tagService) ReplaceTags(ctx context.Context, req *request.TagAssignRequest, userID uint) (*response.TagAssignResponse, error) {
 	s.logger.InfoContext(ctx, "Replacing tags",
-		logger.Uint("resource_id", uint(req.ResourceID)),
-		logger.Uint("user_id", uint(userID)))
+		logger.Uint("resource_id", req.ResourceID),
+		logger.Uint("user_id", userID))
 
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// Remove all existing tags using transaction
@@ -263,8 +263,8 @@ func (s *tagService) ReplaceTags(ctx context.Context, req *request.TagAssignRequ
 // UnassignTags removes tag associations from a resource
 func (s *tagService) UnassignTags(ctx context.Context, req *request.TagUnassignRequest, userID uint) (*response.TagUnassignResponse, error) {
 	s.logger.InfoContext(ctx, "Unassigning tags",
-		logger.Uint("resource_id", uint(req.ResourceID)),
-		logger.Uint("user_id", uint(userID)))
+		logger.Uint("resource_id", req.ResourceID),
+		logger.Uint("user_id", userID))
 
 	// Remove specified tag associations
 	if err := s.tagRepo.DeleteTaggingsByTagIDs(ctx, req.ResourceID, req.TagIDs); err != nil {
@@ -280,7 +280,7 @@ func (s *tagService) UnassignTags(ctx context.Context, req *request.TagUnassignR
 
 // GetResourceTags retrieves all tags for a resource
 func (s *tagService) GetResourceTags(ctx context.Context, req *request.TaggingListRequest) ([]*response.TagSimpleResponse, error) {
-	s.logger.InfoContext(ctx, "Getting resource tags", logger.Uint("resource_id", uint(req.ResourceID)))
+	s.logger.InfoContext(ctx, "Getting resource tags", logger.Uint("resource_id", req.ResourceID))
 
 	taggings, err := s.tagRepo.GetTaggingsByResourceID(ctx, req.ResourceID)
 	if err != nil {

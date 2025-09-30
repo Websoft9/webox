@@ -54,6 +54,7 @@ auth:
   user_not_authenticated: "用户未认证"
   username_supported: "仅支持用户名登录"
   email_supported: "仅支持邮箱登录"
+  access_denied: "访问被拒绝"
 common:
   success: "操作成功"
   validation_failed: "验证失败"

@@ -40,7 +40,6 @@ func (c *UserAuthController) handleUserAuth(
 	action string,
 	serviceFunc func(context.Context, interface{}) (interface{}, error),
 ) {
-
 	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}

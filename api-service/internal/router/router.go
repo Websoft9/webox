@@ -26,9 +26,9 @@ type Controllers struct {
 	AuditLogController       *controller.AuditLogController
 	UserProfileController    *controller.UserProfileController
 	SystemConfigController   *controller.SystemConfigController
+	AlertController          *controller.AlertController
 	TagController            *controller.TagController
-
-	AlertController *controller.AlertController
+	SecretKeyController      *controller.SecretKeyController
 	// More controllers can be added
 	// AppController  *controller.ApplicationController
 }
@@ -136,7 +136,7 @@ func setupAPIRoutes(v1 *gin.RouterGroup, controllers *Controllers) {
 	// Routes requiring JWT authentication
 	protected := v1.Group("/")
 	setupUserAuthRoutes(v1, controllers.UserAuthController)
-	setupI18nRoutes(v1, controllers.I18nController)
+	setupI18nRoutes(v1, protected, controllers.I18nController)
 	setupUserRoutes(protected, controllers.UserController)
 	setupRoleRoutes(protected, controllers.RolePermissionController)
 	setupPermissionRoutes(protected, controllers.RolePermissionController)
@@ -148,6 +148,7 @@ func setupAPIRoutes(v1 *gin.RouterGroup, controllers *Controllers) {
 	setupSystemConfigRoutes(protected, controllers.SystemConfigController)
 	setupTagRoutes(protected, controllers.TagController)
 	setupAlertRoutes(protected, controllers.AlertController)
+	setupSecretKeyRoutes(protected, controllers.SecretKeyController)
 }
 
 // setupUserRoutes sets up user related routes
@@ -166,7 +167,7 @@ func setupUserAuthRoutes(v1 *gin.RouterGroup, userAuthController *controller.Use
 }
 
 // setupI18nRoutes sets up internationalization routes
-func setupI18nRoutes(v1 *gin.RouterGroup, i18nController *controller.I18nController) {
+func setupI18nRoutes(v1, protected *gin.RouterGroup, i18nController *controller.I18nController) {
 	if i18nController == nil {
 		return
 	}
@@ -174,8 +175,10 @@ func setupI18nRoutes(v1 *gin.RouterGroup, i18nController *controller.I18nControl
 	// i18n related routes (no JWT verification required)
 	i18nGroup := v1.Group("/i18n")
 	i18nGroup.GET("/languages", i18nController.GetLanguages)
-	i18nGroup.GET("/translations/:lang", i18nController.GetTranslations)
-	i18nGroup.GET("/test", i18nController.TestI18n)
+
+	// Protected i18n routes (JWT verification required)
+	protectedI18n := protected.Group("/i18n")
+	protectedI18n.POST("/switch-language", i18nController.SwitchLanguage)
 }
 
 // setupUserRoutes sets up user management routes
@@ -353,4 +356,21 @@ func setupAlertRoutes(protected *gin.RouterGroup, alertController *controller.Al
 	recordsGroup.GET("", alertController.GetAlertRecords)                        // Get list of alert records
 	recordsGroup.PUT("/:id/acknowledge", alertController.AcknowledgeAlertRecord) // Acknowledge an alert
 	recordsGroup.PUT("/:id/resolve", alertController.ResolveAlertRecord)         // Resolve an alert
+}
+
+// setupSecretKeyRoutes sets up secret key management routes
+func setupSecretKeyRoutes(protected *gin.RouterGroup, secretKeyController *controller.SecretKeyController) {
+	if secretKeyController == nil {
+		return
+	}
+
+	// Secret key routes
+	secretKeys := protected.Group("/secret-keys")
+	secretKeys.GET("", secretKeyController.ListSecretKeys)              // GET /api/v1/secret-keys
+	secretKeys.POST("", secretKeyController.CreateSecretKey)            // POST /api/v1/secret-keys
+	secretKeys.GET("/export", secretKeyController.ExportSecretKeys)     // GET /api/v1/secret-keys/export
+	secretKeys.GET("/:id", secretKeyController.GetSecretKey)            // GET /api/v1/secret-keys/{id}
+	secretKeys.GET("/:id/value", secretKeyController.GetSecretKeyValue) // GET /api/v1/secret-keys/{id}/value
+	secretKeys.PUT("/:id", secretKeyController.UpdateSecretKey)         // PUT /api/v1/secret-keys/{id}
+	secretKeys.DELETE("/:id", secretKeyController.DeleteSecretKey)      // DELETE /api/v1/secret-keys/{id}
 }

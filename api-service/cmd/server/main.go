@@ -182,6 +182,7 @@ func initDatabaseWrapper(cfg *config.Config, zapLogger logger.Logger) (*database
 		&model.Tagging{},
 		&model.AlertRecord{},
 		&model.AlertRule{},
+		&model.SecretKey{},
 	); migrateErr != nil {
 		return nil, fmt.Errorf("failed to migrate database models: %v", migrateErr)
 	}
@@ -396,6 +397,7 @@ type repositories struct {
 	systemConfigRepo repoInterface.SystemConfigRepository
 	tagRepo          repoInterface.TagRepository
 	alertRepo        repoInterface.AlertRepository
+	secretKeyRepo    repoInterface.SecretKeyRepository
 }
 
 // initRepositories creates and initializes all repository instances
@@ -412,6 +414,7 @@ func initRepositories(db *gorm.DB) *repositories {
 		systemConfigRepo: repoImpl.NewSystemConfigRepository(db),
 		tagRepo:          repoImpl.NewTagRepository(db),
 		alertRepo:        repoImpl.NewAlertRepository(db),
+		secretKeyRepo:    repoImpl.NewSecretKeyRepository(db),
 	}
 }
 
@@ -430,6 +433,8 @@ type businessServices struct {
 	systemConfigService serviceInterface.SystemConfigService
 	tagService          serviceInterface.TagService
 	alertServices       serviceInterface.AlertService
+	secretKeyService    serviceInterface.SecretKeyService
+	i18nService         serviceInterface.I18nService
 }
 
 // initBusinessServices creates and initializes all service instances with their dependencies
@@ -467,6 +472,8 @@ func initBusinessServices(
 		userProfileService:  serviceImpl.NewUserProfileService(repos.userProfileRepo, zapLogger, i18nInstance),
 		tagService:          serviceImpl.NewTagService(repos.tagRepo, db, zapLogger, i18nInstance),
 		alertServices:       serviceImpl.NewAlertService(repos.alertRepo, zapLogger, i18nInstance),
+		secretKeyService:    serviceImpl.NewSecretKeyService(repos.secretKeyRepo, zapLogger, i18nInstance, cfg),
+		i18nService:         serviceImpl.NewI18nService(repos.userProfileRepo, zapLogger),
 	}
 }
 
@@ -485,7 +492,7 @@ func initControllers(
 	return &router.Controllers{
 		UserController:     controller.NewUserController(services.userService, zapLogger, i18nInstance, validatorInstance),
 		UserAuthController: controller.NewUserAuthController(services.userAuthService, validatorInstance, zapLogger),
-		I18nController:     controller.NewI18nController(),
+		I18nController:     controller.NewI18nController(services.i18nService, validatorInstance, zapLogger),
 		RolePermissionController: controller.NewRolePermissionController(
 			services.roleService,
 			services.permissionService,
@@ -516,6 +523,7 @@ func initControllers(
 			zapLogger,
 			i18nInstance,
 		),
+		SecretKeyController: controller.NewSecretKeyController(services.secretKeyService, zapLogger, i18nInstance, validatorInstance),
 	}
 }
 

@@ -61,23 +61,14 @@ func (c *UserController) ListUsers(ctx *gin.Context) {
 		return
 	}
 
-	users, total, err := c.userService.ListUsers(ctx, &req)
+	result, err := c.userService.ListUsers(ctx, &req)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Failed to get user list", logger.ErrorField(err))
 		response.WithError(ctx, err)
 		return
 	}
 
-	c.logger.InfoContext(ctx, "User list retrieved successfully", logger.Int64("total", total))
-
-	// Return paginated response
-	result := map[string]interface{}{
-		"users":       users.Users,
-		"total":       users.Total,
-		"page":        req.Page,
-		"page_size":   req.PageSize,
-		"total_pages": (int(total) + req.PageSize - 1) / req.PageSize,
-	}
+	c.logger.InfoContext(ctx, "User list retrieved successfully")
 
 	response.SuccessWithData(ctx, result)
 }
@@ -247,7 +238,6 @@ func (c *UserController) DeleteUser(ctx *gin.Context) {
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/users/{id}/status [put]
 func (c *UserController) UpdateUserStatus(ctx *gin.Context) {
-
 	// Get ID
 	id, Success := ParseIDParam(ctx, "id")
 	if !Success {
@@ -288,7 +278,6 @@ func (c *UserController) UpdateUserStatus(ctx *gin.Context) {
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/users/{id}/password [put]
 func (c *UserController) UpdateUserPassword(ctx *gin.Context) {
-
 	// Get ID
 	id, Success := ParseIDParam(ctx, "id")
 	if !Success {

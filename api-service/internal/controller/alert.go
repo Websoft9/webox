@@ -133,17 +133,16 @@ func isExpression(expression string) bool {
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/alert/rules/{id} [get]
 func (c *AlertController) GetAlertRule(ctx *gin.Context) {
-
 	// Get alert rule ID from path parameter
 	id, Success := ParseIDParam(ctx, "id")
 	if !Success {
 		return
 	}
 
-	result, err := c.alertService.GetAlertRuleByID(ctx, uint(id))
+	result, err := c.alertService.GetAlertRuleByID(ctx, id)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Failed to get alert rule",
-			logger.Uint("id", uint(id)),
+			logger.Uint("id", id),
 			logger.ErrorField(err))
 		response.WithError(ctx, err)
 		return
@@ -187,10 +186,10 @@ func (c *AlertController) UpdateAlertRule(ctx *gin.Context) {
 		return
 	}
 
-	result, err := c.alertService.UpdateAlertRule(ctx, uint(id), &req)
+	result, err := c.alertService.UpdateAlertRule(ctx, id, &req)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Failed to update alert rule",
-			logger.Uint("id", uint(id)),
+			logger.Uint("id", id),
 			logger.ErrorField(err))
 		response.WithError(ctx, err)
 		return
@@ -213,7 +212,6 @@ func (c *AlertController) UpdateAlertRule(ctx *gin.Context) {
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/alert/rules/{id} [delete]
 func (c *AlertController) DeleteAlertRule(ctx *gin.Context) {
-
 	id, Success := ParseIDParam(ctx, "id")
 	if !Success {
 		return
@@ -222,7 +220,7 @@ func (c *AlertController) DeleteAlertRule(ctx *gin.Context) {
 	err := c.alertService.DeleteAlertRule(ctx, id)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Failed to delete alert rule",
-			logger.Uint("id", uint(id)),
+			logger.Uint("id", id),
 			logger.ErrorField(err))
 		response.WithError(ctx, err)
 		return
@@ -281,7 +279,6 @@ func (c *AlertController) GetAlertRecords(ctx *gin.Context) {
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/alert/records/{id}/acknowledge [put]
 func (c *AlertController) AcknowledgeAlertRecord(ctx *gin.Context) {
-
 	id, Success := ParseIDParam(ctx, "id")
 	if !Success {
 		return
@@ -299,10 +296,10 @@ func (c *AlertController) AcknowledgeAlertRecord(ctx *gin.Context) {
 		return
 	}
 
-	err := c.alertService.AcknowledgeAlertRecord(ctx, uint(id), currentUserID, &req)
+	err := c.alertService.AcknowledgeAlertRecord(ctx, id, currentUserID, &req)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Failed to acknowledge alert record",
-			logger.Uint("id", uint(id)),
+			logger.Uint("id", id),
 			logger.ErrorField(err))
 		response.WithError(ctx, err)
 		return
@@ -343,10 +340,10 @@ func (c *AlertController) ResolveAlertRecord(ctx *gin.Context) {
 		return
 	}
 
-	err := c.alertService.ResolveAlertRecord(ctx, uint(id), currentUserID, &req)
+	err := c.alertService.ResolveAlertRecord(ctx, id, currentUserID, &req)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Failed to resolve alert record",
-			logger.Uint("id", uint(id)),
+			logger.Uint("id", id),
 			logger.ErrorField(err))
 		response.WithError(ctx, err)
 		return

@@ -40,7 +40,6 @@ func NewUserProfileController(
 // @Tags Profile
 // @Accept json
 // @Produce json
-// @Param userid query uint true "User ID to get profile for"
 // @Security BearerAuth
 // @Success 200 {object} response.APIResponse{data=response.UserProfileResponse}
 // @Failure 401 {object} response.APIResponse

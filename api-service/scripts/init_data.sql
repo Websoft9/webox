@@ -218,7 +218,14 @@ INSERT INTO `permissions` (`parent_code`,`scope`,`name`,`code`,`module`,`action`
    ('e4d3f825-d72c-4a2e-b6fb-0143f5e5eb5e','platform','ui.alert_records','3a8d521d-d3f2-47d8-b302-62cc586bc8c5','alert','*','/alert/records',NULL,'Alert records management all permissions',1,1,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
    ('3a8d521d-d3f2-47d8-b302-62cc586bc8c5','platform','ui.action_query','a23c0473-c7a5-4651-b9e5-86fe5a87f416','alert','query','/alert/records',NULL,'Alert records query permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
    ('3a8d521d-d3f2-47d8-b302-62cc586bc8c5','platform','ui.action_update','6e3b8ca7-1e76-4c2c-a395-53795a426a02','alert','update','/alert/records/*/acknowledge',NULL,'Alert records acknowledge permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
-   ('3a8d521d-d3f2-47d8-b302-62cc586bc8c5','platform','ui.action_update','dc85e805-bce7-4c2c-abef-3f813345921f','alert','update','/alert/records/*/resolve',NULL,'Alert records resolve permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19');
+   ('3a8d521d-d3f2-47d8-b302-62cc586bc8c5','platform','ui.action_update','dc85e805-bce7-4c2c-abef-3f813345921f','alert','update','/alert/records/*/resolve',NULL,'Alert records resolve permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+   ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_query','a1b2c3d4-e5f6-4789-a012-3456789abcde','secret_key','query','/secret-keys',NULL,'Secret key list query permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+   ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_create','b2c3d4e5-f6a7-4890-b123-456789abcdef','secret_key','create','/secret-keys',NULL,'Secret key create permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+   ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_query','c3d4e5f6-a7b8-4901-c234-56789abcdef0','secret_key','query','/secret-keys/*',NULL,'Secret key detail query permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+   ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_update','d4e5f6a7-b8c9-4012-d345-6789abcdef01','secret_key','update','/secret-keys/*',NULL,'Secret key update permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+   ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_delete','e5f6a7b8-c9d0-4123-e456-789abcdef012','secret_key','delete','/secret-keys/*',NULL,'Secret key delete permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+   ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_query','f6a7b8c9-d0e1-4234-f567-89abcdef0123','secret_key','query','/secret-keys/export',NULL,'Secret key export permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+   ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_query','a7b8c9d0-e1f2-4345-a678-9abcdef01234','secret_key','query','/secret-keys/*/value',NULL,'Secret key value decrypt permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19');
     
 -- Insert default users and role permissions
 INSERT INTO `users` (`id`,`username`,`email`,`password_hash`,`nickname`,`avatar`,`phone`,`gender`,`signature`,`status`,`last_login_at`,`last_login_ip`,`timezone`,`language`,`created_at`,`updated_at`) VALUES
@@ -434,7 +441,15 @@ INSERT INTO `role_permissions` (`role_id`,`permission_code`,`granted_by`,`grante
          (1, '3a8d521d-d3f2-47d8-b302-62cc586bc8c5',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
          (1, 'a23c0473-c7a5-4651-b9e5-86fe5a87f416',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
          (1, '6e3b8ca7-1e76-4c2c-a395-53795a426a02',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
-         (1, 'dc85e805-bce7-4c2c-abef-3f813345921f',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19');
+         (1, 'dc85e805-bce7-4c2c-abef-3f813345921f',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, '89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, 'a1b2c3d4-e5f6-4789-a012-3456789abcde',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, 'b2c3d4e5-f6a7-4890-b123-456789abcdef',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, 'c3d4e5f6-a7b8-4901-c234-56789abcdef0',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, 'd4e5f6a7-b8c9-4012-d345-6789abcdef01',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, 'e5f6a7b8-c9d0-4123-e456-789abcdef012',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, 'f6a7b8c9-d0e1-4234-f567-89abcdef0123',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, 'a7b8c9d0-e1f2-4345-a678-9abcdef01234',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19');
          
 -- Insert default application categories
 INSERT INTO `app_store_categories` (`name`, `code`, `description`, `sort_order`, `status`) VALUES

@@ -67,18 +67,20 @@ const (
 	CodeRecordDeleteDenied         ErrorCode = 4013 // Record delete denied
 
 	// Business logic error codes (5000-5999)
-	CodeServerOffline                  ErrorCode = 5001 // Server offline, cannot operate
-	CodeAppDeploymentFailed            ErrorCode = 5002 // Application deployment failed
-	CodeWorkflowExecutionFailed        ErrorCode = 5003 // Workflow execution failed
-	CodeCertificateRequestFailed       ErrorCode = 5004 // Certificate request failed
-	CodeBackupOperationFailed          ErrorCode = 5005 // Backup operation failed
-	CodeMonitoringDataCollectionFailed ErrorCode = 5006 // Monitoring data collection failed
-	CodeAppPublishFailed               ErrorCode = 5007 // Application publish failed
-	CodeAppOfflineFailed               ErrorCode = 5008 // Application offline failed
-	CodeHealthCheckFailed              ErrorCode = 5009 // Health check failed
-	CodeGatewayConfigUpdateFailed      ErrorCode = 5010 // Gateway configuration update failed
-	CodeUserAlreadyExists              ErrorCode = 5011 // Username already exists
-	CodePermissionInvalid              ErrorCode = 5012 // Permission invalid
+	CodeServerOffline                  = 5001 // Server offline, cannot operate
+	CodeAppDeploymentFailed            = 5002 // Application deployment failed
+	CodeWorkflowExecutionFailed        = 5003 // Workflow execution failed
+	CodeCertificateRequestFailed       = 5004 // Certificate request failed
+	CodeBackupOperationFailed          = 5005 // Backup operation failed
+	CodeMonitoringDataCollectionFailed = 5006 // Monitoring data collection failed
+	CodeAppPublishFailed               = 5007 // Application publish failed
+	CodeAppOfflineFailed               = 5008 // Application offline failed
+	CodeHealthCheckFailed              = 5009 // Health check failed
+	CodeGatewayConfigUpdateFailed      = 5010 // Gateway configuration update failed
+	CodeUserAlreadyExists              = 5011 // Username already exists
+	CodePermissionInvalid              = 5012 // Permission invalid
+	CodeEncryptFailed                  = 5013 // Data encryption failed
+	CodeDecryptFailed                  = 5014 // Data decryption failed
 
 	// System related error codes (6000-6999)
 	CodeInternalError                ErrorCode = 6001 // System Internal Error
@@ -159,6 +161,8 @@ var CodeToI18nKey = map[ErrorCode]string{
 	CodeGatewayConfigUpdateFailed:      "business.gateway_config_update_failed",
 	CodeUserAlreadyExists:              "business.user_already_exists",
 	CodePermissionInvalid:              "business.permission_invalid",
+	CodeEncryptFailed:                  "business.encrypt_failed",
+	CodeDecryptFailed:                  "business.decrypt_failed",
 
 	// System related errors (6000-6999)
 	CodeInternalError:                "system.internal_error",
