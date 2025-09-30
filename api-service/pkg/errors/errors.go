@@ -1,6 +1,7 @@
 package errors
 
 import (
+	"api-service/pkg/i18n"
 	"fmt"
 	"net/http"
 )
@@ -19,10 +20,20 @@ type AppError struct {
 // Error implements the error interface
 // It returns a formatted string representation of the error
 func (e *AppError) Error() string {
-	if e.Details != "" {
-		return fmt.Sprintf("Code: %d, Message: %s, Details: %s", e.Code, e.Message, e.Details)
+	// Use i18n key or message
+	message := e.Message
+	if message == "" && e.I18nKey != "" {
+		// Try to translate using default language if i18n is initialized
+		if i18n.Bundle == nil {
+			_ = i18n.Init()
+		}
+		message = i18n.T(e.I18nKey, i18n.DefaultLanguage)
 	}
-	return fmt.Sprintf("Code: %d, Message: %s", e.Code, e.Message)
+
+	if e.Details != "" {
+		return fmt.Sprintf("Code: %d, Message: %s, Details: %s", e.Code, message, e.Details)
+	}
+	return fmt.Sprintf("Code: %d, Message: %s", e.Code, message)
 }
 
 // GetI18nKey returns the internationalization key for this error

@@ -3,8 +3,10 @@ package service
 import (
 	"api-service/internal/dto/common"
 	"api-service/internal/dto/request"
+	"api-service/internal/dto/response"
 	"api-service/internal/model"
 	"api-service/pkg/errors"
+	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
 	"context"
 	stderrors "errors"
@@ -239,6 +241,9 @@ func (m *MockDB) Transaction(fn func(tx *gorm.DB) error) error {
 
 // Test setup
 func setupRoleServiceTest() (*roleService, *MockRoleRepository, *MockPermissionRepository, *MockDB) {
+	// Initialize i18n for testing
+	_ = i18n.Init()
+
 	mockRoleRepo := &MockRoleRepository{}
 	mockPermissionRepo := &MockPermissionRepository{}
 	mockDB := &MockDB{}
@@ -350,7 +355,7 @@ func TestRoleService_CreateRole_CodeAlreadyExists(t *testing.T) {
 	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "role code already exists")
+	assert.Contains(t, err.Error(), "Resource already exists")
 
 	mockRoleRepo.AssertExpectations(t)
 }
@@ -379,7 +384,7 @@ func TestRoleService_CreateRole_InvalidPermissionIDs(t *testing.T) {
 	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "some permission IDs are invalid")
+	assert.Contains(t, err.Error(), "Permission invalid")
 
 	mockRoleRepo.AssertExpectations(t)
 	mockPermissionRepo.AssertExpectations(t)
@@ -470,7 +475,7 @@ func TestRoleService_UpdateRole_SystemRole(t *testing.T) {
 	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "cannot update system role")
+	assert.Contains(t, err.Error(), "Record update failed")
 
 	mockRoleRepo.AssertExpectations(t)
 }
@@ -545,8 +550,8 @@ func TestRoleService_ListRoles_Success(t *testing.T) {
 	// Assert
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
-	items, ok := result.Items.([]interface{})
-	assert.True(t, ok, "Items should be a slice")
+	items, ok := result.Items.([]response.RoleResponse)
+	assert.True(t, ok, "Items should be a slice of RoleResponse")
 	assert.Equal(t, len(roles), len(items))
 	assert.Equal(t, total, result.Total)
 	assert.Equal(t, req.GetOffset(), result.Page)
@@ -613,7 +618,7 @@ func TestRoleService_AssignPermissions_SystemRole(t *testing.T) {
 
 	// Assert
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "cannot modify system role permissions")
+	assert.Contains(t, err.Error(), "Record update failed")
 
 	mockRoleRepo.AssertExpectations(t)
 }

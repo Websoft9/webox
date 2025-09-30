@@ -3,8 +3,10 @@ package service
 import (
 	"api-service/internal/dto/common"
 	"api-service/internal/dto/request"
+	"api-service/internal/dto/response"
 	"api-service/internal/model"
 	"api-service/pkg/errors"
+	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
 	"context"
 	"fmt"
@@ -25,6 +27,9 @@ type PermissionServiceTestSuite struct {
 }
 
 func (suite *PermissionServiceTestSuite) SetupTest() {
+	// Initialize i18n for testing
+	_ = i18n.Init()
+
 	suite.mockPermissionRepo = &MockPermissionRepository{}
 	suite.mockRoleRepo = &MockRoleRepository{}
 	suite.logger = logger.NewZapLogger(logger.InfoLevel, nil)
@@ -96,7 +101,7 @@ func (suite *PermissionServiceTestSuite) TestCreatePermission_CodeAlreadyExists(
 	// Assert
 	suite.Error(err)
 	suite.Nil(result)
-	suite.Contains(err.Error(), "permission code already exists")
+	suite.Contains(err.Error(), "Resource already exists")
 
 	suite.mockPermissionRepo.AssertExpectations(suite.T())
 }
@@ -173,8 +178,8 @@ func (suite *PermissionServiceTestSuite) TestListPermissions_Success() {
 	// Assert
 	suite.NoError(err)
 	suite.NotNil(result)
-	items, ok := result.Items.([]interface{})
-	suite.True(ok, "Items should be a slice")
+	items, ok := result.Items.([]response.PermissionResponse)
+	suite.True(ok, "Items should be a slice of PermissionResponse")
 	suite.Equal(2, len(items))
 	suite.Equal(total, result.Total)
 	suite.Equal(req.GetOffset(), result.Page)
@@ -250,7 +255,7 @@ func (suite *PermissionServiceTestSuite) TestUpdatePermission_SystemPermission()
 	// Assert
 	suite.Error(err)
 	suite.Nil(result)
-	suite.Contains(err.Error(), "cannot update system permission")
+	suite.Contains(err.Error(), "Record update failed")
 
 	suite.mockPermissionRepo.AssertExpectations(suite.T())
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -26,6 +27,38 @@ var SupportedLanguages []string
 // DefaultLanguage is the fallback language (will be initialized from config)
 var DefaultLanguage string
 
+// getProjectRoot returns the absolute path to the project root directory
+// It searches for go.mod file starting from the current file's directory
+func getProjectRoot() (string, error) {
+	// Get the directory of the current source file
+	_, filename, _, ok := runtime.Caller(0)
+	if !ok {
+		return "", fmt.Errorf("failed to get current file path")
+	}
+
+	// Start from the directory containing this file
+	dir := filepath.Dir(filename)
+
+	// Walk up the directory tree to find go.mod
+	for {
+		goModPath := filepath.Join(dir, "go.mod")
+		if _, err := os.Stat(goModPath); err == nil {
+			// Found go.mod, this is the project root
+			return dir, nil
+		}
+
+		// Move up one directory
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			// Reached filesystem root without finding go.mod
+			break
+		}
+		dir = parent
+	}
+
+	return "", fmt.Errorf("could not find project root (go.mod not found)")
+}
+
 // Init initializes the i18n bundle with default configuration
 func Init() error {
 	//TODO: 从`config.yaml`配置文件初始化
@@ -42,9 +75,15 @@ func InitWithConfig(defaultLang string, supportedLangs []string) error {
 	Bundle = i18n.NewBundle(language.AmericanEnglish)
 	Bundle.RegisterUnmarshalFunc("yaml", yaml.Unmarshal)
 
-	// Load all locale files from configs/lang/ directory
+	// Get project root directory
+	projectRoot, err := getProjectRoot()
+	if err != nil {
+		return fmt.Errorf("failed to get project root: %w", err)
+	}
+
+	// Load all locale files from configs/lang/ directory using absolute path
 	for _, lang := range SupportedLanguages {
-		filename := fmt.Sprintf("configs/lang/%s.yaml", lang)
+		filename := filepath.Join(projectRoot, "configs", "lang", fmt.Sprintf("%s.yaml", lang))
 		if err := loadLanguageFile(filename); err != nil {
 			return fmt.Errorf("failed to load language file %s: %w", filename, err)
 		}
@@ -55,19 +94,33 @@ func InitWithConfig(defaultLang string, supportedLangs []string) error {
 
 // loadLanguageFile loads a language file from the filesystem
 func loadLanguageFile(filename string) error {
-	// Check if file exists
-	if _, err := os.Stat(filename); os.IsNotExist(err) {
-		return fmt.Errorf("language file does not exist: %s", filename)
+	// Clean the file path to prevent path traversal
+	cleanPath := filepath.Clean(filename)
+
+	// Validate that the path is absolute and doesn't contain path traversal attempts
+	if !filepath.IsAbs(cleanPath) {
+		return fmt.Errorf("language file path must be absolute: %s", cleanPath)
 	}
 
-	// Read file content
-	data, err := os.ReadFile(filename)
+	// Additional security check: ensure the path doesn't contain ".."
+	if strings.Contains(cleanPath, "..") {
+		return fmt.Errorf("invalid language file path (contains ..): %s", cleanPath)
+	}
+
+	// Check if file exists
+	if _, err := os.Stat(cleanPath); os.IsNotExist(err) {
+		return fmt.Errorf("language file does not exist: %s", cleanPath)
+	}
+
+	// Read file content with cleaned path
+	// #nosec G304 - Path is validated and cleaned above, and only loads from trusted configs/lang directory
+	data, err := os.ReadFile(cleanPath)
 	if err != nil {
 		return fmt.Errorf("failed to read language file: %w", err)
 	}
 
 	// Parse the file
-	_, err = Bundle.ParseMessageFileBytes(data, filepath.Base(filename))
+	_, err = Bundle.ParseMessageFileBytes(data, filepath.Base(cleanPath))
 	if err != nil {
 		return fmt.Errorf("failed to parse language file: %w", err)
 	}

@@ -636,7 +636,7 @@ func TestGlobalPackageFunctions(t *testing.T) {
 
 		err := ValidateUsernameOrEmail("test")
 		assert.Error(t, err) // Should fail because auth policy not initialized
-		assert.Contains(t, err.Error(), "Auth policy not initialized")
+		assert.Contains(t, err.Error(), "Required parameter missing")
 	})
 
 	t.Run("Functions with global policy initialized", func(t *testing.T) {
