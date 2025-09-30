@@ -54,6 +54,7 @@ auth:
   user_not_authenticated: "User not authenticated"
   username_supported: "Only username login is supported"
   email_supported: "Only email login is supported"
+  access_denied: "Access denied"
 common:
   success: "Operation successful"
   validation_failed: "Validation failed"

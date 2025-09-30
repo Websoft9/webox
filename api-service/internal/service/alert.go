@@ -269,15 +269,9 @@ func (s *alertService) ListAlertRecords(ctx context.Context, req *request.AlertR
 	}
 
 	// Convert to DTOs
-	result := &response.AlertRecordListResponse{
-		Records:  make([]response.AlertRecordResponse, 0, len(records)),
-		Total:    total,
-		Page:     req.Page,
-		PageSize: req.PageSize,
-	}
-
+	records_dto := make([]response.AlertRecordResponse, 0, len(records))
 	for _, record := range records {
-		result.Records = append(result.Records, s.mapAlertRecordToDTO(record))
+		records_dto = append(records_dto, s.mapAlertRecordToDTO(record))
 	}
 
 	s.logger.InfoContext(ctx, "Alert records retrieved successfully",
@@ -287,7 +281,7 @@ func (s *alertService) ListAlertRecords(ctx context.Context, req *request.AlertR
 		req.Page,
 		req.PageSize,
 		total,
-		result.Records,
+		records_dto,
 	), nil
 }
 
