@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"api-service/internal/dto/request"
 	"api-service/internal/interface/repository"
 	"api-service/internal/model"
 	"context"
@@ -70,22 +71,26 @@ func (r *userProfileRepository) UpdateUserPassword(ctx context.Context, userID u
 	return nil
 }
 
-// GetLoginHistories retrieves user's login history records
-func (r *userProfileRepository) GetLoginHistories(ctx context.Context, userID uint, page, pageSize int) ([]model.UserLoginHistory, int64, error) {
-	var records []model.UserLoginHistory
+// GetLoginHistories retrieves user login history
+func (r *userProfileRepository) GetLoginHistories(ctx context.Context, userID uint, req *request.LoginHistoryRequest) ([]*model.UserLoginHistory, int64, error) {
+	var records []*model.UserLoginHistory
 	var total int64
 
 	query := r.db.WithContext(ctx).Model(&model.UserLoginHistory{}).Where("user_id = ?", userID)
 
-	// count total records
-	err := query.Count(&total).Error
-	if err != nil {
+	// Get total count
+	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	// paginated query
-	offset := (page - 1) * pageSize
-	err = query.Order("login_time DESC").Offset(offset).Limit(pageSize).Find(&records).Error
+	// Paginated query
+	offset := req.GetOffset()
+	limit := req.GetPageSize()
+
+	err := query.Order(req.GetSortOrder()).
+		Offset(offset).Limit(limit).
+		Find(&records).Error
+
 	if err != nil {
 		return nil, 0, err
 	}
