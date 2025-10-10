@@ -411,8 +411,8 @@ func (c *ServerController) DeleteFile(ctx *gin.Context) {
 	var req struct {
 		Path string `json:"path" binding:"required"`
 	}
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		common.BadRequest(ctx, fmt.Errorf("invalid request body: %v", err))
+	if bindErr := ctx.ShouldBindJSON(&req); bindErr != nil {
+		common.BadRequest(ctx, fmt.Errorf("invalid request body: %v", bindErr))
 		return
 	}
 

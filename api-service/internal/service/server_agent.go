@@ -264,7 +264,7 @@ func (s *serverAgentService) executeAgentRestart(ctx context.Context, agent *mod
 	}
 }
 
-func (s *serverAgentService) mockGetAgentLogs(_ context.Context, agent *model.ServerAgent, lines int) []string {
+func (s *serverAgentService) mockGetAgentLogs(_ context.Context, _ *model.ServerAgent, lines int) []string {
 	// Mock log lines (in real implementation, this would fetch from server)
 	mockLogs := []string{
 		fmt.Sprintf("[%s] Agent started successfully", time.Now().Format("2006-01-02 15:04:05")),

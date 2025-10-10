@@ -202,6 +202,17 @@ func Load() (*Config, error) {
 }
 
 func setDefaults() {
+	setServerDefaults()
+	setDatabaseDefaults()
+	setRedisDefaults()
+	setI18nDefaults()
+	setEmailDefaults()
+	setAppDefaults()
+	setAuditLogDefaults()
+	setSecurityDefaults()
+}
+
+func setServerDefaults() {
 	viper.SetDefault("server.port", constants.DefaultPort)
 	viper.SetDefault("server.mode", "debug")
 
@@ -226,7 +237,11 @@ func setDefaults() {
 	viper.SetDefault("server.log.log_max_age", constants.DefaultLogMaxAge)
 	viper.SetDefault("server.log.log_compress", true)
 
-	// Database defaults
+	// gRPC defaults
+	viper.SetDefault("grpc.port", "9090")
+}
+
+func setDatabaseDefaults() {
 	viper.SetDefault("database.type", "sqlite")
 	viper.SetDefault("database.path", "./data/websoft9.db")
 	viper.SetDefault("database.host", "localhost")
@@ -241,32 +256,34 @@ func setDefaults() {
 	viper.SetDefault("database.connect_timeout", constants.DefaultConnectTimeout)
 	viper.SetDefault("database.charset", "utf8mb4")
 	viper.SetDefault("database.timezone", "Local")
+}
 
-	// Redis defaults
+func setRedisDefaults() {
 	viper.SetDefault("redis.host", "localhost")
 	viper.SetDefault("redis.port", "6379")
 	viper.SetDefault("redis.db", 0)
+}
 
-	// gRPC defaults
-	viper.SetDefault("grpc.port", "9090")
-
-	// i18n defaults
+func setI18nDefaults() {
 	viper.SetDefault("i18n.default_language", "en-US")
 	viper.SetDefault("i18n.supported_languages", []string{"en-US", "zh-CN"})
+}
 
-	// Email defaults
+func setEmailDefaults() {
 	viper.SetDefault("email.smtp.host", "smtp.gmail.com")
 	viper.SetDefault("email.smtp.port", constants.SMTPDefaultPort)
 	viper.SetDefault("email.smtp.username", "")
 	viper.SetDefault("email.smtp.password", "")
 	viper.SetDefault("email.smtp.from", "noreply@websoft9.com")
 	viper.SetDefault("email.smtp.use_tls", true)
+}
 
-	// App defaults
+func setAppDefaults() {
 	viper.SetDefault("app.base_url", "http://localhost:3000")
 	viper.SetDefault("app.name", "Websoft9")
+}
 
-	// Audit log defaults
+func setAuditLogDefaults() {
 	viper.SetDefault("audit_log.skip_paths", []string{"/health", "/api/v1/health"})
 	viper.SetDefault("audit_log.sensitive_get_paths", []string{
 		"/api/v1/users/profile",
@@ -277,8 +294,9 @@ func setDefaults() {
 	})
 	viper.SetDefault("audit_log.audit_methods", []string{"POST", "PUT", "DELETE", "PATCH"})
 	viper.SetDefault("audit_log.skip_methods", []string{"OPTIONS", "HEAD"})
+}
 
-	// Crypto defaults
+func setSecurityDefaults() {
 	viper.SetDefault("security.aes_key", "websoft9-default-encryption-key-change-in-production")
 	// RSA Crypto defaults
 	viper.SetDefault("security.rsa_private_key", "")

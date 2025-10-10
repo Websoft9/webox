@@ -434,7 +434,7 @@ func (s *serverService) checkSingleServerStatus(ctx context.Context, serverID ui
 }
 
 // checkSSHConnectivity tests network connectivity only (not SSH authentication)
-func (s *serverService) checkSSHConnectivity(_ context.Context, server *model.Server, timeout int) response.ServiceStatusInfo {
+func (s *serverService) checkSSHConnectivity(ctx context.Context, server *model.Server, timeout int) response.ServiceStatusInfo {
 	if timeout == 0 {
 		// 使用配置而不是硬编码常量
 		timeout = s.getSSHTimeout()
@@ -453,7 +453,9 @@ func (s *serverService) checkSSHConnectivity(_ context.Context, server *model.Se
 			ErrorMessage: "Network connection failed",
 		}
 	}
-	conn.Close()
+	if closeErr := conn.Close(); closeErr != nil {
+		s.logger.WarnContext(ctx, "Failed to close SSH connection", logger.ErrorField(closeErr))
+	}
 
 	return response.ServiceStatusInfo{
 		Status:       constants.SSHStatusConnected,
@@ -463,7 +465,7 @@ func (s *serverService) checkSSHConnectivity(_ context.Context, server *model.Se
 }
 
 // checkAgentStatus checks Agent status (mock implementation)
-func (s *serverService) checkAgentStatus(_ context.Context, server *model.Server) response.ServiceStatusInfo {
+func (s *serverService) checkAgentStatus(_ context.Context, _ *model.Server) response.ServiceStatusInfo {
 	now := time.Now()
 	// Mock: Simulate Agent status check
 	return response.ServiceStatusInfo{
@@ -476,7 +478,7 @@ func (s *serverService) checkAgentStatus(_ context.Context, server *model.Server
 }
 
 // checkDockerStatus checks Docker status (mock implementation)
-func (s *serverService) checkDockerStatus(_ context.Context, server *model.Server) response.ServiceStatusInfo {
+func (s *serverService) checkDockerStatus(_ context.Context, _ *model.Server) response.ServiceStatusInfo {
 	now := time.Now()
 	// Mock: Simulate Docker status check
 	return response.ServiceStatusInfo{
@@ -506,13 +508,15 @@ func (s *serverService) testServerConnectivity(ctx context.Context, serverID uin
 	}
 }
 
-func (s *serverService) testServerConnectivitySync(_ context.Context, server *model.Server) string {
+func (s *serverService) testServerConnectivitySync(ctx context.Context, server *model.Server) string {
 	// Test basic network connectivity first
 	conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", server.Host, server.SSHPort), tcpConnectionTimeout)
 	if err != nil {
 		return constants.ServerStatusUnreachable
 	}
-	conn.Close()
+	if closeErr := conn.Close(); closeErr != nil {
+		s.logger.WarnContext(ctx, "Failed to close network connection", logger.ErrorField(closeErr))
+	}
 
 	return constants.ServerStatusOnline
 }
