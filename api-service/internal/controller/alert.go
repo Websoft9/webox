@@ -48,9 +48,9 @@ func NewAlertController(
 // @Param target_type query string false "Target type filter"
 // @Param is_enabled query bool false "Is enabled filter"
 // @Param keyword query string false "Keyword for name search"
-// @Success 200 {object} response.APIResponse{data=response.AlertRuleListResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.AlertRuleListResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/alert/rules [get]
 func (c *AlertController) GetAlertRules(ctx *gin.Context) {
 	var req request.AlertRuleQueryRequest
@@ -78,9 +78,9 @@ func (c *AlertController) GetAlertRules(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param request body request.AlertRuleCreateRequest true "Alert rule create request"
-// @Success 200 {object} response.APIResponse{data=response.AlertRuleResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.AlertRuleResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/alert/rules [post]
 func (c *AlertController) CreateAlertRule(ctx *gin.Context) {
 	var req request.AlertRuleCreateRequest
@@ -127,10 +127,10 @@ func isExpression(expression string) bool {
 // @Accept json
 // @Produce json
 // @Param id path int true "Alert rule ID"
-// @Success 200 {object} response.APIResponse{data=response.AlertRuleResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.AlertRuleResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/alert/rules/{id} [get]
 func (c *AlertController) GetAlertRule(ctx *gin.Context) {
 	// Get alert rule ID from path parameter
@@ -160,10 +160,10 @@ func (c *AlertController) GetAlertRule(ctx *gin.Context) {
 // @Produce json
 // @Param id path int true "Alert rule ID"
 // @Param request body request.AlertRuleUpdateRequest true "Alert rule update request"
-// @Success 200 {object} response.APIResponse{data=response.AlertRuleResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.AlertRuleResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/alert/rules/{id} [put]
 func (c *AlertController) UpdateAlertRule(ctx *gin.Context) {
 	// Get role ID
@@ -206,10 +206,10 @@ func (c *AlertController) UpdateAlertRule(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path int true "Alert rule ID"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/alert/rules/{id} [delete]
 func (c *AlertController) DeleteAlertRule(ctx *gin.Context) {
 	id, Success := ParseIDParam(ctx, "id")
@@ -243,9 +243,9 @@ func (c *AlertController) DeleteAlertRule(ctx *gin.Context) {
 // @Param start_time query string false "Start time filter (ISO8601 format)"
 // @Param end_time query string false "End time filter (ISO8601 format)"
 // @Param alert_rule_id query int false "Alert rule ID filter"
-// @Success 200 {object} response.APIResponse{data=response.AlertRecordListResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.AlertRecordListResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/alert/records [get]
 func (c *AlertController) GetAlertRecords(ctx *gin.Context) {
 	var req request.AlertRecordQueryRequest
@@ -273,10 +273,10 @@ func (c *AlertController) GetAlertRecords(ctx *gin.Context) {
 // @Produce json
 // @Param id path int true "Alert record ID"
 // @Param request body request.AlertAcknowledgeRequest true "Alert acknowledge request"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/alert/records/{id}/acknowledge [put]
 func (c *AlertController) AcknowledgeAlertRecord(ctx *gin.Context) {
 	id, Success := ParseIDParam(ctx, "id")
@@ -317,10 +317,10 @@ func (c *AlertController) AcknowledgeAlertRecord(ctx *gin.Context) {
 // @Produce json
 // @Param id path int true "Alert record ID"
 // @Param request body request.AlertResolveRequest true "Alert resolve request"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/alert/records/{id}/resolve [put]
 func (c *AlertController) ResolveAlertRecord(ctx *gin.Context) {
 	id, Success := ParseIDParam(ctx, "id")

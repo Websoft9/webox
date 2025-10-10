@@ -79,9 +79,9 @@ func NewSecurityController(
 // @Accept json
 // @Produce json
 // @Param request body request.RevokeAPITokenRequest true "Revoke API token request"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
 // @Router /api/v1/api-tokens/revoke [post]
 func (c *SecurityController) RevokeAPIToken(ctx *gin.Context) {
 	var req request.RevokeAPITokenRequest
@@ -117,9 +117,9 @@ func (c *SecurityController) RevokeAPIToken(ctx *gin.Context) {
 // @Security BearerAuth
 // @Accept json
 // @Produce json
-// @Success 200 {object} response.APIResponse{data=response.APITokenResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.APITokenResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
 // @Router /api/v1/api-tokens/refresh [get]
 func (c *SecurityController) RefreshAPIToken(ctx *gin.Context) {
 	// Get current user ID
@@ -144,8 +144,8 @@ func (c *SecurityController) RefreshAPIToken(ctx *gin.Context) {
 // @Security BearerAuth
 // @Accept json
 // @Produce json
-// @Success 200 {object} response.APIResponse{data=response.AuthConfigResponse}
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.AuthConfigResponse}
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/auth-config [get]
 func (c *SecurityController) GetAuthConfig(ctx *gin.Context) {
 	// Get auth config
@@ -165,9 +165,9 @@ func (c *SecurityController) GetAuthConfig(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param request body request.UpdateAuthConfigRequest true "Update auth config request"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/auth-config [put]
 func (c *SecurityController) UpdateAuthConfig(ctx *gin.Context) {
 	var req request.UpdateAuthConfigRequest
@@ -193,8 +193,8 @@ func (c *SecurityController) UpdateAuthConfig(ctx *gin.Context) {
 // @Security BearerAuth
 // @Accept json
 // @Produce json
-// @Success 200 {object} response.APIResponse{data=[]resp.OAuth2ProviderResponse}
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=[]response.OAuth2ProviderResponse}
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/auth-config/oauth2-providers [get]
 func (c *SecurityController) GetOAuth2Providers(ctx *gin.Context) {
 	// Get OAuth2 providers
@@ -213,9 +213,9 @@ func (c *SecurityController) GetOAuth2Providers(ctx *gin.Context) {
 // @Security BearerAuth
 // @Accept json
 // @Produce json
-// @Success 200 {object} response.APIResponse{data=response.TOTPSetupResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.TOTPSetupResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/two-factor/enable [post]
 func (c *SecurityController) EnableTOTP(ctx *gin.Context) {
 	// Get current user ID
@@ -241,9 +241,9 @@ func (c *SecurityController) EnableTOTP(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param request body request.ConfirmTOTPRequest true "Confirm TOTP request"
-// @Success 200 {object} response.APIResponse{data=response.TOTPConfirmResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.TOTPConfirmResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/two-factor/confirm [post]
 func (c *SecurityController) ConfirmTOTP(ctx *gin.Context) {
 	var req request.ConfirmTOTPRequest
@@ -276,9 +276,9 @@ func (c *SecurityController) ConfirmTOTP(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param request body request.DisableTOTPRequest true "Disable TOTP request"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/two-factor/totp/disable [post]
 func (c *SecurityController) DisableTOTP(ctx *gin.Context) {
 	var req request.DisableTOTPRequest
@@ -311,9 +311,9 @@ func (c *SecurityController) DisableTOTP(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param request body request.EnableEmailTwoFactorRequest true "Enable email 2FA request"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/two-factor/email/enable [post]
 func (c *SecurityController) EnableEmailTwoFactor(ctx *gin.Context) {
 	var req request.EnableEmailTwoFactorRequest
@@ -345,9 +345,9 @@ func (c *SecurityController) EnableEmailTwoFactor(ctx *gin.Context) {
 // @Security BearerAuth
 // @Accept json
 // @Produce json
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/two-factor/email/disable [post]
 func (c *SecurityController) DisableEmailTwoFactor(ctx *gin.Context) {
 	// Get current user ID
@@ -372,9 +372,9 @@ func (c *SecurityController) DisableEmailTwoFactor(ctx *gin.Context) {
 // @Security BearerAuth
 // @Accept json
 // @Produce json
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/two-factor/email/send-code [post]
 func (c *SecurityController) SendEmailCode(ctx *gin.Context) {
 	// Get current user ID
@@ -400,9 +400,9 @@ func (c *SecurityController) SendEmailCode(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param request body request.VerifyTwoFactorRequest true "Verify 2FA request"
-// @Success 200 {object} response.APIResponse{data=response.TwoFactorVerificationResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.TwoFactorVerificationResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
 // @Router /api/v1/two-factor/verify [post]
 func (c *SecurityController) VerifyTwoFactor(ctx *gin.Context) {
 	var req request.VerifyTwoFactorRequest
@@ -432,8 +432,8 @@ func (c *SecurityController) VerifyTwoFactor(ctx *gin.Context) {
 // @Security BearerAuth
 // @Accept json
 // @Produce json
-// @Success 200 {object} response.APIResponse{data=response.TwoFactorStatusResponse}
-// @Failure 400 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.TwoFactorStatusResponse}
+// @Failure 400 {object} common.APIResponse
 // @Router /api/v1/two-factor [get]
 func (c *SecurityController) GetTwoFactorStatus(ctx *gin.Context) {
 	// Get current user ID
@@ -458,9 +458,9 @@ func (c *SecurityController) GetTwoFactorStatus(ctx *gin.Context) {
 // @Security BearerAuth
 // @Accept json
 // @Produce json
-// @Success 200 {object} response.APIResponse{data=response.BackupCodesResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.BackupCodesResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/two-factor/backup-codes [post]
 func (c *SecurityController) GenerateBackupCodes(ctx *gin.Context) {
 	// Get current user ID
@@ -485,9 +485,9 @@ func (c *SecurityController) GenerateBackupCodes(ctx *gin.Context) {
 // @Security BearerAuth
 // @Accept json
 // @Produce json
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/two-factor/disable [post]
 func (c *SecurityController) DisableTwoFactor(ctx *gin.Context) {
 	// Get user ID from path parameter
@@ -525,9 +525,9 @@ func (c *SecurityController) DisableTwoFactor(ctx *gin.Context) {
 // @Security BearerAuth
 // @Accept json
 // @Produce json
-// @Success 200 {object} response.APIResponse{data=response.TOTPSecretResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.TOTPSecretResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/two-factor/totp/generate [post]
 func (c *SecurityController) GenerateTOTPSecret(ctx *gin.Context) {
 	// Get user ID from path parameter

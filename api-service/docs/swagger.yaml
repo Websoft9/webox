@@ -1,5 +1,91 @@
 basePath: /
 definitions:
+  common.APIResponse:
+    properties:
+      code:
+        example: 200
+        type: integer
+      data: {}
+      error:
+        example: Error message
+        type: string
+      message:
+        example: Success
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  common.PaginationResponse:
+    properties:
+      items:
+        description: 数据列表
+      page:
+        description: 当前页码
+        type: integer
+      page_size:
+        description: 每页数量
+        type: integer
+      total:
+        description: 总记录数
+        type: integer
+      total_pages:
+        description: 总页数
+        type: integer
+    type: object
+  common.Response:
+    properties:
+      code:
+        example: 200
+        type: integer
+      data: {}
+      error:
+        example: Error message
+        type: string
+      message:
+        example: Success
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  model.AlertRuleType:
+    enum:
+    - METRIC
+    - LOG
+    - EVENT
+    type: string
+    x-enum-varnames:
+    - AlertRuleTypeMetric
+    - AlertRuleTypeLog
+    - AlertRuleTypeEvent
+  model.CustomFields:
+    additionalProperties: true
+    type: object
+  model.SecretKeyType:
+    enum:
+    - API_KEY
+    - DATABASE
+    - SSH
+    - CERTIFICATE
+    - CUSTOM
+    type: string
+    x-enum-varnames:
+    - SecretKeyTypeAPIKey
+    - SecretKeyTypeDatabase
+    - SecretKeyTypeSSH
+    - SecretKeyTypeCertificate
+    - SecretKeyTypeCustom
+  model.TargetType:
+    enum:
+    - SERVER
+    - APP_INSTANCE
+    - WORKFLOW
+    type: string
+    x-enum-varnames:
+    - TargetTypeServer
+    - TargetTypeAppInstance
+    - TargetTypeWorkflow
   request.APIAuthRequest:
     properties:
       oauth2:
@@ -7,12 +93,78 @@ definitions:
       token_auth:
         $ref: '#/definitions/request.TokenAuthRequest'
     type: object
+  request.AlertAcknowledgeRequest:
+    properties:
+      note:
+        type: string
+    type: object
+  request.AlertResolveRequest:
+    properties:
+      resolution_note:
+        type: string
+    type: object
+  request.AlertRuleCreateRequest:
+    properties:
+      condition_expression:
+        type: string
+      is_enabled:
+        type: boolean
+      metric_name:
+        type: string
+      name:
+        maxLength: 64
+        type: string
+      notification_channels:
+        type: string
+      rule_type:
+        allOf:
+        - $ref: '#/definitions/model.AlertRuleType'
+        enum:
+        - METRIC
+        - LOG
+        - EVENT
+      target_id:
+        type: integer
+      target_type:
+        allOf:
+        - $ref: '#/definitions/model.TargetType'
+        enum:
+        - SERVER
+        - APP_INSTANCE
+        - WORKFLOW
+    required:
+    - condition_expression
+    - name
+    - rule_type
+    - target_type
+    type: object
+  request.AlertRuleUpdateRequest:
+    properties:
+      condition_expression:
+        type: string
+      is_enabled:
+        type: boolean
+      name:
+        maxLength: 64
+        type: string
+      notification_channels:
+        type: string
+    type: object
   request.BasicAuthRequest:
     properties:
       login_methods:
         items:
           type: string
         type: array
+    type: object
+  request.BatchUpdateSystemConfigsRequest:
+    properties:
+      configs:
+        items:
+          $ref: '#/definitions/request.UpdateSystemConfigRequest'
+        type: array
+    required:
+    - configs
     type: object
   request.ConfirmTOTPRequest:
     properties:
@@ -149,6 +301,17 @@ definitions:
         minimum: 1
         type: integer
     type: object
+  request.NotificationSettingsRequest:
+    properties:
+      email_notifications:
+        type: boolean
+      marketing_emails:
+        type: boolean
+      push_notifications:
+        type: boolean
+      sms_notifications:
+        type: boolean
+    type: object
   request.OAuth2LoginConfigRequest:
     properties:
       auto_register:
@@ -245,6 +408,23 @@ definitions:
       require_uppercase:
         type: boolean
     type: object
+  request.ProfileChangePasswordRequest:
+    properties:
+      confirm_password:
+        example: newpass123
+        type: string
+      new_password:
+        example: newpass123
+        minLength: 6
+        type: string
+      old_password:
+        example: oldpass123
+        type: string
+    required:
+    - confirm_password
+    - new_password
+    - old_password
+    type: object
   request.ResendVerificationRequest:
     properties:
       username:
@@ -282,6 +462,76 @@ definitions:
     required:
     - permission_ids
     type: object
+  request.SecretKeyCreateRequest:
+    properties:
+      authorized_users:
+        description: '@Schema(example="[1,2,3]")'
+        items:
+          type: integer
+        type: array
+      custom_fields:
+        allOf:
+        - $ref: '#/definitions/model.CustomFields'
+        description: '@Schema(example="{\"rotation_interval\":90}")'
+      description:
+        example: MySQL database connection credentials
+        type: string
+      encrypted_value:
+        example: username:password or key content
+        type: string
+      expires_at:
+        example: "2025-12-31T23:59:59Z"
+        type: string
+      key_type:
+        allOf:
+        - $ref: '#/definitions/model.SecretKeyType'
+        enum:
+        - API_KEY
+        - DATABASE
+        - SSH
+        - CERTIFICATE
+        - CUSTOM
+        example: DATABASE
+      name:
+        example: Database Connection Key
+        maxLength: 64
+        minLength: 1
+        type: string
+      resource_group_id:
+        example: 1
+        type: integer
+    required:
+    - encrypted_value
+    - key_type
+    - name
+    type: object
+  request.SecretKeyUpdateRequest:
+    properties:
+      encrypted_value:
+        example: new_username:new_password
+        type: string
+      key_type:
+        allOf:
+        - $ref: '#/definitions/model.SecretKeyType'
+        enum:
+        - API_KEY
+        - DATABASE
+        - SSH
+        - CERTIFICATE
+        - CUSTOM
+        example: DATABASE
+    required:
+    - encrypted_value
+    - key_type
+    type: object
+  request.SecuritySettingsRequest:
+    properties:
+      login_alerts:
+        type: boolean
+      session_timeout:
+        minimum: 0
+        type: integer
+    type: object
   request.SessionConfigRequest:
     properties:
       max_concurrent_sessions:
@@ -292,6 +542,15 @@ definitions:
         type: boolean
       timeout:
         type: integer
+    type: object
+  request.SwitchLanguageRequest:
+    properties:
+      language:
+        maxLength: 10
+        minLength: 2
+        type: string
+    required:
+    - language
     type: object
   request.TOTPMethodRequest:
     properties:
@@ -307,6 +566,79 @@ definitions:
         type: string
       period:
         type: integer
+    type: object
+  request.TagAssignRequest:
+    properties:
+      replaceAll:
+        example: false
+        type: boolean
+      resourceId:
+        example: 123
+        type: integer
+      tagIds:
+        items:
+          type: integer
+        type: array
+      tagNames:
+        items:
+          type: string
+        type: array
+    required:
+    - resourceId
+    type: object
+  request.TagCreateRequest:
+    properties:
+      color:
+        example: '#ff0000'
+        maxLength: 16
+        type: string
+      description:
+        example: Production environment tag
+        maxLength: 500
+        type: string
+      name:
+        example: production
+        maxLength: 128
+        type: string
+    required:
+    - name
+    type: object
+  request.TagUnassignRequest:
+    properties:
+      resourceId:
+        example: 123
+        type: integer
+      tagIds:
+        items:
+          type: integer
+        type: array
+    required:
+    - resourceId
+    - tagIds
+    type: object
+  request.TagUpdateRequest:
+    properties:
+      color:
+        example: '#ff0000'
+        maxLength: 16
+        type: string
+      description:
+        example: Production environment tag
+        maxLength: 500
+        type: string
+      name:
+        example: production
+        maxLength: 128
+        type: string
+    required:
+    - name
+    type: object
+  request.TestSMTPRequest:
+    properties:
+      test_email:
+        type: string
+    required:
+    - test_email
     type: object
   request.TokenAuthRequest:
     properties:
@@ -388,6 +720,31 @@ definitions:
         - 1
         type: integer
     type: object
+  request.UpdateSystemConfigRequest:
+    properties:
+      category:
+        type: string
+      config_key:
+        type: string
+      config_type:
+        enum:
+        - STRING
+        - BOOLEAN
+        - NUMBER
+        - JSON
+        type: string
+      config_value:
+        type: string
+      description:
+        type: string
+      sort_order:
+        type: integer
+    required:
+    - category
+    - config_key
+    - config_type
+    - config_value
+    type: object
   request.UserAuthRequest:
     properties:
       basic_auth:
@@ -415,67 +772,7 @@ definitions:
         - $ref: '#/definitions/request.TwoFactorRequest'
         description: Two-factor authentication configuration
     type: object
-  request.UserChangePasswordRequest:
-    properties:
-      new_password:
-        example: newpass123
-        type: string
-      old_password:
-        example: oldpass123
-        type: string
-    required:
-    - new_password
-    - old_password
-    type: object
   request.UserCreateRequest:
-    properties:
-      avatar:
-        example: https://example.com/avatar.jpg
-        type: string
-      email:
-        example: john@example.com
-        type: string
-      gender:
-        example: 1
-        maximum: 2
-        minimum: 0
-        type: integer
-      language:
-        example: zh-CN
-        maxLength: 10
-        type: string
-      nickname:
-        example: John Doe
-        maxLength: 64
-        type: string
-      password:
-        example: password123
-        type: string
-      phone:
-        example: "+1234567890"
-        maxLength: 20
-        type: string
-      signature:
-        example: This is my signature
-        maxLength: 255
-        type: string
-      status:
-        example: 1
-        maximum: 1
-        minimum: 0
-        type: integer
-      timezone:
-        example: Asia/Shanghai
-        maxLength: 64
-        type: string
-      username:
-        example: johndoe
-        maxLength: 64
-        type: string
-    required:
-    - email
-    - password
-    - username
     type: object
   request.UserLoginRequest:
     properties:
@@ -497,6 +794,35 @@ definitions:
     required:
     - new_password
     type: object
+  request.UserProfileUpdateRequest:
+    properties:
+      avatar:
+        example: https://example.com/avatar.jpg
+        type: string
+      gender:
+        description: 0-unknown, 1-male, 2-female
+        enum:
+        - 0
+        - 1
+        - 2
+        example: 1
+        type: integer
+      language:
+        example: zh-CN
+        type: string
+      nickname:
+        example: John Doe
+        type: string
+      phone:
+        example: "+1234567890"
+        type: string
+      signature:
+        example: This is my signature
+        type: string
+      timezone:
+        example: Asia/Shanghai
+        type: string
+    type: object
   request.UserRegisterRequest:
     properties:
       password:
@@ -510,42 +836,6 @@ definitions:
     - username
     type: object
   request.UserUpdateRequest:
-    properties:
-      avatar:
-        example: https://example.com/avatar.jpg
-        type: string
-      email:
-        example: newemail@example.com
-        type: string
-      gender:
-        example: 1
-        maximum: 2
-        minimum: 0
-        type: integer
-      language:
-        example: zh-CN
-        maxLength: 10
-        type: string
-      nickname:
-        example: John Doe
-        maxLength: 64
-        type: string
-      phone:
-        example: "+1234567890"
-        maxLength: 20
-        type: string
-      signature:
-        example: This is my signature
-        maxLength: 255
-        type: string
-      timezone:
-        example: Asia/Shanghai
-        maxLength: 64
-        type: string
-      username:
-        example: johndoe
-        maxLength: 64
-        type: string
     type: object
   request.UserUpdateStatusRequest:
     properties:
@@ -554,8 +844,6 @@ definitions:
         maximum: 1
         minimum: 0
         type: integer
-    required:
-    - status
     type: object
   request.VerifyTwoFactorRequest:
     properties:
@@ -580,19 +868,6 @@ definitions:
         $ref: '#/definitions/response.OAuth2Response'
       token_auth:
         $ref: '#/definitions/response.TokenAuthResponse'
-    type: object
-  response.APIResponse:
-    properties:
-      code:
-        example: 200
-        type: integer
-      data: {}
-      error:
-        example: Error message
-        type: string
-      message:
-        example: Success
-        type: string
     type: object
   response.APITokenResponse:
     properties:
@@ -628,6 +903,90 @@ definitions:
       count:
         example: 800
         type: integer
+    type: object
+  response.AlertRecordListResponse:
+    properties:
+      page:
+        type: integer
+      page_size:
+        type: integer
+      records:
+        items:
+          $ref: '#/definitions/response.AlertRecordResponse'
+        type: array
+      total:
+        type: integer
+    type: object
+  response.AlertRecordResponse:
+    properties:
+      acknowledge_note:
+        type: string
+      acknowledged_at:
+        type: string
+      acknowledged_by:
+        type: integer
+      alert_id:
+        type: string
+      alert_rule_id:
+        type: integer
+      created_at:
+        type: string
+      description:
+        type: string
+      fired_at:
+        type: string
+      id:
+        type: integer
+      notification_sent:
+        type: boolean
+      resolution_note:
+        type: string
+      resolved_at:
+        type: string
+      severity:
+        type: string
+      status:
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  response.AlertRuleListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/response.AlertRuleResponse'
+        type: array
+      total:
+        type: integer
+    type: object
+  response.AlertRuleResponse:
+    properties:
+      condition_expression:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      is_enabled:
+        type: boolean
+      metric_name:
+        type: string
+      name:
+        type: string
+      notification_channels:
+        type: string
+      owner_id:
+        type: integer
+      rule_type:
+        $ref: '#/definitions/model.AlertRuleType'
+      target_id:
+        type: integer
+      target_type:
+        $ref: '#/definitions/model.TargetType'
+      updated_at:
+        type: string
     type: object
   response.AuditLogListResponse:
     properties:
@@ -784,6 +1143,51 @@ definitions:
       template:
         type: string
     type: object
+  response.LanguageInfo:
+    properties:
+      code:
+        type: string
+      is_default:
+        type: boolean
+      iso_code:
+        type: string
+      name:
+        type: string
+      native_name:
+        type: string
+      region:
+        type: string
+      supported:
+        type: boolean
+    type: object
+  response.LoginHistoryItem:
+    properties:
+      browser:
+        type: string
+      device:
+        type: string
+      id:
+        type: integer
+      ip_address:
+        type: string
+      location:
+        type: string
+      login_time:
+        type: string
+      logout_time:
+        type: string
+      status:
+        type: string
+      user_agent:
+        type: string
+    type: object
+  response.LoginHistoryResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/response.LoginHistoryItem'
+        type: array
+    type: object
   response.LoginSecurityResponse:
     properties:
       allowed_login_hours:
@@ -800,6 +1204,17 @@ definitions:
         type: boolean
       max_login_attempts:
         type: integer
+    type: object
+  response.NotificationSettingsResponse:
+    properties:
+      email_notifications:
+        type: boolean
+      marketing_emails:
+        type: boolean
+      push_notifications:
+        type: boolean
+      sms_notifications:
+        type: boolean
     type: object
   response.OAuth2LoginResponse:
     properties:
@@ -875,21 +1290,6 @@ definitions:
         type: boolean
       require_uppercase:
         type: boolean
-    type: object
-  response.PermissionListResponse:
-    properties:
-      items:
-        items:
-          $ref: '#/definitions/response.PermissionResponse'
-        type: array
-      page:
-        type: integer
-      page_size:
-        type: integer
-      total:
-        type: integer
-      total_pages:
-        type: integer
     type: object
   response.PermissionResponse:
     properties:
@@ -981,34 +1381,6 @@ definitions:
       updated_at:
         type: string
     type: object
-  response.Response:
-    properties:
-      code:
-        example: 200
-        type: integer
-      data: {}
-      error:
-        example: Error message
-        type: string
-      message:
-        example: Success
-        type: string
-    type: object
-  response.RoleListResponse:
-    properties:
-      items:
-        items:
-          $ref: '#/definitions/response.RoleResponse'
-        type: array
-      page:
-        type: integer
-      page_size:
-        type: integer
-      total:
-        type: integer
-      total_pages:
-        type: integer
-    type: object
   response.RoleResponse:
     properties:
       code:
@@ -1051,6 +1423,78 @@ definitions:
       name:
         type: string
     type: object
+  response.SecretKeyListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/response.SecretKeyResponse'
+        type: array
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
+    type: object
+  response.SecretKeyResponse:
+    properties:
+      authorized_users:
+        description: '@Schema(example="[1,2,3]")'
+        items:
+          type: integer
+        type: array
+      created_at:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+      custom_fields:
+        allOf:
+        - $ref: '#/definitions/model.CustomFields'
+        description: '@Schema(example="{\"rotation_interval\":90}")'
+      description:
+        example: MySQL database connection credentials
+        type: string
+      expires_at:
+        example: "2025-12-31T23:59:59Z"
+        type: string
+      id:
+        example: 1
+        type: integer
+      is_encrypted:
+        example: true
+        type: boolean
+      key_type:
+        allOf:
+        - $ref: '#/definitions/model.SecretKeyType'
+        example: DATABASE
+      name:
+        example: Database Connection Key
+        type: string
+      owner_id:
+        example: 1
+        type: integer
+      updated_at:
+        example: "2024-06-15T10:30:00Z"
+        type: string
+      usage:
+        example: MYSQL_CONNECTION
+        type: string
+    type: object
+  response.SecretKeyValueResponse:
+    properties:
+      expires_at:
+        example: "2025-12-31T23:59:59Z"
+        type: string
+      value:
+        example: sk-1234567890abcdef
+        type: string
+    type: object
+  response.SecuritySettingsResponse:
+    properties:
+      login_alerts:
+        type: boolean
+      session_timeout:
+        type: integer
+    type: object
   response.SessionConfigResponse:
     properties:
       max_concurrent_sessions:
@@ -1061,6 +1505,15 @@ definitions:
         type: boolean
       timeout:
         type: integer
+    type: object
+  response.SupportedLanguagesResponse:
+    properties:
+      default_language:
+        type: string
+      languages:
+        items:
+          $ref: '#/definitions/response.LanguageInfo'
+        type: array
     type: object
   response.TOTPConfirmResponse:
     properties:
@@ -1107,6 +1560,107 @@ definitions:
         type: string
       secret:
         type: string
+    type: object
+  response.TagAssignResponse:
+    properties:
+      resourceTags:
+        items:
+          $ref: '#/definitions/response.TagSimpleResponse'
+        type: array
+      results:
+        items:
+          $ref: '#/definitions/response.TagAssignResult'
+        type: array
+    type: object
+  response.TagAssignResult:
+    properties:
+      message:
+        example: Tag created and associated
+        type: string
+      name:
+        example: new-feature
+        type: string
+      status:
+        example: created
+        type: string
+      tagId:
+        example: 3
+        type: integer
+    type: object
+  response.TagResponse:
+    properties:
+      color:
+        example: '#ff0000'
+        type: string
+      createdAt:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+      createdBy:
+        example: 1
+        type: integer
+      description:
+        example: Production environment tag
+        type: string
+      id:
+        example: 1
+        type: integer
+      name:
+        example: production
+        type: string
+      updatedAt:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+      usageCount:
+        example: 25
+        type: integer
+    type: object
+  response.TagSearchResponse:
+    properties:
+      page:
+        example: 1
+        type: integer
+      pageSize:
+        example: 20
+        type: integer
+      resources:
+        items:
+          $ref: '#/definitions/response.TaggedResource'
+        type: array
+      total:
+        example: 25
+        type: integer
+    type: object
+  response.TagSimpleResponse:
+    properties:
+      color:
+        example: '#ff0000'
+        type: string
+      id:
+        example: 1
+        type: integer
+      name:
+        example: production
+        type: string
+    type: object
+  response.TaggedResource:
+    properties:
+      createdAt:
+        example: "2024-01-15T10:30:00Z"
+        type: string
+      matchedTags:
+        items:
+          type: integer
+        type: array
+      resourceId:
+        example: 1
+        type: integer
+      resourceName:
+        example: WordPress Blog
+        type: string
+      tags:
+        items:
+          $ref: '#/definitions/response.TagSimpleResponse'
+        type: array
     type: object
   response.TimelineStatItem:
     properties:
@@ -1215,6 +1769,58 @@ definitions:
       user:
         $ref: '#/definitions/response.UserResponse'
     type: object
+  response.UserProfileResponse:
+    properties:
+      avatar:
+        example: https://example.com/avatar.jpg
+        type: string
+      created_at:
+        example: "2023-01-01T00:00:00Z"
+        type: string
+      email:
+        example: john@example.com
+        type: string
+      gender:
+        example: 1
+        type: integer
+      id:
+        example: 1
+        type: integer
+      language:
+        example: zh-CN
+        type: string
+      last_login_at:
+        example: "2023-01-01T12:00:00Z"
+        type: string
+      last_login_ip:
+        example: 192.168.1.1
+        type: string
+      nickname:
+        example: John Doe
+        type: string
+      phone:
+        example: "+1234567890"
+        type: string
+      roles:
+        items:
+          $ref: '#/definitions/response.RoleResponse'
+        type: array
+      signature:
+        example: This is my signature
+        type: string
+      status:
+        example: 1
+        type: integer
+      timezone:
+        example: Asia/Shanghai
+        type: string
+      updated_at:
+        example: "2023-01-01T00:00:00Z"
+        type: string
+      username:
+        example: john_doe
+        type: string
+    type: object
   response.UserResponse:
     properties:
       avatar:
@@ -1302,6 +1908,341 @@ info:
   title: Websoft9 API Service
   version: "1.0"
 paths:
+  /api/v1/alert/records:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of alert records with optional filtering
+      parameters:
+      - description: Page number, default 1
+        in: query
+        name: page
+        type: integer
+      - description: Page size, default 20
+        in: query
+        name: page_size
+        type: integer
+      - description: Status filter (FIRING, RESOLVED)
+        in: query
+        name: status
+        type: string
+      - description: Severity filter
+        in: query
+        name: severity
+        type: string
+      - description: Start time filter (ISO8601 format)
+        in: query
+        name: start_time
+        type: string
+      - description: End time filter (ISO8601 format)
+        in: query
+        name: end_time
+        type: string
+      - description: Alert rule ID filter
+        in: query
+        name: alert_rule_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.AlertRecordListResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      summary: Get alert records list
+      tags:
+      - Alert
+  /api/v1/alert/records/{id}/acknowledge:
+    put:
+      consumes:
+      - application/json
+      description: Acknowledge an existing alert record
+      parameters:
+      - description: Alert record ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Alert acknowledge request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.AlertAcknowledgeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      summary: Acknowledge alert record
+      tags:
+      - Alert
+  /api/v1/alert/records/{id}/resolve:
+    put:
+      consumes:
+      - application/json
+      description: Resolve an existing alert record
+      parameters:
+      - description: Alert record ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Alert resolve request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.AlertResolveRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      summary: Resolve alert record
+      tags:
+      - Alert
+  /api/v1/alert/rules:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of alert rules with optional filtering
+      parameters:
+      - description: Page number, default 1
+        in: query
+        name: page
+        type: integer
+      - description: Page size, default 20
+        in: query
+        name: page_size
+        type: integer
+      - description: Rule type filter
+        in: query
+        name: rule_type
+        type: string
+      - description: Target type filter
+        in: query
+        name: target_type
+        type: string
+      - description: Is enabled filter
+        in: query
+        name: is_enabled
+        type: boolean
+      - description: Keyword for name search
+        in: query
+        name: keyword
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.AlertRuleListResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      summary: Get alert rules list
+      tags:
+      - Alert
+    post:
+      consumes:
+      - application/json
+      description: Create a new alert rule
+      parameters:
+      - description: Alert rule create request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.AlertRuleCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.AlertRuleResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      summary: Create alert rule
+      tags:
+      - Alert
+  /api/v1/alert/rules/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an existing alert rule
+      parameters:
+      - description: Alert rule ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      summary: Delete alert rule
+      tags:
+      - Alert
+    get:
+      consumes:
+      - application/json
+      description: Get details of a specific alert rule
+      parameters:
+      - description: Alert rule ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.AlertRuleResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      summary: Get alert rule by ID
+      tags:
+      - Alert
+    put:
+      consumes:
+      - application/json
+      description: Update an existing alert rule
+      parameters:
+      - description: Alert rule ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Alert rule update request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.AlertRuleUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.AlertRuleResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      summary: Update alert rule
+      tags:
+      - Alert
   /api/v1/api-tokens/refresh:
     get:
       consumes:
@@ -1314,7 +2255,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.APIResponse'
+            - $ref: '#/definitions/common.APIResponse'
             - properties:
                 data:
                   $ref: '#/definitions/response.APITokenResponse'
@@ -1322,11 +2263,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Refresh API token
@@ -1350,15 +2291,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Revoke API token
@@ -1416,11 +2357,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Get audit log list
@@ -1443,15 +2384,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Get audit log details
@@ -1492,11 +2433,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Export audit logs
@@ -1534,11 +2475,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Get audit log statistics
@@ -1556,7 +2497,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.APIResponse'
+            - $ref: '#/definitions/common.APIResponse'
             - properties:
                 data:
                   $ref: '#/definitions/response.AuthConfigResponse'
@@ -1564,7 +2505,7 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Get authentication config
@@ -1587,15 +2528,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Update authentication config
@@ -1613,7 +2554,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.APIResponse'
+            - $ref: '#/definitions/common.APIResponse'
             - properties:
                 data:
                   items:
@@ -1623,7 +2564,7 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Get OAuth2 providers
@@ -1647,15 +2588,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       summary: Forgot password
       tags:
       - Authentication
@@ -1678,7 +2619,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.APIResponse'
+            - $ref: '#/definitions/common.APIResponse'
             - properties:
                 data:
                   $ref: '#/definitions/response.UserLoginResponse'
@@ -1686,15 +2627,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       summary: User login
       tags:
       - Authentication
@@ -1709,19 +2650,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: User logout
@@ -1746,7 +2687,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.APIResponse'
+            - $ref: '#/definitions/common.APIResponse'
             - properties:
                 data:
                   $ref: '#/definitions/response.UserLoginResponse'
@@ -1754,15 +2695,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       summary: OAuth2 login
       tags:
       - Authentication
@@ -1785,7 +2726,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.APIResponse'
+            - $ref: '#/definitions/common.APIResponse'
             - properties:
                 data:
                   $ref: '#/definitions/response.UserResponse'
@@ -1793,11 +2734,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       summary: User registration
       tags:
       - Authentication
@@ -1819,15 +2760,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       summary: Resend verification email
       tags:
       - Authentication
@@ -1848,15 +2789,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       summary: Show reset password form
       tags:
       - Authentication
@@ -1877,15 +2818,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       summary: Reset password
       tags:
       - Authentication
@@ -1906,15 +2847,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       summary: Verify email
       tags:
       - Authentication
@@ -1922,7 +2863,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: Get list of supported languages
+      description: Get list of supported languages from configuration
       produces:
       - application/json
       responses:
@@ -1930,58 +2871,52 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.APIResponse'
+            - $ref: '#/definitions/common.APIResponse'
             - properties:
                 data:
-                  type: object
+                  $ref: '#/definitions/response.SupportedLanguagesResponse'
               type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
       summary: Get supported languages
       tags:
       - Internationalization
-  /api/v1/i18n/test:
-    get:
+  /api/v1/i18n/switch-language:
+    post:
       consumes:
       - application/json
-      description: Test internationalization functionality with current language
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.APIResponse'
-            - properties:
-                data:
-                  type: object
-              type: object
-      summary: Test i18n functionality
-      tags:
-      - Internationalization
-  /api/v1/i18n/translations/{lang}:
-    get:
-      consumes:
-      - application/json
-      description: Get translations for specified language
+      description: Switch user's language preference and update cache
       parameters:
-      - description: Language code
-        in: path
-        name: lang
+      - description: Language switch request
+        in: body
+        name: request
         required: true
-        type: string
+        schema:
+          $ref: '#/definitions/request.SwitchLanguageRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/response.APIResponse'
-            - properties:
-                data:
-                  type: object
-              type: object
-      summary: Get translations
+            $ref: '#/definitions/common.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Switch user language
       tags:
       - Internationalization
   /api/v1/permissions:
@@ -2040,15 +2975,15 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.APIResponse'
+            - $ref: '#/definitions/common.APIResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/response.PermissionListResponse'
+                  $ref: '#/definitions/common.PaginationResponse'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Get permission list
@@ -2072,7 +3007,7 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/response.APIResponse'
+            - $ref: '#/definitions/common.APIResponse'
             - properties:
                 data:
                   $ref: '#/definitions/response.PermissionResponse'
@@ -2080,11 +3015,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Create permission
@@ -2107,15 +3042,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Delete permission
@@ -2138,7 +3073,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.APIResponse'
+            - $ref: '#/definitions/common.APIResponse'
             - properties:
                 data:
                   $ref: '#/definitions/response.PermissionResponse'
@@ -2146,11 +3081,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Get permission details
@@ -2179,7 +3114,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.APIResponse'
+            - $ref: '#/definitions/common.APIResponse'
             - properties:
                 data:
                   $ref: '#/definitions/response.PermissionResponse'
@@ -2187,11 +3122,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Update permission
@@ -2225,19 +3160,19 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.APIResponse'
+            - $ref: '#/definitions/common.APIResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/response.RoleListResponse'
+                  $ref: '#/definitions/common.PaginationResponse'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Get roles associated with permission
@@ -2271,7 +3206,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.APIResponse'
+            - $ref: '#/definitions/common.APIResponse'
             - properties:
                 data:
                   $ref: '#/definitions/response.PermissionTreeResponse'
@@ -2279,12 +3214,301 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Get permission tree
       tags:
       - Permission Management
+  /api/v1/profile:
+    get:
+      consumes:
+      - application/json
+      description: Get user profile information by user ID
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.UserProfileResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user profile
+      tags:
+      - Profile
+    put:
+      consumes:
+      - application/json
+      description: Update current user's profile information
+      parameters:
+      - description: Profile update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.UserProfileUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.UserProfileResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update user profile
+      tags:
+      - Profile
+  /api/v1/profile/login-history:
+    get:
+      consumes:
+      - application/json
+      description: Get login history records for the current user
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.LoginHistoryResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get login history records
+      tags:
+      - Profile
+  /api/v1/profile/notification-settings:
+    get:
+      consumes:
+      - application/json
+      description: Get notification settings for the current user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.NotificationSettingsResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get notification settings
+      tags:
+      - Profile
+    put:
+      consumes:
+      - application/json
+      description: Update notification settings for the current user
+      parameters:
+      - description: Notification settings request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.NotificationSettingsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update notification settings
+      tags:
+      - Profile
+  /api/v1/profile/password:
+    put:
+      consumes:
+      - application/json
+      description: Change user's password by user ID
+      parameters:
+      - description: Password change request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.ProfileChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Change user password
+      tags:
+      - Profile
+  /api/v1/profile/security-settings:
+    get:
+      consumes:
+      - application/json
+      description: Get security settings for the current user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.SecuritySettingsResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get security settings
+      tags:
+      - Profile
+    put:
+      consumes:
+      - application/json
+      description: Update security settings for the current user
+      parameters:
+      - description: Security settings request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.SecuritySettingsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update security settings
+      tags:
+      - Profile
   /api/v1/roles:
     get:
       consumes:
@@ -2330,15 +3554,15 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.APIResponse'
+            - $ref: '#/definitions/common.APIResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/response.RoleListResponse'
+                  $ref: '#/definitions/common.PaginationResponse'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Get role list
@@ -2362,7 +3586,7 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/response.APIResponse'
+            - $ref: '#/definitions/common.APIResponse'
             - properties:
                 data:
                   $ref: '#/definitions/response.RoleResponse'
@@ -2370,11 +3594,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Create role
@@ -2397,15 +3621,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Delete role
@@ -2428,7 +3652,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.APIResponse'
+            - $ref: '#/definitions/common.APIResponse'
             - properties:
                 data:
                   $ref: '#/definitions/response.RoleResponse'
@@ -2436,11 +3660,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Get role details
@@ -2469,7 +3693,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.APIResponse'
+            - $ref: '#/definitions/common.APIResponse'
             - properties:
                 data:
                   $ref: '#/definitions/response.RoleResponse'
@@ -2477,11 +3701,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Update role
@@ -2510,15 +3734,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Remove permissions from role
@@ -2546,15 +3770,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Assign permissions to role
@@ -2588,24 +3812,1023 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.APIResponse'
+            - $ref: '#/definitions/common.APIResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/response.RoleListResponse'
+                  $ref: '#/definitions/common.PaginationResponse'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Get users associated with role
       tags:
       - Role Management
+  /api/v1/secret-keys:
+    get:
+      consumes:
+      - application/json
+      description: Get secret keys with pagination and filtering
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: Key type filter
+        enum:
+        - API_KEY
+        - DATABASE
+        - SSH
+        - CERTIFICATE
+        - CUSTOM
+        in: query
+        name: key_type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.SecretKeyListResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List secret keys
+      tags:
+      - Secret Keys
+    post:
+      consumes:
+      - application/json
+      description: Create a new secret key with encryption
+      parameters:
+      - description: Create secret key request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.SecretKeyCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.SecretKeyResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create secret key
+      tags:
+      - Secret Keys
+  /api/v1/secret-keys/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a secret key by ID
+      parameters:
+      - description: Secret key ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete secret key
+      tags:
+      - Secret Keys
+    get:
+      consumes:
+      - application/json
+      description: Get secret key information by ID
+      parameters:
+      - description: Secret key ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.SecretKeyResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get secret key
+      tags:
+      - Secret Keys
+    put:
+      consumes:
+      - application/json
+      description: Update an existing secret key
+      parameters:
+      - description: Secret key ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update secret key request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.SecretKeyUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.SecretKeyResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update secret key
+      tags:
+      - Secret Keys
+  /api/v1/secret-keys/{id}/value:
+    get:
+      consumes:
+      - application/json
+      description: Get the decrypted value of a secret key
+      parameters:
+      - description: Secret key ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.SecretKeyValueResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get secret key value
+      tags:
+      - Secret Keys
+  /api/v1/secret-keys/export:
+    get:
+      consumes:
+      - application/json
+      description: Export secret keys in CSV, JSON, or Excel format
+      parameters:
+      - default: csv
+        description: Export format
+        enum:
+        - csv
+        - json
+        - excel
+        in: query
+        name: format
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: Exported file
+          schema:
+            type: file
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Export secret keys
+      tags:
+      - Secret Keys
+  /api/v1/system-configs:
+    get:
+      description: List system configurations with pagination and filtering
+      parameters:
+      - description: Filter by category
+        in: query
+        name: category
+        type: string
+      - description: Filter by keyword
+        in: query
+        name: keyword
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List system configurations
+      tags:
+      - System Config
+    put:
+      consumes:
+      - application/json
+      description: Batch update system configurations
+      parameters:
+      - description: Batch System Configuration Data
+        in: body
+        name: configs
+        required: true
+        schema:
+          $ref: '#/definitions/request.BatchUpdateSystemConfigsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Batch update system configurations
+      tags:
+      - System Config
+  /api/v1/system-configs/basic:
+    get:
+      description: List basic category system configurations
+      parameters:
+      - description: Filter by keyword
+        in: query
+        name: keyword
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List basic system configurations
+      tags:
+      - System Config
+  /api/v1/system-configs/email:
+    get:
+      description: List email category system configurations
+      parameters:
+      - description: Filter by keyword
+        in: query
+        name: keyword
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List email system configurations
+      tags:
+      - System Config
+  /api/v1/system-configs/security:
+    get:
+      description: List security category system configurations
+      parameters:
+      - description: Filter by keyword
+        in: query
+        name: keyword
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List security system configurations
+      tags:
+      - System Config
+  /api/v1/system-configs/smtp/test:
+    post:
+      consumes:
+      - application/json
+      description: Test SMTP configuration by sending a test email
+      parameters:
+      - description: Test email request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.TestSMTPRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Test SMTP configuration
+      tags:
+      - System Config
+  /api/v1/tags:
+    get:
+      description: List tags with optional search and exclusion filters
+      parameters:
+      - description: Search term
+        in: query
+        name: search
+        type: string
+      - description: Comma-separated list of tag IDs to exclude
+        in: query
+        name: excludeIds
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/response.TagResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List tags
+      tags:
+      - Tags
+    post:
+      consumes:
+      - application/json
+      description: Create a new tag
+      parameters:
+      - description: Tag create request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.TagCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.TagResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new tag
+      tags:
+      - Tags
+  /api/v1/tags/{id}:
+    delete:
+      description: Delete a tag by ID
+      parameters:
+      - description: Tag ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete tag
+      tags:
+      - Tags
+    get:
+      description: Retrieve a specific tag by its ID
+      parameters:
+      - description: Tag ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.TagResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get tag by ID
+      tags:
+      - Tags
+    put:
+      consumes:
+      - application/json
+      description: Update an existing tag
+      parameters:
+      - description: Tag ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Tag update request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.TagUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.TagResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update tag
+      tags:
+      - Tags
+  /api/v1/tags/assign:
+    post:
+      consumes:
+      - application/json
+      description: Assign multiple tags to multiple resources
+      parameters:
+      - description: Tag assignment request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.TagAssignRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.TagAssignResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Assign tags to resources
+      tags:
+      - Tags
+  /api/v1/tags/replace:
+    post:
+      consumes:
+      - application/json
+      description: Replace all tags for multiple resources
+      parameters:
+      - description: Tag replacement request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.TagAssignRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.TagAssignResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Replace tags for resources
+      tags:
+      - Tags
+  /api/v1/tags/search:
+    get:
+      description: Search for tags by name or description
+      parameters:
+      - description: Search query
+        in: query
+        name: q
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/response.TagResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Search tags
+      tags:
+      - Tags
+  /api/v1/tags/taggings:
+    get:
+      description: Get all tags assigned to a specific resource
+      parameters:
+      - description: Resource ID
+        in: query
+        name: resourceId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/response.TagSimpleResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get resource tags
+      tags:
+      - Tags
+  /api/v1/tags/taggings/search:
+    get:
+      description: Search for resources that have specific tags
+      parameters:
+      - description: Comma-separated tag IDs
+        in: query
+        name: tagIds
+        type: string
+      - description: Comma-separated tag names
+        in: query
+        name: tagNames
+        type: string
+      - description: AND or OR operation
+        enum:
+        - AND
+        - OR
+        in: query
+        name: operation
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.TagSearchResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Search resources by tags
+      tags:
+      - Tags
+  /api/v1/tags/unassign:
+    post:
+      consumes:
+      - application/json
+      description: Remove multiple tags from multiple resources
+      parameters:
+      - description: Tag unassignment request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.TagUnassignRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.TagAssignResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Unassign tags from resources
+      tags:
+      - Tags
   /api/v1/two-factor:
     get:
       consumes:
@@ -2618,7 +4841,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.APIResponse'
+            - $ref: '#/definitions/common.APIResponse'
             - properties:
                 data:
                   $ref: '#/definitions/response.TwoFactorStatusResponse'
@@ -2626,7 +4849,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Get 2FA status
@@ -2644,7 +4867,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.APIResponse'
+            - $ref: '#/definitions/common.APIResponse'
             - properties:
                 data:
                   $ref: '#/definitions/response.BackupCodesResponse'
@@ -2652,11 +4875,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Generate backup codes
@@ -2681,7 +4904,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.APIResponse'
+            - $ref: '#/definitions/common.APIResponse'
             - properties:
                 data:
                   $ref: '#/definitions/response.TOTPConfirmResponse'
@@ -2689,11 +4912,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Confirm TOTP setup
@@ -2710,15 +4933,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Disable two-factor authentication
@@ -2735,15 +4958,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Disable Email 2FA
@@ -2767,15 +4990,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Enable Email 2FA
@@ -2792,15 +5015,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Send email verification code
@@ -2818,7 +5041,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.APIResponse'
+            - $ref: '#/definitions/common.APIResponse'
             - properties:
                 data:
                   $ref: '#/definitions/response.TOTPSetupResponse'
@@ -2826,11 +5049,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Enable TOTP 2FA
@@ -2854,15 +5077,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Disable TOTP 2FA
@@ -2880,7 +5103,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.APIResponse'
+            - $ref: '#/definitions/common.APIResponse'
             - properties:
                 data:
                   $ref: '#/definitions/response.TOTPSecretResponse'
@@ -2888,11 +5111,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Generate TOTP secret
@@ -2917,7 +5140,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.APIResponse'
+            - $ref: '#/definitions/common.APIResponse'
             - properties:
                 data:
                   $ref: '#/definitions/response.TwoFactorVerificationResponse'
@@ -2925,11 +5148,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Verify 2FA code
@@ -2981,7 +5204,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.APIResponse'
+            - $ref: '#/definitions/common.APIResponse'
             - properties:
                 data:
                   $ref: '#/definitions/response.UserListResponse'
@@ -2989,19 +5212,19 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: List users
@@ -3025,7 +5248,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.APIResponse'
+            - $ref: '#/definitions/common.APIResponse'
             - properties:
                 data:
                   $ref: '#/definitions/response.UserResponse'
@@ -3033,19 +5256,19 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Create user
@@ -3068,27 +5291,27 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Delete user
@@ -3111,7 +5334,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.APIResponse'
+            - $ref: '#/definitions/common.APIResponse'
             - properties:
                 data:
                   $ref: '#/definitions/response.UserResponse'
@@ -3119,23 +5342,23 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Get user details
@@ -3164,7 +5387,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.APIResponse'
+            - $ref: '#/definitions/common.APIResponse'
             - properties:
                 data:
                   $ref: '#/definitions/response.UserResponse'
@@ -3172,23 +5395,23 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Update user
@@ -3217,27 +5440,27 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Update user password
@@ -3266,66 +5489,30 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.APIResponse'
+            $ref: '#/definitions/common.APIResponse'
       security:
       - BearerAuth: []
       summary: Update user status
-      tags:
-      - Users
-  /api/v1/users/password:
-    put:
-      consumes:
-      - application/json
-      description: Change current user's password
-      parameters:
-      - description: Password change request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/request.UserChangePasswordRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/response.APIResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/response.APIResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.APIResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/response.APIResponse'
-      security:
-      - BearerAuth: []
-      summary: Change user password
       tags:
       - Users
   /health/database:
@@ -3340,7 +5527,7 @@ paths:
           description: Database is healthy
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/common.Response'
             - properties:
                 data:
                   additionalProperties: true
@@ -3349,11 +5536,11 @@ paths:
         "500":
           description: Failed to get database info
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/common.Response'
         "503":
           description: Database connection failed
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/common.Response'
       summary: Check database health
       tags:
       - health
@@ -3370,7 +5557,7 @@ paths:
           description: Database statistics retrieved successfully
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/common.Response'
             - properties:
                 data:
                   additionalProperties: true
@@ -3379,7 +5566,7 @@ paths:
         "500":
           description: Failed to get database statistics
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/common.Response'
       summary: Get database statistics
       tags:
       - health

@@ -37,11 +37,11 @@ func NewTagController(tagService service.TagService, validator *validator.Valida
 // @Produce json
 // @Security BearerAuth
 // @Param request body request.TagCreateRequest true "Tag create request"
-// @Success 201 {object} response.APIResponse{data=response.TagResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 403 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 201 {object} common.APIResponse{data=response.TagResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 403 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/tags [post]
 func (c *TagController) CreateTag(ctx *gin.Context) {
 	var req request.TagCreateRequest
@@ -74,11 +74,11 @@ func (c *TagController) CreateTag(ctx *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "Tag ID"
-// @Success 200 {object} response.APIResponse{data=response.TagResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.TagResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/tags/{id} [get]
 func (c *TagController) GetTag(ctx *gin.Context) {
 	id, Success := ParseIDParam(ctx, "id")
@@ -105,12 +105,12 @@ func (c *TagController) GetTag(ctx *gin.Context) {
 // @Security BearerAuth
 // @Param id path int true "Tag ID"
 // @Param request body request.TagUpdateRequest true "Tag update request"
-// @Success 200 {object} response.APIResponse{data=response.TagResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 403 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.TagResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 403 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/tags/{id} [put]
 func (c *TagController) UpdateTag(ctx *gin.Context) {
 	id, Success := ParseIDParam(ctx, "id")
@@ -147,12 +147,12 @@ func (c *TagController) UpdateTag(ctx *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "Tag ID"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 403 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 403 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/tags/{id} [delete]
 func (c *TagController) DeleteTag(ctx *gin.Context) {
 	id, Success := ParseIDParam(ctx, "id")
@@ -185,10 +185,10 @@ func (c *TagController) DeleteTag(ctx *gin.Context) {
 // @Security BearerAuth
 // @Param search query string false "Search term"
 // @Param excludeIds query string false "Comma-separated list of tag IDs to exclude"
-// @Success 200 {object} response.APIResponse{data=[]response.TagResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=[]response.TagResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/tags [get]
 func (c *TagController) ListTags(ctx *gin.Context) {
 	var req request.TagListRequest
@@ -215,11 +215,11 @@ func (c *TagController) ListTags(ctx *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param request body request.TagAssignRequest true "Tag assignment request"
-// @Success 200 {object} response.APIResponse{data=response.TagAssignResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 403 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.TagAssignResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 403 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/tags/assign [post]
 func (c *TagController) AssignTags(ctx *gin.Context) {
 	var req request.TagAssignRequest
@@ -255,11 +255,11 @@ func (c *TagController) AssignTags(ctx *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param request body request.TagAssignRequest true "Tag replacement request"
-// @Success 200 {object} response.APIResponse{data=response.TagAssignResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 403 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.TagAssignResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 403 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/tags/replace [post]
 func (c *TagController) ReplaceTags(ctx *gin.Context) {
 	var req request.TagAssignRequest
@@ -295,11 +295,11 @@ func (c *TagController) ReplaceTags(ctx *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param request body request.TagUnassignRequest true "Tag unassignment request"
-// @Success 200 {object} response.APIResponse{data=response.TagAssignResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 403 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.TagAssignResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 403 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/tags/unassign [post]
 func (c *TagController) UnassignTags(ctx *gin.Context) {
 	var req request.TagUnassignRequest
@@ -334,10 +334,10 @@ func (c *TagController) UnassignTags(ctx *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param q query string true "Search query"
-// @Success 200 {object} response.APIResponse{data=[]response.TagResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=[]response.TagResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/tags/search [get]
 func (c *TagController) SearchTags(ctx *gin.Context) {
 	var req request.TagNameSearchRequest
@@ -366,10 +366,10 @@ func (c *TagController) SearchTags(ctx *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param resourceId query int true "Resource ID"
-// @Success 200 {object} response.APIResponse{data=[]response.TagSimpleResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=[]response.TagSimpleResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/tags/taggings [get]
 func (c *TagController) GetResourceTags(ctx *gin.Context) {
 	var req request.TaggingListRequest
@@ -402,10 +402,10 @@ func (c *TagController) GetResourceTags(ctx *gin.Context) {
 // @Param operation query string false "AND or OR operation" Enums(AND, OR)
 // @Param page query int false "Page number"
 // @Param pageSize query int false "Page size"
-// @Success 200 {object} response.APIResponse{data=response.TagSearchResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.TagSearchResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/tags/taggings/search [get]
 func (c *TagController) SearchResourcesByTags(ctx *gin.Context) {
 	var req request.TagSearchRequest

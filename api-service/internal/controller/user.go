@@ -47,11 +47,11 @@ func NewUserController(
 // @Param keyword query string false "Search keyword"
 // @Param gender query int false "Gender filter" Enums(0,1,2)
 // @Param language query string false "Language filter"
-// @Success 200 {object} response.APIResponse{data=response.UserListResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 403 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.UserListResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 403 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/users [get]
 func (c *UserController) ListUsers(ctx *gin.Context) {
 	var req request.UserListRequest
@@ -81,11 +81,11 @@ func (c *UserController) ListUsers(ctx *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param request body request.UserCreateRequest true "User creation request"
-// @Success 200 {object} response.APIResponse{data=response.UserResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 403 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.UserResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 403 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/users [post]
 func (c *UserController) CreateUser(ctx *gin.Context) {
 	// Get current user ID
@@ -119,12 +119,12 @@ func (c *UserController) CreateUser(ctx *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "User ID"
-// @Success 200 {object} response.APIResponse{data=response.UserResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 403 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.UserResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 403 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/users/{id} [get]
 func (c *UserController) GetUser(ctx *gin.Context) {
 	// Get ID
@@ -153,12 +153,12 @@ func (c *UserController) GetUser(ctx *gin.Context) {
 // @Security BearerAuth
 // @Param id path int true "User ID"
 // @Param request body request.UserUpdateRequest true "User update request"
-// @Success 200 {object} response.APIResponse{data=response.UserResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 403 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.UserResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 403 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/users/{id} [put]
 func (c *UserController) UpdateUser(ctx *gin.Context) {
 	// Get current user ID
@@ -196,12 +196,12 @@ func (c *UserController) UpdateUser(ctx *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "User ID"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 403 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 403 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/users/{id} [delete]
 func (c *UserController) DeleteUser(ctx *gin.Context) {
 	// Get ID
@@ -230,12 +230,12 @@ func (c *UserController) DeleteUser(ctx *gin.Context) {
 // @Security BearerAuth
 // @Param id path int true "User ID"
 // @Param request body request.UserUpdateStatusRequest true "User status update request"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 403 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 403 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/users/{id}/status [put]
 func (c *UserController) UpdateUserStatus(ctx *gin.Context) {
 	// Get ID
@@ -270,12 +270,12 @@ func (c *UserController) UpdateUserStatus(ctx *gin.Context) {
 // @Security BearerAuth
 // @Param id path int true "User ID"
 // @Param request body request.UserPasswordUpdateRequest true "User password update request"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 403 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 403 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/users/{id}/password [put]
 func (c *UserController) UpdateUserPassword(ctx *gin.Context) {
 	// Get ID
