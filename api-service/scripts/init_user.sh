@@ -9,7 +9,7 @@ set -euo pipefail
 # Script configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 API_SERVICE_DIR="$(dirname "$SCRIPT_DIR")"
-CREATE_USER_TOOL_DIR="$API_SERVICE_DIR/tools/create-user"
+CREATE_USER_TOOL_DIR="$API_SERVICE_DIR/scripts/create-user"
 CREATE_USER_BINARY="$CREATE_USER_TOOL_DIR/create-user"
 
 # Colors for output

@@ -48,6 +48,12 @@ RUN CGO_ENABLED=1 GOOS=linux go build \
   -o api-service \
   ./cmd/server
 
+RUN CGO_ENABLED=1 GOOS=linux go build \
+  -ldflags "-X main.Version=${VERSION} -X main.Commit=${COMMIT} -X main.BuildTime=${BUILD_TIME} -w -s" \
+  -a -installsuffix cgo \
+  -o create-user \
+  ./tools/create-user
+
 # Runtime
 FROM alpine:latest
 
@@ -69,6 +75,7 @@ WORKDIR /home/appuser/
 
 # Copy binary files from the build phase (as appuser)
 COPY --from=builder --chown=appuser:appuser /app/api-service .
+COPY --from=builder --chown=appuser:appuser /app/create-user ./scripts
 
 # Copy configuration files (as appuser)
 COPY --from=builder --chown=appuser:appuser /app/configs ./configs
