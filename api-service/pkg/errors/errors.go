@@ -222,6 +222,11 @@ var (
 	ErrUserAlreadyExists              = NewAppErrorWithI18n(CodeUserAlreadyExists, CodeToI18nKey[CodeUserAlreadyExists])
 	ErrPermissionInvalid              = NewAppErrorWithI18n(CodePermissionInvalid, CodeToI18nKey[CodePermissionInvalid])
 
+	// Server management specific errors
+	ErrServerNotFound      = NewAppErrorWithI18n(CodeResourceNotFound, CodeToI18nKey[CodeResourceNotFound])
+	ErrServerNameExists    = NewAppErrorWithI18n(CodeResourceAlreadyExists, CodeToI18nKey[CodeResourceAlreadyExists])
+	ErrServerAgentNotFound = NewAppErrorWithI18n(CodeResourceNotFound, CodeToI18nKey[CodeResourceNotFound])
+
 	// System related errors (6000-6999)
 	ErrInternalError                = NewAppErrorWithI18n(CodeInternalError, CodeToI18nKey[CodeInternalError])
 	ErrCacheServiceUnavailable      = NewAppErrorWithI18n(CodeCacheServiceUnavailable, CodeToI18nKey[CodeCacheServiceUnavailable])

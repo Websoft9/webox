@@ -14,6 +14,15 @@ server:
     idle_timeout: 60
     read_header_timeout: 60
     max_header_bytes: 1048576
+    
+    # Server management configuration
+    ssh:
+      timeout: 30        # SSH connection timeout in seconds
+      retry_count: 3     # SSH connection retry count
+    
+    file_management:
+      upload_max_size: 104857600   # Maximum file upload size (100MB in bytes)
+      download_max_size: 524288000 # Maximum file download size (500MB in bytes)
 
 security:
   aes_key: "your-32-char-aes-key-here!" # Must be 32 characters for AES-256

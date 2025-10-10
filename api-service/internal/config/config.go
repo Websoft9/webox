@@ -34,6 +34,22 @@ type ServerConfigParams struct {
 	IdleTimeout       int `mapstructure:"idle_timeout"`        // Idle timeout in seconds
 	ReadHeaderTimeout int `mapstructure:"read_header_timeout"` // Read header timeout in seconds
 	MaxHeaderBytes    int `mapstructure:"max_header_bytes"`    // Maximum header bytes
+
+	// Server management configuration
+	SSH            SSHConfig            `mapstructure:"ssh"`             // SSH connection configuration
+	FileManagement FileManagementConfig `mapstructure:"file_management"` // File operation configuration
+}
+
+// SSHConfig SSH connection configuration
+type SSHConfig struct {
+	Timeout    int `mapstructure:"timeout"`     // SSH connection timeout in seconds
+	RetryCount int `mapstructure:"retry_count"` // SSH connection retry count
+}
+
+// FileManagementConfig file operation configuration
+type FileManagementConfig struct {
+	UploadMaxSize   int64 `mapstructure:"upload_max_size"`   // Maximum file upload size in bytes
+	DownloadMaxSize int64 `mapstructure:"download_max_size"` // Maximum file download size in bytes
 }
 
 // LogConfig log configuration
@@ -195,6 +211,12 @@ func setDefaults() {
 	viper.SetDefault("server.config.idle_timeout", int(constants.DefaultIdleTimeout.Seconds()))
 	viper.SetDefault("server.config.read_header_timeout", int(constants.DefaultReadHeaderTimeout.Seconds()))
 	viper.SetDefault("server.config.max_header_bytes", constants.DefaultMaxHeaderBytes)
+
+	// Server management defaults
+	viper.SetDefault("server.config.ssh.timeout", constants.DefaultSSHTimeoutValue)
+	viper.SetDefault("server.config.ssh.retry_count", constants.DefaultSSHRetryCount)
+	viper.SetDefault("server.config.file_management.upload_max_size", constants.DefaultFileUploadMaxSize)
+	viper.SetDefault("server.config.file_management.download_max_size", constants.DefaultFileDownloadMaxSize)
 
 	// Log defaults
 	viper.SetDefault("server.log.log_leve", constants.DefaultLogLevel)
