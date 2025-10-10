@@ -6,8 +6,7 @@ build:
 
 # 构建用户创建工具
 build-create-user:
-	mkdir -p tools/create-user
-	go build -v -o tools/create-user/create-user ./tools/create-user
+	go build -v -o scripts/create-user ./tools/create-user
 
 # 运行应用
 run:
