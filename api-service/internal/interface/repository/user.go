@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"api-service/internal/dto/request"
 	"api-service/internal/model"
 	"context"
 )
@@ -26,7 +27,7 @@ type UserRepository interface {
 
 	// List and search
 	List(ctx context.Context, offset, limit int, filters map[string]interface{}) ([]*model.User, int64, error)
-	ListWithRelations(ctx context.Context, offset, limit int, filters map[string]interface{}) ([]*model.User, int64, error)
+	ListWithRelations(ctx context.Context, req *request.UserListRequest) ([]*model.User, int64, error)
 	Search(ctx context.Context, keyword string, offset, limit int) ([]*model.User, int64, error)
 
 	// Business queries

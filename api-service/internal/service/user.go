@@ -67,30 +67,11 @@ func (s *userService) ChangePassword(ctx context.Context, userID uint, req *requ
 func (s *userService) ListUsers(ctx context.Context,
 	req *request.UserListRequest) (*common.PaginationResponse, error) {
 	s.logger.InfoContext(ctx, "Getting user list",
-		logger.Int("page", req.Page),
-		logger.Int("pageSize", req.PageSize))
+		logger.String("service", "user"),
+		logger.String("operation", "ListUsers"))
 
-	// Build filters
-	filters := make(map[string]interface{})
-	if req.Status != nil {
-		filters["status"] = *req.Status
-	}
-	if req.Gender != nil {
-		filters["gender"] = *req.Gender
-	}
-	if req.Language != nil {
-		filters["language"] = *req.Language
-	}
-	if req.Keyword != nil && *req.Keyword != "" {
-		filters["keyword"] = *req.Keyword
-	}
-	// Add role_id filter
-	if req.RoleID != nil {
-		filters["role_id"] = *req.RoleID
-	}
-
-	// Get user list
-	users, total, err := s.userRepo.ListWithRelations(ctx, req.GetOffset(), req.GetPageSize(), filters)
+	// Get user list from repository
+	users, total, err := s.userRepo.ListWithRelations(ctx, req)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to get user list", logger.ErrorField(err))
 		return nil, err
@@ -103,8 +84,8 @@ func (s *userService) ListUsers(ctx context.Context,
 	}
 
 	return common.NewPaginationResponse(
-		req.Page,
-		req.PageSize,
+		req.GetOffset(),
+		req.GetPageSize(),
 		total,
 		userList,
 	), nil
