@@ -1,8 +1,8 @@
 package request
 
 import (
+	"api-service/internal/dto/common"
 	"api-service/internal/model"
-	"time"
 )
 
 // AlertRuleCreateRequest defines the request data for creating an alert rule.
@@ -19,12 +19,12 @@ type AlertRuleCreateRequest struct {
 
 // AlertRuleQueryRequest defines the request data for querying alert rules.
 type AlertRuleQueryRequest struct {
-	Page       int                 `form:"page,default=1" binding:"min=1"`
-	PageSize   int                 `form:"page_size,default=20" binding:"min=5,max=100"`
+	common.PaginationRequest
 	RuleType   model.AlertRuleType `form:"rule_type" binding:"omitempty,oneof=METRIC LOG EVENT"`
 	TargetType model.TargetType    `form:"target_type" binding:"omitempty,oneof=SERVER APP_INSTANCE WORKFLOW"`
 	IsEnabled  *bool               `form:"is_enabled"`
 	Keyword    string              `form:"keyword"`
+	common.SortRequest
 }
 
 // AlertRuleUpdateRequest defines the request data for updating an alert rule.
@@ -37,13 +37,12 @@ type AlertRuleUpdateRequest struct {
 
 // AlertRecordQueryRequest represents a request for querying alert records
 type AlertRecordQueryRequest struct {
-	Page        int       `form:"page" binding:"omitempty,min=1"`
-	PageSize    int       `form:"page_size" binding:"omitempty,min=1,max=100"`
-	Status      string    `form:"status" binding:"omitempty"`
-	Severity    string    `form:"severity" binding:"omitempty"`
-	StartTime   time.Time `form:"start_time" binding:"omitempty"`
-	EndTime     time.Time `form:"end_time" binding:"omitempty"`
-	AlertRuleID *uint     `form:"alert_rule_id" binding:"omitempty"`
+	common.PaginationRequest
+	Status      string `form:"status" binding:"omitempty"`
+	Severity    string `form:"severity" binding:"omitempty"`
+	AlertRuleID *uint  `form:"alert_rule_id" binding:"omitempty"`
+	common.TimeRangeRequest
+	common.SortRequest
 }
 
 // AlertAcknowledgeRequest represents a request to acknowledge an alert record
