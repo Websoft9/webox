@@ -39,9 +39,9 @@ func NewSystemConfigController(
 // @Security BearerAuth
 // @Param category query string false "Filter by category"
 // @Param keyword query string false "Filter by keyword"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/system-configs [get]
 func (c *SystemConfigController) ListSystemConfigs(ctx *gin.Context) {
 	var req request.ListSystemConfigsRequest
@@ -66,9 +66,9 @@ func (c *SystemConfigController) ListSystemConfigs(ctx *gin.Context) {
 // @Accept json
 // @Param request body request.TestSMTPRequest true "Test email request"
 // @Security BearerAuth
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/system-configs/smtp/test [post]
 func (c *SystemConfigController) TestSMTP(ctx *gin.Context) {
 	var req request.TestSMTPRequest
@@ -91,9 +91,9 @@ func (c *SystemConfigController) TestSMTP(ctx *gin.Context) {
 // @Tags System Config
 // @Security BearerAuth
 // @Param keyword query string false "Filter by keyword"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/system-configs/basic [get]
 func (c *SystemConfigController) ListBasicConfigs(ctx *gin.Context) {
 	var req request.ListSystemConfigsRequest
@@ -118,9 +118,9 @@ func (c *SystemConfigController) ListBasicConfigs(ctx *gin.Context) {
 // @Tags System Config
 // @Security BearerAuth
 // @Param keyword query string false "Filter by keyword"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/system-configs/security [get]
 func (c *SystemConfigController) ListSecurityConfigs(ctx *gin.Context) {
 	var req request.ListSystemConfigsRequest
@@ -146,9 +146,9 @@ func (c *SystemConfigController) ListSecurityConfigs(ctx *gin.Context) {
 // @Tags System Config
 // @Security BearerAuth
 // @Param keyword query string false "Filter by keyword"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/system-configs/email [get]
 func (c *SystemConfigController) ListEmailConfigs(ctx *gin.Context) {
 	var req request.ListSystemConfigsRequest
@@ -176,9 +176,9 @@ func (c *SystemConfigController) ListEmailConfigs(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param configs body request.BatchUpdateSystemConfigsRequest true "Batch System Configuration Data"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/system-configs [put]
 func (c *SystemConfigController) BatchUpdateSystemConfigs(ctx *gin.Context) {
 	var req request.BatchUpdateSystemConfigsRequest

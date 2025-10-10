@@ -1,9 +1,9 @@
 package repository
 
 import (
+	"api-service/internal/dto/request"
 	"api-service/internal/model"
 	"context"
-	"time"
 
 	"gorm.io/gorm"
 )
@@ -41,27 +41,27 @@ func (r *alertRepository) GetAlertRuleByID(ctx context.Context, id uint) (*model
 }
 
 // ListAlertRules queries the list of alert rules.
-func (r *alertRepository) ListAlertRules(ctx context.Context, params map[string]interface{}, page, pageSize int) ([]*model.AlertRule, int64, error) {
+func (r *alertRepository) ListAlertRules(ctx context.Context, req *request.AlertRuleQueryRequest) ([]*model.AlertRule, int64, error) {
 	var rules []*model.AlertRule
 	var total int64
 
 	query := r.db.WithContext(ctx).Model(&model.AlertRule{})
 
 	// Apply query conditions
-	if ruleType, exists := params["rule_type"]; exists && ruleType != "" {
-		query = query.Where("rule_type = ?", ruleType)
+	if req.RuleType != "" {
+		query = query.Where("rule_type = ?", req.RuleType)
 	}
 
-	if targetType, exists := params["target_type"]; exists && targetType != "" {
-		query = query.Where("target_type = ?", targetType)
+	if req.TargetType != "" {
+		query = query.Where("target_type = ?", req.TargetType)
 	}
 
-	if isEnabled, exists := params["is_enabled"]; exists {
-		query = query.Where("is_enabled = ?", isEnabled)
+	if req.IsEnabled != nil {
+		query = query.Where("is_enabled = ?", *req.IsEnabled)
 	}
 
-	if keyword, exists := params["keyword"].(string); exists && keyword != "" {
-		query = query.Where("name LIKE ?", "%"+keyword+"%")
+	if req.Keyword != "" {
+		query = query.Where("name LIKE ?", "%"+req.Keyword+"%")
 	}
 
 	// Count total records
@@ -70,10 +70,14 @@ func (r *alertRepository) ListAlertRules(ctx context.Context, params map[string]
 	}
 
 	// Paginated query
-	if err := query.Order("created_at DESC").
-		Offset((page - 1) * pageSize).
-		Limit(pageSize).
-		Find(&rules).Error; err != nil {
+	offset := req.GetOffset()
+	limit := req.GetPageSize()
+
+	err := query.Order(req.GetSortOrder()).
+		Offset(offset).Limit(limit).
+		Find(&rules).Error
+
+	if err != nil {
 		return nil, 0, err
 	}
 
@@ -102,48 +106,40 @@ func (r *alertRepository) DeleteAlertRule(ctx context.Context, id uint) error {
 	return nil
 }
 
-// ListAlertRecords retrieves a paginated list of alert records
-func (r *alertRepository) ListAlertRecords(ctx context.Context, offset, limit int, filters map[string]interface{}) ([]*model.AlertRecord, int64, error) {
+func (r *alertRepository) ListAlertRecords(ctx context.Context, req *request.AlertRecordQueryRequest) ([]*model.AlertRecord, int64, error) {
 	var records []*model.AlertRecord
 	var total int64
 
-	query := r.db.Model(&model.AlertRecord{})
+	query := r.db.WithContext(ctx).Model(&model.AlertRecord{})
 
-	// Apply filters
-	if status, exists := filters["status"]; exists && status != "" {
-		query = query.Where("status = ?", status)
+	// Build filters
+	if req.Status != "" {
+		query = query.Where("status = ?", req.Status)
 	}
-
-	if severity, exists := filters["severity"]; exists && severity != "" {
-		query = query.Where("severity = ?", severity)
+	if req.Severity != "" {
+		query = query.Where("severity = ?", req.Severity)
 	}
-
-	if startTime, exists := filters["start_time"]; exists {
-		if st, ok := startTime.(time.Time); ok && !st.IsZero() {
-			query = query.Where("fired_at >= ?", st)
-		}
+	if req.StartTime != "" {
+		query = query.Where("created_at >= ?", req.StartTime)
 	}
-
-	if endTime, exists := filters["end_time"]; exists {
-		if et, ok := endTime.(time.Time); ok && !et.IsZero() {
-			query = query.Where("fired_at <= ?", et)
-		}
+	if req.EndTime != "" {
+		query = query.Where("created_at <= ?", req.EndTime)
 	}
-
-	if alertRuleID, exists := filters["alert_rule_id"]; exists {
-		query = query.Where("alert_rule_id = ?", alertRuleID)
+	if req.AlertRuleID != nil {
+		query = query.Where("alert_rule_id = ?", *req.AlertRuleID)
 	}
 
 	// Get total count
-	err := query.Count(&total).Error
-	if err != nil {
+	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	// Paginate and sort
-	err = query.Order("fired_at DESC").
-		Limit(limit).
-		Offset(offset).
+	// Paginated query
+	offset := req.GetOffset()
+	limit := req.GetPageSize()
+
+	err := query.Order(req.GetSortOrder()).
+		Offset(offset).Limit(limit).
 		Find(&records).Error
 
 	if err != nil {

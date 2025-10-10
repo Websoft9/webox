@@ -36,8 +36,8 @@ func NewI18nController(
 // @Tags Internationalization
 // @Accept json
 // @Produce json
-// @Success 200 {object} response.APIResponse{data=response.SupportedLanguagesResponse}
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.SupportedLanguagesResponse}
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/i18n/languages [get]
 func (c *I18nController) GetLanguages(ctx *gin.Context) {
 	c.logger.InfoContext(ctx.Request.Context(), "Getting supported languages")
@@ -63,10 +63,10 @@ func (c *I18nController) GetLanguages(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param request body request.SwitchLanguageRequest true "Language switch request"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Security BearerAuth
 // @Router /api/v1/i18n/switch-language [post]
 func (c *I18nController) SwitchLanguage(ctx *gin.Context) {

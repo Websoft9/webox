@@ -30,9 +30,9 @@ func NewHealthController(cfg *config.Config) *HealthController {
 // @Tags health
 // @Accept json
 // @Produce json
-// @Success 200 {object} response.Response{data=map[string]interface{}} "Database is healthy"
-// @Failure 500 {object} response.Response "Failed to get database info"
-// @Failure 503 {object} response.Response "Database connection failed"
+// @Success 200 {object} common.Response{data=map[string]interface{}} "Database is healthy"
+// @Failure 500 {object} common.Response "Failed to get database info"
+// @Failure 503 {object} common.Response "Database connection failed"
 // @Router /health/database [get]
 func (hc *HealthController) DatabaseHealth(c *gin.Context) {
 	start := time.Now()
@@ -211,8 +211,8 @@ func (hc *HealthController) finalizeHealthResponse(c *gin.Context, healthData ma
 // @Tags health
 // @Accept json
 // @Produce json
-// @Success 200 {object} response.Response{data=map[string]interface{}} "Database statistics retrieved successfully"
-// @Failure 500 {object} response.Response "Failed to get database statistics"
+// @Success 200 {object} common.Response{data=map[string]interface{}} "Database statistics retrieved successfully"
+// @Failure 500 {object} common.Response "Failed to get database statistics"
 // @Router /health/database/stats [get]
 func (hc *HealthController) DatabaseStats(c *gin.Context) {
 	dbInfo, err := database.GetDatabaseInfo(hc.config)

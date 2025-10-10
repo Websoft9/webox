@@ -61,7 +61,6 @@ func getProjectRoot() (string, error) {
 
 // Init initializes the i18n bundle with default configuration
 func Init() error {
-	//TODO: 从`config.yaml`配置文件初始化
 	return InitWithConfig(LangEnUS, []string{LangEnUS, LangZhCN})
 }
 
@@ -78,8 +77,13 @@ func InitWithConfig(defaultLang string, supportedLangs []string) error {
 	// Get project root directory
 	projectRoot, err := getProjectRoot()
 	if err != nil {
-		return fmt.Errorf("failed to get project root: %w", err)
+		execPath, err := os.Executable()
+		if err != nil {
+			return fmt.Errorf("failed to get project root: %w", err)
+		}
+		projectRoot = filepath.Dir(execPath)
 	}
+	fmt.Printf(" - project root: %s\n", projectRoot)
 
 	// Load all locale files from configs/lang/ directory using absolute path
 	for _, lang := range SupportedLanguages {

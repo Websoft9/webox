@@ -47,9 +47,9 @@ func NewAuditLogController(
 // @Security BearerAuth
 // @Param id path int true "Audit Log ID"
 // @Success 200 {object} response.AuditLogResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/audit-logs/{id} [get]
 func (c *AuditLogController) GetAuditLog(ctx *gin.Context) {
 	id, Success := ParseIDParam(ctx, "id")
@@ -81,8 +81,8 @@ func (c *AuditLogController) GetAuditLog(ctx *gin.Context) {
 // @Param end_time query string false "End Time" format(date-time)
 // @Param ip_address query string false "IP Address"
 // @Success 200 {object} response.AuditLogListResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/audit-logs [get]
 func (c *AuditLogController) ListAuditLogs(ctx *gin.Context) {
 	var req request.ListAuditLogRequest
@@ -109,8 +109,8 @@ func (c *AuditLogController) ListAuditLogs(ctx *gin.Context) {
 // @Param end_time query string false "End Time" format(date-time)
 // @Param group_by query string false "Group By" Enums(hour,day,week,month) default(day)
 // @Success 200 {object} response.AuditLogStatisticsResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/audit-logs/statistics [get]
 func (c *AuditLogController) GetAuditLogStatistics(ctx *gin.Context) {
 	var req request.AuditLogStatisticsRequest
@@ -138,8 +138,8 @@ func (c *AuditLogController) GetAuditLogStatistics(ctx *gin.Context) {
 // @Param end_time query string false "End Time" format(date-time)
 // @Param user_id query int false "User ID"
 // @Success 200 {file} file "Export File"
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/audit-logs/export [get]
 func (c *AuditLogController) ExportAuditLogs(ctx *gin.Context) {
 	var req request.ExportAuditLogRequest

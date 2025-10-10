@@ -41,10 +41,10 @@ func NewUserProfileController(
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} response.APIResponse{data=response.UserProfileResponse}
-// @Failure 401 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.UserProfileResponse}
+// @Failure 401 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/profile [get]
 func (c *UserProfileController) GetProfile(ctx *gin.Context) {
 	// Get current user ID
@@ -75,11 +75,11 @@ func (c *UserProfileController) GetProfile(ctx *gin.Context) {
 // @Produce json
 // @Param request body request.UserProfileUpdateRequest true "Profile update data"
 // @Security BearerAuth
-// @Success 200 {object} response.APIResponse{data=response.UserProfileResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.UserProfileResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/profile [put]
 func (c *UserProfileController) UpdateProfile(ctx *gin.Context) {
 	// Parse request parameters
@@ -117,10 +117,10 @@ func (c *UserProfileController) UpdateProfile(ctx *gin.Context) {
 // @Produce json
 // @Param request body request.ProfileChangePasswordRequest true "Password change request"
 // @Security BearerAuth
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/profile/password [put]
 func (c *UserProfileController) ChangePassword(ctx *gin.Context) {
 	// Parse request parameters
@@ -159,10 +159,10 @@ func (c *UserProfileController) ChangePassword(ctx *gin.Context) {
 // @Security BearerAuth
 // @Param page query int false "Page number" default(1)
 // @Param page_size query int false "Items per page" default(20)
-// @Success 200 {object} response.APIResponse{data=response.LoginHistoryResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.LoginHistoryResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/profile/login-history [get]
 func (c *UserProfileController) GetLoginHistories(ctx *gin.Context) {
 	// Get current user ID
@@ -199,9 +199,9 @@ func (c *UserProfileController) GetLoginHistories(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} response.APIResponse{data=response.NotificationSettingsResponse}
-// @Failure 401 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.NotificationSettingsResponse}
+// @Failure 401 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/profile/notification-settings [get]
 func (c *UserProfileController) GetNotificationSettings(ctx *gin.Context) {
 	// Get current user ID
@@ -231,10 +231,10 @@ func (c *UserProfileController) GetNotificationSettings(ctx *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param request body request.NotificationSettingsRequest true "Notification settings request"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/profile/notification-settings [put]
 func (c *UserProfileController) UpdateNotificationSettings(ctx *gin.Context) {
 	// Parse request parameters
@@ -270,9 +270,9 @@ func (c *UserProfileController) UpdateNotificationSettings(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} response.APIResponse{data=response.SecuritySettingsResponse}
-// @Failure 401 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.SecuritySettingsResponse}
+// @Failure 401 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/profile/security-settings [get]
 func (c *UserProfileController) GetSecuritySettings(ctx *gin.Context) {
 	// Get current user ID
@@ -302,10 +302,10 @@ func (c *UserProfileController) GetSecuritySettings(ctx *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param request body request.SecuritySettingsRequest true "Security settings request"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/profile/security-settings [put]
 func (c *UserProfileController) UpdateSecuritySettings(ctx *gin.Context) {
 	// Parse request parameters

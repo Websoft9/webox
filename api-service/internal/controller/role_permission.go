@@ -42,9 +42,9 @@ func NewRolePermissionController(
 // @Accept json
 // @Produce json
 // @Param request body request.CreateRoleRequest true "Create role request"
-// @Success 201 {object} response.APIResponse{data=response.RoleResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 201 {object} common.APIResponse{data=response.RoleResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/roles [post]
 func (c *RolePermissionController) CreateRole(ctx *gin.Context) {
 	var req request.CreateRoleRequest
@@ -78,9 +78,9 @@ func (c *RolePermissionController) CreateRole(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path int true "Role ID"
-// @Success 200 {object} response.APIResponse{data=response.RoleResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.RoleResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
 // @Router /api/v1/roles/{id} [get]
 func (c *RolePermissionController) GetRole(ctx *gin.Context) {
 	// Get role ID
@@ -112,8 +112,8 @@ func (c *RolePermissionController) GetRole(ctx *gin.Context) {
 // @Param status query int false "Role status" Enums(-1, 0, 1)
 // @Param start_time query string false "Start time" format(datetime)
 // @Param end_time query string false "End time" format(datetime)
-// @Success 200 {object} response.APIResponse{data=response.RoleListResponse}
-// @Failure 400 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=common.PaginationResponse}
+// @Failure 400 {object} common.APIResponse
 // @Router /api/v1/roles [get]
 func (c *RolePermissionController) ListRoles(ctx *gin.Context) {
 	var req request.ListRolesRequest
@@ -141,9 +141,9 @@ func (c *RolePermissionController) ListRoles(ctx *gin.Context) {
 // @Produce json
 // @Param id path int true "Role ID"
 // @Param request body request.UpdateRoleRequest true "Update role request"
-// @Success 200 {object} response.APIResponse{data=response.RoleResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.RoleResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
 // @Router /api/v1/roles/{id} [put]
 func (c *RolePermissionController) UpdateRole(ctx *gin.Context) {
 	// Get role ID
@@ -183,9 +183,9 @@ func (c *RolePermissionController) UpdateRole(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path int true "Role ID"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
 // @Router /api/v1/roles/{id} [delete]
 func (c *RolePermissionController) DeleteRole(ctx *gin.Context) {
 	// Get role ID
@@ -212,9 +212,9 @@ func (c *RolePermissionController) DeleteRole(ctx *gin.Context) {
 // @Produce json
 // @Param id path int true "Role ID"
 // @Param request body request.RolePermissionRequest true "Role permission request"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
 // @Router /api/v1/roles/{id}/permissions [post]
 func (c *RolePermissionController) AssignPermissions(ctx *gin.Context) {
 	// Get role ID
@@ -254,9 +254,9 @@ func (c *RolePermissionController) AssignPermissions(ctx *gin.Context) {
 // @Produce json
 // @Param id path int true "Role ID"
 // @Param request body request.RolePermissionRequest true "Role permission request"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
 // @Router /api/v1/roles/{id}/permissions [delete]
 func (c *RolePermissionController) RemovePermissions(ctx *gin.Context) {
 	// Get role ID
@@ -291,9 +291,9 @@ func (c *RolePermissionController) RemovePermissions(ctx *gin.Context) {
 // @Param id path int true "Role ID"
 // @Param page query int false "Page number" default(1)
 // @Param page_size query int false "Page size" default(20)
-// @Success 200 {object} response.APIResponse{data=response.RoleListResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=common.PaginationResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
 // @Router /api/v1/roles/{id}/users [get]
 func (c *RolePermissionController) GetRoleUsers(ctx *gin.Context) {
 	// Get role ID
@@ -322,9 +322,9 @@ func (c *RolePermissionController) GetRoleUsers(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param request body request.CreatePermissionRequest true "Create permission request"
-// @Success 201 {object} response.APIResponse{data=response.PermissionResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 201 {object} common.APIResponse{data=response.PermissionResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/permissions [post]
 func (c *RolePermissionController) CreatePermission(ctx *gin.Context) {
 	var req request.CreatePermissionRequest
@@ -357,9 +357,9 @@ func (c *RolePermissionController) CreatePermission(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path int true "Permission ID"
-// @Success 200 {object} response.APIResponse{data=response.PermissionResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.PermissionResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
 // @Router /api/v1/permissions/{id} [get]
 func (c *RolePermissionController) GetPermission(ctx *gin.Context) {
 	// Get permission ID
@@ -386,9 +386,9 @@ func (c *RolePermissionController) GetPermission(ctx *gin.Context) {
 // @Produce json
 // @Param id path int true "Permission ID"
 // @Param request body request.UpdatePermissionRequest true "Update permission request"
-// @Success 200 {object} response.APIResponse{data=response.PermissionResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.PermissionResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
 // @Router /api/v1/permissions/{id} [put]
 func (c *RolePermissionController) UpdatePermission(ctx *gin.Context) {
 	// Get permission ID
@@ -427,9 +427,9 @@ func (c *RolePermissionController) UpdatePermission(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path int true "Permission ID"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
 // @Router /api/v1/permissions/{id} [delete]
 func (c *RolePermissionController) DeletePermission(ctx *gin.Context) {
 	// Get permission ID
@@ -462,8 +462,8 @@ func (c *RolePermissionController) DeletePermission(ctx *gin.Context) {
 // @Param status query int false "Permission status" Enums(-1, 0, 1)
 // @Param start_time query string false "Start time" format(datetime)
 // @Param end_time query string false "End time" format(datetime)
-// @Success 200 {object} response.APIResponse{data=response.PermissionListResponse}
-// @Failure 400 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=common.PaginationResponse}
+// @Failure 400 {object} common.APIResponse
 // @Router /api/v1/permissions [get]
 func (c *RolePermissionController) ListPermissions(ctx *gin.Context) {
 	var req request.ListPermissionsRequest
@@ -491,8 +491,8 @@ func (c *RolePermissionController) ListPermissions(ctx *gin.Context) {
 // @Produce json
 // @Param scope query string false "Permission scope" Enums(platform, project)
 // @Param status query int false "Permission status" Enums(-1, 0, 1)
-// @Success 200 {object} response.APIResponse{data=response.PermissionTreeResponse}
-// @Failure 400 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.PermissionTreeResponse}
+// @Failure 400 {object} common.APIResponse
 // @Router /api/v1/permissions/tree [get]
 func (c *RolePermissionController) GetPermissionTree(ctx *gin.Context) {
 	var req request.PermissionTreeRequest
@@ -521,9 +521,9 @@ func (c *RolePermissionController) GetPermissionTree(ctx *gin.Context) {
 // @Param id path int true "Permission ID"
 // @Param page query int false "Page number" default(1)
 // @Param page_size query int false "Page size" default(20)
-// @Success 200 {object} response.APIResponse{data=response.RoleListResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=common.PaginationResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
 // @Router /api/v1/permissions/{id}/roles [get]
 func (c *RolePermissionController) GetPermissionRoles(ctx *gin.Context) {
 	// Get permission ID

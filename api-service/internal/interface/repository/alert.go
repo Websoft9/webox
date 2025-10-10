@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"api-service/internal/dto/request"
 	"api-service/internal/model"
 	"context"
 )
@@ -14,7 +15,7 @@ type AlertRepository interface {
 	GetAlertRuleByID(ctx context.Context, id uint) (*model.AlertRule, error)
 
 	// ListAlertRules queries the list of alert rules.
-	ListAlertRules(ctx context.Context, params map[string]interface{}, page, pageSize int) ([]*model.AlertRule, int64, error)
+	ListAlertRules(ctx context.Context, req *request.AlertRuleQueryRequest) ([]*model.AlertRule, int64, error)
 
 	// UpdateAlertRule updates an alert rule.
 	UpdateAlertRule(ctx context.Context, id uint, updates map[string]interface{}) error
@@ -23,7 +24,7 @@ type AlertRepository interface {
 	DeleteAlertRule(ctx context.Context, id uint) error
 
 	// ExistsAlertRule checks if an alert rule exists by its ID.
-	ListAlertRecords(ctx context.Context, offset, limit int, filters map[string]interface{}) ([]*model.AlertRecord, int64, error)
+	ListAlertRecords(ctx context.Context, req *request.AlertRecordQueryRequest) ([]*model.AlertRecord, int64, error)
 
 	// GetAlertRecordByID retrieves an alert record by its ID.
 	GetAlertRecordByID(ctx context.Context, id uint) (*model.AlertRecord, error)

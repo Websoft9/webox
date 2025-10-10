@@ -1,6 +1,7 @@
 package service
 
 import (
+	"api-service/internal/dto/common"
 	"api-service/internal/dto/request"
 	"api-service/internal/dto/response"
 	"api-service/internal/model"
@@ -31,8 +32,8 @@ func (m *MockAlertRepository) GetAlertRuleByID(ctx context.Context, id uint) (*m
 	return args.Get(0).(*model.AlertRule), args.Error(1)
 }
 
-func (m *MockAlertRepository) ListAlertRules(ctx context.Context, params map[string]interface{}, page, pageSize int) ([]*model.AlertRule, int64, error) {
-	args := m.Called(ctx, params, page, pageSize)
+func (m *MockAlertRepository) ListAlertRules(ctx context.Context, req *request.AlertRuleQueryRequest) ([]*model.AlertRule, int64, error) {
+	args := m.Called(ctx, req)
 	return args.Get(0).([]*model.AlertRule), args.Get(1).(int64), args.Error(2)
 }
 
@@ -46,8 +47,8 @@ func (m *MockAlertRepository) DeleteAlertRule(ctx context.Context, id uint) erro
 	return args.Error(0)
 }
 
-func (m *MockAlertRepository) ListAlertRecords(ctx context.Context, offset, limit int, filters map[string]interface{}) ([]*model.AlertRecord, int64, error) {
-	args := m.Called(ctx, offset, limit, filters)
+func (m *MockAlertRepository) ListAlertRecords(ctx context.Context, req *request.AlertRecordQueryRequest) ([]*model.AlertRecord, int64, error) {
+	args := m.Called(ctx, req)
 	return args.Get(0).([]*model.AlertRecord), args.Get(1).(int64), args.Error(2)
 }
 
@@ -261,11 +262,13 @@ func TestListAlertRules(t *testing.T) {
 	// Test case 1: Empty list
 	t.Run("Empty List", func(t *testing.T) {
 		req := &request.AlertRuleQueryRequest{
-			Page:     1,
-			PageSize: 10,
+			PaginationRequest: common.PaginationRequest{
+				Page:     1,
+				PageSize: 10,
+			},
 		}
 
-		mockRepo.On("ListAlertRules", ctx, mock.Anything, req.Page, req.PageSize).
+		mockRepo.On("ListAlertRules", ctx, req).
 			Return([]*model.AlertRule{}, int64(0), nil).Once()
 
 		// Execute
@@ -284,16 +287,18 @@ func TestListAlertRules(t *testing.T) {
 
 	// Test case 2: Rules found with filters
 	t.Run("Rules Found With Filters", func(t *testing.T) {
+		isEnabled := true
 		req := &request.AlertRuleQueryRequest{
-			Page:       1,
-			PageSize:   10,
+			PaginationRequest: common.PaginationRequest{
+				Page:     1,
+				PageSize: 10,
+			},
 			RuleType:   "THRESHOLD",
 			TargetType: "SERVER",
+			IsEnabled:  &isEnabled,
 			Keyword:    "cpu",
 		}
 
-		isEnabled := true
-		req.IsEnabled = &isEnabled
 		targetID1 := uint(1)
 		targetID2 := uint(2)
 		rules := []*model.AlertRule{
@@ -321,12 +326,7 @@ func TestListAlertRules(t *testing.T) {
 			},
 		}
 
-		mockRepo.On("ListAlertRules", ctx, mock.MatchedBy(func(params map[string]interface{}) bool {
-			return params["rule_type"] == req.RuleType &&
-				params["target_type"] == req.TargetType &&
-				params["is_enabled"] == *req.IsEnabled &&
-				params["keyword"] == req.Keyword
-		}), req.Page, req.PageSize).Return(rules, int64(2), nil).Once()
+		mockRepo.On("ListAlertRules", ctx, req).Return(rules, int64(2), nil).Once()
 
 		// Execute
 		result, err := service.ListAlertRules(ctx, req)
@@ -465,69 +465,63 @@ func TestListAlertRecords(t *testing.T) {
 	ctx := context.Background()
 
 	// Test case 1: Successful list with filters
-	// t.Run("Successful List", func(t *testing.T) {
-	// 	ruleID := uint(1)
-	// 	req := &request.AlertRecordQueryRequest{
-	// 		Page:     1,
-	// 		PageSize: 10,
-	// 	}
+	t.Run("Successful List", func(t *testing.T) {
+		ruleID := uint(1)
+		req := &request.AlertRecordQueryRequest{
+			PaginationRequest: common.PaginationRequest{
+				Page:     1,
+				PageSize: 10,
+			},
+			Status:      "FIRING",
+			AlertRuleID: &ruleID,
+		}
 
-	// 	// Calculate offset
-	// 	offset := (req.Page - 1) * req.PageSize
+		// Mock records
+		records := []*model.AlertRecord{
+			{
+				ID:          uint(1),
+				AlertRuleID: ruleID,
+				Title:       "CPU Usage High",
+				Description: "CPU usage exceeded 90%",
+				Status:      "FIRING",
+				FiredAt:     time.Now().Add(-1 * time.Hour),
+			},
+			{
+				ID:          uint(2),
+				AlertRuleID: ruleID,
+				Title:       "Memory Usage High",
+				Description: "Memory usage exceeded 80%",
+				Status:      "FIRING",
+				FiredAt:     time.Now().Add(-30 * time.Minute),
+			},
+		}
 
-	// 	// Expected filters
-	// 	expectedFilters := map[string]interface{}{
-	// 		"status":        req.Status,
-	// 		"severity":      req.Severity,
-	// 		"alert_rule_id": req.AlertRuleID,
-	// 		"start_time":    req.StartTime,
-	// 		"end_time":      req.EndTime,
-	// 	}
+		mockRepo.On("ListAlertRecords", ctx, req).Return(records, int64(2), nil).Once()
 
-	// 	// Mock records
-	// 	records := []*model.AlertRecord{
-	// 		{
-	// 			ID:          uint(1),
-	// 			AlertRuleID: ruleID,
-	// 			Title:       "CPU Usage High",
-	// 			Description: "CPU usage exceeded 90%",
-	// 			Status:      "FIRING",
-	// 			FiredAt:     time.Now().Add(-1 * time.Hour),
-	// 		},
-	// 		{
-	// 			ID:          uint(2),
-	// 			AlertRuleID: ruleID,
-	// 			Title:       "Memory Usage High",
-	// 			Description: "Memory usage exceeded 80%",
-	// 			Status:      "FIRING",
-	// 			FiredAt:     time.Now().Add(-30 * time.Minute),
-	// 		},
-	// 	}
+		// Execute
+		result, err := service.ListAlertRecords(ctx, req)
 
-	// 	mockRepo.On("ListAlertRecords", ctx, offset, req.PageSize, mock.MatchedBy(func(filters map[string]interface{}) bool {
-	// 		return filters["status"] == expectedFilters["status"] &&
-	// 			filters["severity"] == expectedFilters["severity"] &&
-	// 			filters["alert_rule_id"] == expectedFilters["alert_rule_id"]
-	// 	})).Return(records, int64(2), nil).Once()
+		// Assert
+		assert.NoError(t, err)
+		assert.NotNil(t, result)
+		assert.Equal(t, int64(2), result.Total)
 
-	// 	// Execute
-	// 	result, err := service.ListAlertRecords(ctx, req)
-
-	// 	// Assert
-	// 	assert.NoError(t, err)
-	// 	assert.NotNil(t, result)
-	// 	assert.Equal(t, int64(2), int64(2))
-	// 	mockRepo.AssertExpectations(t)
-	// })
+		items, ok := result.Items.([]response.AlertRecordResponse)
+		assert.True(t, ok, "Items should be of type []response.AlertRecordResponse")
+		assert.Len(t, items, 2)
+		mockRepo.AssertExpectations(t)
+	})
 
 	// Test case 2: Default pagination
 	t.Run("Default Pagination", func(t *testing.T) {
 		req := &request.AlertRecordQueryRequest{
-			Page:     0, // Should be set to default 1
-			PageSize: 0, // Should be set to default 20
+			PaginationRequest: common.PaginationRequest{
+				Page:     1,
+				PageSize: 20,
+			},
 		}
 
-		mockRepo.On("ListAlertRecords", ctx, 0, 20, mock.Anything).
+		mockRepo.On("ListAlertRecords", ctx, req).
 			Return([]*model.AlertRecord{}, int64(0), nil).Once()
 
 		// Execute
@@ -536,11 +530,8 @@ func TestListAlertRecords(t *testing.T) {
 		// Assert
 		assert.NoError(t, err)
 		assert.NotNil(t, result)
-		assert.Equal(t, 1, result.Page)
-		assert.Equal(t, 20, result.PageSize)
 		mockRepo.AssertExpectations(t)
 	})
-
 }
 
 func TestAcknowledgeAlertRecord(t *testing.T) {

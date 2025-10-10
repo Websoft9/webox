@@ -85,43 +85,28 @@ func (s *alertService) GetAlertRuleByID(ctx context.Context, id uint) (*response
 	return s.buildAlertRuleResponse(rule), nil
 }
 
-// ListAlertRules retrieves a list of alert rules.
-func (s *alertService) ListAlertRules(ctx context.Context, req *request.AlertRuleQueryRequest) (*common.PaginationResponse, error) {
-	s.logger.InfoContext(ctx, "Listing alert rules",
-		logger.Int("page", req.Page),
-		logger.Int("pageSize", req.PageSize))
+// ListAlertRecords retrieves a paginated list of alert records
+func (s *alertService) ListAlertRecords(ctx context.Context, req *request.AlertRecordQueryRequest) (*common.PaginationResponse, error) {
+	s.logger.InfoContext(ctx, "Listing alert records",
+		logger.String("service", "alert"),
+		logger.String("operation", "ListAlertRecords"))
 
-	// Build query parameters
-	params := map[string]interface{}{}
-	if req.RuleType != "" {
-		params["rule_type"] = req.RuleType
-	}
-	if req.TargetType != "" {
-		params["target_type"] = req.TargetType
-	}
-	if req.IsEnabled != nil {
-		params["is_enabled"] = *req.IsEnabled
-	}
-	if req.Keyword != "" {
-		params["keyword"] = req.Keyword
-	}
-
-	// Query data
-	rules, total, err := s.alertRepo.ListAlertRules(ctx, params, req.Page, req.PageSize)
+	// Call repository to fetch data
+	records, total, err := s.alertRepo.ListAlertRecords(ctx, req)
 	if err != nil {
-		s.logger.ErrorContext(ctx, "Failed to list alert rules", logger.ErrorField(err))
+		s.logger.ErrorContext(ctx, "Failed to list alert records", logger.ErrorField(err))
 		return nil, err
 	}
 
-	// Build response
-	items := make([]response.AlertRuleResponse, 0, len(rules))
-	for _, rule := range rules {
-		items = append(items, *s.buildAlertRuleResponse(rule))
+	// Convert to DTOs
+	items := make([]response.AlertRecordResponse, len(records))
+	for i, record := range records {
+		items[i] = s.mapAlertRecordToDTO(record)
 	}
 
 	return common.NewPaginationResponse(
-		req.Page,
-		req.PageSize,
+		req.GetOffset(),
+		req.GetPageSize(),
 		total,
 		items,
 	), nil
@@ -226,62 +211,30 @@ func (s *alertService) buildAlertRuleResponse(rule *model.AlertRule) *response.A
 	}
 }
 
-// ListAlertRecords retrieves a paginated list of alert records
-func (s *alertService) ListAlertRecords(ctx context.Context, req *request.AlertRecordQueryRequest) (*common.PaginationResponse, error) {
-	s.logger.InfoContext(ctx, "Listing alert records",
-		logger.Int("page", req.Page),
-		logger.Int("page_size", req.PageSize))
+// ListAlertRules retrieves a list of alert rules.
+func (s *alertService) ListAlertRules(ctx context.Context, req *request.AlertRuleQueryRequest) (*common.PaginationResponse, error) {
+	s.logger.InfoContext(ctx, "Listing alert rules",
+		logger.String("service", "alert"),
+		logger.String("operation", "ListAlertRules"))
 
-	// Set default values
-	if req.Page <= 0 {
-		req.Page = 1
-	}
-	if req.PageSize <= 0 || req.PageSize > 100 {
-		req.PageSize = 20
-	}
-
-	// Build filters
-	filters := make(map[string]interface{})
-	if req.Status != "" {
-		filters["status"] = req.Status
-	}
-	if req.Severity != "" {
-		filters["severity"] = req.Severity
-	}
-	if !req.StartTime.IsZero() {
-		filters["start_time"] = req.StartTime
-	}
-	if !req.EndTime.IsZero() {
-		filters["end_time"] = req.EndTime
-	}
-	if req.AlertRuleID != nil {
-		filters["alert_rule_id"] = *req.AlertRuleID
-	}
-
-	// Calculate pagination offset
-	offset := (req.Page - 1) * req.PageSize
-
-	// Call repository to fetch data
-	records, total, err := s.alertRepo.ListAlertRecords(ctx, offset, req.PageSize, filters)
+	// Query data
+	rules, total, err := s.alertRepo.ListAlertRules(ctx, req)
 	if err != nil {
-		s.logger.ErrorContext(ctx, "Failed to list alert records", logger.ErrorField(err))
+		s.logger.ErrorContext(ctx, "Failed to list alert rules", logger.ErrorField(err))
 		return nil, err
 	}
 
-	// Convert to DTOs
-	records_dto := make([]response.AlertRecordResponse, 0, len(records))
-	for _, record := range records {
-		records_dto = append(records_dto, s.mapAlertRecordToDTO(record))
+	// Build response
+	items := make([]response.AlertRuleResponse, len(rules))
+	for i, rule := range rules {
+		items[i] = *s.buildAlertRuleResponse(rule)
 	}
 
-	s.logger.InfoContext(ctx, "Alert records retrieved successfully",
-		logger.Int64("total", total))
-
 	return common.NewPaginationResponse(
-		req.Page,
-		req.PageSize,
+		req.GetOffset(),
+		req.GetPageSize(),
 		total,
-		records_dto,
+		items,
 	), nil
 }
 

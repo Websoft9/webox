@@ -45,11 +45,11 @@ func NewSecretKeyController(
 // @Accept json
 // @Produce json
 // @Param request body request.SecretKeyCreateRequest true "Create secret key request"
-// @Success 201 {object} response.APIResponse{data=response.SecretKeyResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 422 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 201 {object} common.APIResponse{data=response.SecretKeyResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 422 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/secret-keys [post]
 func (c *SecretKeyController) CreateSecretKey(ctx *gin.Context) {
 	// Parse request parameters
@@ -87,12 +87,12 @@ func (c *SecretKeyController) CreateSecretKey(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path int true "Secret key ID"
-// @Success 200 {object} response.APIResponse{data=response.SecretKeyResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 403 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.SecretKeyResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 403 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/secret-keys/{id} [get]
 func (c *SecretKeyController) GetSecretKey(ctx *gin.Context) {
 	// Parse path parameter
@@ -129,13 +129,13 @@ func (c *SecretKeyController) GetSecretKey(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path int true "Secret key ID"
-// @Success 200 {object} response.APIResponse{data=response.SecretKeyValueResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 403 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
-// @Failure 422 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.SecretKeyValueResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 403 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 422 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/secret-keys/{id}/value [get]
 func (c *SecretKeyController) GetSecretKeyValue(ctx *gin.Context) {
 	// Parse path parameter
@@ -173,13 +173,13 @@ func (c *SecretKeyController) GetSecretKeyValue(ctx *gin.Context) {
 // @Produce json
 // @Param id path int true "Secret key ID"
 // @Param request body request.SecretKeyUpdateRequest true "Update secret key request"
-// @Success 200 {object} response.APIResponse{data=response.SecretKeyResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 403 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
-// @Failure 422 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.SecretKeyResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 403 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 422 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/secret-keys/{id} [put]
 func (c *SecretKeyController) UpdateSecretKey(ctx *gin.Context) {
 	// Parse path parameter
@@ -222,12 +222,12 @@ func (c *SecretKeyController) UpdateSecretKey(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path int true "Secret key ID"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 403 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 403 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/secret-keys/{id} [delete]
 func (c *SecretKeyController) DeleteSecretKey(ctx *gin.Context) {
 	// Parse path parameter
@@ -266,10 +266,10 @@ func (c *SecretKeyController) DeleteSecretKey(ctx *gin.Context) {
 // @Param page query int false "Page number" default(1)
 // @Param page_size query int false "Page size" default(20)
 // @Param key_type query string false "Key type filter" Enums(API_KEY,DATABASE,SSH,CERTIFICATE,CUSTOM)
-// @Success 200 {object} response.APIResponse{data=response.SecretKeyListResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.SecretKeyListResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/secret-keys [get]
 func (c *SecretKeyController) ListSecretKeys(ctx *gin.Context) {
 	// Bind request parameters
@@ -308,9 +308,9 @@ func (c *SecretKeyController) ListSecretKeys(ctx *gin.Context) {
 // @Produce application/octet-stream
 // @Param format query string false "Export format" Enums(csv,json,excel) default(csv)
 // @Success 200 {file} file "Exported file"
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/secret-keys/export [get]
 func (c *SecretKeyController) ExportSecretKeys(ctx *gin.Context) {
 	// Bind request parameters

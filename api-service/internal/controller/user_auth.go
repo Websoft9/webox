@@ -83,9 +83,9 @@ func (c *UserAuthController) handleUserAuth(
 // @Accept json
 // @Produce json
 // @Param request body request.UserRegisterRequest true "User registration request"
-// @Success 200 {object} response.APIResponse{data=response.UserResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.UserResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/auth/register [post]
 func (c *UserAuthController) Register(ctx *gin.Context) {
 	var req request.UserRegisterRequest
@@ -101,10 +101,10 @@ func (c *UserAuthController) Register(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param request body request.UserLoginRequest true "User login request"
-// @Success 200 {object} response.APIResponse{data=response.UserLoginResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.UserLoginResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/auth/login [post]
 func (c *UserAuthController) Login(ctx *gin.Context) {
 	var req request.UserLoginRequest
@@ -121,9 +121,9 @@ func (c *UserAuthController) Login(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param request body request.ForgotPasswordRequest true "Forgot password request"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/auth/forgot-password [post]
 func (c *UserAuthController) ForgotPassword(ctx *gin.Context) {
 	var req request.ForgotPasswordRequest
@@ -149,9 +149,9 @@ func (c *UserAuthController) ForgotPassword(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param token query string true "Password reset token"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/auth/reset-password [get]
 func (c *UserAuthController) ShowResetPasswordForm(ctx *gin.Context) {
 	// Get token from query parameter
@@ -182,9 +182,9 @@ func (c *UserAuthController) ShowResetPasswordForm(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param request body request.ResetPasswordRequest true "Reset password request"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/auth/reset-password [post]
 func (c *UserAuthController) ResetPassword(ctx *gin.Context) {
 	var req request.ResetPasswordRequest
@@ -210,9 +210,9 @@ func (c *UserAuthController) ResetPassword(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param token query string true "Verification token"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/auth/verify-email [get]
 func (c *UserAuthController) VerifyEmail(ctx *gin.Context) {
 	// Get token from query parameter
@@ -246,9 +246,9 @@ func (c *UserAuthController) VerifyEmail(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param request body request.ResendVerificationRequest true "Resend verification request"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/auth/resend-verification [post]
 func (c *UserAuthController) ResendVerificationEmail(ctx *gin.Context) {
 	var req request.ResendVerificationRequest
@@ -274,10 +274,10 @@ func (c *UserAuthController) ResendVerificationEmail(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param request body request.OAuth2LoginRequest true "OAuth2 login request"
-// @Success 200 {object} response.APIResponse{data=response.UserLoginResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.UserLoginResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/auth/oauth2/login [post]
 func (c *UserAuthController) OAuth2Login(ctx *gin.Context) {
 	var req request.OAuth2LoginRequest
@@ -294,10 +294,10 @@ func (c *UserAuthController) OAuth2Login(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/auth/logout [post]
 func (c *UserAuthController) Logout(ctx *gin.Context) {
 	// Extract JWT token from Authorization header
