@@ -75,11 +75,11 @@ WORKDIR /home/appuser/
 
 # Copy binary files from the build phase (as appuser)
 COPY --from=builder --chown=appuser:appuser /app/api-service .
-COPY --from=builder --chown=appuser:appuser /app/create-user ./scripts
 
 # Copy configuration files (as appuser)
 COPY --from=builder --chown=appuser:appuser /app/configs ./configs
 COPY --from=builder --chown=appuser:appuser /app/scripts ./scripts
+COPY --from=builder --chown=appuser:appuser /app/create-user ./scripts
 
 # Make scripts executable
 RUN chmod +x ./scripts/*.sh
