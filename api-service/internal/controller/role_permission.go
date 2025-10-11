@@ -302,11 +302,14 @@ func (c *RolePermissionController) GetRoleUsers(ctx *gin.Context) {
 		return
 	}
 
-	// Get pagination parameters
-	page, pageSize := GetPaginationParams(ctx)
+	var req response.PaginationRequest
+	// Bind query parameters
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
+		return
+	}
 
 	// Get role users
-	users, err := c.roleService.GetRoleUsers(utils.ContextWithUserID(ctx), id, page, pageSize)
+	users, err := c.roleService.GetRoleUsers(utils.ContextWithUserID(ctx), id, &req)
 	if err != nil {
 		response.WithError(ctx, err)
 		return
@@ -532,11 +535,14 @@ func (c *RolePermissionController) GetPermissionRoles(ctx *gin.Context) {
 		return
 	}
 
-	// Get pagination parameters
-	page, pageSize := GetPaginationParams(ctx)
+	var req response.PaginationRequest
+	// Bind query parameters
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
+		return
+	}
 
 	// Get permission roles
-	roles, err := c.permissionService.GetPermissionRoles(utils.ContextWithUserID(ctx), id, page, pageSize)
+	roles, err := c.permissionService.GetPermissionRoles(utils.ContextWithUserID(ctx), id, &req)
 	if err != nil {
 		response.WithError(ctx, err)
 		return

@@ -18,7 +18,7 @@ type RoleService interface {
 	// Query operations
 	ListRoles(ctx context.Context, req *request.ListRolesRequest) (*common.PaginationResponse, error)
 	GetRoleWithPermissions(ctx context.Context, id uint) (*response.RoleResponse, error)
-	GetRoleUsers(ctx context.Context, id uint, page, pageSize int) (*common.PaginationResponse, error)
+	GetRoleUsers(ctx context.Context, id uint, req *common.PaginationRequest) (*common.PaginationResponse, error)
 
 	// Permission management
 	AssignPermissions(ctx context.Context, roleID uint, req *request.RolePermissionRequest, grantedBy uint) error
@@ -39,7 +39,7 @@ type PermissionService interface {
 	// Query operations
 	ListPermissions(ctx context.Context, req *request.ListPermissionsRequest) (*common.PaginationResponse, error)
 	GetPermissionTree(ctx context.Context, req *request.PermissionTreeRequest) ([]*response.PermissionTreeResponse, error)
-	GetPermissionRoles(ctx context.Context, id uint, page, pageSize int) (*common.PaginationResponse, error)
+	GetPermissionRoles(ctx context.Context, id uint, req *common.PaginationRequest) (*common.PaginationResponse, error)
 
 	// Permission verification
 	CheckUserPermission(ctx context.Context, userID uint, resource, action string) (bool, error)
