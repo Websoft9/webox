@@ -357,7 +357,7 @@ func (s *secretKeyService) ListSecretKeys(ctx context.Context, req *request.Secr
 		return nil, err
 	}
 
-	return response.ToSecretKeyListResponse(secretKeys, total, req.Page, req.PageSize), nil
+	return response.ToSecretKeyListResponse(secretKeys, total, req.GetOffset(), req.GetPageSize()), nil
 }
 
 // ExportSecretKeys exports secret keys in specified format
@@ -366,13 +366,7 @@ func (s *secretKeyService) ExportSecretKeys(ctx context.Context, req *request.Se
 		logger.Uint("user_id", userID),
 		logger.String("format", req.Format))
 
-	// Create query request for filtering
-	queryReq := &request.SecretKeyQueryRequest{
-		Page:     1,
-		PageSize: constants.DefaultExportPageSize, // Large number to get all keys
-	}
-
-	secretKeys, _, err := s.secretKeyRepo.List(ctx, queryReq, userID)
+	secretKeys, err := s.secretKeyRepo.ListAll(ctx, userID)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to get secret keys for export",
 			logger.Uint("user_id", userID),

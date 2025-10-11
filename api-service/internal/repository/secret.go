@@ -80,12 +80,13 @@ func (r *secretKeyRepository) List(ctx context.Context, req *request.SecretKeyQu
 		return nil, 0, err
 	}
 
-	// Apply pagination and sorting
-	offset := (req.Page - 1) * req.PageSize
+	// Paginated query
+	offset := req.GetOffset()
+	limit := req.GetPageSize()
 	err := query.
 		Preload("Owner").
 		Order("created_at DESC").
-		Limit(req.PageSize).
+		Limit(limit).
 		Offset(offset).
 		Find(&secretKeys).Error
 
@@ -94,6 +95,24 @@ func (r *secretKeyRepository) List(ctx context.Context, req *request.SecretKeyQu
 	}
 
 	return secretKeys, total, nil
+}
+
+// ListAll retrieves all secret keys for a user without pagination (for export)
+func (r *secretKeyRepository) ListAll(ctx context.Context, userID uint) ([]*model.SecretKey, error) {
+	var secretKeys []*model.SecretKey
+
+	err := r.db.WithContext(ctx).
+		Model(&model.SecretKey{}).
+		Where("owner_id = ?", userID).
+		Preload("Owner").
+		Order("created_at DESC").
+		Find(&secretKeys).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return secretKeys, nil
 }
 
 // GetByOwnerID retrieves secret keys by owner ID

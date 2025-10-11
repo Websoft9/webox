@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"api-service/internal/config"
+	"api-service/internal/dto/common"
 	"api-service/internal/dto/request"
 	"api-service/internal/dto/response"
 	"api-service/internal/interface/service"
@@ -49,6 +50,14 @@ func (m *MockSecretKeyRepository) Delete(ctx context.Context, id uint) error {
 func (m *MockSecretKeyRepository) List(ctx context.Context, req *request.SecretKeyQueryRequest, userID uint) ([]*model.SecretKey, int64, error) {
 	args := m.Called(ctx, req, userID)
 	return args.Get(0).([]*model.SecretKey), args.Get(1).(int64), args.Error(2)
+}
+
+func (m *MockSecretKeyRepository) ListAll(ctx context.Context, userID uint) ([]*model.SecretKey, error) {
+	args := m.Called(ctx, userID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*model.SecretKey), args.Error(1)
 }
 
 func (m *MockSecretKeyRepository) GetByOwnerID(ctx context.Context, ownerID uint) ([]*model.SecretKey, error) {
@@ -426,10 +435,11 @@ func TestSecretKeyService_ListSecretKeys_Success(t *testing.T) {
 	testKeys := []*model.SecretKey{createTestSecretKey()}
 	userID := uint(1)
 	req := &request.SecretKeyQueryRequest{
-		Page:     1,
-		PageSize: 10,
+		PaginationRequest: common.PaginationRequest{
+			Page:     1,
+			PageSize: 10,
+		},
 	}
-
 	// Mock List call
 	mockRepo.On("List", ctx, req, userID).Return(testKeys, int64(1), nil)
 
@@ -460,8 +470,8 @@ func TestSecretKeyService_ExportSecretKeys_CSV_Success(t *testing.T) {
 		Format: "csv",
 	}
 
-	// Mock List call
-	mockRepo.On("List", ctx, mock.AnythingOfType("*request.SecretKeyQueryRequest"), userID).Return(testKeys, int64(1), nil)
+	// Mock ListAll call
+	mockRepo.On("ListAll", ctx, userID).Return(testKeys, nil)
 
 	// Execute
 	data, filename, err := service.ExportSecretKeys(ctx, req, userID)
@@ -484,8 +494,8 @@ func TestSecretKeyService_ExportSecretKeys_JSON_Success(t *testing.T) {
 		Format: "json",
 	}
 
-	// Mock List call
-	mockRepo.On("List", ctx, mock.AnythingOfType("*request.SecretKeyQueryRequest"), userID).Return(testKeys, int64(1), nil)
+	// Mock ListAll call
+	mockRepo.On("ListAll", ctx, userID).Return(testKeys, nil)
 
 	// Execute
 	data, filename, err := service.ExportSecretKeys(ctx, req, userID)
@@ -510,7 +520,8 @@ func TestSecretKeyService_ExportSecretKeys_UnsupportedFormat(t *testing.T) {
 
 	// Mock List call since the service calls List before format validation
 	testKeys := []*model.SecretKey{createTestSecretKey()}
-	mockRepo.On("List", ctx, mock.AnythingOfType("*request.SecretKeyQueryRequest"), userID).Return(testKeys, int64(1), nil)
+	// Mock ListAll call
+	mockRepo.On("ListAll", ctx, userID).Return(testKeys, nil)
 
 	// Execute
 	data, filename, err := service.ExportSecretKeys(ctx, req, userID)
@@ -606,7 +617,12 @@ func TestSecretKeyService_FullWorkflow(t *testing.T) {
 	assert.Equal(t, testKey.ID, updateResult.ID)
 
 	// Step 4: List secret keys
-	listReq := &request.SecretKeyQueryRequest{Page: 1, PageSize: 10}
+	listReq := &request.SecretKeyQueryRequest{
+		PaginationRequest: common.PaginationRequest{
+			Page:     1,
+			PageSize: 10,
+		},
+	}
 	mockRepo.On("List", ctx, listReq, userID).Return([]*model.SecretKey{testKey}, int64(1), nil)
 
 	listResult, err := service.ListSecretKeys(ctx, listReq, userID)

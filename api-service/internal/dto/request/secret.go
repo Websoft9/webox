@@ -1,6 +1,7 @@
 package request
 
 import (
+	"api-service/internal/dto/common"
 	"api-service/internal/model"
 	"time"
 )
@@ -29,9 +30,8 @@ type SecretKeyUpdateRequest struct {
 // SecretKeyQueryRequest represents the request to query secret keys
 // According to API design, only 3 parameters: page, page_size, key_type
 type SecretKeyQueryRequest struct {
-	Page     int                  `form:"page" binding:"omitempty,min=1"`
-	PageSize int                  `form:"page_size" binding:"omitempty,min=1,max=100"`
-	KeyType  *model.SecretKeyType `form:"key_type" binding:"omitempty,oneof=API_KEY DATABASE SSH CERTIFICATE CUSTOM"`
+	common.PaginationRequest
+	KeyType *model.SecretKeyType `form:"key_type" binding:"omitempty,oneof=API_KEY DATABASE SSH CERTIFICATE CUSTOM"`
 }
 
 // SecretKeyExportRequest represents the request to export secret keys
