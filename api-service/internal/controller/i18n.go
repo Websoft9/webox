@@ -59,7 +59,7 @@ func (c *I18nController) GetLanguages(ctx *gin.Context) {
 // SwitchLanguage switches user's language preference
 // @Summary Switch user language
 // @Description Switch user's language preference and update cache
-// @Tags Internationalization
+// @Tags Profile
 // @Accept json
 // @Produce json
 // @Param request body request.SwitchLanguageRequest true "Language switch request"
@@ -68,7 +68,7 @@ func (c *I18nController) GetLanguages(ctx *gin.Context) {
 // @Failure 401 {object} common.APIResponse
 // @Failure 500 {object} common.APIResponse
 // @Security BearerAuth
-// @Router /api/v1/i18n/switch-language [post]
+// @Router /api/v1/profile/switch-language [put]
 func (c *I18nController) SwitchLanguage(ctx *gin.Context) {
 	c.logger.InfoContext(ctx.Request.Context(), "Switching user language")
 

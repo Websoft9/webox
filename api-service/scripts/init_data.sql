@@ -11,6 +11,47 @@ INSERT INTO `roles` (`name`, `code`, `description`, `is_system`, `status`) VALUE
    ('Operator', 'operator', 'Operations role responsible for system operations', 1, 1),
    ('User', 'user', 'Regular user role with basic permissions', 1, 1);
 
+INSERT INTO `modules` (`name`, `code`, `description`, `created_at`, `updated_at`) VALUES
+	 ('ui.platform','platform','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.home','home','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.project_overview_dashboard','project_overview','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.monitor_overview_dashboard','monitor_overview','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.app_quick_navigation','app_navigation','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.personal_space','personal_folder','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.project','project','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.project_dashboard','project_dashboard','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.project_space','project_folder','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.application_management','application','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.workflow_management','workflow','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.task_management','job','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.resource','project_resource','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.resource_group_management','resource_group','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.server_management','server','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.secret_management','secret','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.database_management','database','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.gateway_management','gateway','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.certificate_management','certificate','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.cloud_resource_management','cloud_resource','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.project_team_management','project_team','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.project_settings','project_setting','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.apps','apps','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.marketplace','marketplace','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.wishlist','wishlist','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.platform_management','platform_setting','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.project_management','project_manage','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.security_management','security','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.role_management','role','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.permission_management','permission','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.auth_management','auth','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.user_management','user','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.notification','notification','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.profile','profile','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.audit_log','audit_log','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.admin_settings','admin_settings','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.tag_management','tag_management','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.alert_management','alert','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('ui.action_query','secret_key','Default module defines','2025-09-01 12:11:19','2025-09-01 12:11:19');
+
 INSERT INTO `permissions` (`parent_code`,`scope`,`name`,`code`,`module`,`action`,`resource`,`element`,`description`,`is_system`,`is_menu`,`sort_order`,`status`,`created_by`,`updated_by`,`created_at`,`updated_at`) VALUES
 	 (NULL,'platform','ui.platform','e06e84c7-fe48-4d0d-9dbb-cbe65cf5d936','platform','*',NULL,NULL,'Default permissions root node',1,1,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
 	 ('e06e84c7-fe48-4d0d-9dbb-cbe65cf5d936','platform','ui.home','16aa0ce0-ce2a-4075-8aee-5f9ccb472819','home','*',NULL,NULL,'Platform home page',1,1,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
@@ -186,8 +227,10 @@ INSERT INTO `permissions` (`parent_code`,`scope`,`name`,`code`,`module`,`action`
 	 ('208ebe4c-74f3-48ea-9819-9aa9a8212158','platform','ui.action_query','a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11','profile','query','/profile/security-settings',NULL,'Security settings query permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
 	 ('208ebe4c-74f3-48ea-9819-9aa9a8212158','platform','ui.action_update','550e8400-e29b-41d4-a716-446655440000','profile','update','/profile/security-settings',NULL,'Security settings update permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
 	 ('208ebe4c-74f3-48ea-9819-9aa9a8212158','platform','ui.action_query','6ba7b812-9dad-11d1-80b4-00c04fd430c8','profile','query','/profile/login-history',NULL,'Login history query permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+   ('208ebe4c-74f3-48ea-9819-9aa9a8212158','platform','ui.action_update','f7a3b2c1-4d5e-6f8a-9b0c-1d2e3f4a5b6c','profile','update','/profile/switch-language',NULL,'switches user language preference permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
 	 ('777614c1-7f84-4e3e-95ee-edab4f5a47bc','platform','ui.audit_log','556f99a8-6626-4200-9f80-6abfa68c18e2','audit_log','*','/audit-logs',NULL,'Audit log all permissions',1,1,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
 	 ('556f99a8-6626-4200-9f80-6abfa68c18e2','platform','ui.action_query','2a65e848-d451-469d-9d8c-76c7b527cec5','audit_log','query','/audit-logs',NULL,'Audit log query permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+	 ('556f99a8-6626-4200-9f80-6abfa68c18e2','platform','ui.action_query','8e9d7c6b-5a4f-3e2d-1c0b-9a8f7e6d5c4b','audit_log','query','/audit-logs/*',NULL,'Audit log query permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
 	 ('556f99a8-6626-4200-9f80-6abfa68c18e2','platform','ui.action_query','e706486b-32a9-4aec-be78-b9d480b571ab','audit_log','query','/audit-logs/export',NULL,'Audit log export permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
    ('777614c1-7f84-4e3e-95ee-edab4f5a47bc','platform','ui.admin_settings','f8e5c2a1-3d47-4b8e-9c15-8a2b1f7e4d93','admin_settings','*','/system-configs',NULL,'System configuration management all permissions',1,1,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
 	 ('f8e5c2a1-3d47-4b8e-9c15-8a2b1f7e4d93','platform','ui.action_query','4c8a7b2e-1f65-4e3c-8d29-6b9c5e8f4a12','admin_settings','query','/system-configs',NULL,'System configuration query permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
@@ -226,7 +269,7 @@ INSERT INTO `permissions` (`parent_code`,`scope`,`name`,`code`,`module`,`action`
    ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_delete','e5f6a7b8-c9d0-4123-e456-789abcdef012','secret_key','delete','/secret-keys/*',NULL,'Secret key delete permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
    ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_query','f6a7b8c9-d0e1-4234-f567-89abcdef0123','secret_key','query','/secret-keys/export',NULL,'Secret key export permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
    ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_query','a7b8c9d0-e1f2-4345-a678-9abcdef01234','secret_key','query','/secret-keys/*/value',NULL,'Secret key value decrypt permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19');
-    
+
 -- Insert default users and role permissions
 INSERT INTO `users` (`id`,`username`,`email`,`password_hash`,`nickname`,`avatar`,`phone`,`gender`,`signature`,`status`,`last_login_at`,`last_login_ip`,`timezone`,`language`,`created_at`,`updated_at`) VALUES
 	 (1,'admin','admin@websoft9.com','d1a7b27aa60359a6033b046831168286dddc5a83268d4d483d30a09983f9c944','Manager','','',0,'Websoft9 manager',1,NULL,'','Asia/Shanghai','zh-CN','2025-09-01 12:11:19','2025-09-01 12:11:19');
@@ -409,8 +452,10 @@ INSERT INTO `role_permissions` (`role_id`,`permission_code`,`granted_by`,`grante
          (1, 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
          (1, '550e8400-e29b-41d4-a716-446655440000',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
          (1, '6ba7b812-9dad-11d1-80b4-00c04fd430c8',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, 'f7a3b2c1-4d5e-6f8a-9b0c-1d2e3f4a5b6c',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
          (1, '556f99a8-6626-4200-9f80-6abfa68c18e2',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
          (1, '2a65e848-d451-469d-9d8c-76c7b527cec5',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, '8e9d7c6b-5a4f-3e2d-1c0b-9a8f7e6d5c4b',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
          (1, 'e706486b-32a9-4aec-be78-b9d480b571ab',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
          (1, 'f8e5c2a1-3d47-4b8e-9c15-8a2b1f7e4d93',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
          (1, '4c8a7b2e-1f65-4e3c-8d29-6b9c5e8f4a12',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
@@ -450,7 +495,7 @@ INSERT INTO `role_permissions` (`role_id`,`permission_code`,`granted_by`,`grante
          (1, 'e5f6a7b8-c9d0-4123-e456-789abcdef012',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
          (1, 'f6a7b8c9-d0e1-4234-f567-89abcdef0123',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
          (1, 'a7b8c9d0-e1f2-4345-a678-9abcdef01234',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19');
-         
+
 -- Insert default application categories
 INSERT INTO `app_store_categories` (`name`, `code`, `description`, `sort_order`, `status`) VALUES
 ('Web Services', 'web', 'Web servers and related applications', 1, 1),

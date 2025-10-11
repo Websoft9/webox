@@ -937,6 +937,18 @@ CREATE TABLE IF NOT EXISTS `users` (
     KEY `idx_email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Users table';
 
+-- Modules table
+CREATE TABLE IF NOT EXISTS `modules` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(64) NOT NULL COMMENT 'module name',
+    `code` VARCHAR(64) NOT NULL UNIQUE COMMENT 'module code',
+    `description` TEXT NULL COMMENT 'module description',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation time',
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update time',
+    PRIMARY KEY (`id`),
+    KEY `idx_module_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='modules table';
+
 -- Permissions table
 CREATE TABLE IF NOT EXISTS `permissions` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
