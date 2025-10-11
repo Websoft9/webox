@@ -397,8 +397,7 @@ CREATE TABLE IF NOT EXISTS `ssl_certificates` (
 CREATE TABLE IF NOT EXISTS `secret_keys` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(64) NOT NULL COMMENT 'Secret key name',
-    `key_type` ENUM('API_KEY', 'DATABASE', 'SSH', 'CERTIFICATE', 'CUSTOM') NOT NULL COMMENT 'Secret key type',
-    `encrypted_value` TEXT NOT NULL COMMENT 'Encrypted value',
+    `key_type` ENUM('SECRET_KEY', 'ACCOUNT', 'FILE') NOT NULL COMMENT 'Secret key type',
     `description` TEXT NULL COMMENT 'Description',
     `custom_fields` JSON NULL COMMENT 'Custom fields',
     `expires_at` DATETIME NULL COMMENT 'Expiration time',

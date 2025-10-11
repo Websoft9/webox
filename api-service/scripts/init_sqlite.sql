@@ -319,7 +319,6 @@ CREATE TABLE IF NOT EXISTS secret_keys (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name VARCHAR(64) NOT NULL,
     key_type VARCHAR(20) NOT NULL, -- API_KEY, DATABASE, SSH, CERTIFICATE, CUSTOM
-    encrypted_value TEXT NOT NULL,
     description TEXT,
     custom_fields TEXT, -- JSON format
     expires_at DATETIME,
