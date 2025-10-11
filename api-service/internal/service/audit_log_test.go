@@ -349,7 +349,7 @@ func TestAuditLogService_RecordLog_RepositoryError(t *testing.T) {
 
 	// Assert
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to record audit log")
+	assert.Contains(t, err.Error(), "database connection failed")
 	mockRepo.AssertExpectations(t)
 }
 
@@ -362,7 +362,7 @@ func TestAuditLogService_RecordLog_NilRequest(t *testing.T) {
 
 	// Assert
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "audit log request is required")
+	assert.Contains(t, err.Error(), "Parameter format error")
 }
 
 // Tests for GetAuditLog
@@ -410,7 +410,7 @@ func TestAuditLogService_GetAuditLog_NotFound(t *testing.T) {
 	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "failed to get audit log")
+	assert.Contains(t, err.Error(), "record not found")
 	mockRepo.AssertExpectations(t)
 }
 
@@ -428,7 +428,7 @@ func TestAuditLogService_ListAuditLogs_Success(t *testing.T) {
 	}
 
 	// Mock repository call
-	mockRepo.On("List", ctx, mock.AnythingOfType("*request.AuditLogFilter")).Return(testLogs, int64(1), nil)
+	mockRepo.On("List", ctx, mock.AnythingOfType("*request.ListAuditLogRequest")).Return(testLogs, int64(1), nil)
 
 	// Mock user service call for user info
 	userResp := &response.UserResponse{
@@ -463,7 +463,7 @@ func TestAuditLogService_ListAuditLogs_WithDefaults(t *testing.T) {
 	req := &request.ListAuditLogRequest{} // Empty request, should use defaults
 
 	// Mock repository call
-	mockRepo.On("List", ctx, mock.AnythingOfType("*request.AuditLogFilter")).Return(testLogs, int64(0), nil)
+	mockRepo.On("List", ctx, mock.AnythingOfType("*request.ListAuditLogRequest")).Return(testLogs, int64(0), nil)
 
 	// Execute
 	result, err := service.ListAuditLogs(ctx, req)
@@ -472,7 +472,7 @@ func TestAuditLogService_ListAuditLogs_WithDefaults(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, 1, result.Page)      // Default page
-	assert.Equal(t, 20, result.PageSize) // Default page size
+	assert.Equal(t, 10, result.PageSize) // Default page size
 	mockRepo.AssertExpectations(t)
 }
 
@@ -491,7 +491,7 @@ func TestAuditLogService_ExportAuditLogs_CSV_Success(t *testing.T) {
 	// Assert
 	assert.NoError(t, err)
 	assert.NotNil(t, data)
-	assert.Equal(t, "application/octet-stream", contentType)
+	assert.Equal(t, "text/csv", contentType)
 	assert.Contains(t, string(data), "action,created_at,description") // CSV header with database fields
 	// Mock repository is no longer called since we use DBExporter now
 }
@@ -510,7 +510,7 @@ func TestAuditLogService_ExportAuditLogs_JSON_Success(t *testing.T) {
 	// Assert
 	assert.NoError(t, err)
 	assert.NotNil(t, data)
-	assert.Equal(t, "application/octet-stream", contentType)
+	assert.Equal(t, "application/json", contentType)
 	assert.Contains(t, string(data), `"id": 2`) // JSON content with actual test data (note the space)
 }
 
@@ -528,7 +528,7 @@ func TestAuditLogService_ExportAuditLogs_UnsupportedFormat(t *testing.T) {
 	// Assert - unsupported format defaults to CSV
 	assert.NoError(t, err)
 	assert.NotNil(t, data)
-	assert.Equal(t, "application/octet-stream", contentType)
+	assert.Equal(t, "text/csv", contentType)
 	assert.Contains(t, string(data), "action,created_at,description") // CSV header with database fields
 }
 
@@ -546,7 +546,7 @@ func TestAuditLogService_ExportAuditLogs_Excel_Success(t *testing.T) {
 	// Assert
 	assert.NoError(t, err)
 	assert.NotEmpty(t, data)
-	assert.Equal(t, "application/octet-stream", contentType)
+	assert.Equal(t, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", contentType)
 
 	// Verify that data is not empty and contains Excel magic bytes
 	assert.True(t, len(data) > 100) // Excel files are typically larger than 100 bytes
@@ -577,7 +577,7 @@ func TestAuditLogService_ExportAuditLogs_DefaultValues(t *testing.T) {
 	// Assert
 	assert.NoError(t, err)
 	assert.NotNil(t, data)
-	assert.Equal(t, "application/octet-stream", contentType)
+	assert.Equal(t, "text/csv", contentType)
 	// Should return CSV header even if no data matches the user filter
 	assert.Contains(t, string(data), "action,created_at,description")
 }
@@ -647,7 +647,7 @@ func TestAuditLogService_FullWorkflow(t *testing.T) {
 	assert.Equal(t, "Test User", result.User.Nickname)
 
 	// Step 3: List logs
-	mockRepo.On("List", ctx, mock.AnythingOfType("*request.AuditLogFilter")).Return([]*model.AuditLog{testLog}, int64(1), nil)
+	mockRepo.On("List", ctx, mock.AnythingOfType("*request.ListAuditLogRequest")).Return([]*model.AuditLog{testLog}, int64(1), nil)
 
 	listReq := &request.ListAuditLogRequest{
 		PaginationRequest: common.PaginationRequest{

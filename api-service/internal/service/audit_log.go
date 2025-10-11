@@ -187,6 +187,13 @@ func (s *auditLogService) ListAuditLogs(ctx context.Context, req *request.ListAu
 		}
 	}
 
+	// Apply default values for pagination
+	page := req.Page
+	if page <= 0 {
+		page = 1
+	}
+	pageSize := req.GetPageSize()
+
 	return common.NewPaginationResponse(
 		req.GetPage(),
 		req.GetPageSize(),
