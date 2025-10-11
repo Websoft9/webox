@@ -248,7 +248,7 @@ func (s *roleService) ListRoles(ctx context.Context, req *request.ListRolesReque
 	}
 
 	return common.NewPaginationResponse(
-		req.GetOffset(),
+		req.GetPage(),
 		req.GetPageSize(),
 		total,
 		items,
@@ -283,7 +283,7 @@ func (s *roleService) GetRoleUsers(ctx context.Context, id uint, req *common.Pag
 	}
 
 	return common.NewPaginationResponse(
-		req.GetOffset(),
+		req.GetPage(),
 		req.GetPageSize(),
 		total,
 		items,

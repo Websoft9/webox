@@ -211,7 +211,7 @@ func (s *permissionService) ListPermissions(ctx context.Context, req *request.Li
 	}
 
 	return common.NewPaginationResponse(
-		req.GetOffset(),
+		req.GetPage(),
 		req.GetPageSize(),
 		total,
 		items,
@@ -254,7 +254,7 @@ func (s *permissionService) GetPermissionRoles(ctx context.Context, id uint, req
 	}
 
 	return common.NewPaginationResponse(
-		req.GetOffset(),
+		req.GetPage(),
 		req.GetPageSize(),
 		total,
 		items,
