@@ -59,6 +59,15 @@ func (c *SecretKeyController) CreateSecretKey(ctx *gin.Context) {
 		return
 	}
 
+	// Validate custom_fields based on key_type
+	if err := req.Validate(); err != nil {
+		c.logger.ErrorContext(ctx, "Custom fields validation failed",
+			logger.String("key_type", string(req.KeyType)),
+			logger.ErrorField(err))
+		response.WithError(ctx, err)
+		return
+	}
+
 	// Get current user ID
 	currentUserID, Success := GetUserID(ctx)
 	if !Success {
@@ -192,6 +201,16 @@ func (c *SecretKeyController) UpdateSecretKey(ctx *gin.Context) {
 	var req request.SecretKeyUpdateRequest
 	// Bind and validate request
 	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
+		return
+	}
+
+	// Validate custom_fields based on key_type
+	if err := req.Validate(); err != nil {
+		c.logger.ErrorContext(ctx, "Custom fields validation failed",
+			logger.Uint("secret_key_id", uint(id)),
+			logger.String("key_type", string(req.KeyType)),
+			logger.ErrorField(err))
+		response.WithError(ctx, err)
 		return
 	}
 
