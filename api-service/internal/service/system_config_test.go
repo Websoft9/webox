@@ -134,7 +134,6 @@ func (suite *SystemConfigServiceTestSuite) SetupTest() {
 		config:           suite.config,
 		db:               &gorm.DB{},
 		logger:           suite.logger,
-		i18n:             suite.i18n,
 	}
 }
 
@@ -244,7 +243,6 @@ func (suite *SystemConfigServiceTestSuite) TestTestSMTP_EmailServiceNotConfigure
 		config:           suite.config,
 		db:               &gorm.DB{},
 		logger:           suite.logger,
-		i18n:             suite.i18n,
 	}
 
 	err := serviceWithoutEmail.TestSMTP(ctx, req)
@@ -654,7 +652,6 @@ func (suite *SystemConfigServiceTestSuite) TestNewSystemConfigService_WithEmailS
 		configWithEmail,
 		&gorm.DB{},
 		suite.logger,
-		suite.i18n,
 	)
 
 	suite.NotNil(service)
@@ -677,7 +674,6 @@ func (suite *SystemConfigServiceTestSuite) TestNewSystemConfigService_WithoutEma
 		configWithoutEmail,
 		&gorm.DB{},
 		suite.logger,
-		suite.i18n,
 	)
 
 	suite.NotNil(service)

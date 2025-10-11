@@ -8,28 +8,29 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/pkg/errors"
 	"gorm.io/gorm"
 
 	"api-service/internal/config"
 	"api-service/internal/constants"
+	"api-service/internal/dto/common"
 	"api-service/internal/dto/request"
 	"api-service/internal/dto/response"
 	"api-service/internal/interface/repository"
 	"api-service/internal/interface/service"
 	"api-service/internal/model"
 	"api-service/pkg/auth"
-	"api-service/pkg/i18n"
+	"api-service/pkg/errors"
 	"api-service/pkg/logger"
 	"api-service/pkg/utils"
 )
 
 const (
+	// Content types
+	contentTypeCSV   = "text/csv"
+	contentTypeExcel = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
 	// Response limits
 	maxErrorMessageLength = 200
-
-	// Statistics constants
-	successRateMultiplier = 100
 
 	// Password masking constants
 	maskedPassword       = "******"
@@ -48,14 +49,7 @@ type auditLogService struct {
 	userService  service.UserService
 	db           *gorm.DB
 	logger       logger.Logger
-	i18n         *i18n.I18n
 	config       *config.Config
-}
-
-// logAndWrapError logs an error and wraps it with additional context
-func (s *auditLogService) logAndWrapError(ctx context.Context, err error, message, wrapMessage string) error {
-	s.logger.ErrorContext(ctx, message, logger.ErrorField(err))
-	return errors.Wrap(err, wrapMessage)
 }
 
 // NewAuditLogService creates audit log service instance
@@ -64,7 +58,6 @@ func NewAuditLogService(
 	userService service.UserService,
 	db *gorm.DB,
 	logger logger.Logger,
-	i18n *i18n.I18n,
 	config *config.Config,
 ) service.AuditLogService {
 	return &auditLogService{
@@ -72,7 +65,6 @@ func NewAuditLogService(
 		userService:  userService,
 		db:           db,
 		logger:       logger,
-		i18n:         i18n,
 		config:       config,
 	}
 }
@@ -81,7 +73,7 @@ func NewAuditLogService(
 func (s *auditLogService) RecordLog(ctx context.Context, req *request.CreateAuditLogRequest) error {
 	if req == nil {
 		s.logger.ErrorContext(ctx, "Audit log request is required")
-		return errors.New("audit log request is required")
+		return errors.NewAppError(errors.CodeInvalidParameterFormat)
 	}
 
 	s.logger.InfoContext(ctx, "Recording audit log",
@@ -111,7 +103,7 @@ func (s *auditLogService) RecordLog(ctx context.Context, req *request.CreateAudi
 	}
 
 	if err := s.auditLogRepo.Create(ctx, auditLog); err != nil {
-		return s.logAndWrapError(ctx, err, "Failed to create audit log", "failed to record audit log")
+		return err
 	}
 
 	s.logger.InfoContext(ctx, "Audit log recorded successfully",
@@ -128,14 +120,10 @@ func (s *auditLogService) GetAuditLog(ctx context.Context, id uint) (*response.A
 
 	auditLog, err := s.auditLogRepo.GetByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("audit log not found")
-		}
-		return nil, s.logAndWrapError(ctx, err, "Failed to get audit log", "failed to get audit log")
+		return nil, err
 	}
 
-	s.logger.InfoContext(ctx, "Audit log retrieved successfully",
-		logger.Uint("audit_log_id", id))
+	s.logger.InfoContext(ctx, "Audit log retrieved successfully", logger.Uint("audit_log_id", id))
 
 	var resp response.AuditLogResponse
 	resp.FromAuditLog(auditLog)
@@ -153,36 +141,16 @@ func (s *auditLogService) GetAuditLog(ctx context.Context, id uint) (*response.A
 }
 
 // ListAuditLogs lists audit logs with pagination and filters
-func (s *auditLogService) ListAuditLogs(ctx context.Context, req *request.ListAuditLogRequest) (*response.AuditLogListResponse, error) {
+func (s *auditLogService) ListAuditLogs(ctx context.Context, req *request.ListAuditLogRequest) (*common.PaginationResponse, error) {
 	s.logger.InfoContext(ctx, "Listing audit logs",
 		logger.String("service", "audit_log"),
 		logger.String("operation", "ListAuditLogs"),
 		logger.Int("page", req.Page),
 		logger.Int("page_size", req.PageSize))
 
-	if req.Page <= 0 {
-		req.Page = 1
-	}
-	if req.PageSize <= 0 {
-		req.PageSize = 20
-	}
-
-	// Build filter conditions
-	filter := &request.AuditLogFilter{
-		Page:         req.Page,
-		PageSize:     req.PageSize,
-		UserID:       req.UserID,
-		Action:       req.Action,
-		ResourceType: req.ResourceType,
-		ResourceID:   req.ResourceID,
-		StartTime:    req.StartTime,
-		EndTime:      req.EndTime,
-		IPAddress:    req.IPAddress,
-	}
-
-	auditLogs, total, err := s.auditLogRepo.List(ctx, filter)
+	auditLogs, total, err := s.auditLogRepo.List(ctx, req)
 	if err != nil {
-		return nil, s.logAndWrapError(ctx, err, "Failed to list audit logs", "failed to list audit logs")
+		return nil, err
 	}
 
 	// Convert to response structure and collect user IDs
@@ -219,77 +187,12 @@ func (s *auditLogService) ListAuditLogs(ctx context.Context, req *request.ListAu
 		}
 	}
 
-	// Build paginated response
-	totalPages := int((total + int64(req.PageSize) - 1) / int64(req.PageSize))
-	if totalPages == 0 {
-		totalPages = 1
-	}
-
-	listResp := &response.AuditLogListResponse{
-		Page:       req.Page,
-		PageSize:   req.PageSize,
-		Total:      total,
-		TotalPages: totalPages,
-		Items:      responses,
-	}
-
-	s.logger.InfoContext(ctx, "Audit logs listed successfully",
-		logger.Int("total_count", int(total)),
-		logger.Int("returned_count", len(responses)))
-
-	return listResp, nil
-}
-
-// GetStatistics gets audit log statistics
-func (s *auditLogService) GetStatistics(ctx context.Context, req *request.AuditLogStatisticsRequest) (*response.AuditLogStatisticsResponse, error) {
-	s.logger.InfoContext(ctx, "Getting audit log statistics",
-		logger.String("service", "audit_log"),
-		logger.String("operation", "GetStatistics"),
-		logger.String("group_by", req.GroupBy))
-
-	// Build statistics filter conditions
-	filter := &request.StatisticsFilter{
-		StartTime: req.StartTime,
-		EndTime:   req.EndTime,
-		GroupBy:   req.GroupBy,
-	}
-
-	stats, err := s.auditLogRepo.GetStatistics(ctx, filter)
-	if err != nil {
-		return nil, s.logAndWrapError(ctx, err, "Failed to get audit log statistics", "failed to get audit log statistics")
-	}
-
-	// Convert to response structure
-	resp := &response.AuditLogStatisticsResponse{
-		TotalOperations:   stats.TotalOperations,
-		SuccessOperations: stats.SuccessOperations,
-		FailedOperations:  stats.FailedOperations,
-	}
-
-	// Calculate success rate
-	if stats.TotalOperations > 0 {
-		resp.SuccessRate = float64(stats.SuccessOperations) / float64(stats.TotalOperations) * successRateMultiplier
-	}
-
-	// Convert user statistics
-	for _, userStat := range stats.TopUsers {
-		resp.TopUsers = append(resp.TopUsers, response.UserStatItem(userStat))
-	}
-
-	// Convert action statistics
-	for _, actionStat := range stats.TopActions {
-		resp.TopActions = append(resp.TopActions, response.ActionStatItem(actionStat))
-	}
-
-	// Convert timeline statistics
-	for _, timelineStat := range stats.Timeline {
-		resp.Timeline = append(resp.Timeline, response.TimelineStatItem(timelineStat))
-	}
-
-	s.logger.InfoContext(ctx, "Audit log statistics retrieved successfully",
-		logger.Int("timeline_points", len(stats.Timeline)))
-
-	return resp, nil
+	return common.NewPaginationResponse(
+		req.GetPage(),
+		req.GetPageSize(),
+		total,
+		responses,
+	), nil
 }
 
 // ExportAuditLogs exports audit logs in specified format
@@ -299,85 +202,100 @@ func (s *auditLogService) ExportAuditLogs(ctx context.Context, ginCtx *gin.Conte
 		logger.String("operation", "ExportAuditLogs"),
 		logger.String("format", req.Format))
 
-	// Set default values if not provided
-	userID := req.UserID
-	startTime := req.StartTime
-	endTime := req.EndTime
-
-	// If user ID is not provided, use current user's ID from context
-	if userID == nil {
-		if userIDInterface, exists := ginCtx.Get("user_id"); exists {
-			if currentUserID, ok := userIDInterface.(uint); ok {
-				userID = &currentUserID
-			}
-		}
+	// Parse and validate time range using TimeRangeRequest
+	timeRange := &common.TimeRangeRequest{
+		StartTime: req.StartTime,
+		EndTime:   req.EndTime,
+	}
+	startTime, endTime, err := timeRange.GetParsedTimeRange()
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Invalid time range parameters", logger.ErrorField(err))
+		return nil, "", errors.NewAppError(errors.CodeInvalidParameterFormat)
 	}
 
-	// If start time is not provided, default to 24 hours ago
-	if startTime == nil {
-		defaultStartTime := time.Now().AddDate(0, 0, -1) // 24 hours ago
-		startTime = &defaultStartTime
+	// Handle user ID based on permissions and request
+	userID := s.resolveExportUserID(ginCtx, req.UserID)
+
+	// Build query conditions using QueryBuilder pattern
+	queryBuilder := s.buildExportQueryBuilder(userID, startTime, endTime)
+
+	// Determine export format
+	format := strings.ToLower(req.Format)
+	if format == "" {
+		format = constants.FormatCSV // default format
 	}
 
-	// Limit export time range to 7 days maximum
-	if endTime == nil {
-		now := time.Now()
-		endTime = &now
-	}
-
-	// Calculate the time range
-	timeRange := endTime.Sub(*startTime)
-	maxRange := constants.DefaultTimeRangeHours * time.Hour // 7 days
-
-	if timeRange > maxRange {
-		// If range exceeds 7 days, adjust end time to start time + 7 days
-		adjustedEndTime := startTime.AddDate(0, 0, constants.MaxTimeRangeDays)
-		endTime = &adjustedEndTime
-	}
-
-	var format utils.ExportFormat
-
-	switch strings.ToLower(req.Format) {
+	var exportFormat utils.ExportFormat
+	switch format {
 	case constants.FormatJSON:
-		format = utils.FormatJSON
-	case constants.FormatCSV:
-		format = utils.FormatCSV
+		exportFormat = utils.FormatJSON
+		contentType = "application/json"
 	case constants.FormatExcel:
-		format = utils.FormatExcel
+		exportFormat = utils.FormatExcel
+		contentType = contentTypeExcel
+	case constants.FormatCSV:
+		exportFormat = utils.FormatCSV
+		contentType = contentTypeCSV
 	default:
-		format = utils.FormatCSV
+		s.logger.WarnContext(ctx, "Unsupported export format, using CSV", logger.String("format", format))
+		exportFormat = utils.FormatCSV
+		contentType = contentTypeCSV
 	}
 
-	// Build query conditions using QueryBuilder functions
-	var queryBuilders []utils.QueryBuilder
-
-	// Always add time range condition
-	queryBuilders = append(queryBuilders, utils.WhereBetween("created_at", *startTime, *endTime))
-
-	// Only add user ID condition if specified
-	if userID != nil {
-		queryBuilders = append(queryBuilders, utils.WhereEqual("user_id", userID))
-	}
-
-	queryBuilder := utils.CombineQueryBuilders(queryBuilders...)
-
-	export_config := utils.NewExportConfigBuilder().
+	// Create export configuration
+	exporter := utils.NewDBExporter(s.db)
+	config := utils.NewExportConfigBuilder().
 		TableName("audit_logs").
 		Fields("*").
 		QueryBuilder(queryBuilder).
+		Format(exportFormat).
 		OrderBy("created_at DESC").
-		Format(format).
 		Build()
 
-	expoer := utils.NewDBExporter(s.db)
-
-	data, err = expoer.Export(export_config)
-
+	// Export data using DBExporter
+	exportData, err := exporter.Export(config)
 	if err != nil {
-		return nil, "", s.logAndWrapError(ctx, err, "Failed to export audit logs", "failed to export audit logs")
+		s.logger.ErrorContext(ctx, "Failed to export audit logs", logger.ErrorField(err))
+		return nil, "", errors.NewAppErrorWrapError(err, errors.CodeRecordExportFailed)
 	}
 
-	return data, "application/octet-stream", nil
+	s.logger.InfoContext(ctx, "Audit logs exported successfully",
+		logger.String("format", format),
+		logger.Int("data_size", len(exportData)))
+
+	return exportData, contentType, nil
+}
+
+// buildExportQueryBuilder builds query conditions for export
+func (s *auditLogService) buildExportQueryBuilder(userID *uint, startTime, endTime time.Time) utils.QueryBuilder {
+	builders := []utils.QueryBuilder{
+		utils.WhereBetween("created_at", startTime, endTime),
+	}
+
+	// Add user ID filter if specified
+	if userID != nil {
+		builders = append(builders, utils.WhereEqual("user_id", *userID))
+	}
+
+	return utils.CombineQueryBuilders(builders...)
+}
+
+// resolveExportUserID resolves the user ID for export - if not specified, use current user
+func (s *auditLogService) resolveExportUserID(ginCtx *gin.Context, requestUserID *uint) *uint {
+	// If user ID is explicitly provided in request, use it
+	if requestUserID != nil {
+		return requestUserID
+	}
+
+	// Fallback: try to get user ID from context (legacy support)
+	if userIDInterface, exists := ginCtx.Get("user_id"); exists {
+		if currentUserID, ok := userIDInterface.(uint); ok {
+			return &currentUserID
+		}
+	}
+
+	// Return nil if no user context (export all)
+	return nil
 }
 
 // CleanupExpiredLogs cleanup expired audit logs (system scheduled task)

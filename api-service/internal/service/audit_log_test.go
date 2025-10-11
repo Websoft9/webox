@@ -41,17 +41,12 @@ func (m *MockAuditLogRepository) GetByID(ctx context.Context, id uint) (*model.A
 	return args.Get(0).(*model.AuditLog), args.Error(1)
 }
 
-func (m *MockAuditLogRepository) List(ctx context.Context, filter *request.AuditLogFilter) ([]*model.AuditLog, int64, error) {
+func (m *MockAuditLogRepository) List(ctx context.Context, filter *request.ListAuditLogRequest) ([]*model.AuditLog, int64, error) {
 	args := m.Called(ctx, filter)
 	return args.Get(0).([]*model.AuditLog), args.Get(1).(int64), args.Error(2)
 }
 
-func (m *MockAuditLogRepository) GetStatistics(ctx context.Context, filter *request.StatisticsFilter) (*response.AuditLogStatistics, error) {
-	args := m.Called(ctx, filter)
-	return args.Get(0).(*response.AuditLogStatistics), args.Error(1)
-}
-
-func (m *MockAuditLogRepository) Export(ctx context.Context, filter *request.AuditLogFilter) ([]*model.AuditLog, error) {
+func (m *MockAuditLogRepository) Export(ctx context.Context, filter *request.ExportAuditLogRequest) ([]*model.AuditLog, error) {
 	args := m.Called(ctx, filter)
 	return args.Get(0).([]*model.AuditLog), args.Error(1)
 }
@@ -225,7 +220,6 @@ func setupAuditLogService() (service.AuditLogService, *MockAuditLogRepository, *
 
 	// Initialize i18n for testing
 	_ = i18n.Init() // Initialize with default config
-	mockI18n := i18n.NewI18n()
 
 	// Create test configuration
 	testConfig := &config.Config{
@@ -251,7 +245,7 @@ func setupAuditLogService() (service.AuditLogService, *MockAuditLogRepository, *
 	mockLogger.On("WarnContext", mock.Anything, mock.AnythingOfType("string"), mock.Anything).Maybe().Return()
 	mockLogger.On("ErrorContext", mock.Anything, mock.AnythingOfType("string"), mock.Anything).Maybe().Return()
 
-	auditLogService := NewAuditLogService(mockRepo, mockUserService, mockDB, mockLogger, mockI18n, testConfig)
+	auditLogService := NewAuditLogService(mockRepo, mockUserService, mockDB, mockLogger, testConfig)
 	return auditLogService, mockRepo, mockUserService, mockLogger
 }
 
@@ -426,9 +420,11 @@ func TestAuditLogService_ListAuditLogs_Success(t *testing.T) {
 	ctx := context.Background()
 	testLogs := []*model.AuditLog{createTestAuditLog()}
 	req := &request.ListAuditLogRequest{
-		Page:     1,
-		PageSize: 20,
-		Action:   "CREATE",
+		PaginationRequest: common.PaginationRequest{
+			Page:     1,
+			PageSize: 20,
+		},
+		Action: "CREATE",
 	}
 
 	// Mock repository call
@@ -450,8 +446,12 @@ func TestAuditLogService_ListAuditLogs_Success(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, int64(1), result.Total)
-	assert.Equal(t, 1, len(result.Items))
-	assert.Equal(t, "Test User", result.Items[0].User.Nickname)
+
+	// Type assert Items to the correct type
+	items, ok := result.Items.([]response.AuditLogResponse)
+	assert.True(t, ok, "Items should be []response.AuditLogResponse")
+	assert.Equal(t, 1, len(items))
+	assert.Equal(t, "Test User", items[0].User.Nickname)
 	// Note: AuditLogUserResponse no longer contains Email field
 	mockRepo.AssertExpectations(t)
 }
@@ -473,47 +473,6 @@ func TestAuditLogService_ListAuditLogs_WithDefaults(t *testing.T) {
 	assert.NotNil(t, result)
 	assert.Equal(t, 1, result.Page)      // Default page
 	assert.Equal(t, 20, result.PageSize) // Default page size
-	mockRepo.AssertExpectations(t)
-}
-
-// Tests for GetStatistics
-func TestAuditLogService_GetStatistics_Success(t *testing.T) {
-	service, mockRepo, _, _ := setupAuditLogService()
-	ctx := context.Background()
-	req := &request.AuditLogStatisticsRequest{
-		GroupBy: "day",
-	}
-
-	mockStats := &response.AuditLogStatistics{
-		TotalOperations:   100,
-		SuccessOperations: 95,
-		FailedOperations:  5,
-		SuccessRate:       95.0,
-		TopUsers: []response.UserOperationCount{
-			{UserID: 1, Username: "testuser", OperationCount: 50},
-		},
-		TopActions: []response.ActionCount{
-			{Action: "CREATE", Count: 30},
-		},
-		Timeline: []response.TimelineCount{
-			{Date: "2025-08-28", Count: 25},
-		},
-	}
-
-	// Mock repository call
-	mockRepo.On("GetStatistics", ctx, mock.AnythingOfType("*request.StatisticsFilter")).Return(mockStats, nil)
-
-	// Execute
-	result, err := service.GetStatistics(ctx, req)
-
-	// Assert
-	assert.NoError(t, err)
-	assert.NotNil(t, result)
-	assert.Equal(t, int64(100), result.TotalOperations)
-	assert.Equal(t, int64(95), result.SuccessOperations)
-	assert.Equal(t, int64(5), result.FailedOperations)
-	assert.Equal(t, 1, len(result.TopUsers))
-	assert.Equal(t, 1, len(result.TopActions))
 	mockRepo.AssertExpectations(t)
 }
 
@@ -690,7 +649,12 @@ func TestAuditLogService_FullWorkflow(t *testing.T) {
 	// Step 3: List logs
 	mockRepo.On("List", ctx, mock.AnythingOfType("*request.AuditLogFilter")).Return([]*model.AuditLog{testLog}, int64(1), nil)
 
-	listReq := &request.ListAuditLogRequest{Page: 1, PageSize: 20}
+	listReq := &request.ListAuditLogRequest{
+		PaginationRequest: common.PaginationRequest{
+			Page:     1,
+			PageSize: 20,
+		},
+	}
 	listResult, err := service.ListAuditLogs(ctx, listReq)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1), listResult.Total)

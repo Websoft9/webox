@@ -732,7 +732,22 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/response.AuditLogListResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.PaginationResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "items": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.AuditLogResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -7538,34 +7553,6 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "type": "string"
-                }
-            }
-        },
-        "response.AuditLogListResponse": {
-            "type": "object",
-            "properties": {
-                "items": {
-                    "description": "审计日志列表",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/response.AuditLogResponse"
-                    }
-                },
-                "page": {
-                    "description": "当前页码",
-                    "type": "integer"
-                },
-                "page_size": {
-                    "description": "每页数量",
-                    "type": "integer"
-                },
-                "total": {
-                    "description": "总记录数",
-                    "type": "integer"
-                },
-                "total_pages": {
-                    "description": "总页数",
-                    "type": "integer"
                 }
             }
         },

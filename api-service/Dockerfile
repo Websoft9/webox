@@ -22,6 +22,9 @@ WORKDIR /app
 # Download and extract InfluxDB binary
 RUN curl -L https://dl.influxdata.com/influxdb/releases/v${INFLUXDB_VERSION}/influxdb${INFLUXDB_VERSION%%.*}-${INFLUXDB_VERSION}_linux_amd64.tar.gz | tar -xz
 
+# Set Go module proxy
+RUN go env -w GOPROXY=https://goproxy.cn,direct
+
 # Copy go mod files
 COPY go.mod go.sum ./
 

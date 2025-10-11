@@ -9,7 +9,6 @@ import (
 	"api-service/pkg/crypto"
 	"api-service/pkg/email"
 	"api-service/pkg/errors"
-	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
 	"context"
 	"fmt"
@@ -23,7 +22,6 @@ type SystemConfigService struct {
 	emailService     email.EmailService
 	db               *gorm.DB
 	logger           logger.Logger
-	i18n             *i18n.I18n
 }
 
 func NewSystemConfigService(
@@ -31,7 +29,6 @@ func NewSystemConfigService(
 	config *config.Config,
 	db *gorm.DB,
 	logger logger.Logger,
-	i18n *i18n.I18n,
 ) *SystemConfigService {
 	var emailService email.EmailService
 	if config.Email.SMTP.Host != "" && config.Email.SMTP.Username != "" {
@@ -43,7 +40,6 @@ func NewSystemConfigService(
 		config:           config,
 		db:               db,
 		logger:           logger,
-		i18n:             i18n,
 	}
 }
 
