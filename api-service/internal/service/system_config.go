@@ -8,7 +8,6 @@ import (
 	"api-service/internal/model"
 	"api-service/pkg/crypto"
 	"api-service/pkg/email"
-	"api-service/pkg/errors"
 	"api-service/pkg/logger"
 	"context"
 	"fmt"
@@ -30,10 +29,8 @@ func NewSystemConfigService(
 	db *gorm.DB,
 	logger logger.Logger,
 ) *SystemConfigService {
-	var emailService email.EmailService
-	if config.Email.SMTP.Host != "" && config.Email.SMTP.Username != "" {
-		emailService = email.NewEmailService(config, logger)
-	}
+	emailService := email.NewEmailService(config, logger)
+
 	return &SystemConfigService{
 		systemConfigRepo: systemConfigRepo,
 		emailService:     emailService,
@@ -84,10 +81,6 @@ func (s *SystemConfigService) ListSystemConfigs(ctx context.Context, req *reques
 
 // TestSMTP tests the SMTP configuration by sending a test email
 func (s *SystemConfigService) TestSMTP(ctx context.Context, req *request.TestSMTPRequest) error {
-	if s.emailService == nil {
-		return errors.NewAppError(errors.CodeRecordCreateFailed)
-	}
-
 	err := s.emailService.SendEmail(ctx, req.TestEmail, "Test Email", "This is a test email from Websoft9.")
 	if err != nil {
 		s.logger.ErrorContext(ctx, "failed to send test email", logger.ErrorField(err))
