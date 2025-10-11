@@ -1,5 +1,7 @@
 package request
 
+import "api-service/internal/dto/common"
+
 // TagCreateRequest represents a request to create a tag
 type TagCreateRequest struct {
 	Name        string `json:"name" binding:"required,max=128" example:"production"`
@@ -39,8 +41,8 @@ type TagSearchRequest struct {
 	TagIDs    []uint   `form:"tagIds" binding:"omitempty"`
 	TagNames  []string `form:"tagNames" binding:"omitempty"`
 	Operation string   `form:"operation" binding:"omitempty,oneof=AND OR" example:"AND"`
-	Page      int      `form:"page" binding:"omitempty,min=1" example:"1"`
-	PageSize  int      `form:"pageSize" binding:"omitempty,min=1,max=100" example:"20"`
+	common.PaginationRequest
+	common.SortRequest
 }
 
 // TaggingListRequest represents a request to get resource tags

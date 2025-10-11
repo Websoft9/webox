@@ -1,8 +1,10 @@
 package repository
 
 import (
+	"api-service/internal/dto/request"
 	"api-service/internal/interface/repository"
 	"api-service/internal/model"
+	"api-service/pkg/errors"
 	"context"
 
 	"gorm.io/gorm"
@@ -178,48 +180,64 @@ func (r *tagRepository) ExistsTagging(ctx context.Context, tagID, resourceID uin
 	return count > 0, err
 }
 
-// SearchResourcesByTags searches resources by tags with AND/OR operation
-func (r *tagRepository) SearchResourcesByTags(ctx context.Context, tagIDs []uint, operation string, offset, limit int) ([]*model.Tagging, int, error) {
+func (r *tagRepository) SearchResourcesByTags(ctx context.Context, req *request.TagSearchRequest) ([]*model.Tagging, int64, error) {
 	var taggings []*model.Tagging
-	var total int64 // 修改为 int64 类型
+	var total int64
 
-	if len(tagIDs) == 0 {
-		return taggings, int(total), nil
+	// Collect all tag IDs from service layer
+	allTagIDs := make([]uint, 0, len(req.TagIDs)+len(req.TagNames))
+	allTagIDs = append(allTagIDs, req.TagIDs...)
+
+	// Convert tag names to IDs
+	for _, tagName := range req.TagNames {
+		var tag model.Tag
+		if err := r.db.WithContext(ctx).Where("name = ?", tagName).First(&tag).Error; err != nil {
+			if !errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil, 0, err
+			}
+			// Skip non-existent tags
+			continue
+		}
+		allTagIDs = append(allTagIDs, tag.ID)
 	}
 
-	query := r.db.WithContext(ctx).Model(&model.Tagging{}).Preload("Tag")
+	if len(allTagIDs) == 0 {
+		return []*model.Tagging{}, 0, nil
+	}
 
-	if operation == "AND" {
-		// For AND operation, find resources that have all specified tags
-		resourceIDs := []uint{}
-		subQuery := r.db.WithContext(ctx).Model(&model.Tagging{}).
+	// Build base query
+	query := r.db.WithContext(ctx).Model(&model.Tagging{}).
+		Preload("Tag").
+		Where("tag_id IN (?)", allTagIDs)
+
+	// Apply operation logic (AND/OR)
+	if req.Operation == "AND" && len(allTagIDs) > 1 {
+		// For AND operation, find resources that have ALL specified tags
+		subQuery := r.db.Model(&model.Tagging{}).
 			Select("resource_id").
-			Where("tag_id IN ?", tagIDs).
+			Where("tag_id IN (?)", allTagIDs).
 			Group("resource_id").
-			Having("COUNT(DISTINCT tag_id) = ?", len(tagIDs))
+			Having("COUNT(DISTINCT tag_id) = ?", len(allTagIDs))
 
-		err := subQuery.Pluck("resource_id", &resourceIDs).Error
-		if err != nil {
-			return nil, 0, err
-		}
-
-		if len(resourceIDs) == 0 {
-			return taggings, 0, nil
-		}
-
-		query = query.Where("resource_id IN ?", resourceIDs)
-	} else {
-		// For OR operation, find resources that have any of the specified tags
-		query = query.Where("tag_id IN ?", tagIDs)
+		query = query.Where("resource_id IN (?)", subQuery)
 	}
 
-	// Count total
-	err := query.Count(&total).Error
+	// Get total count
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Apply pagination and sorting
+	offset := req.GetOffset()
+	limit := req.GetPageSize()
+
+	err := query.Order(req.GetSortOrder()).
+		Offset(offset).Limit(limit).
+		Find(&taggings).Error
+
 	if err != nil {
 		return nil, 0, err
 	}
 
-	// Get paginated results
-	err = query.Offset(offset).Limit(limit).Find(&taggings).Error
-	return taggings, int(total), err
+	return taggings, total, nil
 }

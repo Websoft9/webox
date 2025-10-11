@@ -1,6 +1,7 @@
 package service
 
 import (
+	"api-service/internal/dto/common"
 	"api-service/internal/dto/request"
 	"api-service/internal/dto/response"
 	"api-service/internal/model"
@@ -117,9 +118,12 @@ func (m *MockTagRepository) ExistsTagging(ctx context.Context, tagID, resourceID
 	return args.Bool(0), args.Error(1)
 }
 
-func (m *MockTagRepository) SearchResourcesByTags(ctx context.Context, tagIDs []uint, operation string, offset, limit int) ([]*model.Tagging, int, error) {
-	args := m.Called(ctx, tagIDs, operation, offset, limit)
-	return args.Get(0).([]*model.Tagging), args.Get(1).(int), args.Error(2)
+func (m *MockTagRepository) SearchResourcesByTags(ctx context.Context, req *request.TagSearchRequest) ([]*model.Tagging, int64, error) {
+	args := m.Called(ctx, req)
+	if args.Get(0) == nil {
+		return nil, args.Get(1).(int64), args.Error(2)
+	}
+	return args.Get(0).([]*model.Tagging), args.Get(1).(int64), args.Error(2)
 }
 
 func (m *MockTagRepository) SearchTagsByName(ctx context.Context, query string) ([]*model.Tag, error) {
@@ -872,6 +876,152 @@ func TestTagService_GetResourceTags_Extended(t *testing.T) {
 				assert.NoError(t, err)
 				assert.NotNil(t, result)
 				assert.Len(t, result, tt.expectedLen)
+			}
+
+			// Verify all expectations were met
+			mockRepo.AssertExpectations(t)
+		})
+	}
+}
+
+// TestTagService_SearchResourcesByTags tests the SearchResourcesByTags functionality
+func TestTagService_SearchResourcesByTags(t *testing.T) {
+	service, mockRepo := setupTagServiceTest()
+	ctx := context.Background()
+
+	// Create test taggings
+	expectedTaggings := []*model.Tagging{
+		{
+			ID:         1,
+			TagID:      1,
+			ResourceID: 100,
+			Tag: &model.Tag{
+				ID:    1,
+				Name:  "production",
+				Color: "#ff0000",
+			},
+		},
+		{
+			ID:         2,
+			TagID:      2,
+			ResourceID: 100,
+			Tag: &model.Tag{
+				ID:    2,
+				Name:  "backend",
+				Color: "#00ff00",
+			},
+		},
+	}
+
+	tests := []struct {
+		name          string
+		req           *request.TagSearchRequest
+		setupMocks    func()
+		expectedErr   error
+		expectedLen   int
+		expectedTotal int64
+	}{
+		{
+			name: "successful search with tag IDs",
+			req: &request.TagSearchRequest{
+				TagIDs:    []uint{1, 2},
+				Operation: "AND",
+				PaginationRequest: common.PaginationRequest{
+					Page:     1,
+					PageSize: 20,
+				},
+			},
+			setupMocks: func() {
+				mockRepo.On("SearchResourcesByTags", ctx, mock.AnythingOfType("*request.TagSearchRequest")).Return(expectedTaggings, int64(2), nil)
+			},
+			expectedErr:   nil,
+			expectedLen:   1, // One resource with multiple tags
+			expectedTotal: 2,
+		},
+		{
+			name: "successful search with tag names",
+			req: &request.TagSearchRequest{
+				TagNames:  []string{"production", "backend"},
+				Operation: "OR",
+				PaginationRequest: common.PaginationRequest{
+					Page:     1,
+					PageSize: 20,
+				},
+			},
+			setupMocks: func() {
+				// Mock collectTagIDs call
+				mockRepo.On("GetTagByName", ctx, "production").Return(&model.Tag{ID: 1, Name: "production"}, nil)
+				mockRepo.On("GetTagByName", ctx, "backend").Return(&model.Tag{ID: 2, Name: "backend"}, nil)
+				mockRepo.On("SearchResourcesByTags", ctx, mock.AnythingOfType("*request.TagSearchRequest")).Return(expectedTaggings, int64(2), nil)
+			},
+			expectedErr:   nil,
+			expectedLen:   1,
+			expectedTotal: 2,
+		},
+		{
+			name: "empty result",
+			req: &request.TagSearchRequest{
+				TagIDs:    []uint{999},
+				Operation: "AND",
+				PaginationRequest: common.PaginationRequest{
+					Page:     1,
+					PageSize: 20,
+				},
+			},
+			setupMocks: func() {
+				mockRepo.On("SearchResourcesByTags", ctx, mock.AnythingOfType("*request.TagSearchRequest")).Return([]*model.Tagging{}, int64(0), nil)
+			},
+			expectedErr:   nil,
+			expectedLen:   0,
+			expectedTotal: 0,
+		},
+		{
+			name: "repository error",
+			req: &request.TagSearchRequest{
+				TagIDs:    []uint{1},
+				Operation: "AND",
+				PaginationRequest: common.PaginationRequest{
+					Page:     1,
+					PageSize: 20,
+				},
+			},
+			setupMocks: func() {
+				mockRepo.On("SearchResourcesByTags", ctx, mock.AnythingOfType("*request.TagSearchRequest")).Return(nil, int64(0), stderrors.New("database error"))
+			},
+			expectedErr:   stderrors.New("database error"),
+			expectedLen:   0,
+			expectedTotal: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Reset mocks
+			mockRepo.ExpectedCalls = nil
+			mockRepo.Calls = nil
+
+			// Setup mocks
+			tt.setupMocks()
+
+			// Execute test
+			result, err := service.SearchResourcesByTags(ctx, tt.req)
+
+			// Assertions
+			if tt.expectedErr != nil {
+				assert.Error(t, err)
+				assert.Nil(t, result)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, result)
+				assert.Equal(t, tt.expectedTotal, result.Total)
+
+				// Verify pagination response structure
+				assert.IsType(t, &common.PaginationResponse{}, result)
+
+				// Check items type and length
+				resources, ok := result.Items.([]response.TaggedResource)
+				assert.True(t, ok, "Items should be of type []response.TaggedResource")
+				assert.Len(t, resources, tt.expectedLen)
 			}
 
 			// Verify all expectations were met
