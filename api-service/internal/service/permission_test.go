@@ -182,7 +182,7 @@ func (suite *PermissionServiceTestSuite) TestListPermissions_Success() {
 	suite.True(ok, "Items should be a slice of PermissionResponse")
 	suite.Equal(2, len(items))
 	suite.Equal(total, result.Total)
-	suite.Equal(req.GetOffset(), result.Page)
+	suite.Equal(req.GetPage(), result.Page)
 	suite.Equal(req.GetPageSize(), result.PageSize)
 
 	suite.mockPermissionRepo.AssertExpectations(suite.T())

@@ -3210,42 +3210,6 @@ paths:
       summary: Get supported languages
       tags:
       - Internationalization
-  /api/v1/i18n/switch-language:
-    post:
-      consumes:
-      - application/json
-      description: Switch user's language preference and update cache
-      parameters:
-      - description: Language switch request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/request.SwitchLanguageRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/common.APIResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/common.APIResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/common.APIResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/common.APIResponse'
-      security:
-      - BearerAuth: []
-      summary: Switch user language
-      tags:
-      - Internationalization
   /api/v1/permissions:
     get:
       consumes:
@@ -3294,6 +3258,17 @@ paths:
         format: datetime
         in: query
         name: end_time
+        type: string
+      - description: Sort field
+        in: query
+        name: sort_field
+        type: string
+      - description: Sort order
+        enum:
+        - asc
+        - desc
+        in: query
+        name: sort_order
         type: string
       produces:
       - application/json
@@ -3836,6 +3811,42 @@ paths:
       summary: Update security settings
       tags:
       - Profile
+  /api/v1/profile/switch-language:
+    put:
+      consumes:
+      - application/json
+      description: Switch user's language preference and update cache
+      parameters:
+      - description: Language switch request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.SwitchLanguageRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Switch user language
+      tags:
+      - Profile
   /api/v1/roles:
     get:
       consumes:
@@ -3873,6 +3884,17 @@ paths:
         format: datetime
         in: query
         name: end_time
+        type: string
+      - description: Sort field
+        in: query
+        name: sort_field
+        type: string
+      - description: Sort order
+        enum:
+        - asc
+        - desc
+        in: query
+        name: sort_order
         type: string
       produces:
       - application/json

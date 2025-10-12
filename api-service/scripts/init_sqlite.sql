@@ -607,6 +607,16 @@ CREATE TABLE IF NOT EXISTS roles (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Modules table
+CREATE TABLE IF NOT EXISTS modules (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name VARCHAR(64) NOT NULL,
+    code VARCHAR(64) NOT NULL UNIQUE,
+    description TEXT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Permissions table
 CREATE TABLE IF NOT EXISTS permissions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1007,6 +1017,7 @@ CREATE INDEX IF NOT EXISTS idx_user_roles_role ON user_roles(role_id);
 CREATE INDEX IF NOT EXISTS idx_users_status ON users(status);
 CREATE INDEX IF NOT EXISTS idx_role_permissions_role ON role_permissions(role_id);
 CREATE INDEX IF NOT EXISTS idx_role_permissions_permission ON role_permissions(permission_code);
+CREATE INDEX IF NOT EXISTS idx_module_code ON modules (code);
 
 -- Alert notification related indexes
 CREATE INDEX IF NOT EXISTS idx_alert_rules_owner ON alert_rules(owner_id);
@@ -1128,6 +1139,13 @@ CREATE TRIGGER IF NOT EXISTS update_permissions_updated_at
     BEGIN
         UPDATE permissions SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
     END;
+
+CREATE TRIGGER IF NOT EXISTS modules_updated_at
+AFTER UPDATE ON modules
+FOR EACH ROW
+BEGIN
+    UPDATE modules SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
 
 -- Server related triggers
 CREATE TRIGGER IF NOT EXISTS update_servers_updated_at

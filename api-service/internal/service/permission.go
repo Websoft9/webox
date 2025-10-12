@@ -211,7 +211,7 @@ func (s *permissionService) ListPermissions(ctx context.Context, req *request.Li
 	}
 
 	return common.NewPaginationResponse(
-		req.GetOffset(),
+		req.GetPage(),
 		req.GetPageSize(),
 		total,
 		items,
@@ -235,13 +235,13 @@ func (s *permissionService) GetPermissionTree(ctx context.Context, req *request.
 }
 
 // GetPermissionRoles retrieves roles associated with a permission
-func (s *permissionService) GetPermissionRoles(ctx context.Context, id uint, page, pageSize int) (*common.PaginationResponse, error) {
+func (s *permissionService) GetPermissionRoles(ctx context.Context, id uint, req *common.PaginationRequest) (*common.PaginationResponse, error) {
 	s.logger.InfoContext(ctx, "Getting permission roles",
 		logger.String("service", "permission"),
 		logger.String("operation", "GetPermissionRoles"),
 		logger.Uint("permission_id", id))
 
-	roles, total, err := s.permissionRepo.GetRoles(ctx, id, page, pageSize)
+	roles, total, err := s.permissionRepo.GetRoles(ctx, id, req.GetOffset(), req.GetPageSize())
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to get permission roles", logger.ErrorField(err))
 		return nil, err
@@ -254,8 +254,8 @@ func (s *permissionService) GetPermissionRoles(ctx context.Context, id uint, pag
 	}
 
 	return common.NewPaginationResponse(
-		page,
-		pageSize,
+		req.GetPage(),
+		req.GetPageSize(),
 		total,
 		items,
 	), nil

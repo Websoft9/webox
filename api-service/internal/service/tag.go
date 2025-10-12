@@ -1,6 +1,7 @@
 package service
 
 import (
+	"api-service/internal/dto/common"
 	"api-service/internal/dto/request"
 	"api-service/internal/dto/response"
 	"api-service/internal/interface/repository"
@@ -302,9 +303,10 @@ func (s *tagService) GetResourceTags(ctx context.Context, req *request.TaggingLi
 	return responses, nil
 }
 
-// SearchResourcesByTags searches resources by tags
-func (s *tagService) SearchResourcesByTags(ctx context.Context, req *request.TagSearchRequest) (*response.TagSearchResponse, error) {
-	s.logger.InfoContext(ctx, "Searching resources by tags")
+func (s *tagService) SearchResourcesByTags(ctx context.Context, req *request.TagSearchRequest) (*common.PaginationResponse, error) {
+	s.logger.InfoContext(ctx, "Searching resources by tags",
+		logger.String("service", "tag"),
+		logger.String("operation", "SearchResourcesByTags"))
 
 	// Collect all tag IDs
 	allTagIDs, err := s.collectTagIDs(ctx, req)
@@ -313,30 +315,21 @@ func (s *tagService) SearchResourcesByTags(ctx context.Context, req *request.Tag
 	}
 
 	if len(allTagIDs) == 0 {
-		return &response.TagSearchResponse{
-			Total:     0,
-			Page:      req.Page,
-			PageSize:  req.PageSize,
-			Resources: []response.TaggedResource{},
-		}, nil
+		return common.NewPaginationResponse(
+			req.GetOffset(),
+			req.GetPageSize(),
+			0,
+			[]response.TaggedResource{},
+		), nil
 	}
 
-	// Set defaults
-	if req.Page <= 0 {
-		req.Page = 1
-	}
-	if req.PageSize <= 0 || req.PageSize > 100 {
-		req.PageSize = 20
-	}
+	// Set default operation if not specified
 	if req.Operation == "" {
 		req.Operation = "AND"
 	}
 
-	// Calculate offset
-	offset := (req.Page - 1) * req.PageSize
-
-	// Search resources
-	taggings, total, err := s.tagRepo.SearchResourcesByTags(ctx, allTagIDs, req.Operation, offset, req.PageSize)
+	// Search resources - all pagination logic handled in repository
+	taggings, total, err := s.tagRepo.SearchResourcesByTags(ctx, req)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to search resources by tags", logger.ErrorField(err))
 		return nil, err
@@ -351,12 +344,12 @@ func (s *tagService) SearchResourcesByTags(ctx context.Context, req *request.Tag
 		resources = append(resources, *resource)
 	}
 
-	return &response.TagSearchResponse{
-		Total:     total,
-		Page:      req.Page,
-		PageSize:  req.PageSize,
-		Resources: resources,
-	}, nil
+	return common.NewPaginationResponse(
+		req.GetOffset(),
+		req.GetPageSize(),
+		total,
+		resources,
+	), nil
 }
 
 // buildSimpleResourceMap builds a simple resource map from taggings

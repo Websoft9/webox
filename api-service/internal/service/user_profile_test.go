@@ -2,6 +2,7 @@ package service
 
 import (
 	"api-service/internal/constants"
+	"api-service/internal/dto/common"
 	"api-service/internal/dto/request"
 	"api-service/internal/dto/response"
 	"api-service/internal/model"
@@ -50,12 +51,12 @@ func (m *MockUserProfileRepository) UpdateUserPassword(ctx context.Context, user
 }
 
 // GetLoginHistories mocks the GetLoginHistories method
-func (m *MockUserProfileRepository) GetLoginHistories(ctx context.Context, userID uint, page, pageSize int) ([]model.UserLoginHistory, int64, error) {
-	args := m.Called(ctx, userID, page, pageSize)
+func (m *MockUserProfileRepository) GetLoginHistories(ctx context.Context, userID uint, req *request.LoginHistoryRequest) ([]*model.UserLoginHistory, int64, error) {
+	args := m.Called(ctx, userID, req)
 	if args.Get(0) == nil {
 		return nil, args.Get(1).(int64), args.Error(2)
 	}
-	return args.Get(0).([]model.UserLoginHistory), args.Get(1).(int64), args.Error(2)
+	return args.Get(0).([]*model.UserLoginHistory), args.Get(1).(int64), args.Error(2)
 }
 
 // GetUserConfigsByCategory mocks the GetUserConfigsByCategory method
@@ -314,14 +315,16 @@ func TestGetLoginHistories(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
 		// Request
 		req := &request.LoginHistoryRequest{
-			Page:     1,
-			PageSize: 10,
+			PaginationRequest: common.PaginationRequest{
+				Page:     1,
+				PageSize: 10,
+			},
 		}
 
 		// Expected login histories
 		loginTime := time.Now().Add(-time.Hour)
 		logoutTime := time.Now().Add(-time.Minute)
-		expectedHistories := []model.UserLoginHistory{
+		expectedHistories := []*model.UserLoginHistory{
 			{
 				ID:         1,
 				UserID:     userID,
@@ -336,7 +339,7 @@ func TestGetLoginHistories(t *testing.T) {
 		}
 
 		// Mock repository calls
-		mockRepo.On("GetLoginHistories", ctx, userID, 1, 10).Return(expectedHistories, int64(1), nil).Once()
+		mockRepo.On("GetLoginHistories", ctx, userID, req).Return(expectedHistories, int64(1), nil).Once()
 
 		// Call service method
 		result, err := service.GetLoginHistories(ctx, userID, req)
@@ -359,12 +362,14 @@ func TestGetLoginHistories(t *testing.T) {
 	t.Run("Default Pagination", func(t *testing.T) {
 		// Request with invalid pagination (should use defaults)
 		req := &request.LoginHistoryRequest{
-			Page:     0,
-			PageSize: 0,
+			PaginationRequest: common.PaginationRequest{
+				Page:     0,
+				PageSize: 0,
+			},
 		}
 
 		// Mock repository calls with expected defaults
-		mockRepo.On("GetLoginHistories", ctx, userID, 1, 20).Return([]model.UserLoginHistory{}, int64(0), nil).Once()
+		mockRepo.On("GetLoginHistories", ctx, userID, req).Return([]*model.UserLoginHistory{}, int64(0), nil).Once()
 
 		// Call service method
 		result, err := service.GetLoginHistories(ctx, userID, req)
@@ -374,7 +379,7 @@ func TestGetLoginHistories(t *testing.T) {
 		assert.Equal(t, int64(0), result.Total)
 
 		// 类型断言：将 interface{} 转换为具体的切片类型
-		items, ok := result.Items.([]response.LoginHistoryItem) // 改为 LoginHistoryItem
+		items, ok := result.Items.([]response.LoginHistoryItem)
 		assert.True(t, ok, "Items should be of type []response.LoginHistoryItem")
 		assert.Empty(t, items)
 		mockRepo.AssertExpectations(t)

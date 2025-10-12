@@ -179,8 +179,8 @@ func setupI18nRoutes(v1, protected *gin.RouterGroup, i18nController *controller.
 	i18nGroup.GET("/languages", i18nController.GetLanguages)
 
 	// Protected i18n routes (JWT verification required)
-	protectedI18n := protected.Group("/i18n")
-	protectedI18n.POST("/switch-language", i18nController.SwitchLanguage)
+	protectedI18n := protected.Group("/profile")
+	protectedI18n.PUT("/switch-language", i18nController.SwitchLanguage)
 }
 
 // setupUserRoutes sets up user management routes

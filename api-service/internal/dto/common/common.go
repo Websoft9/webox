@@ -18,12 +18,17 @@ type PaginationRequest struct {
 	PageSize int `form:"page_size" json:"page_size" binding:"omitempty,min=1,max=100"` // 每页数量，最大100
 }
 
-// GetOffset 计算偏移量
-func (p *PaginationRequest) GetOffset() int {
+// GetOffset 获取页码
+func (p *PaginationRequest) GetPage() int {
 	if p.Page <= 0 {
 		p.Page = 1
 	}
-	return (p.Page - 1) * p.GetPageSize()
+	return p.Page
+}
+
+// GetOffset 计算偏移量
+func (p *PaginationRequest) GetOffset() int {
+	return (p.GetPage() - 1) * p.GetPageSize()
 }
 
 // GetPageSize 获取每页数量

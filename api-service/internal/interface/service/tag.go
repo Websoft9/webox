@@ -1,6 +1,7 @@
 package service
 
 import (
+	"api-service/internal/dto/common"
 	"api-service/internal/dto/request"
 	"api-service/internal/dto/response"
 	"context"
@@ -23,5 +24,5 @@ type TagService interface {
 	GetResourceTags(ctx context.Context, req *request.TaggingListRequest) ([]*response.TagSimpleResponse, error)
 
 	// Search operations
-	SearchResourcesByTags(ctx context.Context, req *request.TagSearchRequest) (*response.TagSearchResponse, error)
+	SearchResourcesByTags(ctx context.Context, req *request.TagSearchRequest) (*common.PaginationResponse, error)
 }

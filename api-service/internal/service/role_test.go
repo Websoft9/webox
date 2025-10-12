@@ -554,7 +554,7 @@ func TestRoleService_ListRoles_Success(t *testing.T) {
 	assert.True(t, ok, "Items should be a slice of RoleResponse")
 	assert.Equal(t, len(roles), len(items))
 	assert.Equal(t, total, result.Total)
-	assert.Equal(t, req.GetOffset(), result.Page)
+	assert.Equal(t, req.GetPage(), result.Page)
 	assert.Equal(t, req.GetPageSize(), result.PageSize)
 	assert.Equal(t, 1, result.TotalPages)
 

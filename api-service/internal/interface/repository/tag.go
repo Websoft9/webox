@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"api-service/internal/dto/request"
 	"api-service/internal/model"
 	"context"
 )
@@ -36,5 +37,5 @@ type TagRepository interface {
 	ExistsTagging(ctx context.Context, tagID, resourceID uint) (bool, error)
 
 	// Search operations
-	SearchResourcesByTags(ctx context.Context, tagIDs []uint, operation string, offset, limit int) ([]*model.Tagging, int, error)
+	SearchResourcesByTags(ctx context.Context, req *request.TagSearchRequest) ([]*model.Tagging, int64, error)
 }

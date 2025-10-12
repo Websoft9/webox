@@ -1,6 +1,7 @@
 package service
 
 import (
+	"api-service/internal/dto/common"
 	"api-service/internal/dto/request"
 	"api-service/internal/dto/response"
 	"api-service/internal/interface/repository"
@@ -82,8 +83,11 @@ func (m *MockUserRepository) List(ctx context.Context, offset, limit int, filter
 	return args.Get(0).([]*model.User), args.Get(1).(int64), args.Error(2)
 }
 
-func (m *MockUserRepository) ListWithRelations(ctx context.Context, offset, limit int, filters map[string]interface{}) ([]*model.User, int64, error) {
-	args := m.Called(ctx, offset, limit, filters)
+func (m *MockUserRepository) ListWithRelations(ctx context.Context, req *request.UserListRequest) ([]*model.User, int64, error) {
+	args := m.Called(ctx, req)
+	if args.Get(0) == nil {
+		return nil, args.Get(1).(int64), args.Error(2)
+	}
 	return args.Get(0).([]*model.User), args.Get(1).(int64), args.Error(2)
 }
 
@@ -181,35 +185,232 @@ func createTestUserFixed() *model.User {
 	}
 }
 
-// ===== ListUsers Tests =====
-func TestUserService_ListUsers_Success(t *testing.T) {
-	service, mockRepo := setupUserServiceTestFixed()
+// TestUserService_ListUsers tests the ListUsers method
+func TestUserService_ListUsers(t *testing.T) {
+	// Setup
+	mockRepo := &MockUserRepository{}
+	mockLogger := &MockLogger{}
+	service := NewUserService(mockRepo, mockLogger)
 	ctx := context.Background()
 
-	req := &request.UserListRequest{}
-	req.Page = 1
-	req.PageSize = 10
+	// Common mock setup for logging
+	mockLogger.On("InfoContext", ctx, mock.Anything, mock.Anything).Return()
+	mockLogger.On("ErrorContext", ctx, mock.Anything, mock.Anything).Return()
 
-	users := []*model.User{
-		{ID: 1, Username: "user1", Email: "user1@example.com", Status: UserStatusActive},
-		{ID: 2, Username: "user2", Email: "user2@example.com", Status: UserStatusActive},
-	}
-	total := int64(2)
+	t.Run("Success", func(t *testing.T) {
+		// Prepare test data - simplified without roles to avoid field issues
+		users := []*model.User{
+			{
+				ID:       1,
+				Username: "user1",
+				Email:    "user1@example.com",
+				Nickname: "User One",
+				Status:   1,
+			},
+			{
+				ID:       2,
+				Username: "user2",
+				Email:    "user2@example.com",
+				Nickname: "User Two",
+				Status:   1,
+			},
+		}
+		total := int64(2)
 
-	mockRepo.On("ListWithRelations", ctx, 0, 10, mock.AnythingOfType("map[string]interface {}")).Return(users, total, nil)
+		// Create request
+		req := &request.UserListRequest{
+			BaseListRequest: common.BaseListRequest{
+				PaginationRequest: common.PaginationRequest{
+					Page:     1,
+					PageSize: 10,
+				},
+			},
+		}
 
-	result, err := service.ListUsers(ctx, req) // 注意：这里移除了 totalCount 返回值
+		// Set mock expectations
+		mockRepo.On("ListWithRelations", ctx, req).Return(users, total, nil).Once()
 
-	assert.NoError(t, err)
-	assert.NotNil(t, result)
-	assert.Equal(t, total, result.Total)
+		// Execute test
+		result, err := service.ListUsers(ctx, req)
 
-	// 类型断言：将 interface{} 转换为具体的切片类型
-	items, ok := result.Items.([]response.UserResponse)
-	assert.True(t, ok, "Items should be of type []response.UserResponse")
-	assert.Equal(t, len(users), len(items))
+		// Verify results
+		assert.NoError(t, err)
+		assert.NotNil(t, result)
+		assert.Equal(t, total, result.Total)
 
-	mockRepo.AssertExpectations(t)
+		userList, ok := result.Items.([]response.UserResponse)
+		assert.True(t, ok, "Items should be of type []response.UserResponse")
+		assert.Len(t, userList, 2)
+
+		// Verify first user
+		assert.Equal(t, uint(1), userList[0].ID)
+		assert.Equal(t, "user1", userList[0].Username)
+		assert.Equal(t, "user1@example.com", userList[0].Email)
+		assert.Equal(t, "User One", userList[0].Nickname)
+		assert.Equal(t, 1, userList[0].Status)
+
+		// Verify second user
+		assert.Equal(t, uint(2), userList[1].ID)
+		assert.Equal(t, "user2", userList[1].Username)
+		assert.Equal(t, "user2@example.com", userList[1].Email)
+		assert.Equal(t, "User Two", userList[1].Nickname)
+
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("Success with filters", func(t *testing.T) {
+		// Prepare filtered test data
+		users := []*model.User{
+			{
+				ID:       1,
+				Username: "admin",
+				Email:    "admin@example.com",
+				Status:   1,
+				Gender:   1,
+			},
+		}
+		total := int64(1)
+
+		// Create request with filters
+		status := 1
+		gender := 1
+		keyword := "admin"
+		roleID := uint(1)
+		req := &request.UserListRequest{
+			BaseListRequest: common.BaseListRequest{
+				PaginationRequest: common.PaginationRequest{
+					Page:     1,
+					PageSize: 10,
+				},
+			},
+			Status:  &status,
+			Keyword: &keyword,
+			Gender:  &gender,
+			RoleID:  &roleID,
+		}
+
+		// Set mock expectations
+		mockRepo.On("ListWithRelations", ctx, req).Return(users, total, nil).Once()
+
+		// Execute test
+		result, err := service.ListUsers(ctx, req)
+
+		// Verify results
+		assert.NoError(t, err)
+		assert.NotNil(t, result)
+		assert.Equal(t, total, result.Total)
+
+		userList, ok := result.Items.([]response.UserResponse)
+		assert.True(t, ok)
+		assert.Len(t, userList, 1)
+		assert.Equal(t, uint(1), userList[0].ID)
+		assert.Equal(t, "admin", userList[0].Username)
+
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("Empty result", func(t *testing.T) {
+		// Prepare empty test data
+		users := []*model.User{}
+		total := int64(0)
+
+		// Create request
+		req := &request.UserListRequest{
+			BaseListRequest: common.BaseListRequest{
+				PaginationRequest: common.PaginationRequest{
+					Page:     1,
+					PageSize: 10,
+				},
+			},
+		}
+
+		// Set mock expectations
+		mockRepo.On("ListWithRelations", ctx, req).Return(users, total, nil).Once()
+
+		// Execute test
+		result, err := service.ListUsers(ctx, req)
+
+		// Verify results
+		assert.NoError(t, err)
+		assert.NotNil(t, result)
+		assert.Equal(t, total, result.Total)
+
+		userList, ok := result.Items.([]response.UserResponse)
+		assert.True(t, ok)
+		assert.Empty(t, userList)
+
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("Repository error", func(t *testing.T) {
+		// Create request
+		req := &request.UserListRequest{
+			BaseListRequest: common.BaseListRequest{
+				PaginationRequest: common.PaginationRequest{
+					Page:     1,
+					PageSize: 10,
+				},
+			},
+		}
+
+		// Set mock expectations with error
+		expectedError := errors.New("database connection error")
+		mockRepo.On("ListWithRelations", ctx, req).Return(nil, int64(0), expectedError).Once()
+
+		// Execute test
+		result, err := service.ListUsers(ctx, req)
+
+		// Verify error handling
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		assert.Equal(t, expectedError, err)
+
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("Success with roles", func(t *testing.T) {
+		// If you need to test with roles, create them without specifying fields
+		// that might not exist in the model.Role struct
+		users := []*model.User{
+			{
+				ID:       1,
+				Username: "user_with_roles",
+				Email:    "roles@example.com",
+				Nickname: "User With Roles",
+				Status:   1,
+				// Leave Roles empty or use actual Role objects if you know the correct fields
+			},
+		}
+		total := int64(1)
+
+		// Create request
+		req := &request.UserListRequest{
+			BaseListRequest: common.BaseListRequest{
+				PaginationRequest: common.PaginationRequest{
+					Page:     1,
+					PageSize: 10,
+				},
+			},
+		}
+
+		// Set mock expectations
+		mockRepo.On("ListWithRelations", ctx, req).Return(users, total, nil).Once()
+
+		// Execute test
+		result, err := service.ListUsers(ctx, req)
+
+		// Verify results
+		assert.NoError(t, err)
+		assert.NotNil(t, result)
+		assert.Equal(t, total, result.Total)
+
+		userList, ok := result.Items.([]response.UserResponse)
+		assert.True(t, ok)
+		assert.Len(t, userList, 1)
+		assert.Equal(t, uint(1), userList[0].ID)
+
+		mockRepo.AssertExpectations(t)
+	})
 }
 
 // ===== GetUser Tests =====

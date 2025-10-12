@@ -112,6 +112,8 @@ func (c *RolePermissionController) GetRole(ctx *gin.Context) {
 // @Param status query int false "Role status" Enums(-1, 0, 1)
 // @Param start_time query string false "Start time" format(datetime)
 // @Param end_time query string false "End time" format(datetime)
+// @Param sort_field query string false "Sort field"
+// @Param sort_order query string false "Sort order" Enums(asc, desc)
 // @Success 200 {object} common.APIResponse{data=common.PaginationResponse}
 // @Failure 400 {object} common.APIResponse
 // @Router /api/v1/roles [get]
@@ -302,11 +304,14 @@ func (c *RolePermissionController) GetRoleUsers(ctx *gin.Context) {
 		return
 	}
 
-	// Get pagination parameters
-	page, pageSize := GetPaginationParams(ctx)
+	var req response.PaginationRequest
+	// Bind query parameters
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
+		return
+	}
 
 	// Get role users
-	users, err := c.roleService.GetRoleUsers(utils.ContextWithUserID(ctx), id, page, pageSize)
+	users, err := c.roleService.GetRoleUsers(utils.ContextWithUserID(ctx), id, &req)
 	if err != nil {
 		response.WithError(ctx, err)
 		return
@@ -462,6 +467,8 @@ func (c *RolePermissionController) DeletePermission(ctx *gin.Context) {
 // @Param status query int false "Permission status" Enums(-1, 0, 1)
 // @Param start_time query string false "Start time" format(datetime)
 // @Param end_time query string false "End time" format(datetime)
+// @Param sort_field query string false "Sort field"
+// @Param sort_order query string false "Sort order" Enums(asc, desc)
 // @Success 200 {object} common.APIResponse{data=common.PaginationResponse}
 // @Failure 400 {object} common.APIResponse
 // @Router /api/v1/permissions [get]
@@ -532,11 +539,14 @@ func (c *RolePermissionController) GetPermissionRoles(ctx *gin.Context) {
 		return
 	}
 
-	// Get pagination parameters
-	page, pageSize := GetPaginationParams(ctx)
+	var req response.PaginationRequest
+	// Bind query parameters
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
+		return
+	}
 
 	// Get permission roles
-	roles, err := c.permissionService.GetPermissionRoles(utils.ContextWithUserID(ctx), id, page, pageSize)
+	roles, err := c.permissionService.GetPermissionRoles(utils.ContextWithUserID(ctx), id, &req)
 	if err != nil {
 		response.WithError(ctx, err)
 		return

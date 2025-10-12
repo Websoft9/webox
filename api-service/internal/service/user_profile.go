@@ -180,48 +180,40 @@ func (s *userProfileService) ChangeProfilePassword(ctx context.Context, userID u
 
 // GetLoginHistories retrieves the user's login history
 func (s *userProfileService) GetLoginHistories(ctx context.Context, userID uint, req *request.LoginHistoryRequest) (*common.PaginationResponse, error) {
-	// Set default values
-	page := req.Page
-	if page <= 0 {
-		page = 1 // default to page 1
-	}
-
-	pageSize := req.PageSize
-	if pageSize <= 0 {
-		pageSize = 20 // default 20 items per page
-	}
+	s.logger.InfoContext(ctx, "Getting user login histories",
+		logger.String("service", "user_profile"),
+		logger.String("operation", "GetLoginHistories"),
+		logger.Uint("userID", userID))
 
 	// Fetch data
-	records, _, err := s.profileRepo.GetLoginHistories(ctx, userID, page, pageSize)
+	records, total, err := s.profileRepo.GetLoginHistories(ctx, userID, req)
 	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to get login histories",
+			logger.Uint("userID", userID),
+			logger.ErrorField(err))
 		return nil, err
 	}
 
-	// Build response
-	result := &response.LoginHistoryResponse{
-		Items: make([]response.LoginHistoryItem, 0, len(records)),
-	}
-
 	// Convert record format
-	for i := range records {
-		item := response.LoginHistoryItem{
-			ID:         records[i].ID,
-			IPAddress:  records[i].IPAddress,
-			UserAgent:  records[i].UserAgent,
-			Device:     records[i].Device,
-			Browser:    records[i].Browser,
-			Location:   records[i].Location,
-			LoginTime:  records[i].LoginTime,
-			LogoutTime: records[i].LogoutTime,
+	items := make([]response.LoginHistoryItem, len(records))
+	for i, record := range records {
+		items[i] = response.LoginHistoryItem{
+			ID:         record.ID,
+			IPAddress:  record.IPAddress,
+			UserAgent:  record.UserAgent,
+			Device:     record.Device,
+			Browser:    record.Browser,
+			Location:   record.Location,
+			LoginTime:  record.LoginTime,
+			LogoutTime: record.LogoutTime,
 		}
-
-		result.Items = append(result.Items, item)
 	}
+
 	return common.NewPaginationResponse(
-		page,
-		pageSize,
-		int64(len(records)),
-		result.Items,
+		req.GetOffset(),
+		req.GetPageSize(),
+		total,
+		items,
 	), nil
 }
 

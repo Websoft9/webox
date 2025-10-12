@@ -248,7 +248,7 @@ func (s *roleService) ListRoles(ctx context.Context, req *request.ListRolesReque
 	}
 
 	return common.NewPaginationResponse(
-		req.GetOffset(),
+		req.GetPage(),
 		req.GetPageSize(),
 		total,
 		items,
@@ -266,8 +266,8 @@ func (s *roleService) GetRoleWithPermissions(ctx context.Context, id uint) (*res
 }
 
 // GetRoleUsers gets role users
-func (s *roleService) GetRoleUsers(ctx context.Context, id uint, page, pageSize int) (*common.PaginationResponse, error) {
-	users, total, err := s.roleRepo.GetUsers(ctx, id, page, pageSize)
+func (s *roleService) GetRoleUsers(ctx context.Context, id uint, req *common.PaginationRequest) (*common.PaginationResponse, error) {
+	users, total, err := s.roleRepo.GetUsers(ctx, id, req.GetOffset(), req.GetPageSize())
 	if err != nil {
 		return nil, err
 	}
@@ -283,8 +283,8 @@ func (s *roleService) GetRoleUsers(ctx context.Context, id uint, page, pageSize 
 	}
 
 	return common.NewPaginationResponse(
-		page,
-		pageSize,
+		req.GetPage(),
+		req.GetPageSize(),
 		total,
 		items,
 	), nil
