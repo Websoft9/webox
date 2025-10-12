@@ -595,3 +595,104 @@ const (
 	ExportFormatJson      = "json"
 	ExportFormatCsv       = "csv"
 )
+
+// ==========================================
+// File Management Security Constants
+// ==========================================
+
+// File path security mode
+const (
+	FilePathModeBlacklist = "blacklist" // 黑名单模式（默认）
+	FilePathModeWhitelist = "whitelist" // 白名单模式
+)
+
+// File extension security mode
+const (
+	FileExtModeBlacklist = "blacklist" // 黑名单模式（默认）
+	FileExtModeWhitelist = "whitelist" // 白名单模式
+)
+
+// Global forbidden paths (always forbidden, cannot be overridden)
+var GlobalForbiddenPaths = []string{
+	"/etc/passwd",
+	"/etc/shadow",
+	"/etc/sudoers",
+	"/etc/sudoers.d/*",
+	"/root/.ssh/*",
+	"/home/*/.ssh/*",
+	"/proc/*",
+	"/sys/*",
+	"~/.ssh/*",
+	"/boot/*",
+	"/dev/*",
+}
+
+// Global forbidden extensions (always forbidden, cannot be overridden)
+var GlobalForbiddenExtensions = []string{
+	".exe",
+	".bat",
+	".cmd",
+	".com",
+	".pif",
+	".scr",
+	".vbs",
+	".js",
+	".jse",
+	".wsf",
+	".wsh",
+	".msi",
+}
+
+// Default allowed paths (whitelist mode)
+var DefaultAllowedPaths = []string{
+	"/tmp/*",
+	"/var/tmp/*",
+	"/home/*/uploads/*",
+	"/opt/websoft9/data/*",
+	"/data/*",
+}
+
+// Default allowed extensions (whitelist mode)
+var DefaultAllowedExtensions = []string{
+	".txt",
+	".log",
+	".conf",
+	".yaml",
+	".yml",
+	".json",
+	".xml",
+	".md",
+	".pdf",
+	".zip",
+	".tar",
+	".tar.gz",
+	".tgz",
+	".csv",
+	".sql",
+}
+
+// Default custom forbidden paths (blacklist mode, can be overridden)
+var DefaultCustomForbiddenPaths = []string{
+	"/var/log/auth.log",
+	"/var/log/secure",
+	"/etc/nginx/*",
+	"/etc/apache2/*",
+}
+
+// Default custom forbidden extensions (blacklist mode, can be overridden)
+var DefaultCustomForbiddenExtensions = []string{
+	".sh",
+	".bash",
+	".py",
+	".rb",
+	".pl",
+	".php",
+	".jsp",
+	".asp",
+	".aspx",
+}
+
+// File size limits
+const (
+	MaxFileSizeLimit = 1073741824 // 1GB (hard limit)
+)

@@ -17,6 +17,7 @@ type ServerService interface {
 	ListServers(ctx context.Context, req *request.ListServersRequest) (*response.ServerListResponse, error)
 
 	// Status and action operations (按设计文档)
+	GetServerStatus(ctx context.Context, id uint) (*response.ServerStatusCheckResult, error) // 6.3.6 单个服务器状态检查
 	CheckServersStatus(ctx context.Context, req *request.ServerStatusCheckRequest) (*response.BatchServerStatusResponse, error)
 	ExecuteServerActions(ctx context.Context, req *request.ServerActionRequest) (*response.ServerActionResponse, error)
 

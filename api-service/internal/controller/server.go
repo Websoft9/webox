@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"path/filepath"
@@ -13,6 +14,14 @@ import (
 	"api-service/internal/interface/service"
 	"api-service/pkg/errors"
 	"api-service/pkg/logger"
+)
+
+// contextKey is a custom type for context keys to avoid collisions
+type contextKey string
+
+const (
+	// userIDKey is used to store user ID in context
+	userIDKey contextKey = "user_id"
 )
 
 // ServerController handles server management HTTP endpoints
@@ -43,9 +52,9 @@ func NewServerController(
 // @Produce json
 // @Param request body request.CreateServerRequest true "Server creation request"
 // @Success 201 {object} response.ServerResponse
-// @Failure 400 {object} errors.ErrorResponse
-// @Failure 409 {object} errors.ErrorResponse
-// @Failure 500 {object} errors.ErrorResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 409 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /servers [post]
 func (c *ServerController) CreateServer(ctx *gin.Context) {
 	var req request.CreateServerRequest
@@ -75,9 +84,9 @@ func (c *ServerController) CreateServer(ctx *gin.Context) {
 // @Produce json
 // @Param id path int true "Server ID"
 // @Success 200 {object} response.ServerResponse
-// @Failure 400 {object} errors.ErrorResponse
-// @Failure 404 {object} errors.ErrorResponse
-// @Failure 500 {object} errors.ErrorResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /servers/{id} [get]
 func (c *ServerController) GetServer(ctx *gin.Context) {
 	idParam := ctx.Param("id")
@@ -108,10 +117,10 @@ func (c *ServerController) GetServer(ctx *gin.Context) {
 // @Param id path int true "Server ID"
 // @Param request body request.UpdateServerRequest true "Server update request"
 // @Success 200 {object} response.ServerResponse
-// @Failure 400 {object} errors.ErrorResponse
-// @Failure 404 {object} errors.ErrorResponse
-// @Failure 409 {object} errors.ErrorResponse
-// @Failure 500 {object} errors.ErrorResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 409 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /servers/{id} [put]
 func (c *ServerController) UpdateServer(ctx *gin.Context) {
 	idParam := ctx.Param("id")
@@ -148,9 +157,9 @@ func (c *ServerController) UpdateServer(ctx *gin.Context) {
 // @Produce json
 // @Param id path int true "Server ID"
 // @Success 204 "No Content"
-// @Failure 400 {object} errors.ErrorResponse
-// @Failure 404 {object} errors.ErrorResponse
-// @Failure 500 {object} errors.ErrorResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /servers/{id} [delete]
 func (c *ServerController) DeleteServer(ctx *gin.Context) {
 	idParam := ctx.Param("id")
@@ -184,8 +193,8 @@ func (c *ServerController) DeleteServer(ctx *gin.Context) {
 // @Param resource_group_id query int false "Resource group ID filter"
 // @Param include_deleted query bool false "Include deleted servers"
 // @Success 200 {object} response.ServerListResponse
-// @Failure 400 {object} errors.ErrorResponse
-// @Failure 500 {object} errors.ErrorResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /servers [get]
 func (c *ServerController) ListServers(ctx *gin.Context) {
 	var req request.ListServersRequest
@@ -215,6 +224,37 @@ func (c *ServerController) ListServers(ctx *gin.Context) {
 	common.SuccessWithData(ctx, servers)
 }
 
+// GetServerStatus handles GET /servers/:id/status (设计文档序号6.3.6)
+// @Summary Get server status
+// @Description Check SSH, Agent, Docker status of a single server
+// @Tags servers
+// @Produce json
+// @Param id path int true "Server ID"
+// @Success 200 {object} response.ServerStatusCheckResult
+// @Failure 400 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
+// @Router /servers/{id}/status [get]
+func (c *ServerController) GetServerStatus(ctx *gin.Context) {
+	idParam := ctx.Param("id")
+	id, err := strconv.ParseUint(idParam, 10, 32)
+	if err != nil {
+		common.BadRequest(ctx, fmt.Errorf("invalid server ID: %s", idParam))
+		return
+	}
+
+	result, err := c.serverService.GetServerStatus(ctx.Request.Context(), uint(id))
+	if err != nil {
+		c.logger.ErrorContext(ctx.Request.Context(), "Failed to get server status",
+			logger.Uint("serverId", uint(id)),
+			logger.ErrorField(err))
+		common.WithError(ctx, err)
+		return
+	}
+
+	common.SuccessWithData(ctx, result)
+}
+
 // CheckServersStatus handles POST /servers/status (设计文档序号6)
 // @Summary Check multiple servers status
 // @Description Check SSH, Agent, Docker status of multiple servers
@@ -223,8 +263,8 @@ func (c *ServerController) ListServers(ctx *gin.Context) {
 // @Produce json
 // @Param request body request.ServerStatusCheckRequest true "Status check request"
 // @Success 200 {object} response.BatchServerStatusResponse
-// @Failure 400 {object} errors.ErrorResponse
-// @Failure 500 {object} errors.ErrorResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /servers/status [post]
 func (c *ServerController) CheckServersStatus(ctx *gin.Context) {
 	var req request.ServerStatusCheckRequest
@@ -254,8 +294,8 @@ func (c *ServerController) CheckServersStatus(ctx *gin.Context) {
 // @Produce json
 // @Param request body request.ServerActionRequest true "Server action request"
 // @Success 200 {object} response.ServerActionResponse
-// @Failure 400 {object} errors.ErrorResponse
-// @Failure 500 {object} errors.ErrorResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /servers/actions [post]
 func (c *ServerController) ExecuteServerActions(ctx *gin.Context) {
 	var req request.ServerActionRequest
@@ -287,15 +327,21 @@ func (c *ServerController) ExecuteServerActions(ctx *gin.Context) {
 // @Param file formData file true "File to upload"
 // @Param path formData string true "Upload path on server"
 // @Success 200 {object} response.ServerFileUploadResponse
-// @Failure 400 {object} errors.ErrorResponse
-// @Failure 404 {object} errors.ErrorResponse
-// @Failure 500 {object} errors.ErrorResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /servers/{id}/files [post]
 func (c *ServerController) UploadFile(ctx *gin.Context) {
 	idParam := ctx.Param("id")
 	id, err := strconv.ParseUint(idParam, 10, 32)
 	if err != nil {
 		common.BadRequest(ctx, fmt.Errorf("invalid server ID: %s", idParam))
+		return
+	}
+
+	// Get current user ID
+	userID, exists := GetUserID(ctx)
+	if !exists {
 		return
 	}
 
@@ -328,7 +374,10 @@ func (c *ServerController) UploadFile(ctx *gin.Context) {
 		return
 	}
 
-	result, err := c.serverService.UploadFile(ctx.Request.Context(), uint(id), uploadPath, fileData)
+	// Add user ID to context for service layer
+	requestCtx := context.WithValue(ctx.Request.Context(), userIDKey, userID)
+
+	result, err := c.serverService.UploadFile(requestCtx, uint(id), uploadPath, fileData)
 	if err != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Failed to upload file",
 			logger.Uint("serverId", uint(id)),
@@ -349,15 +398,21 @@ func (c *ServerController) UploadFile(ctx *gin.Context) {
 // @Param id path int true "Server ID"
 // @Param path query string true "File path on server"
 // @Success 200 {file} binary "File content"
-// @Failure 400 {object} errors.ErrorResponse
-// @Failure 404 {object} errors.ErrorResponse
-// @Failure 500 {object} errors.ErrorResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /servers/{id}/files/download [get]
 func (c *ServerController) DownloadFile(ctx *gin.Context) {
 	idParam := ctx.Param("id")
 	id, err := strconv.ParseUint(idParam, 10, 32)
 	if err != nil {
 		common.BadRequest(ctx, fmt.Errorf("invalid server ID: %s", idParam))
+		return
+	}
+
+	// Get current user ID
+	userID, exists := GetUserID(ctx)
+	if !exists {
 		return
 	}
 
@@ -368,7 +423,10 @@ func (c *ServerController) DownloadFile(ctx *gin.Context) {
 		return
 	}
 
-	fileData, filename, err := c.serverService.DownloadFile(ctx.Request.Context(), uint(id), filePath)
+	// Add user ID to context for service layer
+	requestCtx := context.WithValue(ctx.Request.Context(), userIDKey, userID)
+
+	fileData, filename, err := c.serverService.DownloadFile(requestCtx, uint(id), filePath)
 	if err != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Failed to download file",
 			logger.Uint("serverId", uint(id)),
@@ -395,15 +453,21 @@ func (c *ServerController) DownloadFile(ctx *gin.Context) {
 // @Param id path int true "Server ID"
 // @Param path query string true "File path on server"
 // @Success 200 {object} response.ServerFileDeleteResponse
-// @Failure 400 {object} errors.ErrorResponse
-// @Failure 404 {object} errors.ErrorResponse
-// @Failure 500 {object} errors.ErrorResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /servers/{id}/files [delete]
 func (c *ServerController) DeleteFile(ctx *gin.Context) {
 	idParam := ctx.Param("id")
 	id, err := strconv.ParseUint(idParam, 10, 32)
 	if err != nil {
 		common.BadRequest(ctx, fmt.Errorf("invalid server ID: %s", idParam))
+		return
+	}
+
+	// Get current user ID
+	userID, exists := GetUserID(ctx)
+	if !exists {
 		return
 	}
 
@@ -416,7 +480,10 @@ func (c *ServerController) DeleteFile(ctx *gin.Context) {
 		return
 	}
 
-	result, err := c.serverService.DeleteFile(ctx.Request.Context(), uint(id), req.Path)
+	// Add user ID to context for service layer
+	requestCtx := context.WithValue(ctx.Request.Context(), userIDKey, userID)
+
+	result, err := c.serverService.DeleteFile(requestCtx, uint(id), req.Path)
 	if err != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Failed to delete file",
 			logger.Uint("serverId", uint(id)),

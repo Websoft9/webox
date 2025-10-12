@@ -398,6 +398,8 @@ type repositories struct {
 	tagRepo          repoInterface.TagRepository
 	alertRepo        repoInterface.AlertRepository
 	secretKeyRepo    repoInterface.SecretKeyRepository
+	serverRepo       repoInterface.ServerRepository
+	serverAgentRepo  repoInterface.ServerAgentRepository
 }
 
 // initRepositories creates and initializes all repository instances
@@ -415,6 +417,8 @@ func initRepositories(db *gorm.DB) *repositories {
 		tagRepo:          repoImpl.NewTagRepository(db),
 		alertRepo:        repoImpl.NewAlertRepository(db),
 		secretKeyRepo:    repoImpl.NewSecretKeyRepository(db),
+		serverRepo:       repoImpl.NewServerRepository(db),
+		serverAgentRepo:  repoImpl.NewServerAgentRepository(db),
 	}
 }
 
@@ -435,6 +439,8 @@ type businessServices struct {
 	alertServices       serviceInterface.AlertService
 	secretKeyService    serviceInterface.SecretKeyService
 	i18nService         serviceInterface.I18nService
+	serverService       serviceInterface.ServerService
+	serverAgentService  serviceInterface.ServerAgentService
 }
 
 // initBusinessServices creates and initializes all service instances with their dependencies
@@ -450,6 +456,7 @@ func initBusinessServices(
 	// Create OAuth2 service for external authentication providers
 	oauth2Service := serviceImpl.NewOAuth2Service(authConfigManager, zapLogger)
 	userService := serviceImpl.NewUserService(repos.userRepo, zapLogger)
+	secretKeyService := serviceImpl.NewSecretKeyService(repos.secretKeyRepo, zapLogger, i18nInstance, cfg)
 	return &businessServices{
 		userService: userService,
 		userAuthService: serviceImpl.NewUserAuthService(
@@ -472,8 +479,20 @@ func initBusinessServices(
 		userProfileService:  serviceImpl.NewUserProfileService(repos.userProfileRepo, zapLogger, i18nInstance),
 		tagService:          serviceImpl.NewTagService(repos.tagRepo, db, zapLogger, i18nInstance),
 		alertServices:       serviceImpl.NewAlertService(repos.alertRepo, zapLogger, i18nInstance),
-		secretKeyService:    serviceImpl.NewSecretKeyService(repos.secretKeyRepo, zapLogger, i18nInstance, cfg),
+		secretKeyService:    secretKeyService,
 		i18nService:         serviceImpl.NewI18nService(repos.userProfileRepo, zapLogger),
+		serverService: serviceImpl.NewServerService(serviceImpl.ServerServiceConfig{
+			Logger:           zapLogger,
+			ServerRepo:       repos.serverRepo,
+			SecretKeyService: secretKeyService,
+			SystemConfigRepo: repos.systemConfigRepo,
+			Config:           cfg,
+		}),
+		serverAgentService: serviceImpl.NewServerAgentService(serviceImpl.ServerAgentServiceConfig{
+			AgentRepo:  repos.serverAgentRepo,
+			ServerRepo: repos.serverRepo,
+			Logger:     zapLogger,
+		}),
 	}
 }
 
@@ -524,6 +543,11 @@ func initControllers(
 			i18nInstance,
 		),
 		SecretKeyController: controller.NewSecretKeyController(services.secretKeyService, zapLogger, i18nInstance, validatorInstance),
+		ServerController: controller.NewServerController(
+			services.serverService,
+			services.serverAgentService,
+			zapLogger,
+		),
 	}
 }
 

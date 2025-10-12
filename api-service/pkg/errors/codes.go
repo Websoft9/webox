@@ -95,6 +95,12 @@ const (
 	CodeServerStatusCacheExpired    = 5029 // Server status cache expired
 	CodeServerAgentOffline          = 5030 // Agent offline
 	CodeServerTaskTimeout           = 5031 // Task execution timeout
+	CodeSFTPOperationFailed         = 5032 // SFTP operation failed
+	CodeFileSizeTooLarge            = 5033 // File size exceeds limit
+	CodePathForbidden               = 5034 // Path is forbidden
+	CodeFileExtensionForbidden      = 5035 // File extension is forbidden
+	CodeFileNotFound                = 5036 // File not found on server
+	CodeFilePermissionDenied        = 5037 // File permission denied
 
 	// System related error codes (6000-6999)
 	CodeInternalError                ErrorCode = 6001 // System Internal Error

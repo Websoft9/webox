@@ -29,6 +29,7 @@ type Controllers struct {
 	AlertController          *controller.AlertController
 	TagController            *controller.TagController
 	SecretKeyController      *controller.SecretKeyController
+	ServerController         *controller.ServerController
 	// More controllers can be added
 	// AppController  *controller.ApplicationController
 }
@@ -149,6 +150,7 @@ func setupAPIRoutes(v1 *gin.RouterGroup, controllers *Controllers) {
 	setupTagRoutes(protected, controllers.TagController)
 	setupAlertRoutes(protected, controllers.AlertController)
 	setupSecretKeyRoutes(protected, controllers.SecretKeyController)
+	setupServerRoutes(protected, controllers.ServerController)
 }
 
 // setupUserRoutes sets up user related routes
@@ -373,4 +375,29 @@ func setupSecretKeyRoutes(protected *gin.RouterGroup, secretKeyController *contr
 	secretKeys.GET("/:id/value", secretKeyController.GetSecretKeyValue) // GET /api/v1/secret-keys/{id}/value
 	secretKeys.PUT("/:id", secretKeyController.UpdateSecretKey)         // PUT /api/v1/secret-keys/{id}
 	secretKeys.DELETE("/:id", secretKeyController.DeleteSecretKey)      // DELETE /api/v1/secret-keys/{id}
+}
+
+// setupServerRoutes sets up server management routes
+func setupServerRoutes(protected *gin.RouterGroup, serverController *controller.ServerController) {
+	if serverController == nil {
+		return
+	}
+
+	// Server basic management endpoints
+	servers := protected.Group("/servers")
+	servers.GET("", serverController.ListServers)                // GET /api/v1/servers
+	servers.POST("", serverController.CreateServer)              // POST /api/v1/servers
+	servers.GET("/:id", serverController.GetServer)              // GET /api/v1/servers/{id}
+	servers.PUT("/:id", serverController.UpdateServer)           // PUT /api/v1/servers/{id}
+	servers.DELETE("/:id", serverController.DeleteServer)        // DELETE /api/v1/servers/{id}
+	servers.GET("/:id/status", serverController.GetServerStatus) // GET /api/v1/servers/{id}/status (6.3.6)
+
+	// Server batch operations
+	servers.POST("/status", serverController.CheckServersStatus)    // POST /api/v1/servers/status (6)
+	servers.POST("/actions", serverController.ExecuteServerActions) // POST /api/v1/servers/actions (7)
+
+	// Server file management endpoints
+	servers.POST("/:id/files", serverController.UploadFile)           // POST /api/v1/servers/{id}/files (8)
+	servers.GET("/:id/files/download", serverController.DownloadFile) // GET /api/v1/servers/{id}/files/download (9)
+	servers.DELETE("/:id/files", serverController.DeleteFile)         // DELETE /api/v1/servers/{id}/files (10)
 }
