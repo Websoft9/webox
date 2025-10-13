@@ -284,7 +284,7 @@ func (c *SecretKeyController) DeleteSecretKey(ctx *gin.Context) {
 // @Produce json
 // @Param page query int false "Page number" default(1)
 // @Param page_size query int false "Page size" default(20)
-// @Param key_type query string false "Key type filter" Enums(API_KEY,DATABASE,SSH,CERTIFICATE,CUSTOM)
+// @Param key_type query string false "Key type filter" Enums(SECRET_KEY,ACCOUNT,FILE)
 // @Success 200 {object} common.APIResponse{data=response.SecretKeyListResponse}
 // @Failure 400 {object} common.APIResponse
 // @Failure 401 {object} common.APIResponse
