@@ -32,6 +32,7 @@ type secretKeyService struct {
 	logger        logger.Logger
 	i18n          *i18n.I18n
 	rsaCrypto     *crypto.RSACrypto
+	//cfg           *config.Config
 }
 
 // NewSecretKeyService creates a new secret key service
@@ -42,6 +43,7 @@ func NewSecretKeyService(
 	cfg *config.Config,
 ) service.SecretKeyService {
 	rsaCrypto, err := initRSACryptoFromConfig(&cfg.Security)
+
 	if err != nil {
 		rsaCrypto, err = crypto.NewRSACrypto(crypto.MinRSAKeySize)
 		if err != nil {

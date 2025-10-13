@@ -42,6 +42,7 @@ func NewAlertController(
 // @Tags Alert
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param page query int false "Page number, default 1"
 // @Param page_size query int false "Page size, default 20"
 // @Param rule_type query string false "Rule type filter"
@@ -77,6 +78,7 @@ func (c *AlertController) GetAlertRules(ctx *gin.Context) {
 // @Tags Alert
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param request body request.AlertRuleCreateRequest true "Alert rule create request"
 // @Success 200 {object} common.APIResponse{data=response.AlertRuleResponse}
 // @Failure 400 {object} common.APIResponse
@@ -126,6 +128,7 @@ func isExpression(expression string) bool {
 // @Tags Alert
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "Alert rule ID"
 // @Success 200 {object} common.APIResponse{data=response.AlertRuleResponse}
 // @Failure 400 {object} common.APIResponse
@@ -158,6 +161,7 @@ func (c *AlertController) GetAlertRule(ctx *gin.Context) {
 // @Tags Alert
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "Alert rule ID"
 // @Param request body request.AlertRuleUpdateRequest true "Alert rule update request"
 // @Success 200 {object} common.APIResponse{data=response.AlertRuleResponse}
@@ -205,6 +209,7 @@ func (c *AlertController) UpdateAlertRule(ctx *gin.Context) {
 // @Tags Alert
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "Alert rule ID"
 // @Success 200 {object} common.APIResponse
 // @Failure 400 {object} common.APIResponse
@@ -236,6 +241,7 @@ func (c *AlertController) DeleteAlertRule(ctx *gin.Context) {
 // @Tags Alert
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param page query int false "Page number, default 1"
 // @Param page_size query int false "Page size, default 20"
 // @Param status query string false "Status filter (FIRING, RESOLVED)"
@@ -271,6 +277,7 @@ func (c *AlertController) GetAlertRecords(ctx *gin.Context) {
 // @Tags Alert
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "Alert record ID"
 // @Param request body request.AlertAcknowledgeRequest true "Alert acknowledge request"
 // @Success 200 {object} common.APIResponse
@@ -315,6 +322,7 @@ func (c *AlertController) AcknowledgeAlertRecord(ctx *gin.Context) {
 // @Tags Alert
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "Alert record ID"
 // @Param request body request.AlertResolveRequest true "Alert resolve request"
 // @Success 200 {object} common.APIResponse
