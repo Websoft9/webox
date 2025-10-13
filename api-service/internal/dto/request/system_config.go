@@ -10,7 +10,7 @@ type ListSystemConfigsRequest struct {
 type UpdateSystemConfigRequest struct {
 	ConfigKey   string  `json:"config_key" validate:"required"`
 	ConfigValue string  `json:"config_value" validate:"required"`
-	ConfigType  string  `json:"config_type" validate:"required,oneof=STRING BOOLEAN NUMBER JSON"`
+	ConfigType  string  `json:"config_type" validate:"required,oneof=STRING BOOLEAN INTEGER JSON FLOAT"`
 	Category    string  `json:"category" validate:"required"`
 	Description *string `json:"description,omitempty"`
 	SortOrder   *int    `json:"sort_order,omitempty"`

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"api-service/internal/dto/common"
 	"api-service/internal/dto/request"
 	"api-service/internal/dto/response"
 	"context"
@@ -19,10 +20,7 @@ type AuditLogService interface {
 
 	// Query operations
 	GetAuditLog(ctx context.Context, id uint) (*response.AuditLogResponse, error)
-	ListAuditLogs(ctx context.Context, req *request.ListAuditLogRequest) (*response.AuditLogListResponse, error)
-
-	// Statistics and analysis
-	GetStatistics(ctx context.Context, req *request.AuditLogStatisticsRequest) (*response.AuditLogStatisticsResponse, error)
+	ListAuditLogs(ctx context.Context, req *request.ListAuditLogRequest) (*common.PaginationResponse, error)
 
 	// Export functionality
 	ExportAuditLogs(ctx context.Context, ginCtx *gin.Context, req *request.ExportAuditLogRequest) ([]byte, string, error)

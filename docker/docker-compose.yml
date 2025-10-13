@@ -11,7 +11,7 @@ services:
       - "8080:8080" # Web Service Port
       # - "9090:9090" # RPC Port
     healthcheck:
-      test: ["CMD", "sh", "-c", "/home/appuser/scripts/healthcheck.sh"]
+      test: [ "CMD", "sh", "-c", "/home/appuser/scripts/healthcheck.sh" ]
       interval: 10s
       timeout: 5s
       retries: 3

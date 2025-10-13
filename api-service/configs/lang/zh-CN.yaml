@@ -93,6 +93,7 @@ resource:
   record_is_disabled: "资源被禁用"
   record_no_affected: "没有资源被更新"
   record_delete_denied: "不允许删除"
+  record_export_failed: "导出失败"
 business:
   server_offline: "服务器离线无法操作"
   app_deployment_failed: "应用部署失败"

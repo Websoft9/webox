@@ -10,6 +10,7 @@ import (
 	repoImpl "api-service/internal/repository"
 	"api-service/internal/router"
 	serviceImpl "api-service/internal/service"
+	customValidator "api-service/internal/validator"
 	"api-service/pkg/auth"
 	"api-service/pkg/crypto"
 	"api-service/pkg/database"
@@ -21,11 +22,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 	"os"
 	"os/signal"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"syscall"
 	"time"
@@ -232,46 +231,6 @@ func initServices(cfg *config.Config, authConfig *config.AuthConfig, zapLogger l
 	}, nil
 }
 
-// registerCustomValidators registers all custom validators for request validation
-func registerCustomValidators(validatorInstance *validator.Validate) error {
-	// Register custom validator for RFC3339 datetime format
-	err := validatorInstance.RegisterValidation("rfc3339", func(fl validator.FieldLevel) bool {
-		dateStr := fl.Field().String()
-		if dateStr == "" {
-			return true // omitempty will handle empty strings
-		}
-
-		// Handle URL encoding:
-		// 1. URL decode to handle %3A (colon) and other encoded characters
-		// 2. Replace spaces with '+' since URL query parameters convert '+' to space
-		decodedStr, err := url.QueryUnescape(dateStr)
-		if err != nil {
-			decodedStr = dateStr
-		}
-
-		// In URL query parameters, '+' becomes space, so we need to convert back
-		// Check if the string looks like a datetime with spaces instead of '+'
-		if strings.Contains(decodedStr, " ") && strings.Count(decodedStr, " ") == 1 {
-			// Replace the space with '+' for timezone offset
-			parts := strings.Split(decodedStr, " ")
-			if len(parts) == 2 && len(parts[1]) >= 5 {
-				// Check if the second part looks like timezone offset (e.g., "08:00")
-				if matched, _ := regexp.MatchString(`^\d{2}:\d{2}$`, parts[1]); matched {
-					decodedStr = parts[0] + "+" + parts[1]
-				}
-			}
-		}
-
-		_, err = time.Parse(time.RFC3339, decodedStr)
-		return err == nil
-	})
-	if err != nil {
-		return fmt.Errorf("failed to register RFC3339 validator: %w", err)
-	}
-
-	return nil
-}
-
 // startServer initializes all application components and starts the HTTP server
 // Handles graceful shutdown when receiving interrupt signals
 func startServer(
@@ -286,7 +245,7 @@ func startServer(
 	validatorInstance := validator.New()
 
 	// Register custom validators
-	if err := registerCustomValidators(validatorInstance); err != nil {
+	if err := customValidator.RegisterCustomValidators(validatorInstance); err != nil {
 		return fmt.Errorf("failed to register custom validators: %w", err)
 	}
 
@@ -467,8 +426,8 @@ func initBusinessServices(
 		apiTokenService:     serviceImpl.NewAPITokenService(repos.apiTokenRepo, authConfigManager, db, zapLogger),
 		authConfigService:   serviceImpl.NewAuthConfigService(authConfigManager, zapLogger),
 		twoFactorService:    serviceImpl.NewTwoFactorService(repos.twoFactorRepo, db, zapLogger),
-		auditLogService:     serviceImpl.NewAuditLogService(repos.auditLogRepo, userService, db, zapLogger, i18nInstance, cfg),
-		systemConfigService: serviceImpl.NewSystemConfigService(repos.systemConfigRepo, cfg, db, zapLogger, i18nInstance),
+		auditLogService:     serviceImpl.NewAuditLogService(repos.auditLogRepo, userService, db, zapLogger, cfg),
+		systemConfigService: serviceImpl.NewSystemConfigService(repos.systemConfigRepo, cfg, db, zapLogger),
 		userProfileService:  serviceImpl.NewUserProfileService(repos.userProfileRepo, zapLogger, i18nInstance),
 		tagService:          serviceImpl.NewTagService(repos.tagRepo, db, zapLogger, i18nInstance),
 		alertServices:       serviceImpl.NewAlertService(repos.alertRepo, zapLogger, i18nInstance),
@@ -508,13 +467,12 @@ func initControllers(
 			zapLogger,
 		),
 		HealthController:      controller.NewHealthController(cfg),
-		AuditLogController:    controller.NewAuditLogController(services.auditLogService, validatorInstance, zapLogger, i18nInstance),
+		AuditLogController:    controller.NewAuditLogController(services.auditLogService, validatorInstance, zapLogger),
 		UserProfileController: controller.NewUserProfileController(services.userProfileService, zapLogger, i18nInstance, validatorInstance),
 		SystemConfigController: controller.NewSystemConfigController(
 			services.systemConfigService,
 			validatorInstance,
 			zapLogger,
-			i18nInstance,
 		),
 		AlertController: controller.NewAlertController(services.alertServices, zapLogger, i18nInstance, validatorInstance),
 		TagController: controller.NewTagController(
