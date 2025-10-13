@@ -57,7 +57,7 @@ func (c *AlertController) GetAlertRules(ctx *gin.Context) {
 	var req request.AlertRuleQueryRequest
 
 	// Bind and validate request
-	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
+	if !BindAndValidateQuery(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
@@ -256,7 +256,7 @@ func (c *AlertController) DeleteAlertRule(ctx *gin.Context) {
 func (c *AlertController) GetAlertRecords(ctx *gin.Context) {
 	var req request.AlertRecordQueryRequest
 	// Bind and validate request
-	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
+	if !BindAndValidateQuery(ctx, &req, c.validator, c.logger) {
 		return
 	}
 

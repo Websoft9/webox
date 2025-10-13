@@ -294,7 +294,7 @@ func (c *SecretKeyController) ListSecretKeys(ctx *gin.Context) {
 	// Bind request parameters
 	var req request.SecretKeyQueryRequest
 	// Bind and validate request
-	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
+	if !BindAndValidateQuery(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
@@ -335,7 +335,7 @@ func (c *SecretKeyController) ExportSecretKeys(ctx *gin.Context) {
 	// Bind request parameters
 	var req request.SecretKeyExportRequest
 	// Bind and validate request
-	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
+	if !BindAndValidateQuery(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
