@@ -264,11 +264,7 @@ func setDefaults() {
 
 	// Crypto defaults
 	viper.SetDefault("security.aes_key", "websoft9-default-encryption-key-change-in-production")
-	// RSA Crypto defaults
-	viper.SetDefault("security.rsa_private_key", "")
-	viper.SetDefault("security.rsa_public_key", "")
-	viper.SetDefault("security.rsa_private_key_file", "")
-	viper.SetDefault("security.rsa_public_key_file", "")
+
 	// Upload defaults
 	viper.SetDefault("upload.secret_storage", "/home/appuser/data")
 }

@@ -207,7 +207,7 @@ func (c *SecretKeyController) UpdateSecretKey(ctx *gin.Context) {
 	// Validate custom_fields based on key_type
 	if err := req.Validate(); err != nil {
 		c.logger.ErrorContext(ctx, "Custom fields validation failed",
-			logger.Uint("secret_key_id", uint(id)),
+			logger.Uint("secret_key_id", id),
 			logger.String("key_type", string(req.KeyType)),
 			logger.ErrorField(err))
 		response.WithError(ctx, err)

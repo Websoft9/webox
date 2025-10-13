@@ -32,7 +32,6 @@ type secretKeyService struct {
 	logger        logger.Logger
 	i18n          *i18n.I18n
 	rsaCrypto     *crypto.RSACrypto
-	//cfg           *config.Config
 }
 
 // NewSecretKeyService creates a new secret key service
@@ -83,6 +82,165 @@ func initRSACryptoFromConfig(securityConfig *config.SecurityConfig) (*crypto.RSA
 	return crypto.NewRSACryptoFromKeys(privateKeyPEM, publicKeyPEM)
 }
 
+// encryptCustomFields encrypts sensitive fields in custom_fields based on key_type
+func (s *secretKeyService) encryptCustomFields(ctx context.Context, keyType model.SecretKeyType, customFields map[string]interface{}) (model.CustomFields, error) {
+	if customFields == nil {
+		return make(model.CustomFields), nil
+	}
+
+	encryptedFields := make(model.CustomFields)
+
+	// Copy all fields first
+	for k, v := range customFields {
+		encryptedFields[k] = v
+	}
+
+	// Encrypt specific fields based on key_type
+	switch keyType {
+	case model.SecretKeyTypeSecretKey:
+		return s.encryptSecretKeyFields(ctx, encryptedFields)
+	case model.SecretKeyTypeAccount:
+		return s.encryptAccountFields(ctx, encryptedFields)
+	case model.SecretKeyTypeFile:
+		return s.encryptFileFields(ctx, encryptedFields)
+	}
+
+	return encryptedFields, nil
+}
+
+// encryptSecretKeyFields encrypts secret_key field for SECRET_KEY type
+func (s *secretKeyService) encryptSecretKeyFields(ctx context.Context, fields model.CustomFields) (model.CustomFields, error) {
+	if secretKey, ok := fields["secret_key"].(string); ok && secretKey != "" {
+		encryptedSecretKey, err := s.rsaCrypto.EncryptString(secretKey)
+		if err != nil {
+			s.logger.ErrorContext(ctx, "Failed to encrypt secret_key field", logger.ErrorField(err))
+			return nil, errors.NewAppError(errors.CodeEncryptFailed)
+		}
+		fields["secret_key"] = encryptedSecretKey
+	}
+	return fields, nil
+}
+
+// encryptAccountFields encrypts password field for ACCOUNT type
+func (s *secretKeyService) encryptAccountFields(ctx context.Context, fields model.CustomFields) (model.CustomFields, error) {
+	if password, ok := fields["password"].(string); ok && password != "" {
+		encryptedPassword, err := s.rsaCrypto.EncryptString(password)
+		if err != nil {
+			s.logger.ErrorContext(ctx, "Failed to encrypt password field", logger.ErrorField(err))
+			return nil, errors.NewAppError(errors.CodeEncryptFailed)
+		}
+		fields["password"] = encryptedPassword
+	}
+	return fields, nil
+}
+
+// encryptFileFields encrypts password field for FILE type (if provided)
+func (s *secretKeyService) encryptFileFields(ctx context.Context, fields model.CustomFields) (model.CustomFields, error) {
+	if password, ok := fields["password"].(string); ok && password != "" {
+		encryptedPassword, err := s.rsaCrypto.EncryptString(password)
+		if err != nil {
+			s.logger.ErrorContext(ctx, "Failed to encrypt password field", logger.ErrorField(err))
+			return nil, errors.NewAppError(errors.CodeEncryptFailed)
+		}
+		fields["password"] = encryptedPassword
+	}
+	return fields, nil
+}
+
+// createUserSecretRelationships creates user-secret relationships for authorized users
+func (s *secretKeyService) createUserSecretRelationships(ctx context.Context, secretKeyID uint, authorizedUsers []uint, userID uint, expiresAt *time.Time) {
+	if len(authorizedUsers) == 0 {
+		return
+	}
+
+	for _, authorizedUserID := range authorizedUsers {
+		userSecret := &model.UserSecret{
+			UserID:      authorizedUserID,
+			SecretKeyID: secretKeyID,
+			GrantedBy:   &userID,
+			GrantedAt:   time.Now(),
+			ExpiresAt:   expiresAt,
+		}
+
+		if err := s.secretKeyRepo.CreateUserSecret(ctx, userSecret); err != nil {
+			s.logger.ErrorContext(ctx, "Failed to create user secret relationship",
+				logger.Uint("secret_key_id", secretKeyID),
+				logger.Uint("authorized_user_id", authorizedUserID),
+				logger.ErrorField(err))
+			continue
+		}
+
+		s.logger.InfoContext(ctx, "User secret relationship created",
+			logger.Uint("secret_key_id", secretKeyID),
+			logger.Uint("authorized_user_id", authorizedUserID))
+	}
+
+	s.logger.InfoContext(ctx, "User secret relationships creation completed",
+		logger.Uint("secret_key_id", secretKeyID),
+		logger.Int("total_users", len(authorizedUsers)))
+}
+
+// decryptCustomFields decrypts sensitive fields in custom_fields based on key_type
+func (s *secretKeyService) decryptCustomFields(ctx context.Context, keyType model.SecretKeyType, customFields model.CustomFields) (map[string]interface{}, error) {
+	decryptedFields := make(map[string]interface{})
+
+	// Copy all fields first
+	for k, v := range customFields {
+		decryptedFields[k] = v
+	}
+
+	// Decrypt specific fields based on key_type
+	switch keyType {
+	case model.SecretKeyTypeSecretKey:
+		return s.decryptSecretKeyFields(ctx, decryptedFields)
+	case model.SecretKeyTypeAccount:
+		return s.decryptAccountFields(ctx, decryptedFields)
+	case model.SecretKeyTypeFile:
+		return s.decryptFileFields(ctx, decryptedFields)
+	}
+
+	return decryptedFields, nil
+}
+
+// decryptSecretKeyFields decrypts secret_key field for SECRET_KEY type
+func (s *secretKeyService) decryptSecretKeyFields(ctx context.Context, fields map[string]interface{}) (map[string]interface{}, error) {
+	if encryptedSecretKey, ok := fields["secret_key"].(string); ok && encryptedSecretKey != "" {
+		decryptedValue, err := s.rsaCrypto.DecryptString(encryptedSecretKey)
+		if err != nil {
+			s.logger.ErrorContext(ctx, "Failed to decrypt secret_key field", logger.ErrorField(err))
+			return nil, err
+		}
+		fields["secret_key"] = decryptedValue
+	}
+	return fields, nil
+}
+
+// decryptAccountFields decrypts password field for ACCOUNT type
+func (s *secretKeyService) decryptAccountFields(ctx context.Context, fields map[string]interface{}) (map[string]interface{}, error) {
+	if encryptedPassword, ok := fields["password"].(string); ok && encryptedPassword != "" {
+		decryptedValue, err := s.rsaCrypto.DecryptString(encryptedPassword)
+		if err != nil {
+			s.logger.ErrorContext(ctx, "Failed to decrypt password field", logger.ErrorField(err))
+			return nil, err
+		}
+		fields["password"] = decryptedValue
+	}
+	return fields, nil
+}
+
+// decryptFileFields decrypts password field for FILE type (if exists)
+func (s *secretKeyService) decryptFileFields(ctx context.Context, fields map[string]interface{}) (map[string]interface{}, error) {
+	if encryptedPassword, ok := fields["password"].(string); ok && encryptedPassword != "" {
+		decryptedValue, err := s.rsaCrypto.DecryptString(encryptedPassword)
+		if err != nil {
+			s.logger.ErrorContext(ctx, "Failed to decrypt password field", logger.ErrorField(err))
+			return nil, err
+		}
+		fields["password"] = decryptedValue
+	}
+	return fields, nil
+}
+
 // CreateSecretKey creates a new secret key
 func (s *secretKeyService) CreateSecretKey(ctx context.Context, req *request.SecretKeyCreateRequest, userID uint) (*response.SecretKeyResponse, error) {
 	s.logger.InfoContext(ctx, "Creating secret key",
@@ -104,49 +262,9 @@ func (s *secretKeyService) CreateSecretKey(ctx context.Context, req *request.Sec
 	}
 
 	// Encrypt sensitive fields in custom_fields based on key_type
-	encryptedCustomFields := make(model.CustomFields)
-	if req.CustomFields != nil {
-		for k, v := range req.CustomFields {
-			encryptedCustomFields[k] = v
-		}
-
-		switch req.KeyType {
-		case model.SecretKeyTypeSecretKey:
-			// Encrypt secret_key field
-			if secretKey, ok := req.CustomFields["secret_key"].(string); ok && secretKey != "" {
-				encryptedSecretKey, err := s.rsaCrypto.EncryptString(secretKey)
-				if err != nil {
-					s.logger.ErrorContext(ctx, "Failed to encrypt secret_key field",
-						logger.ErrorField(err))
-					return nil, errors.NewAppError(errors.CodeEncryptFailed)
-				}
-				encryptedCustomFields["secret_key"] = encryptedSecretKey
-			}
-
-		case model.SecretKeyTypeAccount:
-			// Encrypt password field
-			if password, ok := req.CustomFields["password"].(string); ok && password != "" {
-				encryptedPassword, err := s.rsaCrypto.EncryptString(password)
-				if err != nil {
-					s.logger.ErrorContext(ctx, "Failed to encrypt password field",
-						logger.ErrorField(err))
-					return nil, errors.NewAppError(errors.CodeEncryptFailed)
-				}
-				encryptedCustomFields["password"] = encryptedPassword
-			}
-
-		case model.SecretKeyTypeFile:
-			// Encrypt password field if provided
-			if password, ok := req.CustomFields["password"].(string); ok && password != "" {
-				encryptedPassword, err := s.rsaCrypto.EncryptString(password)
-				if err != nil {
-					s.logger.ErrorContext(ctx, "Failed to encrypt password field",
-						logger.ErrorField(err))
-					return nil, errors.NewAppError(errors.CodeEncryptFailed)
-				}
-				encryptedCustomFields["password"] = encryptedPassword
-			}
-		}
+	encryptedCustomFields, err := s.encryptCustomFields(ctx, req.KeyType, req.CustomFields)
+	if err != nil {
+		return nil, err
 	}
 
 	// Create the secret key model
@@ -169,33 +287,8 @@ func (s *secretKeyService) CreateSecretKey(ctx context.Context, req *request.Sec
 		return nil, err
 	}
 
-	if len(req.AuthorizedUsers) > 0 {
-		for _, authorizedUserID := range req.AuthorizedUsers {
-			userSecret := &model.UserSecret{
-				UserID:      authorizedUserID,
-				SecretKeyID: secretKey.ID,
-				GrantedBy:   &userID,
-				GrantedAt:   time.Now(),
-				ExpiresAt:   req.ExpiresAt,
-			}
-
-			if err := s.secretKeyRepo.CreateUserSecret(ctx, userSecret); err != nil {
-				s.logger.ErrorContext(ctx, "Failed to create user secret relationship",
-					logger.Uint("secret_key_id", secretKey.ID),
-					logger.Uint("authorized_user_id", authorizedUserID),
-					logger.ErrorField(err))
-				continue
-			}
-
-			s.logger.InfoContext(ctx, "User secret relationship created",
-				logger.Uint("secret_key_id", secretKey.ID),
-				logger.Uint("authorized_user_id", authorizedUserID))
-		}
-
-		s.logger.InfoContext(ctx, "User secret relationships creation completed",
-			logger.Uint("secret_key_id", secretKey.ID),
-			logger.Int("total_users", len(req.AuthorizedUsers)))
-	}
+	// Create user-secret relationships for authorized users
+	s.createUserSecretRelationships(ctx, secretKey.ID, req.AuthorizedUsers, userID, req.ExpiresAt)
 
 	s.logger.InfoContext(ctx, "Secret key created successfully",
 		logger.Uint("secret_key_id", secretKey.ID),
@@ -260,7 +353,7 @@ func (s *secretKeyService) GetSecretKeyValue(ctx context.Context, id, userID uin
 				logger.Uint("secret_key_id", id),
 				logger.Uint("user_id", userID),
 				logger.ErrorField(accessErr))
-			return nil, err
+			return nil, accessErr
 		}
 
 		if !hasAccess {
@@ -274,50 +367,9 @@ func (s *secretKeyService) GetSecretKeyValue(ctx context.Context, id, userID uin
 	}
 
 	// Decrypt sensitive fields in custom_fields based on key_type
-	decryptedCustomFields := make(map[string]interface{})
-
-	// Copy all fields first
-	for k, v := range secretKey.CustomFields {
-		decryptedCustomFields[k] = v
-	}
-
-	// Decrypt specific fields based on key_type
-	switch secretKey.KeyType {
-	case model.SecretKeyTypeSecretKey:
-		// Decrypt secret_key field
-		if encryptedSecretKey, ok := secretKey.CustomFields["secret_key"].(string); ok && encryptedSecretKey != "" {
-			decryptedValue, err := s.rsaCrypto.DecryptString(encryptedSecretKey)
-			if err != nil {
-				s.logger.ErrorContext(ctx, "Failed to decrypt secret_key field",
-					logger.ErrorField(err))
-				return nil, err
-			}
-			decryptedCustomFields["secret_key"] = decryptedValue
-		}
-
-	case model.SecretKeyTypeAccount:
-		// Decrypt password field
-		if encryptedPassword, ok := secretKey.CustomFields["password"].(string); ok && encryptedPassword != "" {
-			decryptedValue, err := s.rsaCrypto.DecryptString(encryptedPassword)
-			if err != nil {
-				s.logger.ErrorContext(ctx, "Failed to decrypt password field",
-					logger.ErrorField(err))
-				return nil, err
-			}
-			decryptedCustomFields["password"] = decryptedValue
-		}
-
-	case model.SecretKeyTypeFile:
-		// Decrypt password field if exists
-		if encryptedPassword, ok := secretKey.CustomFields["password"].(string); ok && encryptedPassword != "" {
-			decryptedValue, err := s.rsaCrypto.DecryptString(encryptedPassword)
-			if err != nil {
-				s.logger.ErrorContext(ctx, "Failed to decrypt password field",
-					logger.ErrorField(err))
-				return nil, err
-			}
-			decryptedCustomFields["password"] = decryptedValue
-		}
+	decryptedCustomFields, err := s.decryptCustomFields(ctx, secretKey.KeyType, secretKey.CustomFields)
+	if err != nil {
+		return nil, err
 	}
 
 	s.logger.InfoContext(ctx, "Secret key value accessed",
@@ -349,46 +401,10 @@ func (s *secretKeyService) UpdateSecretKey(ctx context.Context, id, userID uint,
 	// Encrypt sensitive fields in custom_fields based on key_type
 	encryptedCustomFields := make(model.CustomFields)
 	if req.CustomFields != nil {
-		for k, v := range req.CustomFields {
-			encryptedCustomFields[k] = v
-		}
-
-		switch req.KeyType {
-		case model.SecretKeyTypeSecretKey:
-			// Encrypt secret_key field
-			if secretKeyVal, ok := req.CustomFields["secret_key"].(string); ok && secretKeyVal != "" {
-				encryptedSecretKey, err := s.rsaCrypto.EncryptString(secretKeyVal)
-				if err != nil {
-					s.logger.ErrorContext(ctx, "Failed to encrypt secret_key field",
-						logger.ErrorField(err))
-					return nil, errors.NewAppError(errors.CodeEncryptFailed)
-				}
-				encryptedCustomFields["secret_key"] = encryptedSecretKey
-			}
-
-		case model.SecretKeyTypeAccount:
-			// Encrypt password field
-			if password, ok := req.CustomFields["password"].(string); ok && password != "" {
-				encryptedPassword, err := s.rsaCrypto.EncryptString(password)
-				if err != nil {
-					s.logger.ErrorContext(ctx, "Failed to encrypt password field",
-						logger.ErrorField(err))
-					return nil, errors.NewAppError(errors.CodeEncryptFailed)
-				}
-				encryptedCustomFields["password"] = encryptedPassword
-			}
-
-		case model.SecretKeyTypeFile:
-			// Encrypt password field if provided
-			if password, ok := req.CustomFields["password"].(string); ok && password != "" {
-				encryptedPassword, err := s.rsaCrypto.EncryptString(password)
-				if err != nil {
-					s.logger.ErrorContext(ctx, "Failed to encrypt password field",
-						logger.ErrorField(err))
-					return nil, errors.NewAppError(errors.CodeEncryptFailed)
-				}
-				encryptedCustomFields["password"] = encryptedPassword
-			}
+		var err error
+		encryptedCustomFields, err = s.encryptCustomFields(ctx, req.KeyType, req.CustomFields)
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -404,10 +420,7 @@ func (s *secretKeyService) UpdateSecretKey(ctx context.Context, id, userID uint,
 		return nil, err
 	}
 
-	s.logger.InfoContext(ctx, "Secret key updated successfully",
-		logger.Uint("secret_key_id", id),
-		logger.Uint("user_id", userID))
-
+	s.logger.InfoContext(ctx, "Secret key updated successfully")
 	return response.ToSecretKeyResponse(secretKey), nil
 }
 
