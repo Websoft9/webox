@@ -4,7 +4,6 @@ import (
 	response "api-service/internal/dto/common"
 	"api-service/internal/dto/request"
 	"api-service/internal/interface/service"
-	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
 
 	"github.com/gin-gonic/gin"
@@ -15,20 +14,17 @@ type SystemConfigController struct {
 	SystemConfigService service.SystemConfigService
 	validator           *validator.Validate
 	logger              logger.Logger
-	i18n                *i18n.I18n
 }
 
 func NewSystemConfigController(
 	systemConfigService service.SystemConfigService,
 	validator *validator.Validate,
 	logger logger.Logger,
-	i18n *i18n.I18n,
 ) *SystemConfigController {
 	return &SystemConfigController{
 		SystemConfigService: systemConfigService,
 		validator:           validator,
 		logger:              logger,
-		i18n:                i18n,
 	}
 }
 

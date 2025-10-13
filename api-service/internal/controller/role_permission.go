@@ -121,7 +121,7 @@ func (c *RolePermissionController) ListRoles(ctx *gin.Context) {
 	var req request.ListRolesRequest
 
 	// Bind query parameters
-	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
+	if !BindAndValidateQuery(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
@@ -306,7 +306,7 @@ func (c *RolePermissionController) GetRoleUsers(ctx *gin.Context) {
 
 	var req response.PaginationRequest
 	// Bind query parameters
-	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
+	if !BindAndValidateQuery(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
@@ -476,7 +476,7 @@ func (c *RolePermissionController) ListPermissions(ctx *gin.Context) {
 	var req request.ListPermissionsRequest
 
 	// Bind query parameters
-	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
+	if !BindAndValidateQuery(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
@@ -505,7 +505,7 @@ func (c *RolePermissionController) GetPermissionTree(ctx *gin.Context) {
 	var req request.PermissionTreeRequest
 
 	// Bind query parameters
-	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
+	if !BindAndValidateQuery(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
@@ -541,7 +541,7 @@ func (c *RolePermissionController) GetPermissionRoles(ctx *gin.Context) {
 
 	var req response.PaginationRequest
 	// Bind query parameters
-	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
+	if !BindAndValidateQuery(ctx, &req, c.validator, c.logger) {
 		return
 	}
 

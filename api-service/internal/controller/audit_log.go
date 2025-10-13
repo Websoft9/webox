@@ -3,7 +3,6 @@ package controller
 import (
 	"api-service/internal/constants"
 	response "api-service/internal/dto/common"
-	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
 	"fmt"
 	"net/http"
@@ -22,7 +21,6 @@ type AuditLogController struct {
 	auditLogService service.AuditLogService
 	validator       *validator.Validate
 	logger          logger.Logger
-	i18n            *i18n.I18n
 }
 
 // NewAuditLogController creates audit log controller instance
@@ -30,13 +28,11 @@ func NewAuditLogController(
 	auditLogService service.AuditLogService,
 	validator *validator.Validate,
 	logger logger.Logger,
-	i18n *i18n.I18n,
 ) *AuditLogController {
 	return &AuditLogController{
 		auditLogService: auditLogService,
 		validator:       validator,
 		logger:          logger,
-		i18n:            i18n,
 	}
 }
 
@@ -80,7 +76,8 @@ func (c *AuditLogController) GetAuditLog(ctx *gin.Context) {
 // @Param start_time query string false "Start Time" format(date-time)
 // @Param end_time query string false "End Time" format(date-time)
 // @Param ip_address query string false "IP Address"
-// @Success 200 {object} response.AuditLogListResponse
+// @Param success query bool false "Success Status"
+// @Success 200 {object} common.PaginationResponse{items=[]response.AuditLogResponse}
 // @Failure 400 {object} common.APIResponse
 // @Failure 500 {object} common.APIResponse
 // @Router /api/v1/audit-logs [get]
@@ -98,34 +95,6 @@ func (c *AuditLogController) ListAuditLogs(ctx *gin.Context) {
 	}
 
 	response.SuccessWithData(ctx, result)
-}
-
-// GetAuditLogStatistics get audit log statistics
-// @Summary Get audit log statistics
-// @Description Get audit log statistical analysis data
-// @Tags Audit Log
-// @Security BearerAuth
-// @Param start_time query string false "Start Time" format(date-time)
-// @Param end_time query string false "End Time" format(date-time)
-// @Param group_by query string false "Group By" Enums(hour,day,week,month) default(day)
-// @Success 200 {object} response.AuditLogStatisticsResponse
-// @Failure 400 {object} common.APIResponse
-// @Failure 500 {object} common.APIResponse
-// @Router /api/v1/audit-logs/statistics [get]
-func (c *AuditLogController) GetAuditLogStatistics(ctx *gin.Context) {
-	var req request.AuditLogStatisticsRequest
-
-	if !BindAndValidateQuery(ctx, &req, c.validator, c.logger) {
-		return
-	}
-
-	statistics, err := c.auditLogService.GetStatistics(ctx.Request.Context(), &req)
-	if err != nil {
-		response.WithError(ctx, err)
-		return
-	}
-
-	response.SuccessWithData(ctx, statistics)
 }
 
 // ExportAuditLogs export audit logs
@@ -174,9 +143,9 @@ func generateExportFilename(format string) string {
 // getFileExtensionByFormat returns the correct file extension for the given format
 func getFileExtensionByFormat(format string) string {
 	switch format {
-	case constants.ExportFormatJson:
+	case constants.FormatJSON:
 		return ".json"
-	case constants.ExportFormatExcel:
+	case constants.FormatExcel:
 		return ".xlsx"
 	default:
 		return ".csv"
