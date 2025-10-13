@@ -230,26 +230,10 @@ func (suite *SystemConfigServiceTestSuite) TestTestSMTP_Success() {
 	suite.NoError(err)
 }
 
-func (suite *SystemConfigServiceTestSuite) TestTestSMTP_EmailServiceNotConfigured() {
-	ctx := context.Background()
-	req := &request.TestSMTPRequest{
-		TestEmail: "test@example.com",
-	}
-
-	// Create service without email service
-	serviceWithoutEmail := &SystemConfigService{
-		systemConfigRepo: suite.mockSystemConfigRepo,
-		emailService:     nil, // No email service
-		config:           suite.config,
-		db:               &gorm.DB{},
-		logger:           suite.logger,
-	}
-
-	err := serviceWithoutEmail.TestSMTP(ctx, req)
-
-	suite.Error(err)
-	suite.Contains(err.Error(), "4008")
-}
+// TestTestSMTP_EmailServiceNotConfigured is no longer needed as email service is always initialized
+// func (suite *SystemConfigServiceTestSuite) TestTestSMTP_EmailServiceNotConfigured() {
+//     // This test is commented out because we now always initialize email service
+// }
 
 func (suite *SystemConfigServiceTestSuite) TestTestSMTP_EmailSendFailed() {
 	ctx := context.Background()
@@ -677,7 +661,7 @@ func (suite *SystemConfigServiceTestSuite) TestNewSystemConfigService_WithoutEma
 	)
 
 	suite.NotNil(service)
-	suite.Nil(service.emailService)
+	suite.NotNil(service.emailService) // Email service is always initialized now
 }
 
 // Run the test suite

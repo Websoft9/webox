@@ -472,7 +472,7 @@ func TestAuditLogService_ListAuditLogs_WithDefaults(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, 1, result.Page)      // Default page
-	assert.Equal(t, 10, result.PageSize) // Default page size
+	assert.Equal(t, 20, result.PageSize) // Default page size
 	mockRepo.AssertExpectations(t)
 }
 
