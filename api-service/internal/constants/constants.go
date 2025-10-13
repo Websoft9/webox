@@ -404,10 +404,18 @@ const (
 	MaxSQLLogLength = 100
 )
 
+// Secret key file types
 const (
-	// Default limit for exporting all secret keys
-	DefaultExportPageSize = 1000
-	ExportFormatExcel     = "excel"
-	ExportFormatJson      = "json"
-	ExportFormatCsv       = "csv"
+	FileTypeKey = ".key" // Private key file
+	FileTypePem = ".pem" // PEM encoded certificate or key
+	FileTypeRsa = ".rsa" // RSA key file
+	FileTypeCrt = ".crt" // Certificate file
 )
+
+// Allowed secret file extensions
+var AllowedSecretFileExtensions = []string{
+	FileTypeKey,
+	FileTypePem,
+	FileTypeRsa,
+	FileTypeCrt,
+}

@@ -373,4 +373,9 @@ func setupSecretKeyRoutes(protected *gin.RouterGroup, secretKeyController *contr
 	secretKeys.GET("/:id/value", secretKeyController.GetSecretKeyValue) // GET /api/v1/secret-keys/{id}/value
 	secretKeys.PUT("/:id", secretKeyController.UpdateSecretKey)         // PUT /api/v1/secret-keys/{id}
 	secretKeys.DELETE("/:id", secretKeyController.DeleteSecretKey)      // DELETE /api/v1/secret-keys/{id}
+	// Secret key file management routes
+	secretKeyFileGroup := secretKeys.Group("/files")
+	secretKeyFileGroup.POST("/upload", secretKeyController.UploadSecretFile)
+	secretKeyFileGroup.GET("/download", secretKeyController.DownloadSecretFile)
+	secretKeyFileGroup.DELETE("/delete", secretKeyController.DeleteSecretFile)
 }

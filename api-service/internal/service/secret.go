@@ -6,6 +6,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"mime/multipart"
 	"os"
 	"time"
 
@@ -32,6 +33,7 @@ type secretKeyService struct {
 	logger        logger.Logger
 	i18n          *i18n.I18n
 	rsaCrypto     *crypto.RSACrypto
+	appConfig     *config.Config
 }
 
 // NewSecretKeyService creates a new secret key service
@@ -54,6 +56,7 @@ func NewSecretKeyService(
 		logger:        logger,
 		i18n:          i18n,
 		rsaCrypto:     rsaCrypto,
+		appConfig:     cfg,
 	}
 }
 
@@ -502,11 +505,11 @@ func (s *secretKeyService) ExportSecretKeys(ctx context.Context, req *request.Se
 	}
 
 	switch req.Format {
-	case constants.ExportFormatCsv:
+	case constants.FormatCSV:
 		return s.exportToCSV(secretKeys)
-	case constants.ExportFormatJson:
+	case constants.FormatJSON:
 		return s.exportToJSON(secretKeys)
-	case constants.ExportFormatExcel:
+	case constants.FormatExcel:
 		return s.exportToExcel(secretKeys)
 	default:
 		return nil, "", errors.NewAppError(errors.CodeValidationFailed)
@@ -719,4 +722,58 @@ func (s *secretKeyService) exportToJSON(secretKeys []*model.SecretKey) (data []b
 
 	filename = fmt.Sprintf("secret-keys-%s.json", time.Now().Format("20060102"))
 	return data, filename, nil
+}
+
+// UploadSecretFile uploads a secret key file
+func (s *secretKeyService) UploadSecretFile(ctx context.Context, file *multipart.FileHeader, fileType string, userID uint) (*response.SecretFileUploadResponse, error) {
+	s.logger.InfoContext(ctx, "Uploading secret file",
+		logger.String("filename", file.Filename),
+		logger.String("type", fileType),
+		logger.Uint("user_id", userID))
+
+	// TODO: 调用 common 文件服务上传文件
+	// 1. 验证文件类型
+	// 2. 验证文件大小
+	// 3. 生成唯一文件名
+	// 4. 保存文件到存储路径
+	// 5. 返回文件信息
+
+	// 占位符实现
+	return &response.SecretFileUploadResponse{
+		Filename:     "placeholder-" + file.Filename,
+		OriginalName: file.Filename,
+		FilePath:     "/home/appuser/data/placeholder-" + file.Filename,
+	}, nil
+}
+
+// DownloadSecretFile downloads a secret key file
+func (s *secretKeyService) DownloadSecretFile(ctx context.Context, filename string, userID uint) (filePath, originalName string, err error) {
+	s.logger.InfoContext(ctx, "Downloading secret file",
+		logger.String("filename", filename),
+		logger.Uint("user_id", userID))
+
+	// TODO: 调用 common 文件服务下载文件
+	// 1. 验证文件存在
+	// 2. 验证用户权限
+	// 3. 获取文件路径和原始文件名
+	// 4. 返回文件信息
+
+	// 占位符实现
+	return "/home/appuser/data/" + filename, filename, nil
+}
+
+// DeleteSecretFile deletes a secret key file
+func (s *secretKeyService) DeleteSecretFile(ctx context.Context, filename string, userID uint) error {
+	s.logger.InfoContext(ctx, "Deleting secret file",
+		logger.String("filename", filename),
+		logger.Uint("user_id", userID))
+
+	// TODO: 调用 common 文件服务删除文件
+	// 1. 验证文件存在
+	// 2. 验证用户权限（检查是否为文件所有者）
+	// 3. 删除文件
+	// 4. 记录审计日志
+
+	// 占位符实现
+	return nil
 }

@@ -96,3 +96,10 @@ func ToSecretKeyValueResponse(keyType model.SecretKeyType, customFields map[stri
 		ExpiresAt:    expiresAt,
 	}
 }
+
+// SecretFileUploadResponse represents the response for secret file upload
+type SecretFileUploadResponse struct {
+	Filename     string `json:"filename" example:"2345678ioasjhhdvgajdjknasd.key"`
+	OriginalName string `json:"original_name" example:"my-certificate.key"`
+	FilePath     string `json:"file_path" example:"/home/appuser/data/2345678ioasjhhdvgajdjknasd.key"`
+}
