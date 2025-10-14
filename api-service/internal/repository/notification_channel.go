@@ -41,7 +41,6 @@ func (r *notificationChannelRepository) GetByID(ctx context.Context, id uint) (*
 			return nil, errors.NewAppError(errors.CodeRecordNotFound)
 		}
 		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
-
 	}
 
 	return &channel, nil
