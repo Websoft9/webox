@@ -1,11 +1,14 @@
 package repository
 
 import (
+	"api-service/internal/constants"
 	"api-service/internal/dto/request"
 	"api-service/internal/interface/repository"
 	"api-service/internal/model"
 	"api-service/pkg/errors"
+	"api-service/pkg/i18n"
 	"context"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -23,7 +26,7 @@ func NewPermissionRepository(db *gorm.DB) repository.PermissionRepository {
 // Create creates a permission
 func (r *permissionRepository) Create(ctx context.Context, permission *model.Permission) error {
 	if err := r.db.WithContext(ctx).Create(permission).Error; err != nil {
-		return errors.WrapError(err, errors.CodeRecordCreateFailed, "failed to create permission")
+		return errors.NewAppErrorWrapError(err, errors.CodeRecordCreateFailed)
 	}
 	return nil
 }
@@ -34,9 +37,9 @@ func (r *permissionRepository) GetByID(ctx context.Context, id uint) (*model.Per
 	err := r.db.WithContext(ctx).Where("status != -1").First(&permission, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.NewAppErrorWithMessage(errors.CodeRecordNotFound, "permission not found")
+			return nil, errors.NewAppError(errors.CodeRecordNotFound)
 		}
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to get permission by ID")
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 	return &permission, nil
 }
@@ -47,9 +50,9 @@ func (r *permissionRepository) GetByCode(ctx context.Context, code string) (*mod
 	err := r.db.WithContext(ctx).Where("code = ? AND status != -1", code).First(&permission).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.NewAppErrorWithMessage(errors.CodeRecordNotFound, "permission not found")
+			return nil, errors.NewAppError(errors.CodeRecordNotFound)
 		}
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to get permission by code")
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 	return &permission, nil
 }
@@ -60,14 +63,14 @@ func (r *permissionRepository) Update(ctx context.Context, permission *model.Per
 	var existingPermission model.Permission
 	if err := r.db.WithContext(ctx).Where("status != -1").First(&existingPermission, permission.ID).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.NewAppErrorWithMessage(errors.CodeRecordNotFound, "permission not found")
+			return errors.NewAppError(errors.CodeRecordNotFound)
 		}
-		return errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to get permission for update")
+		return errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	// Check if permission is disabled
 	if existingPermission.Status == 0 {
-		return errors.NewAppErrorWithMessage(errors.CodeRecordIsDisabled, "cannot update disabled permission")
+		return errors.NewAppError(errors.CodeRecordIsDisabled)
 	}
 
 	result := r.db.WithContext(ctx).Model(permission).
@@ -75,11 +78,11 @@ func (r *permissionRepository) Update(ctx context.Context, permission *model.Per
 		Updates(permission)
 
 	if result.Error != nil {
-		return errors.WrapError(result.Error, errors.CodeRecordUpdateFailed, "failed to update permission")
+		return errors.NewAppErrorWrapError(result.Error, errors.CodeRecordUpdateFailed)
 	}
 
 	if result.RowsAffected == 0 {
-		return errors.NewAppErrorWithMessage(errors.CodeRecordNoAffected, "no rows affected")
+		return errors.NewAppError(errors.CodeRecordNoAffected)
 	}
 
 	return nil
@@ -91,40 +94,40 @@ func (r *permissionRepository) Delete(ctx context.Context, id uint) error {
 	var permission model.Permission
 	if err := r.db.WithContext(ctx).First(&permission, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.NewAppErrorWithMessage(errors.CodeRecordNotFound, "permission not found")
+			return errors.NewAppError(errors.CodeRecordNotFound)
 		}
-		return errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to get permission")
+		return errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	// Check if already deleted
 	if permission.Status == -1 {
-		return errors.NewAppErrorWithMessage(errors.CodeRecordDeleteFailed, "permission already deleted")
+		return errors.NewAppError(errors.CodeRecordDeleteFailed)
 	}
 
 	// Check if there are associated roles
 	var roleCount int64
 	if err := r.db.WithContext(ctx).Model(&model.RolePermission{}).
 		Where("permission_code = ?", id).Count(&roleCount).Error; err != nil {
-		return errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to check permission roles")
+		return errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	if roleCount > 0 {
-		return errors.NewAppErrorWithMessage(errors.CodeRecordDeleteFailed, "cannot delete permission with associated roles")
+		return errors.NewAppError(errors.CodeRecordDeleteFailed)
 	}
 
 	if permission.IsSystem {
-		return errors.NewAppErrorWithMessage(errors.CodeRecordDeleteDenied, "cannot delete system permission")
+		return errors.NewAppError(errors.CodeRecordDeleteDenied)
 	}
 
 	// Check if there are child permissions that are not deleted
 	var childCount int64
 	if err := r.db.WithContext(ctx).Model(&model.Permission{}).
 		Where("parent_code = ? AND status != -1", id).Count(&childCount).Error; err != nil {
-		return errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to check child permissions")
+		return errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	if childCount > 0 {
-		return errors.NewAppErrorWithMessage(errors.CodeRecordDeleteFailed, "cannot delete permission with active child permissions")
+		return errors.NewAppError(errors.CodeRecordDeleteFailed)
 	}
 
 	// Perform soft delete by setting status to -1
@@ -133,27 +136,37 @@ func (r *permissionRepository) Delete(ctx context.Context, id uint) error {
 		Update("status", -1)
 
 	if result.Error != nil {
-		return errors.WrapError(result.Error, errors.CodeRecordDeleteFailed, "failed to delete permission")
+		return errors.NewAppErrorWrapError(result.Error, errors.CodeRecordDeleteFailed)
 	}
 
 	if result.RowsAffected == 0 {
-		return errors.NewAppErrorWithMessage(errors.CodeRecordNoAffected, "no rows affected")
+		return errors.NewAppError(errors.CodeRecordNoAffected)
 	}
 
 	return nil
 }
 
 // List retrieves a list of permissions
-func (r *permissionRepository) List(ctx context.Context, req *request.ListPermissionsRequest) ([]*model.Permission, int64, error) {
+func (r *permissionRepository) List(ctx context.Context, req *request.ListPermissionsRequest, lang string) ([]*model.Permission, int64, error) {
 	var permissions []*model.Permission
 	var total int64
 
 	query := r.db.WithContext(ctx).Model(&model.Permission{}).Where("status != -1")
 
-	// Build query conditions
+	// Build query conditions with translation support
 	if req.Search != "" {
-		query = query.Where("name LIKE ? OR code LIKE ? OR description LIKE ?",
-			"%"+req.Search+"%", "%"+req.Search+"%", "%"+req.Search+"%")
+		// Find permission codes that match the translated names
+		matchedCodes, err := r.findMatchingPermissionCodes(ctx, req.Search, lang)
+		if err != nil {
+			// If translation matching fails, fallback to original search
+			query = query.Where("code LIKE ? OR description LIKE ?", "%"+req.Search+"%", "%"+req.Search+"%")
+		} else if len(matchedCodes) > 0 {
+			// Use matched codes from translation, also include code and description search
+			query = query.Where("code IN (?) OR code LIKE ? OR description LIKE ?", matchedCodes, "%"+req.Search+"%", "%"+req.Search+"%")
+		} else {
+			// No translation matches found, fallback to original search
+			query = query.Where("code LIKE ? OR description LIKE ?", "%"+req.Search+"%", "%"+req.Search+"%")
+		}
 	}
 
 	if req.Module != "" {
@@ -169,26 +182,26 @@ func (r *permissionRepository) List(ctx context.Context, req *request.ListPermis
 	}
 
 	if req.StartTime != "" && req.EndTime != "" {
-		startTime, _ := time.Parse("2006-01-02 15:04:05", req.StartTime)
-		endTime, _ := time.Parse("2006-01-02 15:04:05", req.EndTime)
+		startTime, _ := time.Parse(constants.DefaultTimeFormat, req.StartTime)
+		endTime, _ := time.Parse(constants.DefaultTimeFormat, req.EndTime)
 		query = query.Where("updated_at BETWEEN ? AND ?", startTime, endTime)
 	}
 
 	// Get total count
 	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to count permissions")
+		return nil, 0, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	// Paginated query
 	offset := req.GetOffset()
 	limit := req.GetPageSize()
 
-	err := query.Order("module ASC, sort_order ASC, created_at DESC").
+	err := query.Order(req.GetSortOrder()).
 		Offset(offset).Limit(limit).
 		Find(&permissions).Error
 
 	if err != nil {
-		return nil, 0, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to list permissions")
+		return nil, 0, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	// Get statistical information
@@ -247,7 +260,7 @@ func (r *permissionRepository) getAllPermissions(query *gorm.DB) ([]*model.Permi
 	var permissions []*model.Permission
 	err := query.Order("module ASC, sort_order ASC, created_at ASC").Find(&permissions).Error
 	if err != nil {
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to get permission tree")
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 	return permissions, nil
 }
@@ -282,7 +295,7 @@ func (r *permissionRepository) getScopedPermissions(query *gorm.DB, scope string
 	scopeQuery := query.Where("scope = ?", scope)
 	err := scopeQuery.Order("module ASC, sort_order ASC, created_at ASC").Find(&scopePermissions).Error
 	if err != nil {
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to get scoped permissions")
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 	return scopePermissions, nil
 }
@@ -322,7 +335,7 @@ func (r *permissionRepository) getParentPermissions(ctx context.Context, baseQue
 
 	err := parentQuery.Order("module ASC, sort_order ASC, created_at ASC").Find(&parentPermissions).Error
 	if err != nil {
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to get parent permissions")
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	return parentPermissions, nil
@@ -435,9 +448,9 @@ func (r *permissionRepository) GetWithRoles(ctx context.Context, id uint) (*mode
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.NewAppErrorWithMessage(errors.CodeRecordNotFound, "permission not found")
+			return nil, errors.NewAppError(errors.CodeRecordNotFound)
 		}
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to get permission with roles")
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	return &permission, nil
@@ -453,7 +466,7 @@ func (r *permissionRepository) GetChildren(ctx context.Context, parentID uint) (
 		Find(&permissions).Error
 
 	if err != nil {
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to get child permissions")
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	return permissions, nil
@@ -471,7 +484,7 @@ func (r *permissionRepository) CountRoles(ctx context.Context, permissionID uint
 		Where("permission_code = ? AND status = 1", permissionID).Count(&count).Error
 
 	if err != nil {
-		return 0, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to count permission roles")
+		return 0, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	return count, nil
@@ -488,7 +501,7 @@ func (r *permissionRepository) BatchUpdateStatus(ctx context.Context, ids []uint
 		Update("status", status)
 
 	if result.Error != nil {
-		return errors.WrapError(result.Error, errors.CodeRecordUpdateFailed, "failed to batch update permission status")
+		return errors.NewAppErrorWrapError(result.Error, errors.CodeRecordUpdateFailed)
 	}
 
 	return nil
@@ -504,7 +517,7 @@ func (r *permissionRepository) GetByIDs(ctx context.Context, ids []uint) ([]*mod
 	err := r.db.WithContext(ctx).Where("id IN ? AND status != -1", ids).Find(&permissions).Error
 
 	if err != nil {
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to get permissions by IDs")
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	return permissions, nil
@@ -522,7 +535,7 @@ func (r *permissionRepository) GetUserPermissions(ctx context.Context, userID ui
 		Find(&permissions).Error
 
 	if err != nil {
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to get user permissions")
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	return permissions, nil
@@ -540,7 +553,7 @@ func (r *permissionRepository) CheckUserPermission(ctx context.Context, userID u
 		Count(&count).Error
 
 	if err != nil {
-		return false, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to check user permission")
+		return false, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	return count > 0, nil
@@ -549,7 +562,7 @@ func (r *permissionRepository) CheckUserPermission(ctx context.Context, userID u
 // CreateWithTx creates a permission within a transaction
 func (r *permissionRepository) CreateWithTx(ctx context.Context, tx *gorm.DB, permission *model.Permission) error {
 	if err := tx.WithContext(ctx).Create(permission).Error; err != nil {
-		return errors.WrapError(err, errors.CodeRecordCreateFailed, "failed to create permission in transaction")
+		return errors.NewAppErrorWrapError(err, errors.CodeRecordCreateFailed)
 	}
 	return nil
 }
@@ -560,14 +573,14 @@ func (r *permissionRepository) UpdateWithTx(ctx context.Context, tx *gorm.DB, pe
 	var existingPermission model.Permission
 	if err := tx.WithContext(ctx).Where("status != -1").First(&existingPermission, permission.ID).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.NewAppErrorWithMessage(errors.CodeRecordNotFound, "permission not found")
+			return errors.NewAppError(errors.CodeRecordNotFound)
 		}
-		return errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to get permission for update in transaction")
+		return errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	// Check if permission is disabled
 	if existingPermission.Status == 0 {
-		return errors.NewAppErrorWithMessage(errors.CodeRecordIsDisabled, "cannot update disabled permission")
+		return errors.NewAppError(errors.CodeRecordIsDisabled)
 	}
 
 	result := tx.WithContext(ctx).Model(permission).
@@ -575,12 +588,48 @@ func (r *permissionRepository) UpdateWithTx(ctx context.Context, tx *gorm.DB, pe
 		Updates(permission)
 
 	if result.Error != nil {
-		return errors.WrapError(result.Error, errors.CodeRecordUpdateFailed, "failed to update permission in transaction")
+		return errors.NewAppErrorWrapError(result.Error, errors.CodeRecordUpdateFailed)
 	}
 
 	if result.RowsAffected == 0 {
-		return errors.NewAppErrorWithMessage(errors.CodeRecordNoAffected, "no rows affected in transaction")
+		return errors.NewAppError(errors.CodeRecordNoAffected)
 	}
 
 	return nil
+}
+
+// findMatchingPermissionCodes finds permission codes that match the search term after translation
+func (r *permissionRepository) findMatchingPermissionCodes(ctx context.Context, searchTerm, lang string) ([]string, error) {
+	// Create a struct to hold only the fields we need
+	type PermissionForTranslation struct {
+		Name string `gorm:"column:name"`
+		Code string `gorm:"column:code"`
+	}
+
+	var permissions []PermissionForTranslation
+	err := r.db.WithContext(ctx).Model(&model.Permission{}).
+		Select("name, code").
+		Where("status != -1").
+		Order("id").
+		Find(&permissions).Error
+
+	if err != nil {
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
+	}
+
+	var matchedCodes []string
+	searchTermLower := strings.ToLower(searchTerm)
+
+	for _, perm := range permissions {
+		// Translate the permission name using i18n
+		translatedName := i18n.T(perm.Name, lang)
+		translatedNameLower := strings.ToLower(translatedName)
+
+		// Check if translated name contains the search term
+		if strings.Contains(translatedNameLower, searchTermLower) {
+			matchedCodes = append(matchedCodes, perm.Code)
+		}
+	}
+
+	return matchedCodes, nil
 }

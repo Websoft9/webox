@@ -1,5 +1,7 @@
 package request
 
+import "api-service/internal/dto/common"
+
 // UserProfileUpdateRequest request to update user profile
 type UserProfileUpdateRequest struct {
 	Nickname  *string `json:"nickname" example:"John Doe"`
@@ -20,8 +22,8 @@ type ProfileChangePasswordRequest struct {
 
 // LoginHistoryRequest paging request for login history
 type LoginHistoryRequest struct {
-	Page     int `form:"page" binding:"min=0"`      // Page number
-	PageSize int `form:"page_size" binding:"min=0"` // Items per page
+	common.PaginationRequest
+	common.SortRequest
 }
 
 // NotificationSettingsRequest notification settings request

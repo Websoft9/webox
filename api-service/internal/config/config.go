@@ -132,7 +132,11 @@ type AuditLogConfig struct {
 
 // CryptoConfig encryption configuration
 type SecurityConfig struct {
-	AesKey string `mapstructure:"aes_key"`
+	AesKey            string `mapstructure:"aes_key"`
+	RSAPrivateKey     string `mapstructure:"rsa_private_key"`
+	RSAPublicKey      string `mapstructure:"rsa_public_key"`
+	RSAPrivateKeyFile string `mapstructure:"rsa_private_key_file"`
+	RSAPublicKeyFile  string `mapstructure:"rsa_public_key_file"`
 }
 
 func Load() (*Config, error) {
@@ -254,4 +258,9 @@ func setDefaults() {
 
 	// Crypto defaults
 	viper.SetDefault("security.aes_key", "websoft9-default-encryption-key-change-in-production")
+	// RSA Crypto defaults
+	viper.SetDefault("security.rsa_private_key", "")
+	viper.SetDefault("security.rsa_public_key", "")
+	viper.SetDefault("security.rsa_private_key_file", "")
+	viper.SetDefault("security.rsa_public_key_file", "")
 }

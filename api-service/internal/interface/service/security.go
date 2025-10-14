@@ -1,6 +1,7 @@
 package service
 
 import (
+	"api-service/internal/dto/common"
 	"api-service/internal/dto/request"
 	"api-service/internal/dto/response"
 	"context"
@@ -15,9 +16,9 @@ type RoleService interface {
 	DeleteRole(ctx context.Context, id uint) error
 
 	// Query operations
-	ListRoles(ctx context.Context, req *request.ListRolesRequest) (*response.RoleListResponse, error)
+	ListRoles(ctx context.Context, req *request.ListRolesRequest) (*common.PaginationResponse, error)
 	GetRoleWithPermissions(ctx context.Context, id uint) (*response.RoleResponse, error)
-	GetRoleUsers(ctx context.Context, id uint, page, pageSize int) (*response.RoleListResponse, error)
+	GetRoleUsers(ctx context.Context, id uint, req *common.PaginationRequest) (*common.PaginationResponse, error)
 
 	// Permission management
 	AssignPermissions(ctx context.Context, roleID uint, req *request.RolePermissionRequest, grantedBy uint) error
@@ -36,9 +37,9 @@ type PermissionService interface {
 	DeletePermission(ctx context.Context, id uint) error
 
 	// Query operations
-	ListPermissions(ctx context.Context, req *request.ListPermissionsRequest) (*response.PermissionListResponse, error)
+	ListPermissions(ctx context.Context, req *request.ListPermissionsRequest) (*common.PaginationResponse, error)
 	GetPermissionTree(ctx context.Context, req *request.PermissionTreeRequest) ([]*response.PermissionTreeResponse, error)
-	GetPermissionRoles(ctx context.Context, id uint, page, pageSize int) (*response.RoleListResponse, error)
+	GetPermissionRoles(ctx context.Context, id uint, req *common.PaginationRequest) (*common.PaginationResponse, error)
 
 	// Permission verification
 	CheckUserPermission(ctx context.Context, userID uint, resource, action string) (bool, error)

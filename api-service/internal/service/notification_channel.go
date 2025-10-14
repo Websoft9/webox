@@ -2,24 +2,21 @@ package service
 
 import (
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"net/smtp"
-	"strings"
 	"time"
 
 	"gorm.io/gorm"
 
 	"api-service/internal/constants"
+	"api-service/internal/dto/common"
 	"api-service/internal/dto/request"
 	"api-service/internal/dto/response"
 	"api-service/internal/interface/repository"
 	"api-service/internal/interface/service"
 	"api-service/internal/model"
+	"api-service/pkg/email"
 	"api-service/pkg/errors"
-	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
 )
 
@@ -31,21 +28,21 @@ const (
 )
 
 type notificationChannelService struct {
-	channelRepo repository.NotificationChannelRepository
-	logger      logger.Logger
-	i18n        *i18n.I18n
+	channelRepo  repository.NotificationChannelRepository
+	logger       logger.Logger
+	emailService email.EmailService
 }
 
 // NewNotificationChannelService creates a new notification channel service instance
 func NewNotificationChannelService(
 	channelRepo repository.NotificationChannelRepository,
 	logger logger.Logger,
-	i18n *i18n.I18n,
+	emailService email.EmailService,
 ) service.NotificationChannelService {
 	return &notificationChannelService{
-		channelRepo: channelRepo,
-		logger:      logger,
-		i18n:        i18n,
+		channelRepo:  channelRepo,
+		logger:       logger,
+		emailService: emailService,
 	}
 }
 
@@ -77,7 +74,7 @@ func modelToResponse(channel *model.NotificationChannelConfig) response.Notifica
 func (s *notificationChannelService) GetChannelList(
 	ctx context.Context,
 	req *request.GetNotificationChannelListRequest,
-) (*response.NotificationChannelListResponse, error) {
+) (*common.PaginationResponse, error) {
 	s.logger.InfoContext(ctx, "Getting notification channel list",
 		logger.String("service", "notification_channel"),
 		logger.String("operation", "GetChannelList"),
@@ -88,7 +85,7 @@ func (s *notificationChannelService) GetChannelList(
 	channels, total, err := s.channelRepo.GetList(ctx, req)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to get notification channels from repository", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, s.i18n.T(ctx, "notification.channel.list_failed"))
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	// Convert to response format
@@ -100,20 +97,21 @@ func (s *notificationChannelService) GetChannelList(
 	// Calculate total pages
 	totalPages := int((total + int64(req.PageSize) - 1) / int64(req.PageSize))
 
-	return &response.NotificationChannelListResponse{
-		Page:       req.Page,
-		PageSize:   req.PageSize,
+	result := &common.PaginationResponse{
+		Page:       req.GetPage(),
+		PageSize:   req.GetPageSize(),
 		Total:      total,
 		TotalPages: totalPages,
 		Items:      items,
-	}, nil
+	}
+	return result, nil
 }
 
 // GetChannelByCode retrieves a specific notification channel by code
 func (s *notificationChannelService) GetChannelByCode(
 	ctx context.Context,
 	code string,
-) (*response.NotificationChannelDetailResponse, error) {
+) (*response.NotificationChannelResponse, error) {
 	s.logger.InfoContext(ctx, "Getting notification channel by code",
 		logger.String("service", "notification_channel"),
 		logger.String("operation", "GetChannelByCode"),
@@ -123,17 +121,14 @@ func (s *notificationChannelService) GetChannelByCode(
 	channel, err := s.channelRepo.GetByCode(ctx, code)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.NewAppError(errors.CodeRecordNotFound, s.i18n.T(ctx, "notification.channel.not_found"))
+			return nil, errors.NewAppError(errors.CodeRecordNotFound)
 		}
 		s.logger.ErrorContext(ctx, "Failed to get notification channel from repository", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, s.i18n.T(ctx, "notification.channel.get_failed"))
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
-	return &response.NotificationChannelDetailResponse{
-		NotificationChannelResponse: modelToResponse(channel),
-		// TODO: Add owner name lookup if needed
-		OwnerName: nil,
-	}, nil
+	response := modelToResponse(channel)
+	return &response, nil
 }
 
 // CreateEmailChannel creates a new email notification channel
@@ -141,7 +136,7 @@ func (s *notificationChannelService) CreateEmailChannel(
 	ctx context.Context,
 	req *request.CreateEmailChannelRequest,
 	userID uint,
-) (*response.NotificationChannelDetailResponse, error) {
+) (*response.NotificationChannelResponse, error) {
 	s.logger.InfoContext(ctx, "Creating email notification channel",
 		logger.String("service", "notification_channel"),
 		logger.String("operation", "CreateEmailChannel"),
@@ -152,10 +147,10 @@ func (s *notificationChannelService) CreateEmailChannel(
 	exists, err := s.channelRepo.CheckCodeExists(ctx, req.Code)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to check code existence", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, s.i18n.T(ctx, "notification.channel.check_code_failed"))
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 	if exists {
-		return nil, errors.NewAppError(errors.CodeResourceAlreadyExists, s.i18n.T(ctx, "notification.channel.code_exists"))
+		return nil, errors.NewAppError(errors.CodeResourceAlreadyExists)
 	}
 
 	// Create email config - convert to map for storage
@@ -178,13 +173,13 @@ func (s *notificationChannelService) CreateEmailChannel(
 	configBytes, err := json.Marshal(emailConfig)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to marshal email config", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "notification.channel.config_marshal_failed"))
+		return nil, errors.NewAppError(errors.CodeInternalError)
 	}
 
-	var channelConfig model.JSONChannelConfig
+	var channelConfig model.JSON
 	if err := json.Unmarshal(configBytes, &channelConfig); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to unmarshal to JSONChannelConfig", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "notification.channel.config_convert_failed"))
+		return nil, errors.NewAppError(errors.CodeInternalError)
 	}
 
 	// Create channel model
@@ -201,7 +196,7 @@ func (s *notificationChannelService) CreateEmailChannel(
 	// Save to repository
 	if err := s.channelRepo.Create(ctx, channel); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to create email channel in repository", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeRecordCreateFailed, s.i18n.T(ctx, "notification.channel.create_failed"))
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordCreateFailed)
 	}
 
 	s.logger.InfoContext(ctx, "Email notification channel created successfully",
@@ -209,9 +204,17 @@ func (s *notificationChannelService) CreateEmailChannel(
 		logger.Uint("channel_id", channel.ID))
 
 	// Return response in standard format (consistent with list and detail)
-	return &response.NotificationChannelDetailResponse{
-		NotificationChannelResponse: modelToResponse(channel),
-		OwnerName:                   nil, // TODO: Add owner name lookup if needed
+	return &response.NotificationChannelResponse{
+		ID:            channel.ID,
+		Code:          channel.Code,
+		Name:          channel.Name,
+		Description:   channel.Description,
+		ChannelType:   channel.ChannelType,
+		ChannelConfig: channel.ChannelConfig,
+		OwnerID:       channel.OwnerID,
+		Status:        channel.Status,
+		CreatedAt:     channel.CreatedAt,
+		UpdatedAt:     channel.UpdatedAt,
 	}, nil
 }
 
@@ -220,7 +223,7 @@ func (s *notificationChannelService) CreateWebhookChannel(
 	ctx context.Context,
 	req *request.CreateWebhookChannelRequest,
 	userID uint,
-) (*response.NotificationChannelDetailResponse, error) {
+) (*response.NotificationChannelResponse, error) {
 	s.logger.InfoContext(ctx, "Creating webhook notification channel",
 		logger.String("service", "notification_channel"),
 		logger.String("operation", "CreateWebhookChannel"),
@@ -231,10 +234,10 @@ func (s *notificationChannelService) CreateWebhookChannel(
 	exists, err := s.channelRepo.CheckCodeExists(ctx, req.Code)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to check code existence", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, s.i18n.T(ctx, "notification.channel.check_code_failed"))
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 	if exists {
-		return nil, errors.NewAppError(errors.CodeResourceAlreadyExists, s.i18n.T(ctx, "notification.channel.code_exists"))
+		return nil, errors.NewAppError(errors.CodeResourceAlreadyExists)
 	}
 
 	// Create webhook config - convert to map for storage
@@ -254,13 +257,13 @@ func (s *notificationChannelService) CreateWebhookChannel(
 	configBytes, err := json.Marshal(webhookConfig)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to marshal webhook config", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "notification.channel.config_marshal_failed"))
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeInternalError)
 	}
 
-	var channelConfig model.JSONChannelConfig
+	var channelConfig model.JSON
 	if err := json.Unmarshal(configBytes, &channelConfig); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to unmarshal to JSONChannelConfig", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "notification.channel.config_convert_failed"))
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeInternalError)
 	}
 
 	// Create channel model
@@ -277,17 +280,24 @@ func (s *notificationChannelService) CreateWebhookChannel(
 	// Save to repository
 	if err := s.channelRepo.Create(ctx, channel); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to create webhook channel in repository", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeRecordCreateFailed, s.i18n.T(ctx, "notification.channel.create_failed"))
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordCreateFailed)
 	}
 
 	s.logger.InfoContext(ctx, "Webhook notification channel created successfully",
 		logger.String("code", req.Code),
 		logger.Uint("channel_id", channel.ID))
 
-	// Return response in standard format (consistent with list and detail)
-	return &response.NotificationChannelDetailResponse{
-		NotificationChannelResponse: modelToResponse(channel),
-		OwnerName:                   nil, // TODO: Add owner name lookup if needed
+	return &response.NotificationChannelResponse{
+		ID:            channel.ID,
+		Code:          channel.Code,
+		Name:          channel.Name,
+		Description:   channel.Description,
+		ChannelType:   channel.ChannelType,
+		ChannelConfig: channel.ChannelConfig,
+		OwnerID:       channel.OwnerID,
+		Status:        channel.Status,
+		CreatedAt:     channel.CreatedAt,
+		UpdatedAt:     channel.UpdatedAt,
 	}, nil
 }
 
@@ -344,7 +354,7 @@ func (s *notificationChannelService) UpdateEmailChannel(
 	code string,
 	req *request.UpdateEmailChannelRequest,
 	userID uint,
-) (*response.NotificationChannelDetailResponse, error) {
+) (*response.NotificationChannelResponse, error) {
 	s.logger.InfoContext(ctx, "Updating email notification channel",
 		logger.String("service", "notification_channel"),
 		logger.String("operation", "UpdateEmailChannel"),
@@ -355,20 +365,20 @@ func (s *notificationChannelService) UpdateEmailChannel(
 	channel, err := s.channelRepo.GetByCode(ctx, code)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.NewAppError(errors.CodeRecordNotFound, s.i18n.T(ctx, "notification.channel.not_found"))
+			return nil, errors.NewAppError(errors.CodeRecordNotFound)
 		}
 		s.logger.ErrorContext(ctx, "Failed to get notification channel", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, s.i18n.T(ctx, "notification.channel.get_failed"))
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	// Check if user owns this channel
 	if channel.OwnerID != userID {
-		return nil, errors.NewAppError(errors.CodeAccessDenied, s.i18n.T(ctx, "common.access_denied"))
+		return nil, errors.NewAppError(errors.CodeAccessDenied)
 	}
 
 	// Check if channel is email type
 	if channel.ChannelType != constants.NotificationChannelEmail {
-		return nil, errors.NewAppError(errors.CodeValidationFailed, s.i18n.T(ctx, "notification.channel.invalid_type"))
+		return nil, errors.NewAppError(errors.CodeValidationFailed)
 	}
 
 	// Create updated email config (merge with existing config)
@@ -396,13 +406,13 @@ func (s *notificationChannelService) UpdateEmailChannel(
 	configBytes, err := json.Marshal(emailConfig)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to marshal email config", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "notification.channel.config_marshal_failed"))
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeInternalError)
 	}
 
-	var channelConfig model.JSONChannelConfig
+	var channelConfig model.JSON
 	if err := json.Unmarshal(configBytes, &channelConfig); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to unmarshal to JSONChannelConfig", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "notification.channel.config_convert_failed"))
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeInternalError)
 	}
 
 	channel.ChannelConfig = channelConfig
@@ -410,7 +420,7 @@ func (s *notificationChannelService) UpdateEmailChannel(
 	// Update in repository
 	if err := s.channelRepo.Update(ctx, channel); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to update email channel in repository", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeRecordUpdateFailed, s.i18n.T(ctx, "notification.channel.update_failed"))
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordUpdateFailed)
 	}
 
 	s.logger.InfoContext(ctx, "Email notification channel updated successfully",
@@ -418,9 +428,17 @@ func (s *notificationChannelService) UpdateEmailChannel(
 		logger.Uint("channel_id", channel.ID))
 
 	// Return response in standard format (consistent with list and detail)
-	return &response.NotificationChannelDetailResponse{
-		NotificationChannelResponse: modelToResponse(channel),
-		OwnerName:                   nil, // TODO: Add owner name lookup if needed
+	return &response.NotificationChannelResponse{
+		ID:            channel.ID,
+		Code:          channel.Code,
+		Name:          channel.Name,
+		Description:   channel.Description,
+		ChannelType:   channel.ChannelType,
+		ChannelConfig: channel.ChannelConfig,
+		OwnerID:       channel.OwnerID,
+		Status:        channel.Status,
+		CreatedAt:     channel.CreatedAt,
+		UpdatedAt:     channel.UpdatedAt,
 	}, nil
 }
 
@@ -468,7 +486,7 @@ func (s *notificationChannelService) UpdateWebhookChannel(
 	code string,
 	req *request.UpdateWebhookChannelRequest,
 	userID uint,
-) (*response.NotificationChannelDetailResponse, error) {
+) (*response.NotificationChannelResponse, error) {
 	s.logger.InfoContext(ctx, "Updating webhook notification channel",
 		logger.String("service", "notification_channel"),
 		logger.String("operation", "UpdateWebhookChannel"),
@@ -479,20 +497,20 @@ func (s *notificationChannelService) UpdateWebhookChannel(
 	channel, err := s.channelRepo.GetByCode(ctx, code)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.NewAppError(errors.CodeRecordNotFound, s.i18n.T(ctx, "notification.channel.not_found"))
+			return nil, errors.NewAppError(errors.CodeRecordNotFound)
 		}
 		s.logger.ErrorContext(ctx, "Failed to get notification channel", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, s.i18n.T(ctx, "notification.channel.get_failed"))
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	// Check if user owns this channel
 	if channel.OwnerID != userID {
-		return nil, errors.NewAppError(errors.CodeAccessDenied, s.i18n.T(ctx, "common.access_denied"))
+		return nil, errors.NewAppError(errors.CodeAccessDenied)
 	}
 
 	// Check if channel is webhook type
 	if channel.ChannelType != constants.NotificationChannelWebhook {
-		return nil, errors.NewAppError(errors.CodeValidationFailed, s.i18n.T(ctx, "notification.channel.invalid_type"))
+		return nil, errors.NewAppError(errors.CodeValidationFailed)
 	}
 
 	// Create updated webhook config (merge with existing config)
@@ -520,13 +538,13 @@ func (s *notificationChannelService) UpdateWebhookChannel(
 	configBytes, err := json.Marshal(webhookConfig)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to marshal webhook config", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "notification.channel.config_marshal_failed"))
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeInternalError)
 	}
 
-	var channelConfig model.JSONChannelConfig
+	var channelConfig model.JSON
 	if err := json.Unmarshal(configBytes, &channelConfig); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to unmarshal to JSONChannelConfig", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, s.i18n.T(ctx, "notification.channel.config_convert_failed"))
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeInternalError)
 	}
 
 	channel.ChannelConfig = channelConfig
@@ -534,7 +552,7 @@ func (s *notificationChannelService) UpdateWebhookChannel(
 	// Update in repository
 	if err := s.channelRepo.Update(ctx, channel); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to update webhook channel in repository", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeRecordUpdateFailed, s.i18n.T(ctx, "notification.channel.update_failed"))
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordUpdateFailed)
 	}
 
 	s.logger.InfoContext(ctx, "Webhook notification channel updated successfully",
@@ -542,9 +560,17 @@ func (s *notificationChannelService) UpdateWebhookChannel(
 		logger.Uint("channel_id", channel.ID))
 
 	// Return response in standard format (consistent with list and detail)
-	return &response.NotificationChannelDetailResponse{
-		NotificationChannelResponse: modelToResponse(channel),
-		OwnerName:                   nil, // TODO: Add owner name lookup if needed
+	return &response.NotificationChannelResponse{
+		ID:            channel.ID,
+		Code:          channel.Code,
+		Name:          channel.Name,
+		Description:   channel.Description,
+		ChannelType:   channel.ChannelType,
+		ChannelConfig: channel.ChannelConfig,
+		OwnerID:       channel.OwnerID,
+		Status:        channel.Status,
+		CreatedAt:     channel.CreatedAt,
+		UpdatedAt:     channel.UpdatedAt,
 	}, nil
 }
 
@@ -564,21 +590,21 @@ func (s *notificationChannelService) DeleteChannel(
 	channel, err := s.channelRepo.GetByCode(ctx, code)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.NewAppError(errors.CodeRecordNotFound, s.i18n.T(ctx, "notification.channel.not_found"))
+			return errors.NewAppError(errors.CodeRecordNotFound)
 		}
 		s.logger.ErrorContext(ctx, "Failed to get notification channel", logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeRecordQueryFailed, s.i18n.T(ctx, "notification.channel.get_failed"))
+		return errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	// Check if user owns this channel
 	if channel.OwnerID != userID {
-		return errors.NewAppError(errors.CodeAccessDenied, s.i18n.T(ctx, "common.access_denied"))
+		return errors.NewAppError(errors.CodeAccessDenied)
 	}
 
 	// Delete the channel
 	if err := s.channelRepo.Delete(ctx, channel.ID); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to delete notification channel", logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeRecordDeleteFailed, s.i18n.T(ctx, "notification.channel.delete_failed"))
+		return errors.NewAppErrorWrapError(err, errors.CodeRecordDeleteFailed)
 	}
 
 	s.logger.InfoContext(ctx, "Notification channel deleted successfully",
@@ -591,7 +617,7 @@ func (s *notificationChannelService) DeleteChannel(
 func (s *notificationChannelService) TestEmailChannel(
 	ctx context.Context,
 	req *request.TestEmailChannelRequest,
-) (*response.TestChannelResponse, error) {
+) error {
 	s.logger.InfoContext(ctx, "Testing email notification channel",
 		logger.String("service", "notification_channel"),
 		logger.String("operation", "TestEmailChannel"),
@@ -601,42 +627,15 @@ func (s *notificationChannelService) TestEmailChannel(
 	channel, err := s.channelRepo.GetByCode(ctx, req.Code)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.NewAppError(errors.CodeRecordNotFound, s.i18n.T(ctx, "notification.channel.not_found"))
+			return errors.NewAppError(errors.CodeRecordNotFound)
 		}
 		s.logger.ErrorContext(ctx, "Failed to get notification channel", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, s.i18n.T(ctx, "notification.channel.get_failed"))
+		return errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	// Check if channel is email type
 	if channel.ChannelType != constants.NotificationChannelEmail {
-		return &response.TestChannelResponse{
-			Success: false,
-			Message: s.i18n.T(ctx, "notification.channel.invalid_type"),
-			Details: "Channel is not an email type",
-		}, nil
-	}
-
-	// Parse email configuration
-	var emailConfig model.EmailConfig
-	if channel.ChannelConfig != nil {
-		configBytes, err := json.Marshal(channel.ChannelConfig)
-		if err != nil {
-			s.logger.ErrorContext(ctx, "Failed to marshal channel config", logger.ErrorField(err))
-			return &response.TestChannelResponse{
-				Success: false,
-				Message: s.i18n.T(ctx, "notification.channel.config_parse_failed"),
-				Details: err.Error(),
-			}, nil
-		}
-
-		if err := json.Unmarshal(configBytes, &emailConfig); err != nil {
-			s.logger.ErrorContext(ctx, "Failed to unmarshal email config", logger.ErrorField(err))
-			return &response.TestChannelResponse{
-				Success: false,
-				Message: s.i18n.T(ctx, "notification.channel.config_parse_failed"),
-				Details: err.Error(),
-			}, nil
-		}
+		return errors.NewAppError(errors.CodeValidationFailed)
 	}
 
 	// Test email configuration by sending a test email
@@ -650,31 +649,24 @@ func (s *notificationChannelService) TestEmailChannel(
 		testContent = fmt.Sprintf("This is a test email from Websoft9 notification channel: %s", channel.Name)
 	}
 
-	if err := s.sendTestEmail(&emailConfig, req.Recipient, testSubject, testContent); err != nil {
+	// Use EmailService to send test email
+	if err := s.emailService.SendEmail(ctx, req.Recipient, testSubject, testContent); err != nil {
 		s.logger.ErrorContext(ctx, "Email channel test failed", logger.ErrorField(err))
-		return &response.TestChannelResponse{
-			Success: false,
-			Message: s.i18n.T(ctx, "notification.channel.email_test_failed"),
-			Details: err.Error(),
-		}, nil
+		return errors.NewAppErrorWrapError(err, errors.CodeNotificationChannelEmailTestFailed)
 	}
 
 	s.logger.InfoContext(ctx, "Email channel test completed successfully",
 		logger.String("code", req.Code),
 		logger.String("recipient", req.Recipient))
 
-	return &response.TestChannelResponse{
-		Success: true,
-		Message: s.i18n.T(ctx, "notification.channel.email_test_success"),
-		Details: fmt.Sprintf("Test email sent successfully to %s", req.Recipient),
-	}, nil
+	return nil
 }
 
 // TestWebhookChannel tests webhook channel configuration
 func (s *notificationChannelService) TestWebhookChannel(
 	ctx context.Context,
 	req *request.TestWebhookChannelRequest,
-) (*response.TestChannelResponse, error) {
+) error {
 	s.logger.InfoContext(ctx, "Testing webhook notification channel",
 		logger.String("service", "notification_channel"),
 		logger.String("operation", "TestWebhookChannel"),
@@ -684,19 +676,15 @@ func (s *notificationChannelService) TestWebhookChannel(
 	channel, err := s.channelRepo.GetByCode(ctx, req.Code)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.NewAppError(errors.CodeRecordNotFound, s.i18n.T(ctx, "notification.channel.not_found"))
+			return errors.NewAppError(errors.CodeRecordNotFound)
 		}
 		s.logger.ErrorContext(ctx, "Failed to get notification channel", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, s.i18n.T(ctx, "notification.channel.get_failed"))
+		return errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	// Check if channel is webhook type
 	if channel.ChannelType != constants.NotificationChannelWebhook {
-		return &response.TestChannelResponse{
-			Success: false,
-			Message: s.i18n.T(ctx, "notification.channel.invalid_type"),
-			Details: "Channel is not a webhook type",
-		}, nil
+		return errors.NewAppError(errors.CodeValidationFailed)
 	}
 
 	// Parse webhook configuration
@@ -705,234 +693,37 @@ func (s *notificationChannelService) TestWebhookChannel(
 		configBytes, marshalErr := json.Marshal(channel.ChannelConfig)
 		if marshalErr != nil {
 			s.logger.ErrorContext(ctx, "Failed to marshal channel config", logger.ErrorField(marshalErr))
-			return &response.TestChannelResponse{
-				Success: false,
-				Message: s.i18n.T(ctx, "notification.channel.config_parse_failed"),
-				Details: marshalErr.Error(),
-			}, nil
+			return errors.NewAppErrorWrapError(marshalErr, errors.CodeInternalError)
 		}
 
 		if unmarshalErr := json.Unmarshal(configBytes, &webhookConfig); unmarshalErr != nil {
 			s.logger.ErrorContext(ctx, "Failed to unmarshal webhook config", logger.ErrorField(unmarshalErr))
-			return &response.TestChannelResponse{
-				Success: false,
-				Message: s.i18n.T(ctx, "notification.channel.config_parse_failed"),
-				Details: unmarshalErr.Error(),
-			}, nil
+			return errors.NewAppErrorWrapError(unmarshalErr, errors.CodeInternalError)
 		}
 	}
 
 	// Test webhook configuration by sending a test request
-	testPayload := req.Payload
-	if testPayload == nil {
-		testPayload = map[string]interface{}{
-			"type":      "test",
-			"channel":   channel.Name,
-			"message":   "This is a test webhook from Websoft9 notification channel",
-			"timestamp": time.Now().Format(time.RFC3339),
-		}
-	}
+	// var testPayload map[string]interface{}
+	// if req.Payload == nil {
+	// 	testPayload = map[string]interface{}{
+	// 		"type":      "test",
+	// 		"channel":   channel.Name,
+	// 		"message":   "This is a test webhook from Websoft9 notification channel",
+	// 		"timestamp": time.Now().Format(time.RFC3339),
+	// 	}
+	// } else {
+	// 	// Convert interface{} to map[string]interface{}
+	// 	if payload, ok := req.Payload.(map[string]interface{}); ok {
+	// 		testPayload = payload
+	// 	} else {
+	// 		// If it's not a map, create a wrapper
+	// 		testPayload = map[string]interface{}{
+	// 			"data": req.Payload,
+	// 		}
+	// 	}
+	// }
 
-	statusCode, responseBody, err := s.sendTestWebhook(ctx, &webhookConfig, testPayload)
-	if err != nil {
-		s.logger.ErrorContext(ctx, "Webhook channel test failed", logger.ErrorField(err))
-		return &response.TestChannelResponse{
-			Success: false,
-			Message: s.i18n.T(ctx, "notification.channel.webhook_test_failed"),
-			Details: err.Error(),
-		}, nil
-	}
-
-	s.logger.InfoContext(ctx, "Webhook channel test completed successfully",
-		logger.String("code", req.Code),
-		logger.String("url", webhookConfig.URL),
-		logger.Int("status_code", statusCode))
-
-	return &response.TestChannelResponse{
-		Success: true,
-		Message: s.i18n.T(ctx, "notification.channel.webhook_test_success"),
-		Details: fmt.Sprintf("Webhook test successful. Status: %d, Response: %s", statusCode, responseBody),
-	}, nil
-}
-
-// sendTestEmail sends a test email using the provided email configuration
-func (s *notificationChannelService) sendTestEmail(
-	config *model.EmailConfig,
-	to, subject, body string,
-) error {
-	// Build the email message with proper headers
-	msg := s.buildEmailMessage(config.SenderEmail, to, subject, body)
-
-	// Create SMTP authentication
-	auth := smtp.PlainAuth("", config.SMTPUsername, config.SMTPPassword, config.SMTPHost)
-
-	// Construct the SMTP server address
-	addr := fmt.Sprintf("%s:%d", config.SMTPHost, config.SMTPPort)
-
-	// Send email based on security configuration
-	var err error
-	switch strings.ToLower(config.SMTPSecurity) {
-	case "tls", "ssl":
-		err = s.sendEmailWithTLS(addr, auth, config.SenderEmail, []string{to}, msg, config.SMTPHost)
-	case "none", "":
-		err = smtp.SendMail(addr, auth, config.SenderEmail, []string{to}, msg)
-	default:
-		err = smtp.SendMail(addr, auth, config.SenderEmail, []string{to}, msg)
-	}
-
-	return err
-}
-
-// sendEmailWithTLS sends email using TLS encryption
-func (s *notificationChannelService) sendEmailWithTLS(
-	addr string,
-	auth smtp.Auth,
-	from string,
-	to []string,
-	msg []byte,
-	serverName string,
-) error {
-	// Create TLS configuration
-	tlsConfig := &tls.Config{
-		ServerName: serverName,
-		MinVersion: tls.VersionTLS12,
-	}
-
-	// Establish TLS connection
-	conn, err := tls.Dial("tcp", addr, tlsConfig)
-	if err != nil {
-		return fmt.Errorf("failed to establish TLS connection: %w", err)
-	}
-	defer conn.Close()
-
-	// Create SMTP client
-	client, err := smtp.NewClient(conn, serverName)
-	if err != nil {
-		return fmt.Errorf("failed to create SMTP client: %w", err)
-	}
-	defer func() {
-		if quitErr := client.Quit(); quitErr != nil {
-			// Log error but don't fail the operation
-			s.logger.WarnContext(context.Background(), "Failed to quit SMTP client", logger.ErrorField(quitErr))
-		}
-	}()
-
-	// Authenticate if auth is provided
-	if auth != nil {
-		if err = client.Auth(auth); err != nil {
-			return fmt.Errorf("SMTP authentication failed: %w", err)
-		}
-	}
-
-	// Set sender
-	if err = client.Mail(from); err != nil {
-		return fmt.Errorf("failed to set sender: %w", err)
-	}
-
-	// Set recipients
-	for _, recipient := range to {
-		if err = client.Rcpt(recipient); err != nil {
-			return fmt.Errorf("failed to set recipient %s: %w", recipient, err)
-		}
-	}
-
-	// Send message
-	writer, err := client.Data()
-	if err != nil {
-		return fmt.Errorf("failed to get data writer: %w", err)
-	}
-
-	_, err = writer.Write(msg)
-	if err != nil {
-		// Attempt to close the writer and surface both errors if closing also fails.
-		if cerr := writer.Close(); cerr != nil {
-			return fmt.Errorf("failed to write message: %v; additionally failed to close writer: %w", err, cerr)
-		}
-		return fmt.Errorf("failed to write message: %w", err)
-	}
-
-	err = writer.Close()
-	if err != nil {
-		return fmt.Errorf("failed to close message writer: %w", err)
-	}
+	// Send test webhook request
 
 	return nil
-}
-
-// buildEmailMessage builds the email message with proper headers
-func (s *notificationChannelService) buildEmailMessage(from, to, subject, body string) []byte {
-	msg := fmt.Sprintf("From: %s\r\n", from)
-	msg += fmt.Sprintf("To: %s\r\n", to)
-	msg += fmt.Sprintf("Subject: %s\r\n", subject)
-	msg += "MIME-Version: 1.0\r\n"
-	msg += "Content-Type: text/html; charset=UTF-8\r\n"
-	msg += "\r\n"
-	msg += body
-
-	return []byte(msg)
-}
-
-// sendTestWebhook sends a test webhook request using the provided webhook configuration
-func (s *notificationChannelService) sendTestWebhook(
-	ctx context.Context,
-	config *model.WebhookConfig,
-	payload interface{},
-) (statusCode int, responseBody string, err error) {
-	// Marshal payload to JSON
-	payloadBytes, err := json.Marshal(payload)
-	if err != nil {
-		return 0, "", fmt.Errorf("failed to marshal payload: %w", err)
-	}
-
-	// Set default method if not specified
-	method := config.Method
-	if method == "" {
-		method = "POST"
-	}
-
-	// Set timeout
-	timeout := time.Duration(config.Timeout) * time.Second
-	if timeout == 0 {
-		timeout = DefaultNetworkTimeout // Default timeout
-	}
-
-	// Create HTTP client with timeout
-	client := &http.Client{
-		Timeout: timeout,
-	}
-
-	// Create request
-	req, err := http.NewRequestWithContext(ctx, method, config.URL, strings.NewReader(string(payloadBytes)))
-	if err != nil {
-		return 0, "", fmt.Errorf("failed to create request: %w", err)
-	}
-
-	// Set default content type
-	req.Header.Set("Content-Type", "application/json")
-
-	// Set custom headers
-	for key, value := range config.Headers {
-		req.Header.Set(key, value)
-	}
-
-	// Add signature if secret is provided
-	if config.Secret != "" {
-		// Simple signature - in production, you might want to use HMAC
-		req.Header.Set("X-Webhook-Signature", config.Secret)
-	}
-
-	// Send request
-	resp, err := client.Do(req)
-	if err != nil {
-		return 0, "", fmt.Errorf("failed to send webhook request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	// Read response body
-	responseBodyBytes := make([]byte, MaxWebhookResponseSize) // Limit response size for testing
-	n, _ := resp.Body.Read(responseBodyBytes)
-
-	statusCode = resp.StatusCode
-	responseBody = string(responseBodyBytes[:n])
-	return statusCode, responseBody, nil
 }

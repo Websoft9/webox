@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"api-service/internal/dto/request"
 	"api-service/internal/interface/repository"
 	"api-service/internal/model"
 	"context"
@@ -126,37 +127,47 @@ func (r *userRepository) List(
 	return users, total, err
 }
 
-// ListWithRelations retrieves a list of users with their relationships loaded
-func (r *userRepository) ListWithRelations(
-	ctx context.Context,
-	offset, limit int,
-	filters map[string]interface{},
-) ([]*model.User, int64, error) {
+func (r *userRepository) ListWithRelations(ctx context.Context, req *request.UserListRequest) ([]*model.User, int64, error) {
 	var users []*model.User
 	var total int64
 
-	query := r.db.WithContext(ctx).Model(&model.User{}).Where("status != ?", -1)
+	query := r.db.WithContext(ctx).Model(&model.User{})
 
-	// Handle role_id filter
-	if roleID, ok := filters["role_id"]; ok && roleID != nil {
-		// Join with user_roles table to filter users by role
+	if req.Status != nil {
+		query = query.Where("status = ?", *req.Status)
+	}
+	if req.Gender != nil {
+		query = query.Where("gender = ?", *req.Gender)
+	}
+	if req.Language != nil {
+		query = query.Where("language = ?", *req.Language)
+	}
+	if req.Keyword != nil && *req.Keyword != "" {
+		keyword := "%" + *req.Keyword + "%"
+		query = query.Where("username LIKE ? OR email LIKE ? OR nickname LIKE ?", keyword, keyword, keyword)
+	}
+	if req.RoleID != nil {
 		query = query.Joins("JOIN user_roles ON users.id = user_roles.user_id").
-			Where("user_roles.role_id = ? AND user_roles.status = ?", roleID, 1)
-		// Remove role_id from filters to avoid applying it twice in applyFilters
-		delete(filters, "role_id")
+			Where("user_roles.role_id = ? AND user_roles.status = 1", *req.RoleID)
 	}
 
-	// Apply other filters
-	query = r.applyFilters(query, filters)
-
-	// Get total count
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	// Get data with relationships
-	err := query.Preload("Roles").Offset(offset).Limit(limit).Order("created_at desc").Find(&users).Error
-	return users, total, err
+	offset := req.GetOffset()
+	limit := req.GetPageSize()
+
+	err := query.Order(req.GetSortOrder()).
+		Preload("Roles").
+		Offset(offset).Limit(limit).
+		Find(&users).Error
+
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return users, total, nil
 }
 
 // Search searches users

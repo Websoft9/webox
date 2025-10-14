@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 
+	"api-service/internal/dto/common"
 	"api-service/internal/dto/request"
 	"api-service/internal/dto/response"
 )
@@ -16,7 +17,7 @@ type NotificationTemplateService interface {
 	GetTemplate(ctx context.Context, id uint) (*response.NotificationTemplateDetailResponse, error)
 
 	// GetTemplateList retrieves a paginated list of notification templates
-	GetTemplateList(ctx context.Context, req *request.GetNotificationTemplateListRequest) (*response.NotificationTemplateListResponse, error)
+	GetTemplateList(ctx context.Context, req *request.GetNotificationTemplateListRequest) (*common.PaginationResponse, error)
 
 	// UpdateTemplate updates an existing notification template
 	UpdateTemplate(ctx context.Context, id uint, req *request.UpdateNotificationTemplateRequest) (*response.NotificationTemplateDetailResponse, error)
@@ -25,5 +26,5 @@ type NotificationTemplateService interface {
 	DeleteTemplate(ctx context.Context, id uint) error
 
 	// TestTemplate tests a template by sending it
-	TestTemplate(ctx context.Context, id uint, req *request.TestNotificationTemplateRequest) (*response.NotificationTemplateTestResponse, error)
+	TestTemplate(ctx context.Context, id uint, req *request.TestNotificationTemplateRequest) error
 }

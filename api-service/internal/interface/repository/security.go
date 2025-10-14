@@ -52,7 +52,7 @@ type PermissionRepository interface {
 	Delete(ctx context.Context, id uint) error
 
 	// Query operations
-	List(ctx context.Context, req *request.ListPermissionsRequest) ([]*model.Permission, int64, error)
+	List(ctx context.Context, req *request.ListPermissionsRequest, lang string) ([]*model.Permission, int64, error)
 	GetTree(ctx context.Context, req *request.PermissionTreeRequest) ([]*model.Permission, error)
 	GetWithRoles(ctx context.Context, id uint) (*model.Permission, error)
 	GetChildren(ctx context.Context, parentID uint) ([]*model.Permission, error)

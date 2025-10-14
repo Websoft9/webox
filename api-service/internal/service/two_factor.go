@@ -8,7 +8,6 @@ import (
 	"api-service/internal/model"
 	"api-service/pkg/auth"
 	"api-service/pkg/errors"
-	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
 	"context"
 	"crypto/rand"
@@ -32,7 +31,6 @@ type twoFactorService struct {
 	twoFactorRepo repository.UserTwoFactorRepository
 	db            *gorm.DB
 	logger        logger.Logger
-	i18n          *i18n.I18n
 }
 
 // NewTwoFactorService creates a new two-factor authentication service instance
@@ -40,13 +38,11 @@ func NewTwoFactorService(
 	twoFactorRepo repository.UserTwoFactorRepository,
 	db *gorm.DB,
 	logger logger.Logger,
-	i18n *i18n.I18n,
 ) service.TwoFactorService {
 	return &twoFactorService{
 		twoFactorRepo: twoFactorRepo,
 		db:            db,
 		logger:        logger,
-		i18n:          i18n,
 	}
 }
 
@@ -81,14 +77,14 @@ func (s *twoFactorService) EnableTOTP(ctx context.Context, userID uint) (*respon
 	}
 
 	if existing != nil && existing.Enabled {
-		return nil, errors.NewAppErrorWithMessage(errors.CodeResourceStateNotAllowed, "TOTP is already enabled")
+		return nil, errors.NewAppError(errors.CodeResourceStateNotAllowed)
 	}
 
 	// Generate TOTP secret
 	secret, err := auth.GenerateSimpleTOTPSecret()
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to generate TOTP secret", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeRecordCreateFailed, "failed to generate TOTP secret")
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordCreateFailed)
 	}
 
 	// Generate QR code URL
@@ -98,7 +94,7 @@ func (s *twoFactorService) EnableTOTP(ctx context.Context, userID uint) (*respon
 	backupCodes, err := s.generateBackupCodes()
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to generate backup codes", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeRecordCreateFailed, "failed to generate backup codes")
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordCreateFailed)
 	}
 
 	// Create or update TOTP record (not enabled yet)
@@ -151,11 +147,11 @@ func (s *twoFactorService) ConfirmTOTP(ctx context.Context, userID uint, code st
 	valid, err := auth.ValidateSimpleTOTP(twoFactor.Secret, code)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to validate TOTP code", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeValidationFailed, "failed to validate TOTP code")
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeValidationFailed)
 	}
 
 	if !valid {
-		return nil, errors.NewAppErrorWithMessage(errors.CodeValidationFailed, "invalid code")
+		return nil, errors.NewAppError(errors.CodeValidationFailed)
 	}
 
 	// Enable TOTP
@@ -209,11 +205,11 @@ func (s *twoFactorService) DisableTOTP(ctx context.Context, userID uint, code st
 	valid, err := auth.ValidateSimpleTOTP(twoFactor.Secret, code)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to validate TOTP code", logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeValidationFailed, "failed to validate TOTP code")
+		return errors.NewAppErrorWrapError(err, errors.CodeValidationFailed)
 	}
 
 	if !valid {
-		return errors.NewAppErrorWithMessage(errors.CodeValidationFailed, "invalid code")
+		return errors.NewAppError(errors.CodeValidationFailed)
 	}
 
 	// Delete TOTP record
@@ -347,7 +343,7 @@ func (s *twoFactorService) VerifyTwoFactor(ctx context.Context, userID uint, cod
 	case constants.TwoFactorMethodBackup:
 		return s.verifyBackupCode(ctx, userID, code)
 	default:
-		return nil, errors.NewAppErrorWithMessage(errors.CodeInvalidParameterFormat, "unsupported 2FA method")
+		return nil, errors.NewAppError(errors.CodeInvalidParameterFormat)
 	}
 }
 
@@ -369,7 +365,7 @@ func (s *twoFactorService) GenerateBackupCodes(ctx context.Context, userID uint)
 	backupCodes, err := s.generateBackupCodes()
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to generate backup codes", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeRecordCreateFailed, "failed to generate backup codes")
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordCreateFailed)
 	}
 
 	// Update backup codes

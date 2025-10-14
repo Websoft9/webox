@@ -3,6 +3,7 @@ module api-service
 go 1.24.5
 
 require (
+	github.com/expr-lang/expr v1.17.6
 	github.com/gin-gonic/gin v1.10.1
 	github.com/go-playground/validator/v10 v10.20.0
 	github.com/golang-jwt/jwt/v5 v5.0.0

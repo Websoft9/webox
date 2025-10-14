@@ -19,19 +19,3 @@ type NotificationRecordResponse struct {
 	CreatedAt     time.Time  `json:"created_at"`
 	UpdatedAt     time.Time  `json:"updated_at"`
 }
-
-// NotificationRecordListResponse notification record list response
-type NotificationRecordListResponse struct {
-	Page       int                          `json:"page"`        // Current page number
-	PageSize   int                          `json:"page_size"`   // Items per page
-	Total      int64                        `json:"total"`       // Total records
-	TotalPages int                          `json:"total_pages"` // Total pages
-	Items      []NotificationRecordResponse `json:"items"`       // Notification record list
-}
-
-// NotificationRecordDetailResponse represents the detailed notification record response
-type NotificationRecordDetailResponse struct {
-	NotificationRecordResponse
-	TemplateName *string `json:"template_name,omitempty"`
-	UserName     *string `json:"user_name,omitempty"`
-}

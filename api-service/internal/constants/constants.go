@@ -134,6 +134,20 @@ const (
 	UserMappingUsername = "username"
 )
 
+// Tag management constants
+const (
+	TagMaxNameLength          = 128
+	TagMaxBatchSize           = 50
+	TagMaxColorLength         = 16
+	TagMaxDescLength          = 500
+	TagSearchOpAND            = "AND"
+	TagSearchOpOR             = "OR"
+	TagAssignStatusCreated    = "created"
+	TagAssignStatusAssociated = "associated"
+	DefaultTagPageSize        = 20
+	MaxTagPageSize            = 100
+)
+
 // Auth config constants
 const (
 	DefaultTokenExpiresIn        = 3600  // 1 hour
@@ -227,6 +241,7 @@ const (
 	ModuleNotification     = "告警通知"
 	ModuleProfile          = "个人中心"
 	ModuleAuditLog         = "审计日志"
+	ModuleTag              = "标签管理"
 	ModuleSystem           = "System"
 )
 
@@ -257,6 +272,8 @@ func GetModuleTableName(module string) string {
 		ModuleWishlist:       "app_store_wishlists",
 		ModuleNotification:   "notifications",
 		ModuleAdminSetting:   "system_configs",
+		ModuleTag:            "tags",
+		ModuleSystem:         "system",
 	}
 
 	if tableName, exists := moduleToTableName[module]; exists {
@@ -301,6 +318,8 @@ func GetModuleType(module string) string {
 		"platform-settings": ModulePlatformSetting,
 		"security":          ModuleSecurity,
 		"system-configs":    ModuleAdminSetting,
+		"tags":              ModuleTag,
+		"system":            ModuleSystem,
 	}
 	if moduleName, exists := module_type_map[module]; exists {
 		return moduleName
@@ -316,13 +335,20 @@ const (
 	FormatCSV   = "csv"
 )
 
-// audit-logs constants
+// Time range and audit-logs constants
 const (
 	ExcelRowOffset        = 2      // Excel data starts from row 2 (after header)
 	ExcelColumnDivisor    = 26     // Excel column calculation divisor (A-Z = 26 letters)
-	MaxTimeRangeDays      = 7      // Maximum time range in days for export
+	MaxTimeRangeDays      = 7      // Maximum allowed time range in days (configurable)
 	MinPathSegments       = 3      // Minimum path segments for valid API path
 	DefaultTimeRangeHours = 7 * 24 // Default time range in hours (7 days)
+)
+
+// alert constants
+const (
+	AlertStatusFiring    = "FIRING"
+	AlertStatusConfirmed = "CONFIRMED"
+	AlertStatusResolved  = "RESOLVED"
 )
 
 const (
@@ -334,6 +360,56 @@ const (
 
 	// Session timeout in seconds (30 minutes)
 	DefaultSessionTimeoutSeconds = 1800
+)
+
+// Time field names constants for timezone conversion middleware
+// These field names will be automatically converted to user's timezone in API responses
+const (
+	// Common timestamp fields
+	TimeFieldCreatedAt = "created_at"
+	TimeFieldUpdatedAt = "updated_at"
+)
+
+// GetTimezoneConvertibleFields returns a list of all time field names that should be converted to user's timezone
+func GetTimezoneConvertibleFields() []string {
+	return []string{
+		// Common timestamp fields
+		TimeFieldCreatedAt,
+		TimeFieldUpdatedAt,
+	}
+}
+
+// User preferences config keys
+const (
+	UserCategory = "general"
+	UserLanguage = "language"
+	UserTimezone = "timezone"
+)
+
+// System preferences config keys
+const (
+	SystemLanguage = "system." + UserLanguage
+	SystemTimezone = "system." + UserTimezone
+
+	// Default time format for datetime display: "2006-01-02T15:04:05Z07:00"
+	DefaultTimeFormat = time.RFC3339
+
+	// Default language code
+	DefaultLanguage = "en-US"
+
+	// Default time zone
+	DefaultTimeZone = "UTC"
+
+	// Maximum length of SQL log
+	MaxSQLLogLength = 100
+)
+
+const (
+	// Default limit for exporting all secret keys
+	DefaultExportPageSize = 1000
+	ExportFormatExcel     = "excel"
+	ExportFormatJson      = "json"
+	ExportFormatCsv       = "csv"
 )
 
 // NotificationRecordStatus enum values

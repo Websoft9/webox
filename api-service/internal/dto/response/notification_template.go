@@ -17,19 +17,3 @@ type NotificationTemplateDetailResponse struct {
 	NotificationTemplateResponse
 	Content string `json:"content"`
 }
-
-// NotificationTemplateListResponse represents the paginated list response
-type NotificationTemplateListResponse struct {
-	Page       int                            `json:"page"`
-	PageSize   int                            `json:"page_size"`
-	Total      int64                          `json:"total"`
-	TotalPages int                            `json:"total_pages"`
-	Items      []NotificationTemplateResponse `json:"items"`
-}
-
-// NotificationTemplateTestResponse represents template test result
-type NotificationTemplateTestResponse struct {
-	Success bool   `json:"success"`
-	Message string `json:"message"`
-	Details string `json:"details"`
-}

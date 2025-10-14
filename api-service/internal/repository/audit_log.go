@@ -1,29 +1,16 @@
 package repository
 
 import (
+	"api-service/pkg/errors"
 	"context"
-	"errors"
-	"fmt"
-	"sort"
 	"time"
 
-	"gorm.io/gorm"
-
+	"api-service/internal/constants"
 	"api-service/internal/dto/request"
-	"api-service/internal/dto/response"
 	"api-service/internal/interface/repository"
 	"api-service/internal/model"
-)
 
-const (
-	// Default page size
-	defaultPageSize = 20
-	maxPageSize     = 100
-)
-
-var (
-	// ErrRecordNotFound is returned when a record is not found
-	ErrRecordNotFound = errors.New("record not found")
+	"gorm.io/gorm"
 )
 
 type auditLogRepository struct {
@@ -41,7 +28,7 @@ func NewAuditLogRepository(db *gorm.DB) repository.AuditLogRepository {
 func (r *auditLogRepository) Create(ctx context.Context, auditLog *model.AuditLog) error {
 	// Create the record directly without encryption
 	if err := r.db.WithContext(ctx).Create(auditLog).Error; err != nil {
-		return fmt.Errorf("failed to create audit log: %w", err)
+		return errors.NewAppErrorWrapError(err, errors.CodeRecordCreateFailed)
 	}
 
 	return nil
@@ -54,16 +41,16 @@ func (r *auditLogRepository) GetByID(ctx context.Context, id uint) (*model.Audit
 	err := r.db.WithContext(ctx).First(&auditLog, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrRecordNotFound
+			return nil, errors.NewAppError(errors.CodeRecordNotFound)
 		}
-		return nil, fmt.Errorf("failed to get audit log by ID: %w", err)
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	return &auditLog, nil
 }
 
 // List retrieves audit logs with pagination and filtering
-func (r *auditLogRepository) List(ctx context.Context, filter *request.AuditLogFilter) ([]*model.AuditLog, int64, error) {
+func (r *auditLogRepository) List(ctx context.Context, filter *request.ListAuditLogRequest) ([]*model.AuditLog, int64, error) {
 	var auditLogs []*model.AuditLog
 	var total int64
 
@@ -77,10 +64,6 @@ func (r *auditLogRepository) List(ctx context.Context, filter *request.AuditLogF
 
 	if filter.Action != "" {
 		query = query.Where("action = ?", filter.Action)
-	}
-
-	if filter.Module != "" {
-		query = query.Where("module = ?", filter.Module)
 	}
 
 	if filter.ResourceType != "" {
@@ -100,128 +83,36 @@ func (r *auditLogRepository) List(ctx context.Context, filter *request.AuditLogF
 		query = query.Where("success = ?", *filter.Success)
 	}
 
-	if filter.StartTime != nil {
-		query = query.Where("created_at >= ?", *filter.StartTime)
-	}
-
-	if filter.EndTime != nil {
-		query = query.Where("created_at <= ?", *filter.EndTime)
+	if filter.StartTime != "" && filter.EndTime != "" {
+		startTime, _ := time.Parse(constants.DefaultTimeFormat, filter.StartTime)
+		endTime, _ := time.Parse(constants.DefaultTimeFormat, filter.EndTime)
+		query = query.Where("created_at BETWEEN ? AND ?", startTime, endTime)
 	}
 
 	// Count total records
 	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, fmt.Errorf("failed to count audit logs: %w", err)
+		return nil, 0, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
-	// Apply pagination
-	pageSize := filter.PageSize
-	if pageSize <= 0 || pageSize > maxPageSize {
-		pageSize = defaultPageSize
-	}
-
-	page := filter.Page
-	if page <= 0 {
-		page = 1
-	}
-
-	offset := (page - 1) * pageSize
+	// Paginated query
+	offset := filter.GetOffset()
+	limit := filter.GetPageSize()
 
 	// Execute query with pagination and ordering
 	err := query.Order("created_at DESC").
-		Limit(pageSize).
+		Limit(limit).
 		Offset(offset).
 		Find(&auditLogs).Error
 
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to list audit logs: %w", err)
+		return nil, 0, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	return auditLogs, total, nil
 }
 
-// GetStatistics retrieves audit log statistics
-func (r *auditLogRepository) GetStatistics(ctx context.Context, filter *request.StatisticsFilter) (*response.AuditLogStatistics, error) {
-	stats := &response.AuditLogStatistics{}
-
-	// Build base query
-	query := r.db.WithContext(ctx).Model(&model.AuditLog{})
-
-	// Apply time filters
-	if filter.StartTime != nil {
-		query = query.Where("created_at >= ?", *filter.StartTime)
-	}
-	if filter.EndTime != nil {
-		query = query.Where("created_at <= ?", *filter.EndTime)
-	}
-
-	// Get total operations
-	if err := query.Count(&stats.TotalOperations).Error; err != nil {
-		return nil, fmt.Errorf("failed to count total operations: %w", err)
-	}
-
-	// Get success operations
-	if err := query.Where("success = ?", true).Count(&stats.SuccessOperations).Error; err != nil {
-		return nil, fmt.Errorf("failed to count success operations: %w", err)
-	}
-
-	// Calculate failed operations
-	stats.FailedOperations = stats.TotalOperations - stats.SuccessOperations
-
-	// Get unique users count
-	var uniqueUsers int64
-	if err := query.Select("COUNT(DISTINCT user_id)").Where("user_id IS NOT NULL").Count(&uniqueUsers).Error; err != nil {
-		return nil, fmt.Errorf("failed to count unique users: %w", err)
-	}
-
-	// Get unique IPs count
-	var uniqueIPs int64
-	if err := query.Select("COUNT(DISTINCT ip_address)").Where("ip_address != '' AND ip_address IS NOT NULL").Count(&uniqueIPs).Error; err != nil {
-		return nil, fmt.Errorf("failed to count unique IPs: %w", err)
-	}
-
-	// Get top users - using Raw SQL to ensure proper field mapping
-	var topUsers []response.UserOperationCount
-	if err := r.db.WithContext(ctx).Raw(`
-		SELECT user_id, username, COUNT(*) as operation_count
-		FROM audit_logs 
-		WHERE user_id IS NOT NULL 
-			AND (? IS NULL OR created_at >= ?)
-			AND (? IS NULL OR created_at <= ?)
-		GROUP BY user_id, username 
-		ORDER BY operation_count DESC 
-		LIMIT 10
-	`, filter.StartTime, filter.StartTime, filter.EndTime, filter.EndTime).Scan(&topUsers).Error; err != nil {
-		return nil, fmt.Errorf("failed to get top users: %w", err)
-	}
-	stats.TopUsers = topUsers
-
-	// Get top actions - using Raw SQL to ensure proper field mapping
-	var topActions []response.ActionCount
-	if err := r.db.WithContext(ctx).Raw(`
-		SELECT action, COUNT(*) as count
-		FROM audit_logs 
-		WHERE (? IS NULL OR created_at >= ?)
-			AND (? IS NULL OR created_at <= ?)
-		GROUP BY action 
-		ORDER BY count DESC 
-		LIMIT 10
-	`, filter.StartTime, filter.StartTime, filter.EndTime, filter.EndTime).Scan(&topActions).Error; err != nil {
-		return nil, fmt.Errorf("failed to get top actions: %w", err)
-	}
-	stats.TopActions = topActions
-
-	// Get timeline data - use application layer processing for better database compatibility
-	timeline, err := r.getTimelineData(ctx, filter)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get timeline data: %w", err)
-	}
-	stats.Timeline = timeline
-
-	return stats, nil
-}
-
 // Export exports audit logs for external processing
-func (r *auditLogRepository) Export(ctx context.Context, filter *request.AuditLogFilter) ([]*model.AuditLog, error) {
+func (r *auditLogRepository) Export(ctx context.Context, filter *request.ExportAuditLogRequest) ([]*model.AuditLog, error) {
 	var auditLogs []*model.AuditLog
 
 	// Build query
@@ -232,18 +123,16 @@ func (r *auditLogRepository) Export(ctx context.Context, filter *request.AuditLo
 		query = query.Where("user_id = ?", *filter.UserID)
 	}
 
-	if filter.StartTime != nil {
-		query = query.Where("created_at >= ?", *filter.StartTime)
-	}
-
-	if filter.EndTime != nil {
-		query = query.Where("created_at <= ?", *filter.EndTime)
+	if filter.StartTime != "" && filter.EndTime != "" {
+		startTime, _ := time.Parse(constants.DefaultTimeFormat, filter.StartTime)
+		endTime, _ := time.Parse(constants.DefaultTimeFormat, filter.EndTime)
+		query = query.Where("created_at BETWEEN ? AND ?", startTime, endTime)
 	}
 
 	// Execute query with ordering (no pagination for export)
 	err := query.Order("created_at DESC").Find(&auditLogs).Error
 	if err != nil {
-		return nil, fmt.Errorf("failed to export audit logs: %w", err)
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	return auditLogs, nil
@@ -254,84 +143,8 @@ func (r *auditLogRepository) CleanupOldLogs(ctx context.Context, beforeDate time
 	result := r.db.WithContext(ctx).Where("created_at < ?", beforeDate).Delete(&model.AuditLog{})
 
 	if result.Error != nil {
-		return 0, fmt.Errorf("failed to cleanup old audit logs: %w", result.Error)
+		return 0, errors.NewAppErrorWrapError(result.Error, errors.CodeRecordQueryFailed)
 	}
 
 	return result.RowsAffected, nil
-}
-
-// getTimelineData retrieves timeline statistics with database-agnostic implementation
-func (r *auditLogRepository) getTimelineData(ctx context.Context, filter *request.StatisticsFilter) ([]response.TimelineCount, error) {
-	// Get all records within the time range, then process in application layer
-	var auditLogs []model.AuditLog
-
-	query := r.db.WithContext(ctx).Model(&model.AuditLog{}).Select("created_at")
-
-	// Apply time filters
-	if filter.StartTime != nil {
-		query = query.Where("created_at >= ?", *filter.StartTime)
-	}
-	if filter.EndTime != nil {
-		query = query.Where("created_at <= ?", *filter.EndTime)
-	}
-
-	if err := query.Find(&auditLogs).Error; err != nil {
-		return nil, fmt.Errorf("failed to get audit logs for timeline: %w", err)
-	}
-
-	// Group data based on groupBy parameter
-	groupedData := make(map[string]int64)
-
-	for i := range auditLogs {
-		log := auditLogs[i]
-		var key string
-		switch filter.GroupBy {
-		case "hour":
-			// Format: 2025-01-22 14:00:00
-			key = log.CreatedAt.Truncate(time.Hour).Format("2006-01-02 15:04:05")
-		case "week":
-			// Format: 2025-01-22 (Monday of the week)
-			year, week := log.CreatedAt.ISOWeek()
-			// Find the Monday of this ISO week
-			jan1 := time.Date(year, 1, 1, 0, 0, 0, 0, log.CreatedAt.Location())
-			// Find the Monday of week 1
-			mondayWeek1 := jan1
-			for mondayWeek1.Weekday() != time.Monday {
-				if mondayWeek1.Weekday() == time.Sunday {
-					mondayWeek1 = mondayWeek1.AddDate(0, 0, 1)
-				} else {
-					mondayWeek1 = mondayWeek1.AddDate(0, 0, -int(mondayWeek1.Weekday()-time.Monday))
-				}
-			}
-
-			var daysInWeek = 7
-			// Add weeks to get to the target week
-			targetMonday := mondayWeek1.AddDate(0, 0, (week-1)*daysInWeek)
-			key = targetMonday.Format("2006-01-02")
-		case "month":
-			// Format: 2025-01-01 (first day of month)
-			key = time.Date(log.CreatedAt.Year(), log.CreatedAt.Month(), 1, 0, 0, 0, 0, log.CreatedAt.Location()).Format("2006-01-02")
-		default: // day
-			// Format: 2025-01-22
-			key = log.CreatedAt.Format("2006-01-02")
-		}
-
-		groupedData[key]++
-	}
-
-	// Convert map to slice and sort
-	timeline := make([]response.TimelineCount, 0, len(groupedData))
-	for date, count := range groupedData {
-		timeline = append(timeline, response.TimelineCount{
-			Date:  date,
-			Count: count,
-		})
-	}
-
-	// Sort by date
-	sort.Slice(timeline, func(i, j int) bool {
-		return timeline[i].Date < timeline[j].Date
-	})
-
-	return timeline, nil
 }

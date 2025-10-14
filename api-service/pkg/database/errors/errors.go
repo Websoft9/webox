@@ -296,9 +296,9 @@ func containsAny(s string, substrings []string) bool {
 
 // Predefined common errors
 var (
-	ErrDatabaseLocked     = errors.NewAppError(errors.CodeInternalError, "database is locked")
-	ErrDatabaseBusy       = errors.NewAppError(errors.CodeInternalError, "database is busy")
-	ErrDatabaseCorrupt    = errors.NewAppError(errors.CodeInternalError, "database is corrupt")
-	ErrTransactionActive  = errors.NewAppError(errors.CodeInternalError, "transaction already active")
-	ErrMaxRetriesExceeded = errors.NewAppError(errors.CodeInternalError, "maximum retry attempts exceeded")
+	ErrDatabaseLocked     = errors.NewAppErrorWithDetails(errors.CodeInternalError, "database is locked")
+	ErrDatabaseBusy       = errors.NewAppErrorWithDetails(errors.CodeInternalError, "database is busy")
+	ErrDatabaseCorrupt    = errors.NewAppErrorWithDetails(errors.CodeInternalError, "database is corrupt")
+	ErrTransactionActive  = errors.NewAppErrorWithDetails(errors.CodeInternalError, "transaction already active")
+	ErrMaxRetriesExceeded = errors.NewAppErrorWithDetails(errors.CodeInternalError, "maximum retry attempts exceeded")
 )

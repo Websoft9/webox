@@ -8,30 +8,37 @@ import (
 	"api-service/internal/dto/request"
 	"api-service/internal/interface/service"
 	"api-service/pkg/errors"
-	"api-service/pkg/i18n"
+	"api-service/pkg/logger"
+
+	response "api-service/internal/dto/common"
+
+	"github.com/go-playground/validator/v10"
 )
 
 // NotificationRecordController handles notification record related HTTP requests
 type NotificationRecordController struct {
 	notificationRecordService service.NotificationRecordService
-	i18n                      *i18n.I18n
+	validator                 *validator.Validate
+	logger                    logger.Logger
 }
 
 // NewNotificationRecordController creates a new notification record controller instance
 func NewNotificationRecordController(
 	notificationRecordService service.NotificationRecordService,
-	i18n *i18n.I18n,
+	validator *validator.Validate,
+	logger logger.Logger,
 ) *NotificationRecordController {
 	return &NotificationRecordController{
 		notificationRecordService: notificationRecordService,
-		i18n:                      i18n,
+		validator:                 validator,
+		logger:                    logger,
 	}
 }
 
 // GetNotificationRecords retrieves notification records list with pagination and filtering
 // @Summary Get notification records list
 // @Description Retrieve notification records list with pagination and filtering options
-// @Tags Notification Management
+// @Tags Notification Records
 // @Accept json
 // @Produce json
 // @Param page query int false "Page number" default(1)
@@ -41,53 +48,55 @@ func NewNotificationRecordController(
 // @Param recipient query string false "Recipient filter"
 // @Param sent_start query string false "Sent time start filter" format(2006-01-02 15:04:05)
 // @Param sent_end query string false "Sent time end filter" format(2006-01-02 15:04:05)
-// @Success 200 {object} response.Response{data=response.NotificationRecordListResponse}
-// @Failure 400 {object} response.Response
-// @Failure 500 {object} response.Response
+// @Success 200 {object} common.APIResponse{data=[]response.NotificationRecordResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/notifications/records [get]
 // @Security BearerAuth
 func (c *NotificationRecordController) GetNotificationRecords(ctx *gin.Context) {
 	var req request.GetNotificationRecordListRequest
-	if err := ctx.ShouldBindQuery(&req); err != nil {
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed, c.i18n.T(ctx, "common.validation_failed")))
+
+	if !BindAndValidateQuery(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
 	records, err := c.notificationRecordService.GetNotificationRecordList(ctx.Request.Context(), &req)
+
 	if err != nil {
-		errors.HandleError(ctx, err)
+		response.WithError(ctx, err)
 		return
 	}
 
-	ResponseOKWithData(ctx, records, "notification.get_records_success", c.i18n)
+	response.SuccessWithData(ctx, records)
 }
 
 // GetNotificationRecord retrieves a specific notification record by ID
 // @Summary Get notification record details
 // @Description Retrieve detailed information of a specific notification record
-// @Tags Notification Management
+// @Tags Notification Records
 // @Accept json
 // @Produce json
 // @Param id path int true "Notification record ID"
-// @Success 200 {object} response.Response{data=response.NotificationRecordDetailResponse}
-// @Failure 400 {object} response.Response
-// @Failure 404 {object} response.Response
-// @Failure 500 {object} response.Response
+// @Success 200 {object} common.APIResponse{data=response.NotificationRecordResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/notifications/records/{id} [get]
 // @Security BearerAuth
 func (c *NotificationRecordController) GetNotificationRecord(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		errors.HandleError(ctx, errors.NewAppError(errors.CodeValidationFailed, c.i18n.T(ctx, "common.validation_failed")))
+		c.logger.WarnContext(ctx.Request.Context(), "Channel code is required")
+		response.WithError(ctx, errors.NewAppError(errors.CodeValidationFailed))
 		return
 	}
 
 	record, err := c.notificationRecordService.GetNotificationRecordByID(ctx.Request.Context(), uint(id))
 	if err != nil {
-		errors.HandleError(ctx, err)
+		response.WithError(ctx, err)
 		return
 	}
 
-	ResponseOKWithData(ctx, record, "notification.get_record_success", c.i18n)
+	response.SuccessWithData(ctx, record)
 }

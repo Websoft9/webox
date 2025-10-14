@@ -5,7 +5,9 @@ import (
 	"api-service/internal/interface/service"
 	"api-service/pkg/auth"
 	"api-service/pkg/errors"
+	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
+	"api-service/pkg/utils"
 	"net/http"
 	"strings"
 
@@ -143,7 +145,7 @@ func PermissionMiddleware(permissionService service.PermissionService, apiTokenS
 func authenticateRequest(c *gin.Context) (*auth.Claims, string, error) {
 	authHeader := c.GetHeader("Authorization")
 	if authHeader == "" {
-		return nil, "", errors.NewAppErrorWithMessage(errors.CodeRequiredParameterMissing, "authorization header is empty")
+		return nil, "", errors.NewAppError(errors.CodeRequiredParameterMissing)
 	}
 
 	token, err := auth.ExtractTokenFromHeader(authHeader)
@@ -165,7 +167,7 @@ func handleAuthError(c *gin.Context, err error, log logger.Logger) {
 	c.JSON(http.StatusUnauthorized, gin.H{
 		"success": false,
 		"code":    http.StatusUnauthorized,
-		"message": "User not authenticated",
+		"message": i18n.T("auth.user_not_authenticated", utils.GetUserLangFromRedis(c)),
 	})
 	c.Abort()
 }
@@ -175,8 +177,8 @@ func handleTokenValidationError(c *gin.Context, log logger.Logger) {
 	log.WarnContext(c, "JWT token not found in storage")
 	c.JSON(http.StatusUnauthorized, gin.H{
 		"success": false,
-		"code":    http.StatusUnauthorized,
-		"message": "Invalid token",
+		"code":    errors.CodeInvalidToken,
+		"message": i18n.T("auth.token_invalid", utils.GetUserLangFromRedis(c)),
 	})
 	c.Abort()
 }
@@ -190,10 +192,10 @@ func checkUserPermission(c *gin.Context, permissionService service.PermissionSer
 	hasPermission, err := permissionService.CheckUserPermission(c.Request.Context(), userID, resource, action)
 	if err != nil {
 		log.Error("Failed to check user permission", logger.ErrorField(err))
-		c.JSON(http.StatusInternalServerError, gin.H{
+		c.JSON(http.StatusConflict, gin.H{
 			"success": false,
-			"code":    http.StatusInternalServerError,
-			"message": "Permission check failed",
+			"code":    errors.CodeRecordQueryFailed,
+			"message": i18n.T("resource.record_query_failed", utils.GetUserLangFromRedis(c)),
 		})
 		c.Abort()
 		return false
@@ -209,8 +211,8 @@ func checkUserPermission(c *gin.Context, permissionService service.PermissionSer
 		)
 		c.JSON(http.StatusForbidden, gin.H{
 			"success": false,
-			"code":    http.StatusForbidden,
-			"message": "Insufficient permissions",
+			"code":    errors.CodeInsufficientPermissions,
+			"message": i18n.T("auth.permission_denied", utils.GetUserLangFromRedis(c)),
 		})
 		c.Abort()
 		return false

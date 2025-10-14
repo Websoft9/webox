@@ -11,10 +11,10 @@ import (
 	"gorm.io/gorm"
 
 	"api-service/internal/constants"
-	"api-service/internal/dto"
+	"api-service/internal/dto/common"
 	"api-service/internal/dto/request"
+	"api-service/internal/dto/response"
 	"api-service/internal/model"
-	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
 )
 
@@ -43,10 +43,7 @@ func (m *MockNotificationRecordRepository) GetList(ctx context.Context, req *req
 func setupNotificationRecordServiceTest() (*notificationRecordService, *MockNotificationRecordRepository) {
 	mockRepo := new(MockNotificationRecordRepository)
 	mockLogger := logger.NewZapLogger(logger.InfoLevel, nil)
-	// Initialize i18n for testing
-	_ = i18n.Init() // Initialize with default config
-	mockI18n := i18n.NewI18n()
-	service := NewNotificationRecordService(mockRepo, mockLogger, mockI18n).(*notificationRecordService)
+	service := NewNotificationRecordService(mockRepo, mockLogger).(*notificationRecordService)
 	return service, mockRepo
 }
 
@@ -65,8 +62,8 @@ func TestNotificationRecordService_GetNotificationRecordList(t *testing.T) {
 		{
 			name: "successful retrieval",
 			req: &request.GetNotificationRecordListRequest{
-				BaseListRequest: dto.BaseListRequest{
-					PaginationRequest: dto.PaginationRequest{
+				BaseListRequest: common.BaseListRequest{
+					PaginationRequest: common.PaginationRequest{
 						Page:     1,
 						PageSize: 20,
 					},
@@ -100,8 +97,8 @@ func TestNotificationRecordService_GetNotificationRecordList(t *testing.T) {
 		{
 			name: "repository error",
 			req: &request.GetNotificationRecordListRequest{
-				BaseListRequest: dto.BaseListRequest{
-					PaginationRequest: dto.PaginationRequest{
+				BaseListRequest: common.BaseListRequest{
+					PaginationRequest: common.PaginationRequest{
 						Page:     1,
 						PageSize: 20,
 					},
@@ -127,7 +124,9 @@ func TestNotificationRecordService_GetNotificationRecordList(t *testing.T) {
 				assert.NoError(t, err)
 				assert.NotNil(t, result)
 				assert.Equal(t, tt.mockTotal, result.Total)
-				assert.Equal(t, len(tt.mockData), len(result.Items))
+				if items, ok := result.Items.([]response.NotificationRecordResponse); ok {
+					assert.Equal(t, len(tt.mockData), len(items))
+				}
 				assert.Equal(t, tt.req.Page, result.Page)
 				assert.Equal(t, tt.req.PageSize, result.PageSize)
 			}

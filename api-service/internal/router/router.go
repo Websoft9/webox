@@ -5,6 +5,7 @@ import (
 	"api-service/internal/controller"
 	serviceInterface "api-service/internal/interface/service"
 	"api-service/internal/middleware"
+	"api-service/pkg/errors"
 	"api-service/pkg/logger"
 	"net/http"
 	"time"
@@ -25,10 +26,12 @@ type Controllers struct {
 	AuditLogController             *controller.AuditLogController
 	UserProfileController          *controller.UserProfileController
 	SystemConfigController         *controller.SystemConfigController
+	AlertController                *controller.AlertController
+	TagController                  *controller.TagController
+	SecretKeyController            *controller.SecretKeyController
 	NotificationRecordController   *controller.NotificationRecordController
 	NotificationChannelController  *controller.NotificationChannelController
 	NotificationTemplateController *controller.NotificationTemplateController
-
 	// More controllers can be added
 	// AppController  *controller.ApplicationController
 }
@@ -85,8 +88,7 @@ func setupMiddleware(
 	r.Use(middleware.I18nMiddleware())
 	r.Use(middleware.PermissionMiddleware(permissionService, apiTokenService, cfg, log))
 	r.Use(middleware.AuditLogMiddleware(auditLogService, log))
-	r.Use(middleware.ErrorHandler(log))
-	r.Use(middleware.RequestValidator(log))
+	r.Use(errors.ErrorHandler(log))
 }
 
 // setupHealthCheck sets up health check routes
@@ -137,7 +139,7 @@ func setupAPIRoutes(v1 *gin.RouterGroup, controllers *Controllers) {
 	// Routes requiring JWT authentication
 	protected := v1.Group("/")
 	setupUserAuthRoutes(v1, controllers.UserAuthController)
-	setupI18nRoutes(v1, controllers.I18nController)
+	setupI18nRoutes(v1, protected, controllers.I18nController)
 	setupUserRoutes(protected, controllers.UserController)
 	setupRoleRoutes(protected, controllers.RolePermissionController)
 	setupPermissionRoutes(protected, controllers.RolePermissionController)
@@ -148,6 +150,9 @@ func setupAPIRoutes(v1 *gin.RouterGroup, controllers *Controllers) {
 	setupUserProfileRoutes(protected, controllers.UserProfileController)
 	setupSystemConfigRoutes(protected, controllers.SystemConfigController)
 	setupNotificationRoutes(protected, controllers.NotificationRecordController, controllers.NotificationChannelController, controllers.NotificationTemplateController)
+	setupTagRoutes(protected, controllers.TagController)
+	setupAlertRoutes(protected, controllers.AlertController)
+	setupSecretKeyRoutes(protected, controllers.SecretKeyController)
 }
 
 // setupUserRoutes sets up user related routes
@@ -166,7 +171,7 @@ func setupUserAuthRoutes(v1 *gin.RouterGroup, userAuthController *controller.Use
 }
 
 // setupI18nRoutes sets up internationalization routes
-func setupI18nRoutes(v1 *gin.RouterGroup, i18nController *controller.I18nController) {
+func setupI18nRoutes(v1, protected *gin.RouterGroup, i18nController *controller.I18nController) {
 	if i18nController == nil {
 		return
 	}
@@ -174,8 +179,10 @@ func setupI18nRoutes(v1 *gin.RouterGroup, i18nController *controller.I18nControl
 	// i18n related routes (no JWT verification required)
 	i18nGroup := v1.Group("/i18n")
 	i18nGroup.GET("/languages", i18nController.GetLanguages)
-	i18nGroup.GET("/translations/:lang", i18nController.GetTranslations)
-	i18nGroup.GET("/test", i18nController.TestI18n)
+
+	// Protected i18n routes (JWT verification required)
+	protectedI18n := protected.Group("/profile")
+	protectedI18n.PUT("/switch-language", i18nController.SwitchLanguage)
 }
 
 // setupUserRoutes sets up user management routes
@@ -277,7 +284,7 @@ func setupAuditLogRoutes(protected *gin.RouterGroup, auditLogController *control
 	auditLogs := protected.Group("/audit-logs")
 	auditLogs.GET("", auditLogController.ListAuditLogs)
 	auditLogs.GET("/:id", auditLogController.GetAuditLog)
-	auditLogs.GET("/statistics", auditLogController.GetAuditLogStatistics)
+
 	auditLogs.GET("/export", auditLogController.ExportAuditLogs)
 }
 
@@ -359,4 +366,62 @@ func setupNotificationRoutes(
 		// Template test route
 		notifications.POST("/templates/:id/test", templateController.TestTemplate)
 	}
+}
+
+// setupTagRoutes sets up tag management routes
+func setupTagRoutes(protected *gin.RouterGroup, tagController *controller.TagController) {
+	if tagController == nil {
+		return
+	}
+
+	// Tag basic management endpoints
+	tags := protected.Group("/tags")
+	tags.GET("", tagController.ListTags)
+	tags.POST("", tagController.CreateTag)
+	tags.GET("/search", tagController.SearchTags)
+	tags.GET("/:id", tagController.GetTag)
+	tags.PUT("/:id", tagController.UpdateTag)
+	tags.DELETE("/:id", tagController.DeleteTag)
+
+	// Tag-resource association endpoints
+	tags.POST("/assign", tagController.AssignTags)
+	tags.POST("/replace", tagController.ReplaceTags)
+	tags.POST("/unassign", tagController.UnassignTags)
+	tags.GET("/taggings", tagController.GetResourceTags)
+	tags.GET("/taggings/search", tagController.SearchResourcesByTags)
+}
+
+// setupAlertRoutes registers all alert related routes
+func setupAlertRoutes(protected *gin.RouterGroup, alertController *controller.AlertController) {
+	alertGroup := protected.Group("/alert")
+
+	// Alert rules routes
+	rulesGroup := alertGroup.Group("/rules")
+	rulesGroup.GET("", alertController.GetAlertRules)          // Get list of alert rules
+	rulesGroup.POST("", alertController.CreateAlertRule)       // Create a new alert rule
+	rulesGroup.GET("/:id", alertController.GetAlertRule)       // Get a single alert rule by ID
+	rulesGroup.PUT("/:id", alertController.UpdateAlertRule)    // Update an alert rule
+	rulesGroup.DELETE("/:id", alertController.DeleteAlertRule) // Delete an alert rule
+
+	recordsGroup := alertGroup.Group("/records")
+	recordsGroup.GET("", alertController.GetAlertRecords)                        // Get list of alert records
+	recordsGroup.PUT("/:id/acknowledge", alertController.AcknowledgeAlertRecord) // Acknowledge an alert
+	recordsGroup.PUT("/:id/resolve", alertController.ResolveAlertRecord)         // Resolve an alert
+}
+
+// setupSecretKeyRoutes sets up secret key management routes
+func setupSecretKeyRoutes(protected *gin.RouterGroup, secretKeyController *controller.SecretKeyController) {
+	if secretKeyController == nil {
+		return
+	}
+
+	// Secret key routes
+	secretKeys := protected.Group("/secret-keys")
+	secretKeys.GET("", secretKeyController.ListSecretKeys)              // GET /api/v1/secret-keys
+	secretKeys.POST("", secretKeyController.CreateSecretKey)            // POST /api/v1/secret-keys
+	secretKeys.GET("/export", secretKeyController.ExportSecretKeys)     // GET /api/v1/secret-keys/export
+	secretKeys.GET("/:id", secretKeyController.GetSecretKey)            // GET /api/v1/secret-keys/{id}
+	secretKeys.GET("/:id/value", secretKeyController.GetSecretKeyValue) // GET /api/v1/secret-keys/{id}/value
+	secretKeys.PUT("/:id", secretKeyController.UpdateSecretKey)         // PUT /api/v1/secret-keys/{id}
+	secretKeys.DELETE("/:id", secretKeyController.DeleteSecretKey)      // DELETE /api/v1/secret-keys/{id}
 }

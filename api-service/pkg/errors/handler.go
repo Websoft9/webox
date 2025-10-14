@@ -2,7 +2,8 @@ package errors
 
 import (
 	"api-service/pkg/i18n"
-	"api-service/pkg/response"
+	"api-service/pkg/logger"
+	"api-service/pkg/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -11,37 +12,40 @@ import (
 // ErrorHandlerMiddleware provides unified error handling middleware for Gin
 // It catches panics and converts them into structured error responses
 // This middleware ensures consistent error formatting across the application
-func ErrorHandlerMiddleware() gin.HandlerFunc {
+func ErrorHandler(log logger.Logger) gin.HandlerFunc {
 	return gin.CustomRecovery(func(c *gin.Context, recovered interface{}) {
 		// Handle different types of recovered values
 		switch err := recovered.(type) {
 		case string:
 			// Handle string panics as internal errors
-			HandleError(c, NewAppErrorWithI18n(CodeInternalError, err, "error.unknown_error"))
+			log.ErrorContext(c, err)
+			processes(c, NewAppErrorWithI18nDetails(CodeInternalError, "error.unknown_error", err))
 		case error:
 			// Wrap standard errors as internal errors
-			HandleError(c, WrapError(err, CodeInternalError, "error.internal_error"))
+			log.ErrorContext(c, "system panic", logger.ErrorField(err))
+			processes(c, NewAppErrorWrapError(err, CodeInternalError))
 		default:
 			// Handle unknown panic types
-			HandleError(c, ErrInternalError)
+			log.ErrorContext(c, "system panic", logger.Any("error", recovered))
+			processes(c, ErrInternalError)
 		}
 		c.Abort()
 	})
 }
 
-// HandleError provides unified error handling for HTTP responses
+// Processes provides unified error handling for HTTP responses
 // It processes both standard Go errors and custom AppErrors,
 // applying internationalization when available
-func HandleError(c *gin.Context, err error) {
-	// Extract language preference from request context
-	lang := getLanguageFromContext(c)
+func processes(c *gin.Context, err error) {
+	// Extract user language preference from redis
+	lang := utils.GetUserLangFromRedis(c)
 
 	// Check if the error is a custom AppError
 	appErr, ok := err.(*AppError)
 	if !ok {
 		// Handle standard Go errors as internal server errors
 		message := i18n.T("error.internal_error", lang)
-		response.Error(c, http.StatusInternalServerError, message, err.Error())
+		sendErrorResponse(c, http.StatusInternalServerError, CodeInternalError, message, err.Error())
 		return
 	}
 
@@ -56,27 +60,16 @@ func HandleError(c *gin.Context, err error) {
 		}
 	}
 
-	// Send structured error response with appropriate HTTP status
-	response.Error(c, appErr.HTTPStatus, message, appErr.Details)
+	// Send structured error response
+	sendErrorResponse(c, appErr.HTTPStatus, appErr.Code, message, appErr.Details)
 }
 
-// getLanguageFromContext extracts the language preference from Gin context
-// It returns the default language if no preference is found
-func getLanguageFromContext(c *gin.Context) string {
-	if lang, exists := c.Get("language"); exists {
-		if langStr, ok := lang.(string); ok {
-			return langStr
-		}
-	}
-	return i18n.DefaultLanguage
-}
-
-// IsAppError checks if an error is an AppError and returns it
-// This utility function helps with type assertion and error handling
-// Returns the AppError and a boolean indicating success
-func IsAppError(err error) (*AppError, bool) {
-	if appErr, ok := err.(*AppError); ok {
-		return appErr, true
-	}
-	return nil, false
+// sendErrorResponse sends a structured error response without importing the response package
+// This prevents circular import dependencies
+func sendErrorResponse(c *gin.Context, statusCode HTTPCode, errorCode ErrorCode, message, details string) {
+	c.JSON(int(statusCode), gin.H{
+		"code":    int(errorCode),
+		"message": message,
+		"error":   details,
+	})
 }

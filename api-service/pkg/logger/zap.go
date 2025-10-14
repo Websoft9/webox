@@ -23,8 +23,8 @@ const (
 
 // Constant definitions
 const (
-	DefaultFilePermission = 0o666 // Default file permission
-	ContextFieldCapacity  = 4     // Context field capacity
+	DefaultFilePermission = 0666 // Default file permission
+	ContextFieldCapacity  = 4    // Context field capacity
 )
 
 // Allowed log file directory prefixes (safe paths)

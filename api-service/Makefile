@@ -6,8 +6,7 @@ build:
 
 # 构建用户创建工具
 build-create-user:
-	mkdir -p tools/create-user
-	go build -v -o tools/create-user/create-user ./tools/create-user
+	go build -v -o scripts/create-user ./tools/create-user
 
 # 运行应用
 run:
@@ -92,8 +91,7 @@ test-db:
 
 # 重置SQLite数据库
 reset-db:
-	rm -f data/websoft9.db
-	./scripts/init_db.sh --init ./scripts/init_data.sql
+	./scripts/init_db.sh --init ./scripts/init_data.sql --force
 
 # 健康检查
 health-check:

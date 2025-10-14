@@ -7,18 +7,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// LoggerMiddleware is a Gin middleware for logging HTTP requests and responses
+// LoggerMiddleware structured logging middleware
 func LoggerMiddleware(log logger.Logger) gin.HandlerFunc {
 	return gin.HandlerFunc(func(c *gin.Context) {
 		startTime := time.Now()
 
-		// Process the request
+		// Process request
 		c.Next()
 
-		// Calculate the duration
+		// Calculate processing time
 		duration := time.Since(startTime)
 
-		// Log the request details
+		// Log request information
 		log.InfoContext(c, "HTTP Request",
 			logger.String("method", c.Request.Method),
 			logger.String("path", c.Request.URL.Path),
@@ -30,7 +30,7 @@ func LoggerMiddleware(log logger.Logger) gin.HandlerFunc {
 	})
 }
 
-// Logger returns a Gin logger middleware instance
+// Logger simple logging middleware for backward compatibility
 func Logger() gin.HandlerFunc {
 	return gin.Logger()
 }

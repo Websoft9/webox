@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"api-service/internal/dto/request"
 	"api-service/internal/model"
 	"context"
 )
@@ -20,7 +21,7 @@ type UserProfileRepository interface {
 	UpdateUserPassword(ctx context.Context, userID uint, passwordHash string) error
 
 	// GetLoginHistories gets the login history for a user with pagination
-	GetLoginHistories(ctx context.Context, userID uint, page, pageSize int) ([]model.UserLoginHistory, int64, error)
+	GetLoginHistories(ctx context.Context, userID uint, req *request.LoginHistoryRequest) ([]*model.UserLoginHistory, int64, error)
 
 	// get user configuration by user ID, category, and config key
 	GetUserConfig(ctx context.Context, userID uint, category, configKey string) (*model.UserProfile, error)

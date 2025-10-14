@@ -2,6 +2,7 @@ package service
 
 import (
 	"api-service/internal/config"
+	"api-service/internal/constants"
 	"api-service/internal/dto/request"
 	"api-service/internal/dto/response"
 	"api-service/internal/interface/repository"
@@ -10,7 +11,6 @@ import (
 	"api-service/pkg/auth"
 	"api-service/pkg/email"
 	"api-service/pkg/errors"
-	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
 	"api-service/pkg/redis"
 	"context"
@@ -31,6 +31,7 @@ var (
 const (
 	tokenRandomBytesSize    = 32 // Size in bytes for verification token generation
 	secondsToMinutesConvert = 60 // Conversion factor from seconds to minutes
+	hashKeyValuePairs       = 2  // Number of elements per key-value pair for Redis hash
 )
 
 // VerificationToken represents email verification or password reset token
@@ -46,40 +47,43 @@ type VerificationToken struct {
 type userAuthService struct {
 	userRepo          repository.UserRepository
 	apiTokenRepo      repository.APITokenRepository
+	userProfileRepo   repository.UserProfileRepository
+	systemConfigRepo  repository.SystemConfigRepository
 	emailService      email.EmailService
 	oauth2Service     *OAuth2Service
 	logger            logger.Logger
 	appConfig         *config.Config
 	authConfigManager *config.AuthConfigManager
-	i18nInstance      *i18n.I18n
 	authPolicy        *auth.AuthPolicy
 }
 
 func NewUserAuthService(
 	userRepo repository.UserRepository,
 	apiTokenRepo repository.APITokenRepository,
+	userProfileRepo repository.UserProfileRepository,
+	systemConfigRepo repository.SystemConfigRepository,
 	oauth2Service *OAuth2Service,
 	zapLogger logger.Logger,
 	appConfig *config.Config,
 	authConfigManager *config.AuthConfigManager,
-	i18nInstance *i18n.I18n,
 ) service.UserAuthService {
 	// Create email service internally
 	var emailService email.EmailService
 	if appConfig.Email.SMTP.Host != "" && appConfig.Email.SMTP.Username != "" {
-		emailService = email.NewEmailService(appConfig, zapLogger, i18nInstance)
+		emailService = email.NewEmailService(appConfig, zapLogger)
 	}
 	authConfig = authConfigManager.GetConfig()
 
 	service := &userAuthService{
 		userRepo:          userRepo,
 		apiTokenRepo:      apiTokenRepo,
+		userProfileRepo:   userProfileRepo,
+		systemConfigRepo:  systemConfigRepo,
 		emailService:      emailService,
 		oauth2Service:     oauth2Service,
 		logger:            zapLogger,
 		appConfig:         appConfig,
 		authConfigManager: authConfigManager,
-		i18nInstance:      i18nInstance,
 		authPolicy:        auth.NewAuthPolicy(authConfigManager, zapLogger),
 	}
 
@@ -161,7 +165,7 @@ func (s *userAuthService) Register(ctx context.Context, req *request.UserRegiste
 		logger.Uint("user_id", user.ID),
 		logger.String("email", req.Username))
 
-	return s.buildUserResponse(user), nil
+	return response.BuildUserResponse(user), nil
 }
 
 // Login handles user authentication with username/email and password
@@ -238,7 +242,13 @@ func (s *userAuthService) Login(ctx context.Context, req *request.UserLoginReque
 		// Don't return error as login is already successful
 	}
 
-	// 8. Build response
+	// 8. Store user preferences in Redis
+	if err := s.storeUserPreferencesInRedis(ctx, user.ID); err != nil {
+		s.logger.WarnContext(ctx, "Failed to store user preferences in Redis", logger.ErrorField(err))
+		// Don't return error as login is already successful
+	}
+
+	// 9. Build response
 	s.logger.InfoContext(ctx, "User login successful",
 		logger.Uint("user_id", user.ID),
 		logger.String("username", user.Username),
@@ -247,7 +257,7 @@ func (s *userAuthService) Login(ctx context.Context, req *request.UserLoginReque
 	return &response.UserLoginResponse{
 		Token:     token,
 		ExpiresAt: expiresAt,
-		User:      *s.buildUserResponse(user),
+		User:      *response.BuildUserResponse(user),
 	}, nil
 }
 
@@ -572,7 +582,7 @@ func (s *userAuthService) OAuth2Login(ctx context.Context, req *request.OAuth2Lo
 	return &response.UserLoginResponse{
 		Token:     token,
 		ExpiresAt: expiresAt,
-		User:      *s.buildUserResponse(user),
+		User:      *response.BuildUserResponse(user),
 	}, nil
 }
 
@@ -609,12 +619,12 @@ func (s *userAuthService) findOrCreateOAuth2User(ctx context.Context, userInfo *
 				logger.String("provider", provider))
 			return user, nil
 		} else if err != gorm.ErrRecordNotFound {
-			return nil, errors.WrapError(err, errors.CodeInternalError, "Failed to find user")
+			return nil, errors.NewAppError(errors.CodeRecordNotFound)
 		}
 	}
 
 	if !authConfig.UserAuth.OAuth2.AutoRegister {
-		return nil, errors.NewAppErrorWithI18n(errors.CodeRecordNotFound, "User not found and auto-registration disabled", "user.auto_registration_disabled")
+		return nil, errors.NewAppError(errors.CodeRecordNotFound)
 	}
 
 	// 3. 创建新用户
@@ -638,7 +648,7 @@ func (s *userAuthService) findOrCreateOAuth2User(ctx context.Context, userInfo *
 
 	if err := s.userRepo.Create(ctx, user); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to create OAuth2 user", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeInternalError, "Failed to create user")
+		return nil, errors.NewAppError(errors.CodeRecordCreateFailed)
 	}
 
 	s.logger.InfoContext(ctx, "Created new OAuth2 user",
@@ -647,42 +657,6 @@ func (s *userAuthService) findOrCreateOAuth2User(ctx context.Context, userInfo *
 		logger.String("provider", provider))
 
 	return user, nil
-}
-
-// buildUserResponse 构建用户响应
-func (s *userAuthService) buildUserResponse(user *model.User) *response.UserResponse {
-	resp := &response.UserResponse{
-		ID:          user.ID,
-		Username:    user.Username,
-		Email:       user.Email,
-		Nickname:    user.Nickname,
-		Phone:       user.Phone,
-		Avatar:      user.Avatar,
-		Gender:      user.Gender,
-		Signature:   user.Signature,
-		Status:      user.Status,
-		LastLoginAt: user.LastLoginAt,
-		LastLoginIP: user.LastLoginIP,
-		Timezone:    user.Timezone,
-		Language:    user.Language,
-		CreatedAt:   user.CreatedAt,
-		UpdatedAt:   user.UpdatedAt,
-	}
-
-	if len(user.Roles) > 0 {
-		resp.Roles = make([]response.RoleResponse, len(user.Roles))
-		for i := range user.Roles {
-			role := &user.Roles[i]
-			resp.Roles[i] = response.RoleResponse{
-				ID:          role.ID,
-				Name:        role.Name,
-				Code:        role.Code,
-				Description: role.Description,
-			}
-		}
-	}
-
-	return resp
 }
 
 // setEmailVerificationLock sets email verification lock in Redis
@@ -998,4 +972,112 @@ func (s *userAuthService) markTokenAsUsed(ctx context.Context, token string) err
 
 	s.logger.InfoContext(ctx, "Token marked as used", logger.String("token", token[:8]+"..."))
 	return nil
+}
+
+// storeUserPreferencesInRedis stores user preferences in Redis using HASH structure
+func (s *userAuthService) storeUserPreferencesInRedis(ctx context.Context, userID uint) error {
+	s.logger.InfoContext(ctx, "Storing user preferences in Redis", logger.Uint("user_id", userID))
+
+	// 1. Query user preferences from database using UserProfileRepository
+	// Get language and timezone preferences (general category)
+	preferences, err := s.userProfileRepo.GetUserConfigsByCategory(ctx, userID, constants.UserCategory)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to get user preferences from database",
+			logger.ErrorField(err), logger.Uint("user_id", userID))
+		return err
+	}
+
+	// 2. Check for missing preferences and fill with system defaults
+	preferences = s.fillMissingPreferences(ctx, preferences)
+
+	// 3. Generate Redis key for user preferences
+	redisKey := redis.FormatRedisKeyWithID(redis.RK_USER_PREFERENCES, userID)
+
+	// 4. Convert preferences to Redis hash field-value pairs
+	preferencesMap := make(map[string]interface{})
+	for _, pref := range preferences {
+		if pref.ConfigKey != "" {
+			preferencesMap[pref.ConfigKey] = pref.ConfigValue
+		}
+	}
+
+	// 5. Store preferences in Redis using HASH structure
+	if len(preferencesMap) > 0 {
+		// Convert map to alternating key-value slice for HSet
+		hashValues := make([]interface{}, 0, len(preferencesMap)*hashKeyValuePairs)
+		for key, value := range preferencesMap {
+			hashValues = append(hashValues, key, value)
+		}
+
+		_, err = redis.HSet(ctx, redisKey, hashValues...)
+		if err != nil {
+			s.logger.ErrorContext(ctx, "Failed to store preferences in Redis HASH",
+				logger.ErrorField(err), logger.String("key", redisKey))
+			return err
+		}
+
+		s.logger.InfoContext(ctx, "User preferences stored in Redis successfully",
+			logger.Uint("user_id", userID),
+			logger.String("key", redisKey),
+			logger.Int("preferences_count", len(preferencesMap)))
+	} else {
+		s.logger.InfoContext(ctx, "No user preferences found to store in Redis",
+			logger.Uint("user_id", userID))
+	}
+
+	return nil
+}
+
+// fillMissingPreferences checks for missing language and timezone preferences
+// and fills them with system defaults if needed
+func (s *userAuthService) fillMissingPreferences(ctx context.Context, preferences []*model.UserProfile) []*model.UserProfile {
+	// Create a map to track existing preferences
+	existingPrefs := make(map[string]string)
+	for _, pref := range preferences {
+		if pref.ConfigKey != "" {
+			existingPrefs[pref.ConfigKey] = pref.ConfigValue
+		}
+	}
+
+	preferencesMapping := map[string]string{
+		constants.UserLanguage: constants.SystemLanguage,
+		constants.UserTimezone: constants.SystemTimezone,
+	}
+
+	for userPref, sysConfig := range preferencesMapping {
+		if _, hasKey := existingPrefs[userPref]; !hasKey {
+			configValue := s.getSystemConfigByKey(ctx, sysConfig)
+
+			// If system config is empty, use hardcoded defaults
+			if configValue == "" {
+				switch userPref {
+				case constants.UserLanguage:
+					configValue = constants.DefaultLanguage
+				case constants.UserTimezone:
+					configValue = constants.DefaultTimeZone
+				}
+			}
+
+			preferences = append(preferences, &model.UserProfile{
+				ConfigKey:   userPref,
+				ConfigValue: configValue,
+			})
+			s.logger.InfoContext(ctx, "Added default preference value",
+				logger.String(userPref, configValue))
+		}
+	}
+	return preferences
+}
+
+// getSystemConfigByKey retrieves system configuration by key
+func (s *userAuthService) getSystemConfigByKey(ctx context.Context, configKey string) string {
+	config, err := s.systemConfigRepo.GetByKey(ctx, configKey)
+	if err != nil && err != gorm.ErrRecordNotFound {
+		s.logger.WarnContext(ctx, "Failed to get system config", logger.ErrorField(err))
+	}
+
+	if config != nil && config.ConfigValue != "" {
+		return config.ConfigValue
+	}
+	return ""
 }

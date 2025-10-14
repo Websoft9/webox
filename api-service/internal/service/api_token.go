@@ -7,7 +7,6 @@ import (
 	"api-service/internal/interface/service"
 	"api-service/pkg/auth"
 	"api-service/pkg/errors"
-	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
 	"api-service/pkg/redis"
 	"context"
@@ -22,7 +21,6 @@ type apiTokenService struct {
 	authConfigManager *config.AuthConfigManager
 	db                *gorm.DB
 	logger            logger.Logger
-	i18n              *i18n.I18n
 }
 
 // NewAPITokenService creates a new API token service instance
@@ -31,14 +29,12 @@ func NewAPITokenService(
 	authConfigManager *config.AuthConfigManager,
 	db *gorm.DB,
 	logger logger.Logger,
-	i18n *i18n.I18n,
 ) service.APITokenService {
 	return &apiTokenService{
 		tokenRepo:         tokenRepo,
 		authConfigManager: authConfigManager,
 		db:                db,
 		logger:            logger,
-		i18n:              i18n,
 	}
 }
 
@@ -50,7 +46,7 @@ func (s *apiTokenService) CleanExpiredTokens(ctx context.Context) error {
 
 	if err := s.tokenRepo.CleanExpiredTokens(ctx); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to clean expired tokens", logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeInternalError, "failed to clean expired tokens")
+		return errors.NewAppError(errors.CodeRecordDeleteFailed)
 	}
 
 	s.logger.InfoContext(ctx, "Expired API tokens cleaned successfully")
@@ -76,7 +72,7 @@ func (s *apiTokenService) RevokeAPITokenByToken(ctx context.Context, token strin
 
 	// Check if user owns the token
 	if apiToken.UserID != userID {
-		return errors.NewAppErrorWithMessage(errors.CodeRecordNotFound, "token not found")
+		return errors.NewAppError(errors.CodeRecordNotFound)
 	}
 
 	// Delete the token (revoke)
@@ -115,7 +111,7 @@ func (s *apiTokenService) RefreshUserAPIToken(ctx context.Context, userID uint) 
 	newToken, expiresAt, err := auth.GetGlobalJWT().RefreshToken(token.Token)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to generate new token", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeRecordCreateFailed, "failed to generate new token")
+		return nil, errors.NewAppError(errors.CodeRecordCreateFailed)
 	}
 
 	// Update token

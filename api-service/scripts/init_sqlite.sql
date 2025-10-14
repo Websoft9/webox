@@ -232,37 +232,46 @@ CREATE TABLE IF NOT EXISTS servers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name VARCHAR(64) NOT NULL,
     hostname VARCHAR(255) NOT NULL,
-    ip_address VARCHAR(45) NOT NULL,
+    host VARCHAR(255) NOT NULL,
     internal_ip VARCHAR(45),
+    ipv6_address VARCHAR(45),
     ssh_port INTEGER DEFAULT 22,
-    os_type VARCHAR(32) NOT NULL,
+    ssh_credential_id VARCHAR(64),
+    os_distro VARCHAR(32),
     os_version VARCHAR(64),
     kernel_version VARCHAR(64),
     cpu_cores INTEGER DEFAULT 0,
     memory_total INTEGER DEFAULT 0,
     disk_total INTEGER DEFAULT 0,
     architecture VARCHAR(16),
-    status VARCHAR(20) DEFAULT 'UNKNOWN',
-    last_heartbeat_at DATETIME,
-    resource_group_id INTEGER REFERENCES resource_groups(id),
-    owner_id INTEGER NOT NULL REFERENCES users(id),
+    resource_group_id INTEGER REFERENCES resource_groups(id) ON DELETE SET NULL,
+    owner_id INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     description TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    deleted_at DATETIME
 );
 
--- Client agents table
+-- Server agents table
 CREATE TABLE IF NOT EXISTS server_agents (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    server_id INTEGER NOT NULL REFERENCES servers(id),
+    server_id INTEGER NOT NULL,
+    agent_id VARCHAR(64) NOT NULL UNIQUE,
+    deployment_type VARCHAR(20) DEFAULT 'docker',
     container_id VARCHAR(64),
+    container_name VARCHAR(128),
+    service_name VARCHAR(64),
+    binary_path VARCHAR(255),
+    config_path VARCHAR(255),
     agent_ip VARCHAR(45),
-    agent_port INTEGER DEFAULT 22,
+    agent_port INTEGER DEFAULT 8080,
     version VARCHAR(32),
-    status VARCHAR(20) DEFAULT 'UNKNOWN',
+    pull_mode INTEGER DEFAULT 1,
+    pull_interval INTEGER DEFAULT 30,
     last_heartbeat_at DATETIME,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(server_id)
 );
 
 -- Application instances table
@@ -318,6 +327,18 @@ CREATE TABLE IF NOT EXISTS secret_keys (
     owner_id INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- User secret access table (many-to-many relationship between users and secret_keys)
+CREATE TABLE IF NOT EXISTS user_secret (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    secret_key_id INTEGER NOT NULL REFERENCES secret_keys(id) ON DELETE CASCADE,
+    granted_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    granted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    expires_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, secret_key_id)
 );
 
 -- Application gateways table
@@ -584,6 +605,16 @@ CREATE TABLE IF NOT EXISTS roles (
     status INTEGER DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Modules table
+CREATE TABLE IF NOT EXISTS modules (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name VARCHAR(64) NOT NULL,
+    code VARCHAR(64) NOT NULL UNIQUE,
+    description TEXT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Permissions table
@@ -981,6 +1012,7 @@ CREATE INDEX IF NOT EXISTS idx_user_roles_role ON user_roles(role_id);
 CREATE INDEX IF NOT EXISTS idx_users_status ON users(status);
 CREATE INDEX IF NOT EXISTS idx_role_permissions_role ON role_permissions(role_id);
 CREATE INDEX IF NOT EXISTS idx_role_permissions_permission ON role_permissions(permission_code);
+CREATE INDEX IF NOT EXISTS idx_module_code ON modules (code);
 
 -- Alert notification related indexes
 CREATE INDEX IF NOT EXISTS idx_alert_rules_owner ON alert_rules(owner_id);
@@ -1007,8 +1039,13 @@ CREATE INDEX IF NOT EXISTS idx_workflow_tasks_workflow ON workflow_tasks(workflo
 CREATE INDEX IF NOT EXISTS idx_workflow_executions_task ON workflow_executions(task_id);
 
 -- Resource management related indexes
+CREATE INDEX IF NOT EXISTS idx_servers_name ON servers(name);
+CREATE INDEX IF NOT EXISTS idx_servers_host ON servers(host);
 CREATE INDEX IF NOT EXISTS idx_servers_owner ON servers(owner_id);
-CREATE INDEX IF NOT EXISTS idx_servers_status ON servers(status);
+CREATE INDEX IF NOT EXISTS idx_servers_deleted_at ON servers(deleted_at);
+CREATE INDEX IF NOT EXISTS idx_server_agents_server ON server_agents(server_id);
+CREATE INDEX IF NOT EXISTS idx_server_agents_last_heartbeat ON server_agents(last_heartbeat_at);
+CREATE INDEX IF NOT EXISTS idx_server_agents_deployment_type ON server_agents(deployment_type);
 CREATE INDEX IF NOT EXISTS idx_app_instances_server ON app_instances(server_id);
 CREATE INDEX IF NOT EXISTS idx_app_instances_template ON app_instances(template_id);
 
@@ -1096,6 +1133,13 @@ CREATE TRIGGER IF NOT EXISTS update_permissions_updated_at
     BEGIN
         UPDATE permissions SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
     END;
+
+CREATE TRIGGER IF NOT EXISTS modules_updated_at
+AFTER UPDATE ON modules
+FOR EACH ROW
+BEGIN
+    UPDATE modules SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
 
 -- Server related triggers
 CREATE TRIGGER IF NOT EXISTS update_servers_updated_at

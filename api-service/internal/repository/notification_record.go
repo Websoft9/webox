@@ -4,11 +4,13 @@ import (
 	"context"
 	"time"
 
-	"gorm.io/gorm"
-
+	"api-service/internal/constants"
 	"api-service/internal/dto/request"
 	"api-service/internal/interface/repository"
 	"api-service/internal/model"
+	"api-service/pkg/errors"
+
+	"gorm.io/gorm"
 )
 
 type notificationRecordRepository struct {
@@ -23,11 +25,12 @@ func NewNotificationRecordRepository(db *gorm.DB) repository.NotificationRecordR
 // GetByID retrieves a notification record by ID
 func (r *notificationRecordRepository) GetByID(ctx context.Context, id uint) (*model.NotificationRecord, error) {
 	var record model.NotificationRecord
-	err := r.db.WithContext(ctx).
-		Where("id = ?", id).
-		First(&record).Error
+	err := r.db.WithContext(ctx).Where("id = ?", id).First(&record).Error
 	if err != nil {
-		return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.NewAppError(errors.CodeRecordNotFound)
+		}
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 	return &record, nil
 }
@@ -50,13 +53,14 @@ func (r *notificationRecordRepository) GetList(ctx context.Context, req *request
 		query = query.Where("recipient LIKE ?", "%"+req.Recipient+"%")
 	}
 	if req.SentStart != "" {
-		sentStart, err := time.Parse("2006-01-02 15:04:05", req.SentStart)
+		sentStart, err := time.Parse(constants.DefaultTimeFormat, req.SentStart)
+
 		if err == nil {
 			query = query.Where("sent_at >= ?", sentStart)
 		}
 	}
 	if req.SentEnd != "" {
-		sentEnd, err := time.Parse("2006-01-02 15:04:05", req.SentEnd)
+		sentEnd, err := time.Parse(constants.DefaultTimeFormat, req.SentEnd)
 		if err == nil {
 			query = query.Where("sent_at <= ?", sentEnd)
 		}
@@ -64,7 +68,7 @@ func (r *notificationRecordRepository) GetList(ctx context.Context, req *request
 
 	// Count total records
 	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, err
+		return nil, 0, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	// Apply pagination and order
@@ -74,5 +78,9 @@ func (r *notificationRecordRepository) GetList(ctx context.Context, req *request
 		Limit(req.GetPageSize()).
 		Find(&records).Error
 
-	return records, total, err
+	if err != nil {
+		return nil, 0, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
+	}
+
+	return records, total, nil
 }

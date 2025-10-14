@@ -10,9 +10,11 @@ import (
 	repoImpl "api-service/internal/repository"
 	"api-service/internal/router"
 	serviceImpl "api-service/internal/service"
+	customValidator "api-service/internal/validator"
 	"api-service/pkg/auth"
 	"api-service/pkg/crypto"
 	"api-service/pkg/database"
+	"api-service/pkg/email"
 	"api-service/pkg/errors"
 	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
@@ -32,8 +34,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"gorm.io/gorm"
-
-	_ "api-service/docs" // This line is necessary for go-swagger to find your docs!
+	// _ "api-service/docs" // This line is necessary for go-swagger to find your docs!
 )
 
 //	@title			Websoft9 API Service
@@ -176,6 +177,11 @@ func initDatabaseWrapper(cfg *config.Config, zapLogger logger.Logger) (*database
 		&model.UserLoginHistory{},
 		&model.UserProfile{},
 		&model.SystemConfig{},
+		&model.Tag{},
+		&model.Tagging{},
+		&model.AlertRecord{},
+		&model.AlertRule{},
+		&model.SecretKey{},
 		&model.NotificationRecord{},
 		&model.NotificationChannelConfig{},
 		&model.NotificationTemplate{},
@@ -240,6 +246,11 @@ func startServer(
 ) error {
 	// Initialize request validator for input validation
 	validatorInstance := validator.New()
+
+	// Register custom validators
+	if err := customValidator.RegisterCustomValidators(validatorInstance); err != nil {
+		return fmt.Errorf("failed to register custom validators: %w", err)
+	}
 
 	// Initialize data access layer repositories with database connection
 	repos := initRepositories(db, zapLogger)
@@ -346,6 +357,9 @@ type repositories struct {
 	auditLogRepo             repoInterface.AuditLogRepository
 	userProfileRepo          repoInterface.UserProfileRepository
 	systemConfigRepo         repoInterface.SystemConfigRepository
+	tagRepo                  repoInterface.TagRepository
+	alertRepo                repoInterface.AlertRepository
+	secretKeyRepo            repoInterface.SecretKeyRepository
 	notificationRepo         repoInterface.NotificationRecordRepository
 	notificationChannelRepo  repoInterface.NotificationChannelRepository
 	notificationTemplateRepo repoInterface.NotificationTemplateRepository
@@ -363,6 +377,9 @@ func initRepositories(db *gorm.DB, zapLogger logger.Logger) *repositories {
 		auditLogRepo:             repoImpl.NewAuditLogRepository(db),
 		userProfileRepo:          repoImpl.NewUserProfileRepository(db),
 		systemConfigRepo:         repoImpl.NewSystemConfigRepository(db),
+		tagRepo:                  repoImpl.NewTagRepository(db),
+		alertRepo:                repoImpl.NewAlertRepository(db),
+		secretKeyRepo:            repoImpl.NewSecretKeyRepository(db),
 		notificationRepo:         repoImpl.NewNotificationRecordRepository(db),
 		notificationChannelRepo:  repoImpl.NewNotificationChannelRepository(db, zapLogger),
 		notificationTemplateRepo: repoImpl.NewNotificationTemplateRepository(db),
@@ -382,6 +399,10 @@ type businessServices struct {
 	auditLogService             serviceInterface.AuditLogService
 	userProfileService          serviceInterface.UserProfileService
 	systemConfigService         serviceInterface.SystemConfigService
+	tagService                  serviceInterface.TagService
+	alertServices               serviceInterface.AlertService
+	secretKeyService            serviceInterface.SecretKeyService
+	i18nService                 serviceInterface.I18nService
 	notificationRecordService   serviceInterface.NotificationRecordService
 	notificationChannelService  serviceInterface.NotificationChannelService
 	notificationTemplateService serviceInterface.NotificationTemplateService
@@ -401,24 +422,41 @@ func initBusinessServices(
 	oauth2Service := serviceImpl.NewOAuth2Service(authConfigManager, zapLogger)
 	userService := serviceImpl.NewUserService(repos.userRepo, zapLogger)
 
-	// Create notification channel service first
-	notificationChannelService := serviceImpl.NewNotificationChannelService(repos.notificationChannelRepo, zapLogger, i18nInstance)
+	// Create email service first
+	emailService := email.NewEmailService(cfg, zapLogger)
 
-	return &businessServices{
-		userService:                 userService,
-		userAuthService:             serviceImpl.NewUserAuthService(repos.userRepo, repos.apiTokenRepo, oauth2Service, zapLogger, cfg, authConfigManager, i18nInstance),
-		roleService:                 serviceImpl.NewRoleService(repos.roleRepo, repos.permissionRepo, db, zapLogger, i18nInstance),
-		permissionService:           serviceImpl.NewPermissionService(repos.permissionRepo, db, zapLogger, i18nInstance),
-		apiTokenService:             serviceImpl.NewAPITokenService(repos.apiTokenRepo, authConfigManager, db, zapLogger, i18nInstance),
-		authConfigService:           serviceImpl.NewAuthConfigService(authConfigManager, zapLogger),
-		twoFactorService:            serviceImpl.NewTwoFactorService(repos.twoFactorRepo, db, zapLogger, i18nInstance),
-		auditLogService:             serviceImpl.NewAuditLogService(repos.auditLogRepo, userService, db, zapLogger, i18nInstance, cfg),
-		userProfileService:          serviceImpl.NewUserProfileService(repos.userProfileRepo, zapLogger, i18nInstance),
-		systemConfigService:         serviceImpl.NewSystemConfigService(repos.systemConfigRepo, cfg, db, zapLogger, i18nInstance),
-		notificationRecordService:   serviceImpl.NewNotificationRecordService(repos.notificationRepo, zapLogger, i18nInstance),
-		notificationChannelService:  notificationChannelService,
-		notificationTemplateService: serviceImpl.NewNotificationTemplateService(repos.notificationTemplateRepo, notificationChannelService, zapLogger, i18nInstance),
+	services := &businessServices{
+		userService: userService,
+		userAuthService: serviceImpl.NewUserAuthService(
+			repos.userRepo,
+			repos.apiTokenRepo,
+			repos.userProfileRepo,
+			repos.systemConfigRepo,
+			oauth2Service,
+			zapLogger,
+			cfg,
+			authConfigManager,
+		),
+		roleService:                serviceImpl.NewRoleService(repos.roleRepo, repos.permissionRepo, db, zapLogger),
+		permissionService:          serviceImpl.NewPermissionService(repos.permissionRepo, db, zapLogger),
+		apiTokenService:            serviceImpl.NewAPITokenService(repos.apiTokenRepo, authConfigManager, db, zapLogger),
+		authConfigService:          serviceImpl.NewAuthConfigService(authConfigManager, zapLogger),
+		twoFactorService:           serviceImpl.NewTwoFactorService(repos.twoFactorRepo, db, zapLogger),
+		auditLogService:            serviceImpl.NewAuditLogService(repos.auditLogRepo, userService, db, zapLogger, cfg),
+		systemConfigService:        serviceImpl.NewSystemConfigService(repos.systemConfigRepo, cfg, db, zapLogger),
+		userProfileService:         serviceImpl.NewUserProfileService(repos.userProfileRepo, zapLogger, i18nInstance),
+		tagService:                 serviceImpl.NewTagService(repos.tagRepo, db, zapLogger, i18nInstance),
+		alertServices:              serviceImpl.NewAlertService(repos.alertRepo, zapLogger, i18nInstance),
+		secretKeyService:           serviceImpl.NewSecretKeyService(repos.secretKeyRepo, zapLogger, i18nInstance, cfg),
+		i18nService:                serviceImpl.NewI18nService(repos.userProfileRepo, zapLogger),
+		notificationRecordService:  serviceImpl.NewNotificationRecordService(repos.notificationRepo, zapLogger),
+		notificationChannelService: serviceImpl.NewNotificationChannelService(repos.notificationChannelRepo, zapLogger, emailService),
 	}
+
+	// Create notification template service after channel service is created
+	services.notificationTemplateService = serviceImpl.NewNotificationTemplateService(repos.notificationTemplateRepo, services.notificationChannelService, zapLogger)
+
+	return services
 }
 
 // initControllers creates and initializes all HTTP controllers with their dependencies
@@ -434,15 +472,14 @@ func initControllers(
 	var oauth2ServiceForSecurity *serviceImpl.OAuth2Service
 
 	return &router.Controllers{
-		UserController:     controller.NewUserController(services.userService, zapLogger, i18nInstance),
-		UserAuthController: controller.NewUserAuthController(services.userAuthService, zapLogger, i18nInstance),
-		I18nController:     controller.NewI18nController(),
+		UserController:     controller.NewUserController(services.userService, zapLogger, i18nInstance, validatorInstance),
+		UserAuthController: controller.NewUserAuthController(services.userAuthService, validatorInstance, zapLogger),
+		I18nController:     controller.NewI18nController(services.i18nService, validatorInstance, zapLogger),
 		RolePermissionController: controller.NewRolePermissionController(
 			services.roleService,
 			services.permissionService,
 			validatorInstance,
 			zapLogger,
-			i18nInstance,
 		),
 		SecurityController: controller.NewSecurityController(
 			services.apiTokenService,
@@ -451,20 +488,26 @@ func initControllers(
 			services.twoFactorService,
 			validatorInstance,
 			zapLogger,
-			i18nInstance,
 		),
 		HealthController:      controller.NewHealthController(cfg),
-		AuditLogController:    controller.NewAuditLogController(services.auditLogService, validatorInstance, zapLogger, i18nInstance),
-		UserProfileController: controller.NewUserProfileController(services.userProfileService, zapLogger, i18nInstance),
+		AuditLogController:    controller.NewAuditLogController(services.auditLogService, validatorInstance, zapLogger),
+		UserProfileController: controller.NewUserProfileController(services.userProfileService, zapLogger, i18nInstance, validatorInstance),
 		SystemConfigController: controller.NewSystemConfigController(
 			services.systemConfigService,
 			validatorInstance,
 			zapLogger,
+		),
+		AlertController: controller.NewAlertController(services.alertServices, zapLogger, i18nInstance, validatorInstance),
+		TagController: controller.NewTagController(
+			services.tagService,
+			validatorInstance,
+			zapLogger,
 			i18nInstance,
 		),
-		NotificationRecordController:   controller.NewNotificationRecordController(services.notificationRecordService, i18nInstance),
-		NotificationChannelController:  controller.NewNotificationChannelController(services.notificationChannelService, zapLogger, i18nInstance, validatorInstance),
-		NotificationTemplateController: controller.NewNotificationTemplateController(services.notificationTemplateService, zapLogger, i18nInstance),
+		SecretKeyController:            controller.NewSecretKeyController(services.secretKeyService, zapLogger, i18nInstance, validatorInstance),
+		NotificationRecordController:   controller.NewNotificationRecordController(services.notificationRecordService, validatorInstance, zapLogger),
+		NotificationChannelController:  controller.NewNotificationChannelController(services.notificationChannelService, zapLogger, validatorInstance),
+		NotificationTemplateController: controller.NewNotificationTemplateController(services.notificationTemplateService, validatorInstance, zapLogger),
 	}
 }
 
@@ -478,7 +521,7 @@ func shutdownServices(ctx context.Context, zapLogger logger.Logger, db *gorm.DB,
 	// 1. Close Redis connection pool
 	zapLogger.Info("Closing Redis connection...")
 	if err := redis.Close(); err != nil {
-		shutdownErr := errors.WrapError(err, errors.CodeInternalError, "failed to close Redis connection")
+		shutdownErr := errors.NewAppErrorWrapError(err, errors.CodeInternalError)
 		shutdownErrors = append(shutdownErrors, shutdownErr)
 		zapLogger.Error("Redis shutdown error", logger.String("error", shutdownErr.Error()))
 	} else {
@@ -497,7 +540,7 @@ func shutdownServices(ctx context.Context, zapLogger logger.Logger, db *gorm.DB,
 		zapLogger.Info("Closing database connection...")
 		sqlDB, err := db.DB()
 		if err != nil {
-			shutdownErr := errors.WrapError(err, errors.CodeInternalError, "failed to get underlying sql.DB instance")
+			shutdownErr := errors.NewAppErrorWrapError(err, errors.CodeInternalError)
 			shutdownErrors = append(shutdownErrors, shutdownErr)
 			zapLogger.Error("Database connection retrieval error", logger.String("error", shutdownErr.Error()))
 		} else {
@@ -514,14 +557,14 @@ func shutdownServices(ctx context.Context, zapLogger logger.Logger, db *gorm.DB,
 			select {
 			case err := <-done:
 				if err != nil {
-					shutdownErr := errors.WrapError(err, errors.CodeInternalError, "failed to close database connection")
+					shutdownErr := errors.NewAppErrorWrapError(err, errors.CodeInternalError)
 					shutdownErrors = append(shutdownErrors, shutdownErr)
 					zapLogger.Error("Database shutdown error", logger.String("error", shutdownErr.Error()))
 				} else {
 					zapLogger.Info("Database connection closed successfully")
 				}
 			case <-dbCloseCtx.Done():
-				shutdownErr := errors.NewAppError(errors.CodeInternalError, "database connection close timed out")
+				shutdownErr := errors.NewAppError(errors.CodeInternalError)
 				shutdownErrors = append(shutdownErrors, shutdownErr)
 				zapLogger.Error("Database shutdown timeout", logger.String("error", shutdownErr.Error()))
 			}

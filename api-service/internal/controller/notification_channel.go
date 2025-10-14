@@ -3,13 +3,14 @@ package controller
 import (
 	"net/http"
 
+	response "api-service/internal/dto/common"
+
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 
 	"api-service/internal/dto/request"
 	"api-service/internal/interface/service"
 	"api-service/pkg/errors"
-	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
 )
 
@@ -17,7 +18,6 @@ import (
 type NotificationChannelController struct {
 	channelService service.NotificationChannelService
 	logger         logger.Logger
-	i18n           *i18n.I18n
 	validator      *validator.Validate
 }
 
@@ -25,13 +25,11 @@ type NotificationChannelController struct {
 func NewNotificationChannelController(
 	channelService service.NotificationChannelService,
 	logger logger.Logger,
-	i18n *i18n.I18n,
 	validator *validator.Validate,
 ) *NotificationChannelController {
 	return &NotificationChannelController{
 		channelService: channelService,
 		logger:         logger,
-		i18n:           i18n,
 		validator:      validator,
 	}
 }
@@ -46,31 +44,28 @@ func NewNotificationChannelController(
 // @Param page query int false "Page number" default(1)
 // @Param page_size query int false "Page size" default(20)
 // @Param search query string false "Search keyword"
-// @Param channel_type query string false "Channel type filter" Enums(EMAIL,WEBHOOK,INTERNAL)
-// @Success 200 {object} response.APIResponse{data=response.NotificationChannelListResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Param channel_type query string false "Channel type filter" Enums(EMAIL,WEBHOOK)
+// @Success		200		{object}	common.APIResponse	"Test Success"
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/notifications/channels [get]
 func (ctrl *NotificationChannelController) GetChannelList(c *gin.Context) {
 	var req request.GetNotificationChannelListRequest
 
 	// Bind and validate query parameters
-	if !BindAndValidateQuery(c, &req, ctrl.validator, ctrl.logger, ctrl.i18n) {
+	if !BindAndValidateQuery(c, &req, ctrl.validator, ctrl.logger) {
 		return
 	}
 
 	// Call service
 	result, err := ctrl.channelService.GetChannelList(c.Request.Context(), &req)
 	if err != nil {
-		ResponseWithError(c, err, ctrl.logger, ctrl.i18n)
+		response.WithError(c, err)
 		return
 	}
 
-	ctrl.logger.InfoContext(c.Request.Context(), "Notification channel list retrieved successfully",
-		logger.Int("count", len(result.Items)))
-
-	ResponseOKWithData(c, result, "notification.channel.list_success", ctrl.i18n)
+	response.SuccessWithData(c, result)
 }
 
 // GetChannelByCode get notification channel details by code
@@ -81,31 +76,31 @@ func (ctrl *NotificationChannelController) GetChannelList(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param code path string true "Channel code"
-// @Success 200 {object} response.APIResponse{data=response.NotificationChannelDetailResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.NotificationChannelResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/notifications/channels/{code} [get]
 func (ctrl *NotificationChannelController) GetChannelByCode(c *gin.Context) {
 	code := c.Param("code")
 	if code == "" {
 		ctrl.logger.WarnContext(c.Request.Context(), "Channel code is required")
-		ResponseBadRequest(c, errors.NewAppError(errors.CodeValidationFailed, "Channel code is required"), "common.validation_failed", ctrl.i18n)
+		response.WithError(c, errors.NewAppError(errors.CodeValidationFailed))
 		return
 	}
 
 	// Call service
 	result, err := ctrl.channelService.GetChannelByCode(c.Request.Context(), code)
 	if err != nil {
-		ResponseWithError(c, err, ctrl.logger, ctrl.i18n)
+		response.WithError(c, err)
 		return
 	}
 
 	ctrl.logger.InfoContext(c.Request.Context(), "Notification channel retrieved successfully",
 		logger.String("code", code))
 
-	ResponseOKWithData(c, result, "notification.channel.get_success", ctrl.i18n)
+	response.SuccessWithData(c, result)
 }
 
 // CreateEmailChannel create email notification channel
@@ -116,22 +111,22 @@ func (ctrl *NotificationChannelController) GetChannelByCode(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param request body request.CreateEmailChannelRequest true "Email channel configuration"
-// @Success 201 {object} response.APIResponse{data=response.NotificationChannelResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 409 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 201 {object} common.APIResponse{data=response.NotificationChannelResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 409 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/notifications/channels/email [post]
 func (ctrl *NotificationChannelController) CreateEmailChannel(c *gin.Context) {
 	var req request.CreateEmailChannelRequest
 
 	// Bind and validate request
-	if !BindAndValidateRequest(c, &req, ctrl.validator, ctrl.logger, ctrl.i18n) {
+	if !BindAndValidateRequest(c, &req, ctrl.validator, ctrl.logger) {
 		return
 	}
 
 	// Get user ID from context
-	userID, ok := GetUserID(c, ctrl.i18n)
+	userID, ok := GetUserID(c)
 	if !ok {
 		return
 	}
@@ -139,14 +134,14 @@ func (ctrl *NotificationChannelController) CreateEmailChannel(c *gin.Context) {
 	// Call service
 	result, err := ctrl.channelService.CreateEmailChannel(c.Request.Context(), &req, userID)
 	if err != nil {
-		ResponseWithError(c, err, ctrl.logger, ctrl.i18n)
+		response.WithError(c, err)
 		return
 	}
 
 	ctrl.logger.InfoContext(c.Request.Context(), "Email notification channel created successfully",
 		logger.String("code", req.Code))
 
-	ResponseOKWithData(c, result, "notification.channel.create_success", ctrl.i18n)
+	response.SuccessWithData(c, result)
 }
 
 // CreateWebhookChannel create webhook notification channel
@@ -157,22 +152,22 @@ func (ctrl *NotificationChannelController) CreateEmailChannel(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param request body request.CreateWebhookChannelRequest true "Webhook channel configuration"
-// @Success 201 {object} response.APIResponse{data=response.NotificationChannelResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 409 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 201 {object} common.APIResponse{data=response.NotificationChannelResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 409 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/notifications/channels/webhook [post]
 func (ctrl *NotificationChannelController) CreateWebhookChannel(c *gin.Context) {
 	var req request.CreateWebhookChannelRequest
 
 	// Bind and validate request
-	if !BindAndValidateRequest(c, &req, ctrl.validator, ctrl.logger, ctrl.i18n) {
+	if !BindAndValidateRequest(c, &req, ctrl.validator, ctrl.logger) {
 		return
 	}
 
 	// Get user ID from context
-	userID, ok := GetUserID(c, ctrl.i18n)
+	userID, ok := GetUserID(c)
 	if !ok {
 		return
 	}
@@ -180,14 +175,14 @@ func (ctrl *NotificationChannelController) CreateWebhookChannel(c *gin.Context) 
 	// Call service
 	result, err := ctrl.channelService.CreateWebhookChannel(c.Request.Context(), &req, userID)
 	if err != nil {
-		ResponseWithError(c, err, ctrl.logger, ctrl.i18n)
+		response.WithError(c, err)
 		return
 	}
 
 	ctrl.logger.InfoContext(c.Request.Context(), "Webhook notification channel created successfully",
 		logger.String("code", req.Code))
 
-	ResponseOKWithData(c, result, "notification.channel.create_success", ctrl.i18n)
+	response.SuccessWithData(c, result)
 }
 
 // UpdateEmailChannel update email notification channel
@@ -199,29 +194,29 @@ func (ctrl *NotificationChannelController) CreateWebhookChannel(c *gin.Context) 
 // @Security BearerAuth
 // @Param code path string true "Channel code"
 // @Param request body request.UpdateEmailChannelRequest true "Updated email channel configuration"
-// @Success 200 {object} response.APIResponse{data=response.NotificationChannelResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.NotificationChannelResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/notifications/channels/{code}/email [put]
 func (ctrl *NotificationChannelController) UpdateEmailChannel(c *gin.Context) {
 	code := c.Param("code")
 	if code == "" {
 		ctrl.logger.WarnContext(c.Request.Context(), "Channel code is required")
-		ResponseBadRequest(c, errors.NewAppError(errors.CodeValidationFailed, "Channel code is required"), "common.validation_failed", ctrl.i18n)
+		response.WithError(c, errors.NewAppError(errors.CodeValidationFailed))
 		return
 	}
 
 	var req request.UpdateEmailChannelRequest
 
 	// Bind and validate request
-	if !BindAndValidateRequest(c, &req, ctrl.validator, ctrl.logger, ctrl.i18n) {
+	if !BindAndValidateRequest(c, &req, ctrl.validator, ctrl.logger) {
 		return
 	}
 
 	// Get user ID from context
-	userID, ok := GetUserID(c, ctrl.i18n)
+	userID, ok := GetUserID(c)
 	if !ok {
 		return
 	}
@@ -229,14 +224,14 @@ func (ctrl *NotificationChannelController) UpdateEmailChannel(c *gin.Context) {
 	// Call service
 	result, err := ctrl.channelService.UpdateEmailChannel(c.Request.Context(), code, &req, userID)
 	if err != nil {
-		ResponseWithError(c, err, ctrl.logger, ctrl.i18n)
+		response.WithError(c, err)
 		return
 	}
 
 	ctrl.logger.InfoContext(c.Request.Context(), "Email notification channel updated successfully",
 		logger.String("code", code))
 
-	ResponseOKWithData(c, result, "notification.channel.update_success", ctrl.i18n)
+	response.SuccessWithData(c, result)
 }
 
 // UpdateWebhookChannel update webhook notification channel
@@ -248,29 +243,29 @@ func (ctrl *NotificationChannelController) UpdateEmailChannel(c *gin.Context) {
 // @Security BearerAuth
 // @Param code path string true "Channel code"
 // @Param request body request.UpdateWebhookChannelRequest true "Updated webhook channel configuration"
-// @Success 200 {object} response.APIResponse{data=response.NotificationChannelResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse{data=response.NotificationChannelResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/notifications/channels/{code}/webhook [put]
 func (ctrl *NotificationChannelController) UpdateWebhookChannel(c *gin.Context) {
 	code := c.Param("code")
 	if code == "" {
 		ctrl.logger.WarnContext(c.Request.Context(), "Channel code is required")
-		ResponseBadRequest(c, errors.NewAppError(errors.CodeValidationFailed, "Channel code is required"), "common.validation_failed", ctrl.i18n)
+		response.WithError(c, errors.NewAppError(errors.CodeValidationFailed))
 		return
 	}
 
 	var req request.UpdateWebhookChannelRequest
 
 	// Bind and validate request
-	if !BindAndValidateRequest(c, &req, ctrl.validator, ctrl.logger, ctrl.i18n) {
+	if !BindAndValidateRequest(c, &req, ctrl.validator, ctrl.logger) {
 		return
 	}
 
 	// Get user ID from context
-	userID, ok := GetUserID(c, ctrl.i18n)
+	userID, ok := GetUserID(c)
 	if !ok {
 		return
 	}
@@ -278,14 +273,14 @@ func (ctrl *NotificationChannelController) UpdateWebhookChannel(c *gin.Context) 
 	// Call service
 	result, err := ctrl.channelService.UpdateWebhookChannel(c.Request.Context(), code, &req, userID)
 	if err != nil {
-		ResponseWithError(c, err, ctrl.logger, ctrl.i18n)
+		response.WithError(c, err)
 		return
 	}
 
 	ctrl.logger.InfoContext(c.Request.Context(), "Webhook notification channel updated successfully",
 		logger.String("code", code))
 
-	ResponseOKWithData(c, result, "notification.channel.update_success", ctrl.i18n)
+	response.SuccessWithData(c, result)
 }
 
 // DeleteChannel delete notification channel
@@ -296,22 +291,22 @@ func (ctrl *NotificationChannelController) UpdateWebhookChannel(c *gin.Context) 
 // @Produce json
 // @Security BearerAuth
 // @Param code path string true "Channel code"
-// @Success 204 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 204 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/notifications/channels/{code} [delete]
 func (ctrl *NotificationChannelController) DeleteChannel(c *gin.Context) {
 	code := c.Param("code")
 	if code == "" {
 		ctrl.logger.WarnContext(c.Request.Context(), "Channel code is required")
-		ResponseBadRequest(c, errors.NewAppError(errors.CodeValidationFailed, "Channel code is required"), "common.validation_failed", ctrl.i18n)
+		response.WithError(c, errors.NewAppError(errors.CodeValidationFailed))
 		return
 	}
 
 	// Get user ID from context
-	userID, ok := GetUserID(c, ctrl.i18n)
+	userID, ok := GetUserID(c)
 	if !ok {
 		return
 	}
@@ -319,7 +314,7 @@ func (ctrl *NotificationChannelController) DeleteChannel(c *gin.Context) {
 	// Call service
 	err := ctrl.channelService.DeleteChannel(c.Request.Context(), code, userID)
 	if err != nil {
-		ResponseWithError(c, err, ctrl.logger, ctrl.i18n)
+		response.WithError(c, err)
 		return
 	}
 
@@ -337,31 +332,31 @@ func (ctrl *NotificationChannelController) DeleteChannel(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param request body request.TestEmailChannelRequest true "Test email configuration"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/notifications/channels/test/email [post]
 func (ctrl *NotificationChannelController) TestEmailChannel(c *gin.Context) {
 	var req request.TestEmailChannelRequest
 
 	// Bind and validate request
-	if !BindAndValidateRequest(c, &req, ctrl.validator, ctrl.logger, ctrl.i18n) {
+	if !BindAndValidateRequest(c, &req, ctrl.validator, ctrl.logger) {
 		return
 	}
 
 	// Call service
-	result, err := ctrl.channelService.TestEmailChannel(c.Request.Context(), &req)
+	err := ctrl.channelService.TestEmailChannel(c.Request.Context(), &req)
 	if err != nil {
-		ResponseWithError(c, err, ctrl.logger, ctrl.i18n)
+		response.WithError(c, err)
 		return
 	}
 
 	ctrl.logger.InfoContext(c.Request.Context(), "Email notification channel tested",
 		logger.String("code", req.Code),
-		logger.Bool("success", result.Success))
+		logger.Bool("success", true))
 
-	ResponseOKWithData(c, result, "notification.channel.test_complete", ctrl.i18n)
+	response.Success(c)
 }
 
 // TestWebhookChannel test webhook notification channel
@@ -372,29 +367,29 @@ func (ctrl *NotificationChannelController) TestEmailChannel(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param request body request.TestWebhookChannelRequest true "Test webhook configuration"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 401 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/notifications/channels/test/webhook [post]
 func (ctrl *NotificationChannelController) TestWebhookChannel(c *gin.Context) {
 	var req request.TestWebhookChannelRequest
 
 	// Bind and validate request
-	if !BindAndValidateRequest(c, &req, ctrl.validator, ctrl.logger, ctrl.i18n) {
+	if !BindAndValidateRequest(c, &req, ctrl.validator, ctrl.logger) {
 		return
 	}
 
 	// Call service
-	result, err := ctrl.channelService.TestWebhookChannel(c.Request.Context(), &req)
+	err := ctrl.channelService.TestWebhookChannel(c.Request.Context(), &req)
 	if err != nil {
-		ResponseWithError(c, err, ctrl.logger, ctrl.i18n)
+		response.WithError(c, err)
 		return
 	}
 
 	ctrl.logger.InfoContext(c.Request.Context(), "Webhook notification channel tested",
 		logger.String("code", req.Code),
-		logger.Bool("success", result.Success))
+		logger.Bool("success", true))
 
-	ResponseOKWithData(c, result, "notification.channel.test_complete", ctrl.i18n)
+	response.Success(c)
 }

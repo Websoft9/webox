@@ -8,6 +8,7 @@ import (
 	"api-service/internal/dto/request"
 	"api-service/internal/interface/repository"
 	"api-service/internal/model"
+	"api-service/pkg/errors"
 )
 
 // notificationTemplateRepository implements NotificationTemplateRepository
@@ -24,16 +25,23 @@ func NewNotificationTemplateRepository(db *gorm.DB) repository.NotificationTempl
 
 // Create creates a new notification template
 func (r *notificationTemplateRepository) Create(ctx context.Context, template *model.NotificationTemplate) error {
-	return r.db.WithContext(ctx).Create(template).Error
+	if err := r.db.WithContext(ctx).Create(template).Error; err != nil {
+		return errors.NewAppErrorWrapError(err, errors.CodeRecordCreateFailed)
+	}
+
+	return nil
 }
 
 // GetByID retrieves a notification template by ID
 func (r *notificationTemplateRepository) GetByID(ctx context.Context, id uint) (*model.NotificationTemplate, error) {
 	var template model.NotificationTemplate
-	err := r.db.WithContext(ctx).Where("id = ?", id).First(&template).Error
-	if err != nil {
-		return nil, err
+	if err := r.db.WithContext(ctx).Where("id = ?", id).First(&template).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, errors.NewAppError(errors.CodeRecordNotFound)
+		}
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
+
 	return &template, nil
 }
 
@@ -63,7 +71,7 @@ func (r *notificationTemplateRepository) GetList(ctx context.Context, req *reque
 
 	// Count total records
 	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, err
+		return nil, 0, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	// Apply pagination and sorting
@@ -71,9 +79,8 @@ func (r *notificationTemplateRepository) GetList(ctx context.Context, req *reque
 	pageSize := req.GetPageSize()
 	orderBy := req.GetSortOrder()
 
-	err := query.Order(orderBy).Offset(offset).Limit(pageSize).Find(&templates).Error
-	if err != nil {
-		return nil, 0, err
+	if err := query.Order(orderBy).Offset(offset).Limit(pageSize).Find(&templates).Error; err != nil {
+		return nil, 0, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	return templates, total, nil
@@ -81,12 +88,20 @@ func (r *notificationTemplateRepository) GetList(ctx context.Context, req *reque
 
 // Update updates an existing notification template
 func (r *notificationTemplateRepository) Update(ctx context.Context, template *model.NotificationTemplate) error {
-	return r.db.WithContext(ctx).Save(template).Error
+	if err := r.db.WithContext(ctx).Save(template).Error; err != nil {
+		return errors.NewAppErrorWrapError(err, errors.CodeRecordUpdateFailed)
+	}
+
+	return nil
 }
 
 // Delete deletes a notification template by ID
 func (r *notificationTemplateRepository) Delete(ctx context.Context, id uint) error {
-	return r.db.WithContext(ctx).Delete(&model.NotificationTemplate{}, id).Error
+	if err := r.db.WithContext(ctx).Delete(&model.NotificationTemplate{}, id).Error; err != nil {
+		return errors.NewAppErrorWrapError(err, errors.CodeRecordDeleteFailed)
+	}
+
+	return nil
 }
 
 // ExistsByName checks if a template with the given name exists
@@ -100,7 +115,7 @@ func (r *notificationTemplateRepository) ExistsByName(ctx context.Context, name 
 
 	err := query.Count(&count).Error
 	if err != nil {
-		return false, err
+		return false, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	return count > 0, nil

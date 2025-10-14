@@ -1,9 +1,9 @@
 package controller
 
 import (
+	response "api-service/internal/dto/common"
 	"api-service/internal/dto/request"
 	"api-service/internal/interface/service"
-	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
 
 	"github.com/gin-gonic/gin"
@@ -14,20 +14,17 @@ type SystemConfigController struct {
 	SystemConfigService service.SystemConfigService
 	validator           *validator.Validate
 	logger              logger.Logger
-	i18n                *i18n.I18n
 }
 
 func NewSystemConfigController(
 	systemConfigService service.SystemConfigService,
 	validator *validator.Validate,
 	logger logger.Logger,
-	i18n *i18n.I18n,
 ) *SystemConfigController {
 	return &SystemConfigController{
 		SystemConfigService: systemConfigService,
 		validator:           validator,
 		logger:              logger,
-		i18n:                i18n,
 	}
 }
 
@@ -38,24 +35,24 @@ func NewSystemConfigController(
 // @Security BearerAuth
 // @Param category query string false "Filter by category"
 // @Param keyword query string false "Filter by keyword"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/system-configs [get]
 func (c *SystemConfigController) ListSystemConfigs(ctx *gin.Context) {
 	var req request.ListSystemConfigsRequest
 
-	if !BindAndValidateQuery(ctx, &req, c.validator, c.logger, c.i18n) {
+	if !BindAndValidateQuery(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
 	result, err := c.SystemConfigService.ListSystemConfigs(ctx.Request.Context(), &req)
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err)
 		return
 	}
 
-	ResponseOKWithData(ctx, result, "common.success", c.i18n)
+	response.SuccessWithData(ctx, result)
 }
 
 // TestSMTP tests the SMTP configuration by sending a test email
@@ -65,23 +62,23 @@ func (c *SystemConfigController) ListSystemConfigs(ctx *gin.Context) {
 // @Accept json
 // @Param request body request.TestSMTPRequest true "Test email request"
 // @Security BearerAuth
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/system-configs/smtp/test [post]
 func (c *SystemConfigController) TestSMTP(ctx *gin.Context) {
 	var req request.TestSMTPRequest
-	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger, c.i18n) {
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
 	err := c.SystemConfigService.TestSMTP(ctx.Request.Context(), &req)
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err)
 		return
 	}
 
-	ResponseOK(ctx, "common.success", c.i18n)
+	response.Success(ctx)
 }
 
 // ListBasicConfigs lists basic category system configurations
@@ -90,25 +87,25 @@ func (c *SystemConfigController) TestSMTP(ctx *gin.Context) {
 // @Tags System Config
 // @Security BearerAuth
 // @Param keyword query string false "Filter by keyword"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/system-configs/basic [get]
 func (c *SystemConfigController) ListBasicConfigs(ctx *gin.Context) {
 	var req request.ListSystemConfigsRequest
 
-	if !BindAndValidateQuery(ctx, &req, c.validator, c.logger, c.i18n) {
+	if !BindAndValidateQuery(ctx, &req, c.validator, c.logger) {
 		return
 	}
 	req.Category = "basic"
 
 	result, err := c.SystemConfigService.ListSystemConfigs(ctx.Request.Context(), &req)
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err)
 		return
 	}
 
-	ResponseOKWithData(ctx, result, "common.success", c.i18n)
+	response.SuccessWithData(ctx, result)
 }
 
 // ListSecurityConfigs lists security category system configurations
@@ -117,14 +114,14 @@ func (c *SystemConfigController) ListBasicConfigs(ctx *gin.Context) {
 // @Tags System Config
 // @Security BearerAuth
 // @Param keyword query string false "Filter by keyword"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/system-configs/security [get]
 func (c *SystemConfigController) ListSecurityConfigs(ctx *gin.Context) {
 	var req request.ListSystemConfigsRequest
 
-	if !BindAndValidateQuery(ctx, &req, c.validator, c.logger, c.i18n) {
+	if !BindAndValidateQuery(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
@@ -132,11 +129,11 @@ func (c *SystemConfigController) ListSecurityConfigs(ctx *gin.Context) {
 
 	result, err := c.SystemConfigService.ListSystemConfigs(ctx.Request.Context(), &req)
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err)
 		return
 	}
 
-	ResponseOKWithData(ctx, result, "common.success", c.i18n)
+	response.SuccessWithData(ctx, result)
 }
 
 // ListEmailConfigs lists email category system configurations
@@ -145,14 +142,14 @@ func (c *SystemConfigController) ListSecurityConfigs(ctx *gin.Context) {
 // @Tags System Config
 // @Security BearerAuth
 // @Param keyword query string false "Filter by keyword"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/system-configs/email [get]
 func (c *SystemConfigController) ListEmailConfigs(ctx *gin.Context) {
 	var req request.ListSystemConfigsRequest
 
-	if !BindAndValidateQuery(ctx, &req, c.validator, c.logger, c.i18n) {
+	if !BindAndValidateQuery(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
@@ -160,11 +157,11 @@ func (c *SystemConfigController) ListEmailConfigs(ctx *gin.Context) {
 
 	result, err := c.SystemConfigService.ListSystemConfigs(ctx.Request.Context(), &req)
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err)
 		return
 	}
 
-	ResponseOKWithData(ctx, result, "common.success", c.i18n)
+	response.SuccessWithData(ctx, result)
 }
 
 // BatchUpdateSystemConfigs batch updates system configurations
@@ -175,22 +172,22 @@ func (c *SystemConfigController) ListEmailConfigs(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param configs body request.BatchUpdateSystemConfigsRequest true "Batch System Configuration Data"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
 // @Router /api/v1/system-configs [put]
 func (c *SystemConfigController) BatchUpdateSystemConfigs(ctx *gin.Context) {
 	var req request.BatchUpdateSystemConfigsRequest
 
-	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger, c.i18n) {
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
 	err := c.SystemConfigService.BatchUpdateSystemConfigs(ctx.Request.Context(), &req)
 	if err != nil {
-		ResponseWithError(ctx, err, c.logger, c.i18n)
+		response.WithError(ctx, err)
 		return
 	}
 
-	ResponseOK(ctx, "common.success", c.i18n)
+	response.Success(ctx)
 }

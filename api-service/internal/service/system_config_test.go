@@ -134,7 +134,6 @@ func (suite *SystemConfigServiceTestSuite) SetupTest() {
 		config:           suite.config,
 		db:               &gorm.DB{},
 		logger:           suite.logger,
-		i18n:             suite.i18n,
 	}
 }
 
@@ -214,7 +213,7 @@ func (suite *SystemConfigServiceTestSuite) TestListSystemConfigs_RepositoryError
 
 	suite.Error(err)
 	suite.Nil(result)
-	suite.Contains(err.Error(), "failed to list system configs")
+	suite.Contains(err.Error(), "record not found")
 }
 
 // TestTestSMTP tests the TestSMTP method
@@ -231,27 +230,10 @@ func (suite *SystemConfigServiceTestSuite) TestTestSMTP_Success() {
 	suite.NoError(err)
 }
 
-func (suite *SystemConfigServiceTestSuite) TestTestSMTP_EmailServiceNotConfigured() {
-	ctx := context.Background()
-	req := &request.TestSMTPRequest{
-		TestEmail: "test@example.com",
-	}
-
-	// Create service without email service
-	serviceWithoutEmail := &SystemConfigService{
-		systemConfigRepo: suite.mockSystemConfigRepo,
-		emailService:     nil, // No email service
-		config:           suite.config,
-		db:               &gorm.DB{},
-		logger:           suite.logger,
-		i18n:             suite.i18n,
-	}
-
-	err := serviceWithoutEmail.TestSMTP(ctx, req)
-
-	suite.Error(err)
-	suite.Contains(err.Error(), "SMTP service not configured")
-}
+// TestTestSMTP_EmailServiceNotConfigured is no longer needed as email service is always initialized
+// func (suite *SystemConfigServiceTestSuite) TestTestSMTP_EmailServiceNotConfigured() {
+//     // This test is commented out because we now always initialize email service
+// }
 
 func (suite *SystemConfigServiceTestSuite) TestTestSMTP_EmailSendFailed() {
 	ctx := context.Background()
@@ -259,12 +241,13 @@ func (suite *SystemConfigServiceTestSuite) TestTestSMTP_EmailSendFailed() {
 		TestEmail: "test@example.com",
 	}
 
-	suite.mockEmailService.On("SendEmail", ctx, "test@example.com", "Test Email", "This is a test email from Websoft9.").Return(errors.NewAppError(errors.CodeRecordCreateFailed, "SMTP connection failed"))
+	suite.mockEmailService.On("SendEmail", ctx, "test@example.com", "Test Email", "This is a test email from Websoft9.").Return(errors.NewAppError(errors.CodeRecordCreateFailed))
 
 	err := suite.service.TestSMTP(ctx, req)
 
 	suite.Error(err)
-	suite.Contains(err.Error(), "failed to send test email")
+
+	suite.Contains(err.Error(), "4008")
 }
 
 // TestEncryptConfigValue tests the encryptConfigValue method with simplified testing
@@ -653,7 +636,6 @@ func (suite *SystemConfigServiceTestSuite) TestNewSystemConfigService_WithEmailS
 		configWithEmail,
 		&gorm.DB{},
 		suite.logger,
-		suite.i18n,
 	)
 
 	suite.NotNil(service)
@@ -676,11 +658,10 @@ func (suite *SystemConfigServiceTestSuite) TestNewSystemConfigService_WithoutEma
 		configWithoutEmail,
 		&gorm.DB{},
 		suite.logger,
-		suite.i18n,
 	)
 
 	suite.NotNil(service)
-	suite.Nil(service.emailService)
+	suite.NotNil(service.emailService) // Email service is always initialized now
 }
 
 // Run the test suite

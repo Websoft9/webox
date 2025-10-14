@@ -8,8 +8,6 @@ import (
 	"api-service/internal/model"
 	"api-service/pkg/crypto"
 	"api-service/pkg/email"
-	"api-service/pkg/errors"
-	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
 	"context"
 	"fmt"
@@ -23,7 +21,6 @@ type SystemConfigService struct {
 	emailService     email.EmailService
 	db               *gorm.DB
 	logger           logger.Logger
-	i18n             *i18n.I18n
 }
 
 func NewSystemConfigService(
@@ -31,19 +28,15 @@ func NewSystemConfigService(
 	config *config.Config,
 	db *gorm.DB,
 	logger logger.Logger,
-	i18n *i18n.I18n,
 ) *SystemConfigService {
-	var emailService email.EmailService
-	if config.Email.SMTP.Host != "" && config.Email.SMTP.Username != "" {
-		emailService = email.NewEmailService(config, logger, i18n)
-	}
+	emailService := email.NewEmailService(config, logger)
+
 	return &SystemConfigService{
 		systemConfigRepo: systemConfigRepo,
 		emailService:     emailService,
 		config:           config,
 		db:               db,
 		logger:           logger,
-		i18n:             i18n,
 	}
 }
 
@@ -57,7 +50,7 @@ func (s *SystemConfigService) ListSystemConfigs(ctx context.Context, req *reques
 	systemConfigs, err := s.systemConfigRepo.List(ctx, filter)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "failed to list system configs", logger.ErrorField(err))
-		return nil, errors.WrapError(err, errors.CodeRecordQueryFailed, "failed to list system configs")
+		return nil, err
 	}
 
 	// Decrypt encrypted values
@@ -88,14 +81,10 @@ func (s *SystemConfigService) ListSystemConfigs(ctx context.Context, req *reques
 
 // TestSMTP tests the SMTP configuration by sending a test email
 func (s *SystemConfigService) TestSMTP(ctx context.Context, req *request.TestSMTPRequest) error {
-	if s.emailService == nil {
-		return errors.NewAppError(errors.CodeRecordCreateFailed, "SMTP service not configured")
-	}
-
 	err := s.emailService.SendEmail(ctx, req.TestEmail, "Test Email", "This is a test email from Websoft9.")
 	if err != nil {
 		s.logger.ErrorContext(ctx, "failed to send test email", logger.ErrorField(err))
-		return errors.WrapError(err, errors.CodeRecordCreateFailed, "failed to send test email")
+		return err
 	}
 
 	return nil

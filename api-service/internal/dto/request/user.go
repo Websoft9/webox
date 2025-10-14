@@ -1,6 +1,6 @@
 package request
 
-import "api-service/internal/dto"
+import "api-service/internal/dto/common"
 
 // UserRegisterRequest 用户注册请求
 type UserRegisterRequest struct {
@@ -22,7 +22,7 @@ type UserChangePasswordRequest struct {
 
 // UserListRequest 用户列表请求
 type UserListRequest struct {
-	dto.BaseListRequest
+	common.BaseListRequest
 	Status   *int    `form:"status" json:"status" binding:"omitempty,min=0,max=1" example:"1"`
 	Keyword  *string `form:"keyword" json:"keyword" binding:"omitempty" example:"john"`
 	Gender   *int    `form:"gender" json:"gender" binding:"omitempty,min=0,max=2" example:"1"`
@@ -44,7 +44,7 @@ type UserCreateRequest struct {
 	Status    *int    `json:"status,omitempty" binding:"omitempty,min=0,max=1" example:"1"`                      // Status: 0-disabled, 1-enabled (optional)
 	Timezone  *string `json:"timezone,omitempty" binding:"omitempty,max=64" example:"Asia/Shanghai"`             // Timezone, default UTC (optional)
 	Language  *string `json:"language,omitempty" binding:"omitempty,max=10" example:"zh-CN"`                     // Language, default zh-CN (optional)
-	RoleIDs   []uint  `json:"role_ids,omitempty" binding:"omitempty,dive,gt=0"`                                  // Array of role IDs to assign (optional)
+	RoleIDs   []uint  `json:"role_ids,omitempty" binding:"omitempty,dive,gt=0" example:"1,2"`                    // Array of role IDs to assign (optional)
 }
 
 // UserUpdateRequest 更新用户请求
@@ -63,7 +63,7 @@ type UserUpdateRequest struct {
 
 // UserUpdateStatusRequest 用户状态更新请求
 type UserUpdateStatusRequest struct {
-	Status int `json:"status" binding:"required,min=0,max=1" example:"1"`
+	Status int `json:"status" binding:"min=0,max=1" example:"1"`
 }
 
 // UserPasswordUpdateRequest 管理员修改用户密码请求

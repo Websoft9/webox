@@ -1,10 +1,10 @@
 package request
 
-import "api-service/internal/dto"
+import "api-service/internal/dto/common"
 
 // GetNotificationChannelListRequest represents the request for getting notification channel list
 type GetNotificationChannelListRequest struct {
-	dto.BaseListRequest
+	common.BaseListRequest
 	ChannelType string `form:"channel_type" binding:"omitempty,oneof=EMAIL WEBHOOK" json:"channel_type"`
 	Status      *int8  `form:"status" binding:"omitempty,oneof=0 1" json:"status"`
 	OwnerID     *uint  `form:"owner_id" json:"owner_id"`
