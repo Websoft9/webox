@@ -90,6 +90,16 @@ func (m *MockSecretKeyRepository) CheckUserSecretAccess(ctx context.Context, sec
 	return args.Bool(0), args.Error(1)
 }
 
+func (m *MockSecretKeyRepository) CreateSecretReference(ctx context.Context, reference *model.SecretReference) error {
+	args := m.Called(ctx, reference)
+	return args.Error(0)
+}
+
+func (m *MockSecretKeyRepository) DeleteSecretReferencesBySecretID(ctx context.Context, secretID uint) error {
+	args := m.Called(ctx, secretID)
+	return args.Error(0)
+}
+
 // createTestConfig creates a test configuration with RSA keys
 func createTestConfig() *config.Config {
 	// Generate test RSA key pair
@@ -201,6 +211,11 @@ func TestSecretKeyService_CreateSecretKey_Success(t *testing.T) {
 	// Mock CreateUserSecret calls for each authorized user
 	for range req.AuthorizedUsers {
 		mockRepo.On("CreateUserSecret", ctx, mock.AnythingOfType("*model.UserSecret")).Return(nil)
+	}
+
+	// 新增: Mock CreateSecretReference call if resource_code is provided
+	if req.ResourceCode != nil {
+		mockRepo.On("CreateSecretReference", ctx, mock.AnythingOfType("*model.SecretReference")).Return(nil)
 	}
 
 	// Execute
@@ -371,7 +386,6 @@ func TestSecretKeyService_UpdateSecretKey_Success(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 }
 
-// Tests for DeleteSecretKey
 func TestSecretKeyService_DeleteSecretKey_Success(t *testing.T) {
 	service, mockRepo, _ := setupSecretKeyService()
 	ctx := context.Background()
@@ -384,6 +398,9 @@ func TestSecretKeyService_DeleteSecretKey_Success(t *testing.T) {
 
 	// Mock DeleteUserSecretsBySecretKeyID call
 	mockRepo.On("DeleteUserSecretsBySecretKeyID", ctx, keyID).Return(nil)
+
+	// 新增: Mock DeleteSecretReferencesBySecretID call
+	mockRepo.On("DeleteSecretReferencesBySecretID", ctx, keyID).Return(nil)
 
 	// Mock Delete call
 	mockRepo.On("Delete", ctx, keyID).Return(nil)
@@ -592,6 +609,7 @@ func TestSecretKeyService_FullWorkflow(t *testing.T) {
 
 	// Step 5: Delete secret key
 	mockRepo.On("DeleteUserSecretsBySecretKeyID", ctx, uint(1)).Return(nil)
+	mockRepo.On("DeleteSecretReferencesBySecretID", ctx, uint(1)).Return(nil) // 新增这行
 	mockRepo.On("Delete", ctx, uint(1)).Return(nil)
 
 	err = service.DeleteSecretKey(ctx, 1, userID)

@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"mime/multipart"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"api-service/internal/config"
@@ -20,6 +22,7 @@ import (
 	"api-service/internal/model"
 	"api-service/pkg/crypto"
 	"api-service/pkg/errors"
+	filestorage "api-service/pkg/files"
 	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
 
@@ -293,6 +296,25 @@ func (s *secretKeyService) CreateSecretKey(ctx context.Context, req *request.Sec
 	// Create user-secret relationships for authorized users
 	s.createUserSecretRelationships(ctx, secretKey.ID, req.AuthorizedUsers, userID, req.ExpiresAt)
 
+	// Create secret reference if resource_code is provided
+	if req.ResourceCode != nil && *req.ResourceCode != "" {
+		reference := &model.SecretReference{
+			SecretID:     secretKey.ID,
+			ResourceCode: *req.ResourceCode,
+		}
+
+		if err := s.secretKeyRepo.CreateSecretReference(ctx, reference); err != nil {
+			s.logger.ErrorContext(ctx, "Failed to create secret reference",
+				logger.Uint("secret_key_id", secretKey.ID),
+				logger.String("resource_code", *req.ResourceCode),
+				logger.ErrorField(err))
+		} else {
+			s.logger.InfoContext(ctx, "Secret reference created successfully",
+				logger.Uint("secret_key_id", secretKey.ID),
+				logger.String("resource_code", *req.ResourceCode))
+		}
+	}
+
 	s.logger.InfoContext(ctx, "Secret key created successfully",
 		logger.Uint("secret_key_id", secretKey.ID),
 		logger.Uint("user_id", userID))
@@ -456,6 +478,17 @@ func (s *secretKeyService) DeleteSecretKey(ctx context.Context, id, userID uint)
 
 	s.logger.InfoContext(ctx, "User secret relationships deleted successfully",
 		logger.Uint("secret_key_id", id))
+
+	// Delete all secret references for this secret key
+	if err := s.secretKeyRepo.DeleteSecretReferencesBySecretID(ctx, id); err != nil {
+		s.logger.ErrorContext(ctx, "Failed to delete secret references",
+			logger.Uint("secret_key_id", id),
+			logger.ErrorField(err))
+		// Continue with deletion even if reference deletion fails
+	} else {
+		s.logger.InfoContext(ctx, "Secret references deleted successfully",
+			logger.Uint("secret_key_id", id))
+	}
 
 	// Then delete the secret key itself
 	if err := s.secretKeyRepo.Delete(ctx, id); err != nil {
@@ -725,55 +758,151 @@ func (s *secretKeyService) exportToJSON(secretKeys []*model.SecretKey) (data []b
 }
 
 // UploadSecretFile uploads a secret key file
-func (s *secretKeyService) UploadSecretFile(ctx context.Context, file *multipart.FileHeader, fileType string, userID uint) (*response.SecretFileUploadResponse, error) {
+func (s *secretKeyService) UploadSecretFile(ctx context.Context, file *multipart.FileHeader, fileType string) (*response.SecretFileUploadResponse, error) {
 	s.logger.InfoContext(ctx, "Uploading secret file",
 		logger.String("filename", file.Filename),
-		logger.String("type", fileType),
-		logger.Uint("user_id", userID))
+		logger.String("type", fileType))
 
-	// TODO: 调用 common 文件服务上传文件
-	// 1. 验证文件类型
-	// 2. 验证文件大小
-	// 3. 生成唯一文件名
-	// 4. 保存文件到存储路径
-	// 5. 返回文件信息
+	// 1. Validate file extension
+	ext := strings.ToLower(filepath.Ext(file.Filename))
+	validExt := false
+	for _, allowedExt := range constants.AllowedSecretFileExtensions {
+		if ext == allowedExt {
+			validExt = true
+			break
+		}
+	}
+	if !validExt {
+		s.logger.ErrorContext(ctx, "Invalid file extension",
+			logger.String("filename", file.Filename),
+			logger.String("extension", ext))
+		return nil, errors.NewAppError(
+			errors.CodeInvalidParameterFormat,
+		)
+	}
 
-	// 占位符实现
+	// 3. Open uploaded file
+	src, err := file.Open()
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to open uploaded file",
+			logger.String("filename", file.Filename),
+			logger.ErrorField(err))
+		return nil, errors.NewAppError(
+			errors.CodeResourceNotFound,
+		)
+	}
+	defer src.Close()
+
+	// 4. Construct storage path
+	storagePath := filepath.Join(s.appConfig.Upload.SecretStorage, file.Filename)
+
+	// 5. Save file
+	fs := filestorage.GetInstance()
+	savedFilename, err := fs.SaveFile(src, storagePath, false)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to save file",
+			logger.String("filename", file.Filename),
+			logger.ErrorField(err))
+		return nil, errors.NewAppError(
+			errors.CodeRecordCreateFailed,
+		)
+	}
+
+	s.logger.InfoContext(ctx, "Secret file uploaded successfully",
+		logger.String("filename", savedFilename))
+
 	return &response.SecretFileUploadResponse{
-		Filename:     "placeholder-" + file.Filename,
+		Filename:     savedFilename,
 		OriginalName: file.Filename,
-		FilePath:     "/home/appuser/data/placeholder-" + file.Filename,
+		FilePath:     storagePath,
 	}, nil
 }
 
 // DownloadSecretFile downloads a secret key file
-func (s *secretKeyService) DownloadSecretFile(ctx context.Context, filename string, userID uint) (filePath, originalName string, err error) {
+func (s *secretKeyService) DownloadSecretFile(ctx context.Context, filename string) (filePath, originalName string, err error) {
 	s.logger.InfoContext(ctx, "Downloading secret file",
+		logger.String("filename", filename))
+
+	// 1. Validate filename
+	if filename == "" {
+		s.logger.ErrorContext(ctx, "Filename cannot be empty")
+		return "", "", errors.NewAppError(errors.CodeValidationFailed)
+	}
+
+	// 2. Construct file storage path
+	storagePath := filepath.Join(s.appConfig.Upload.SecretStorage, filename)
+
+	// 3. Check if file exists
+	fs := filestorage.GetInstance()
+	exists, err := fs.Exists(storagePath)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to check file existence",
+			logger.String("filename", filename),
+			logger.ErrorField(err))
+		return "", "", errors.NewAppError(errors.CodeResourceNotFound)
+	}
+
+	if !exists {
+		s.logger.WarnContext(ctx, "File not found",
+			logger.String("filename", filename))
+		return "", "", errors.NewAppError(errors.CodeRecordNotFound)
+	}
+
+	s.logger.InfoContext(ctx, "Secret file download prepared",
 		logger.String("filename", filename),
-		logger.Uint("user_id", userID))
+		logger.String("storage_path", storagePath))
 
-	// TODO: 调用 common 文件服务下载文件
-	// 1. 验证文件存在
-	// 2. 验证用户权限
-	// 3. 获取文件路径和原始文件名
-	// 4. 返回文件信息
-
-	// 占位符实现
-	return "/home/appuser/data/" + filename, filename, nil
+	// 4. Return file path and original name
+	return storagePath, filename, nil
 }
 
 // DeleteSecretFile deletes a secret key file
-func (s *secretKeyService) DeleteSecretFile(ctx context.Context, filename string, userID uint) error {
+func (s *secretKeyService) DeleteSecretFile(ctx context.Context, filename string) error {
 	s.logger.InfoContext(ctx, "Deleting secret file",
-		logger.String("filename", filename),
-		logger.Uint("user_id", userID))
+		logger.String("filename", filename))
 
-	// TODO: 调用 common 文件服务删除文件
-	// 1. 验证文件存在
-	// 2. 验证用户权限（检查是否为文件所有者）
-	// 3. 删除文件
-	// 4. 记录审计日志
+	// 1. Validate filename
+	if filename == "" {
+		s.logger.ErrorContext(ctx, "Filename cannot be empty")
+		return errors.NewAppError(errors.CodeValidationFailed)
+	}
 
-	// 占位符实现
+	// 2. Construct file storage path
+	storagePath := filepath.Join(s.appConfig.Upload.SecretStorage, filename)
+
+	// 3. Check if file exists
+	fs := filestorage.GetInstance()
+	exists, err := fs.Exists(storagePath)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to check file existence",
+			logger.String("filename", filename),
+			logger.ErrorField(err))
+		return errors.NewAppError(errors.CodeResourceNotFound)
+	}
+
+	if !exists {
+		s.logger.WarnContext(ctx, "File not found",
+			logger.String("filename", filename))
+		return errors.NewAppError(errors.CodeResourceNotFound)
+	}
+
+	// 4. Delete file
+	deleted, err := fs.DeleteFile(storagePath, false)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to delete file",
+			logger.String("filename", filename),
+			logger.ErrorField(err))
+		return errors.NewAppError(errors.CodeRecordDeleteFailed)
+	}
+
+	if !deleted {
+		s.logger.WarnContext(ctx, "File was not deleted",
+			logger.String("filename", filename))
+		return errors.NewAppError(errors.CodeRecordDeleteFailed)
+	}
+
+	s.logger.InfoContext(ctx, "Secret file deleted successfully",
+		logger.String("filename", filename))
+
 	return nil
 }

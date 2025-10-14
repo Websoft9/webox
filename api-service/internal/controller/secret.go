@@ -393,19 +393,8 @@ func (c *SecretKeyController) UploadSecretFile(ctx *gin.Context) {
 	// Get file type parameter (optional)
 	fileType := ctx.DefaultPostForm("type", "certificate")
 
-	// Get current user ID
-	currentUserID, Success := GetUserID(ctx)
-	if !Success {
-		return
-	}
-
-	c.logger.InfoContext(ctx, "Handling upload secret file request",
-		logger.Uint("userID", currentUserID),
-		logger.String("filename", file.Filename),
-		logger.String("type", fileType))
-
 	// Call service layer to upload file
-	result, err := c.secretKeyService.UploadSecretFile(ctx.Request.Context(), file, fileType, currentUserID)
+	result, err := c.secretKeyService.UploadSecretFile(ctx.Request.Context(), file, fileType)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Failed to upload secret file",
 			logger.String("filename", file.Filename),
@@ -441,18 +430,8 @@ func (c *SecretKeyController) DownloadSecretFile(ctx *gin.Context) {
 		return
 	}
 
-	// Get current user ID
-	currentUserID, Success := GetUserID(ctx)
-	if !Success {
-		return
-	}
-
-	c.logger.InfoContext(ctx, "Handling download secret file request",
-		logger.Uint("userID", currentUserID),
-		logger.String("filename", filename))
-
 	// Call service layer to download file
-	filePath, originalName, err := c.secretKeyService.DownloadSecretFile(ctx.Request.Context(), filename, currentUserID)
+	filePath, originalName, err := c.secretKeyService.DownloadSecretFile(ctx.Request.Context(), filename)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Failed to download secret file",
 			logger.String("filename", filename),
@@ -504,7 +483,7 @@ func (c *SecretKeyController) DeleteSecretFile(ctx *gin.Context) {
 		logger.String("filename", filename))
 
 	// Call service layer to delete file
-	err := c.secretKeyService.DeleteSecretFile(ctx.Request.Context(), filename, currentUserID)
+	err := c.secretKeyService.DeleteSecretFile(ctx.Request.Context(), filename)
 	if err != nil {
 		c.logger.ErrorContext(ctx, "Failed to delete secret file",
 			logger.String("filename", filename),

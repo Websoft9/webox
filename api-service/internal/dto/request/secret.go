@@ -17,6 +17,7 @@ type SecretKeyCreateRequest struct {
 	ResourceGroupID *uint                  `json:"resource_group_id" binding:"omitempty"`
 	ExpiresAt       *time.Time             `json:"expires_at" binding:"omitempty"`
 	AuthorizedUsers []uint                 `json:"authorized_users" binding:"omitempty"`
+	ResourceCode    *string                `json:"resource_code" binding:"omitempty,max=64"`
 }
 
 // Validate validates the custom_fields based on key_type

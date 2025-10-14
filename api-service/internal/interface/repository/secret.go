@@ -44,4 +44,10 @@ type SecretKeyRepository interface {
 
 	// CheckUserSecretAccess checks if a user has access to a secret key
 	CheckUserSecretAccess(ctx context.Context, userID, secretKeyID uint) (bool, error)
+
+	// CreateSecretReference creates a secret reference record
+	CreateSecretReference(ctx context.Context, reference *model.SecretReference) error
+
+	// DeleteSecretReferencesBySecretID deletes all references for a secret key
+	DeleteSecretReferencesBySecretID(ctx context.Context, secretID uint) error
 }

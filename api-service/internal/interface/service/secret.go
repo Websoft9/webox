@@ -36,11 +36,11 @@ type SecretKeyService interface {
 	ValidateSecretKeyOwnership(ctx context.Context, secretKeyID, userID uint) error
 
 	// UploadSecretFile uploads a secret key file
-	UploadSecretFile(ctx context.Context, file *multipart.FileHeader, fileType string, userID uint) (*response.SecretFileUploadResponse, error)
+	UploadSecretFile(ctx context.Context, file *multipart.FileHeader, fileType string) (*response.SecretFileUploadResponse, error)
 
 	// DownloadSecretFile downloads a secret key file
-	DownloadSecretFile(ctx context.Context, filename string, userID uint) (filePath string, originalName string, err error)
+	DownloadSecretFile(ctx context.Context, filename string) (filePath string, originalName string, err error)
 
 	// DeleteSecretFile deletes a secret key file
-	DeleteSecretFile(ctx context.Context, filename string, userID uint) error
+	DeleteSecretFile(ctx context.Context, filename string) error
 }

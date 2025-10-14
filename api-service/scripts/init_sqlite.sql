@@ -992,6 +992,16 @@ CREATE TABLE IF NOT EXISTS taggings (
     FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
 );
 
+-- Secret references table
+CREATE TABLE IF NOT EXISTS secret_references (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    secret_id INTEGER NOT NULL,
+    resource_code VARCHAR(64) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (secret_id) REFERENCES secret_keys(id) ON DELETE CASCADE
+);
+
 -- ========================================
 -- Index creation
 -- ========================================
@@ -1052,6 +1062,11 @@ CREATE INDEX IF NOT EXISTS idx_server_agents_last_heartbeat ON server_agents(las
 CREATE INDEX IF NOT EXISTS idx_server_agents_deployment_type ON server_agents(deployment_type);
 CREATE INDEX IF NOT EXISTS idx_app_instances_server ON app_instances(server_id);
 CREATE INDEX IF NOT EXISTS idx_app_instances_template ON app_instances(template_id);
+
+-- secret_references indexes
+CREATE INDEX IF NOT EXISTS idx_secret_references_secret_id ON secret_references(secret_id);
+CREATE INDEX IF NOT EXISTS idx_secret_references_resource_code ON secret_references(resource_code);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_secret_references_secret_resource ON secret_references(secret_id, resource_code);
 
 -- Audit log indexes
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user ON audit_logs(user_id);

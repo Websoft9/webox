@@ -86,6 +86,18 @@ func (SecretKey) TableName() string {
 	return "secret_keys"
 }
 
+// SecretReference represents secret key reference record
+type SecretReference struct {
+	ID           uint      `gorm:"primarykey" json:"id"`
+	SecretID     uint      `gorm:"not null;index:idx_secret_references_secret_id;uniqueIndex:idx_secret_references_secret_resource" json:"secret_id"`
+	ResourceCode string    `gorm:"type:varchar(64);not null;index:idx_secret_references_resource_code;uniqueIndex:idx_secret_references_secret_resource" json:"resource_code"`
+	CreatedAt    time.Time `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt    time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+
+	// Associations
+	SecretKey SecretKey `gorm:"foreignKey:SecretID" json:"-"`
+}
+
 // UserSecret represents the relationship between users and secret keys
 type UserSecret struct {
 	ID          uint       `gorm:"primaryKey;autoIncrement" json:"id"`
