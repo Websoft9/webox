@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"regexp"
-	"time"
 
 	"api-service/internal/constants"
 	"api-service/internal/dto/common"
@@ -46,16 +45,11 @@ func (s *notificationTemplateService) CreateTemplate(
 		logger.String("operation", "CreateTemplate"),
 		logger.String("name", req.Name))
 
-	// Validate email template must have subject
-	if req.TemplateType == "EMAIL" && (req.Subject == nil || *req.Subject == "") {
-		return nil, errors.NewAppError(errors.CodeValidationFailed)
-	}
-
 	// Check if template name already exists
 	exists, err := s.templateRepo.ExistsByName(ctx, req.Name)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to check template name existence", logger.ErrorField(err))
-		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
+		return nil, err
 	}
 	if exists {
 		return nil, errors.NewAppError(errors.CodeResourceAlreadyExists)
@@ -74,7 +68,7 @@ func (s *notificationTemplateService) CreateTemplate(
 	// Save to repository
 	if err := s.templateRepo.Create(ctx, template); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to create notification template", logger.ErrorField(err))
-		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordCreateFailed)
+		return nil, err
 	}
 
 	s.logger.InfoContext(ctx, "Notification template created successfully",
@@ -108,7 +102,7 @@ func (s *notificationTemplateService) GetTemplateList(
 	templates, total, err := s.templateRepo.GetList(ctx, req)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to list notification templates", logger.ErrorField(err))
-		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
+		return nil, err
 	}
 
 	templateResponses := make([]response.NotificationTemplateResponse, len(templates))
@@ -142,7 +136,7 @@ func (s *notificationTemplateService) UpdateTemplate(
 		s.logger.ErrorContext(ctx, "Failed to get notification template for update",
 			logger.Uint("template_id", id),
 			logger.ErrorField(err))
-		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordNotFound)
+		return nil, err
 	}
 
 	// Check if system template (cannot be updated)
@@ -156,7 +150,7 @@ func (s *notificationTemplateService) UpdateTemplate(
 		exists, err := s.templateRepo.ExistsByName(ctx, *req.Name, id)
 		if err != nil {
 			s.logger.ErrorContext(ctx, "Failed to check template name existence for update", logger.ErrorField(err))
-			return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
+			return nil, err
 		}
 		if exists {
 			return nil, errors.NewAppError(errors.CodeResourceAlreadyExists)
@@ -172,15 +166,10 @@ func (s *notificationTemplateService) UpdateTemplate(
 		template.Subject = req.Subject
 	}
 
-	// Validate email template must have subject
-	if template.TemplateType == constants.NotificationChannelEmail && (template.Subject == nil || *template.Subject == "") {
-		return nil, errors.NewAppError(errors.CodeValidationFailed)
-	}
-
 	// Update in repository
 	if err := s.templateRepo.Update(ctx, template); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to update notification template", logger.ErrorField(err))
-		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordUpdateFailed)
+		return nil, err
 	}
 
 	s.logger.InfoContext(ctx, "Notification template updated successfully",
@@ -200,7 +189,7 @@ func (s *notificationTemplateService) DeleteTemplate(
 		s.logger.ErrorContext(ctx, "Failed to get notification template for deletion",
 			logger.Uint("template_id", id),
 			logger.ErrorField(err))
-		return errors.NewAppErrorWrapError(err, errors.CodeRecordNotFound)
+		return err
 	}
 
 	// Check if system template (cannot be deleted)
@@ -213,7 +202,7 @@ func (s *notificationTemplateService) DeleteTemplate(
 		s.logger.ErrorContext(ctx, "Failed to delete notification template",
 			logger.Uint("template_id", id),
 			logger.ErrorField(err))
-		return errors.NewAppErrorWrapError(err, errors.CodeRecordDeleteFailed)
+		return err
 	}
 
 	s.logger.InfoContext(ctx, "Notification template deleted successfully",
@@ -233,11 +222,11 @@ func (s *notificationTemplateService) TestTemplate(
 		s.logger.ErrorContext(ctx, "Failed to get notification template for test",
 			logger.Uint("template_id", id),
 			logger.ErrorField(err))
-		return errors.NewAppErrorWrapError(err, errors.CodeRecordNotFound)
+		return err
 	}
 
 	// Validate template variables
-	if validationResult := s.validateTemplateVariables(ctx, template, req); validationResult != nil {
+	if validationResult := s.validateTemplateVariables(template, req); validationResult != nil {
 		return validationResult
 	}
 
@@ -247,7 +236,7 @@ func (s *notificationTemplateService) TestTemplate(
 		s.logger.ErrorContext(ctx, "Failed to get notification channel for test",
 			logger.String("channel_code", req.Code),
 			logger.ErrorField(err))
-		return errors.NewAppErrorWrapError(err, errors.CodeRecordNotFound)
+		return err
 	}
 
 	// Validate template type matches channel type
@@ -272,8 +261,8 @@ func (s *notificationTemplateService) modelToResponse(template *model.Notificati
 		Subject:      template.Subject,
 		IsSystem:     template.IsSystem,
 		Status:       template.Status,
-		CreatedAt:    template.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:    template.UpdatedAt.Format(time.RFC3339),
+		CreatedAt:    template.CreatedAt,
+		UpdatedAt:    template.UpdatedAt,
 	}
 }
 
@@ -286,8 +275,8 @@ func (s *notificationTemplateService) modelToDetailResponse(template *model.Noti
 			Subject:      template.Subject,
 			IsSystem:     template.IsSystem,
 			Status:       template.Status,
-			CreatedAt:    template.CreatedAt.Format(time.RFC3339),
-			UpdatedAt:    template.UpdatedAt.Format(time.RFC3339),
+			CreatedAt:    template.CreatedAt,
+			UpdatedAt:    template.UpdatedAt,
 		},
 		Content: template.Content,
 	}
@@ -369,7 +358,6 @@ func (s *notificationTemplateService) validateVariableData(providedData map[stri
 
 // validateTemplateVariables validates template variables and returns error if validation fails
 func (s *notificationTemplateService) validateTemplateVariables(
-	ctx context.Context,
 	template *model.NotificationTemplate,
 	req *request.TestNotificationTemplateRequest,
 ) error {

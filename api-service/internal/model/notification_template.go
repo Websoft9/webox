@@ -13,8 +13,8 @@ type NotificationTemplate struct {
 	Content      string    `gorm:"type:text;not null" json:"content"`
 	IsSystem     int       `gorm:"default:0;column:is_system" json:"is_system"` // 0-user template, 1-system template
 	Status       int       `gorm:"default:1" json:"status"`                     // 0-disabled, 1-enabled
-	CreatedAt    time.Time `gorm:"autoCreateTime;column:created_at" json:"created_at"`
-	UpdatedAt    time.Time `gorm:"autoUpdateTime;column:updated_at" json:"updated_at"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
 
 // TableName returns the table name for NotificationTemplate

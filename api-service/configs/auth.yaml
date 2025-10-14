@@ -10,7 +10,7 @@ api_auth:
   token_auth:
     algorithm: "HS256"
     secret: "websoft9-jwt-secret-key"
-    expires_in: 1800 # Token validity period (seconds)
+    expires_in: 180000 # Token validity period (seconds)
     refresh_expires_in: 86400 # Refresh token validity period (seconds)
     auto_refresh: true # Whether to automatically refresh tokens
 

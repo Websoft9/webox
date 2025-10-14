@@ -16,8 +16,8 @@ type NotificationRecord struct {
 	RetryCount    int        `json:"retry_count" gorm:"default:0;comment:Retry count"`
 	ReferenceID   *string    `json:"reference_id" gorm:"type:varchar(64);comment:Reference record ID"`
 	ReferenceType *string    `json:"reference_type" gorm:"type:varchar(32);comment:Reference type (table_name)"`
-	CreatedAt     time.Time  `json:"created_at" gorm:"autoCreateTime;comment:Created at"`
-	UpdatedAt     time.Time  `json:"updated_at" gorm:"autoUpdateTime;comment:Updated at"`
+	CreatedAt     time.Time  `json:"created_at"`
+	UpdatedAt     time.Time  `json:"updated_at"`
 }
 
 // TableName returns the table name for NotificationRecord

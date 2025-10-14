@@ -6,15 +6,15 @@ import "api-service/internal/dto/common"
 type CreateNotificationTemplateRequest struct {
 	Name         string  `json:"name" validate:"required,min=2,max=64"`
 	TemplateType string  `json:"template_type" validate:"required,oneof=EMAIL WEBHOOK INTERNAL"`
-	Subject      *string `json:"subject" validate:"omitempty,max=255"`
+	Subject      *string `json:"subject" validate:"required,min=2,max=255"`
 	Content      string  `json:"content" validate:"required"`
 }
 
 // UpdateNotificationTemplateRequest represents the request to update a notification template
 type UpdateNotificationTemplateRequest struct {
 	Name    *string `json:"name" validate:"omitempty,min=2,max=64"`
-	Subject *string `json:"subject" validate:"omitempty,max=255"`
-	Content *string `json:"content" validate:"omitempty"`
+	Subject *string `json:"subject" validate:"required,min=2,max=255"`
+	Content *string `json:"content" validate:"required"`
 }
 
 // GetNotificationTemplateListRequest represents the request to get notification template list

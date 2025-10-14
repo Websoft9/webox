@@ -8,3 +8,6 @@
 .vscode
 
 .*.drawio.bkp
+
+# swagger docs
+api-service/docs

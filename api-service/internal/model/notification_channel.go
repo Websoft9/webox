@@ -1,15 +1,19 @@
 package model
 
+import "time"
+
 // NotificationChannelConfig represents notification channel configuration
 type NotificationChannelConfig struct {
-	BaseModel
-	Code          string  `json:"code" gorm:"uniqueIndex;size:64;not null;comment:Channel unique code"`
-	Name          string  `json:"name" gorm:"size:128;not null;comment:Channel display name"`
-	Description   *string `json:"description" gorm:"size:512;comment:Channel description"`
-	ChannelType   string  `json:"channel_type" gorm:"size:16;not null;comment:Channel type (EMAIL, WEBHOOK)"`
-	ChannelConfig JSON    `json:"channel_config" gorm:"type:json;comment:Channel configuration data"`
-	OwnerID       uint    `json:"owner_id" gorm:"not null;comment:Channel owner user ID"`
-	Status        int8    `json:"status" gorm:"default:1;comment:Channel status (0:disabled, 1:enabled)"`
+	ID            uint      `json:"id" gorm:"primaryKey;autoIncrement;comment:Channel ID"`
+	Code          string    `json:"code" gorm:"uniqueIndex;size:64;not null;comment:Channel unique code"`
+	Name          string    `json:"name" gorm:"size:128;not null;comment:Channel display name"`
+	Description   *string   `json:"description" gorm:"size:512;comment:Channel description"`
+	ChannelType   string    `json:"channel_type" gorm:"size:16;not null;comment:Channel type (EMAIL, WEBHOOK)"`
+	ChannelConfig JSON      `json:"channel_config" gorm:"type:json;comment:Channel configuration data"`
+	OwnerID       uint      `json:"owner_id" gorm:"not null;comment:Channel owner user ID"`
+	Status        int8      `json:"status" gorm:"default:1;comment:Channel status (0:disabled, 1:enabled)"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
 }
 
 // EmailConfig represents email channel configuration
