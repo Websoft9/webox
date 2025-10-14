@@ -43,3 +43,6 @@ data/*
 ehthumbs.db
 Thumbs.db
 redis_test.go
+
+# swagger docs
+api-service/docs
