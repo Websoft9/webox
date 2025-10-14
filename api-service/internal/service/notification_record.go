@@ -3,14 +3,11 @@ package service
 import (
 	"context"
 
-	"gorm.io/gorm"
-
 	"api-service/internal/dto/common"
 	"api-service/internal/dto/request"
 	"api-service/internal/dto/response"
 	"api-service/internal/interface/repository"
 	"api-service/internal/interface/service"
-	"api-service/pkg/errors"
 	"api-service/pkg/logger"
 )
 
@@ -45,7 +42,7 @@ func (s *notificationRecordService) GetNotificationRecordList(
 	records, total, err := s.notificationRepo.GetList(ctx, req)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to get notification records from repository", logger.ErrorField(err))
-		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
+		return nil, err
 	}
 
 	// Convert to response format
@@ -81,16 +78,11 @@ func (s *notificationRecordService) GetNotificationRecordByID(ctx context.Contex
 	// Get record
 	record, err := s.notificationRepo.GetByID(ctx, id)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			s.logger.WarnContext(ctx, "Notification record not found", logger.Uint("record_id", id))
-			return nil, errors.NewAppError(errors.CodeRecordNotFound)
-		}
 		s.logger.ErrorContext(ctx, "Failed to get notification record from repository", logger.ErrorField(err))
-		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
+		return nil, err
 	}
 
-	s.logger.InfoContext(ctx, "Notification record retrieved successfully",
-		logger.Uint("record_id", id))
+	s.logger.InfoContext(ctx, "Notification record retrieved successfully", logger.Uint("record_id", id))
 
 	resp := response.NotificationRecordResponse(*record)
 	return &resp, nil

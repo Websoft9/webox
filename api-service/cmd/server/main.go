@@ -31,11 +31,12 @@ import (
 	"syscall"
 	"time"
 
+	_ "api-service/docs" // This line is necessary for go-swagger to find your docs!
+
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"gorm.io/gorm"
-	// _ "api-service/docs" // This line is necessary for go-swagger to find your docs!
 )
 
 //	@title			Websoft9 API Service
