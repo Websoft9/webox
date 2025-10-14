@@ -16,6 +16,7 @@ import (
 	"api-service/pkg/database"
 	"api-service/pkg/email"
 	"api-service/pkg/errors"
+	"api-service/pkg/files"
 	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
 	"api-service/pkg/redis"
@@ -120,6 +121,9 @@ func main() {
 	if err := startServer(cfg, authConfigManager, zapLogger, i18nInstance, dbWrapper.GetDB(), serviceConns); err != nil {
 		zapLogger.Fatal("Failed to start server", logger.String("error", err.Error()))
 	}
+
+	// 8. Initialize file storage
+	files.InitFileStorage()
 }
 
 // initAuthConfig creates and returns an authentication configuration manager
