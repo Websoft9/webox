@@ -193,7 +193,7 @@ func (c *TagController) DeleteTag(ctx *gin.Context) {
 func (c *TagController) ListTags(ctx *gin.Context) {
 	var req request.TagListRequest
 	// Bind and validate request
-	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
+	if !BindAndValidateQuery(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
@@ -342,7 +342,7 @@ func (c *TagController) UnassignTags(ctx *gin.Context) {
 func (c *TagController) SearchTags(ctx *gin.Context) {
 	var req request.TagNameSearchRequest
 	// Bind and validate request
-	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
+	if !BindAndValidateQuery(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
@@ -374,7 +374,7 @@ func (c *TagController) SearchTags(ctx *gin.Context) {
 func (c *TagController) GetResourceTags(ctx *gin.Context) {
 	var req request.TaggingListRequest
 	// Bind and validate request
-	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
+	if !BindAndValidateQuery(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
@@ -410,7 +410,7 @@ func (c *TagController) GetResourceTags(ctx *gin.Context) {
 func (c *TagController) SearchResourcesByTags(ctx *gin.Context) {
 	var req request.TagSearchRequest
 	// Bind and validate request
-	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
+	if !BindAndValidateQuery(ctx, &req, c.validator, c.logger) {
 		return
 	}
 

@@ -397,8 +397,7 @@ CREATE TABLE IF NOT EXISTS `ssl_certificates` (
 CREATE TABLE IF NOT EXISTS `secret_keys` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(64) NOT NULL COMMENT 'Secret key name',
-    `key_type` ENUM('API_KEY', 'DATABASE', 'SSH', 'CERTIFICATE', 'CUSTOM') NOT NULL COMMENT 'Secret key type',
-    `encrypted_value` TEXT NOT NULL COMMENT 'Encrypted value',
+    `key_type` ENUM('SECRET_KEY', 'ACCOUNT', 'FILE') NOT NULL COMMENT 'Secret key type',
     `description` TEXT NULL COMMENT 'Description',
     `custom_fields` JSON NULL COMMENT 'Custom fields',
     `expires_at` DATETIME NULL COMMENT 'Expiration time',
@@ -1315,6 +1314,19 @@ CREATE TABLE taggings (
     FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Tag-Resource association table';
 
+-- Secret references table
+CREATE TABLE IF NOT EXISTS `secret_references` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `secret_id` BIGINT UNSIGNED NOT NULL,
+    `resource_code` VARCHAR(64) NOT NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_secret_references_secret_id` (`secret_id`),
+    KEY `idx_secret_references_resource_code` (`resource_code`),
+    UNIQUE KEY `idx_secret_references_secret_resource` (`secret_id`, `resource_code`),
+    CONSTRAINT `fk_secret_references_secret` FOREIGN KEY (`secret_id`) REFERENCES `secret_keys` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Secret references table';
 -- ========================================
 -- Index optimization
 -- ========================================

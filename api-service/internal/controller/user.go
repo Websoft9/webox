@@ -57,7 +57,7 @@ func (c *UserController) ListUsers(ctx *gin.Context) {
 	var req request.UserListRequest
 
 	// Bind and validate request
-	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
+	if !BindAndValidateQuery(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
