@@ -83,6 +83,19 @@ const (
 	CodeEncryptFailed                  = 5013 // Data encryption failed
 	CodeDecryptFailed                  = 5014 // Data decryption failed
 
+	// Notification channel related error codes (5100-5199)
+	CodeNotificationChannelNotFound          = 5101 // Notification channel not found
+	CodeNotificationChannelAlreadyExists     = 5102 // Notification channel already exists
+	CodeNotificationChannelInvalidType       = 5103 // Invalid notification channel type
+	CodeNotificationChannelInvalidConfig     = 5104 // Invalid notification channel configuration
+	CodeNotificationChannelTestFailed        = 5105 // Notification channel test failed
+	CodeNotificationChannelEmailTestFailed   = 5106 // Email notification test failed
+	CodeNotificationChannelWebhookTestFailed = 5107 // Webhook notification test failed
+	CodeNotificationChannelCreateFailed      = 5108 // Notification channel creation failed
+	CodeNotificationChannelUpdateFailed      = 5109 // Notification channel update failed
+	CodeNotificationChannelDeleteFailed      = 5110 // Notification channel deletion failed
+	CodeNotificationChannelInUse             = 5111 // Notification channel is in use
+
 	// System related error codes (6000-6999)
 	CodeInternalError                ErrorCode = 6001 // System Internal Error
 	CodeCacheServiceUnavailable      ErrorCode = 6002 // Cache service unavailable

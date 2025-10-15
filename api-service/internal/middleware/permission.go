@@ -57,6 +57,21 @@ var publicRoutes = []string{
 var whiteListRoutes = []string{
 	"/api/v1/api-tokens/refresh", // API token refresh
 	"/api/v1/api-tokens/revoke",  // API token revocation
+
+	"/api/v1/notifications/records",
+	"/api/v1/notifications/records/{id}",
+
+	// Notification channel management - allow all authenticated users
+	"/api/v1/notifications/channels",              // GET/POST channels list
+	"/api/v1/notifications/channels/",             // All channel operations with parameters
+	"/api/v1/notifications/channels/email/test",   // Test email channel
+	"/api/v1/notifications/channels/webhook/test", // Test webhook channel
+
+	// Notification template management - allow all authenticated users
+	"/api/v1/notifications/templates",  // GET/POST templates list
+	"/api/v1/notifications/templates/", // All template operations with parameters
+
+	"/api/v1/notifications/templates/{id}/test", // Test template
 }
 
 // isPublicRoute checks if a given path is a public route that doesn't require authentication

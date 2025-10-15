@@ -10,8 +10,8 @@ type UserRegisterRequest struct {
 
 // UserLoginRequest 用户登录请求
 type UserLoginRequest struct {
-	Username string `json:"username" binding:"required" example:"john@example.com or johndoe"`
-	Password string `json:"password" binding:"required" example:"123456"`
+	Username string `json:"username" binding:"required" example:"admin@websoft9.com"`
+	Password string `json:"password" binding:"required" example:"Websoft9"`
 }
 
 // UserChangePasswordRequest 用户修改密码请求
@@ -58,7 +58,7 @@ type UserUpdateRequest struct {
 	Signature *string `json:"signature,omitempty" binding:"omitempty,max=255" example:"This is my signature"`
 	Timezone  *string `json:"timezone,omitempty" binding:"omitempty,max=64" example:"Asia/Shanghai"`
 	Language  *string `json:"language,omitempty" binding:"omitempty,max=10" example:"zh-CN"`
-	RoleIDs   []uint  `json:"role_ids,omitempty" binding:"omitempty,dive,gt=0" example:"[1,2]"` // Array of role IDs to assign (optional)
+	RoleIDs   []uint  `json:"role_ids,omitempty" binding:"omitempty,dive,gt=0"` // Array of role IDs to assign (optional)
 }
 
 // UserUpdateStatusRequest 用户状态更新请求
