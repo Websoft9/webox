@@ -4,9 +4,8 @@ import (
 	"api-service/internal/dto/request"
 	"api-service/internal/interface/repository"
 	"api-service/internal/model"
+	"api-service/pkg/errors"
 	"context"
-	"errors"
-	"fmt"
 	"strings"
 
 	"gorm.io/gorm"
@@ -25,7 +24,7 @@ func NewSystemConfigRepository(db *gorm.DB) repository.SystemConfigRepository {
 // Create creates a new system configuration
 func (r *systemConfigRepository) Create(ctx context.Context, config *model.SystemConfig) error {
 	if err := r.db.WithContext(ctx).Create(config).Error; err != nil {
-		return fmt.Errorf("failed to create system config: %w", err)
+		return errors.NewAppErrorWrapError(err, errors.CodeRecordCreateFailed)
 	}
 
 	return nil
@@ -38,9 +37,9 @@ func (r *systemConfigRepository) GetByKey(ctx context.Context, key string) (*mod
 	err := r.db.WithContext(ctx).Where("config_key = ?", key).First(&config).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, fmt.Errorf("system config with key '%s' not found", key)
+			return nil, errors.NewAppError(errors.CodeRecordNotFound)
 		}
-		return nil, fmt.Errorf("failed to get system config by key: %w", err)
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	return &config, nil
@@ -53,9 +52,9 @@ func (r *systemConfigRepository) GetByID(ctx context.Context, id uint) (*model.S
 	err := r.db.WithContext(ctx).First(&config, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, fmt.Errorf("system config with ID %d not found", id)
+			return nil, errors.NewAppError(errors.CodeRecordNotFound)
 		}
-		return nil, fmt.Errorf("failed to get system config by ID: %w", err)
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	return &config, nil
@@ -83,7 +82,7 @@ func (r *systemConfigRepository) List(ctx context.Context, filter *request.ListS
 
 	err := query.Find(&configs).Error
 	if err != nil {
-		return nil, fmt.Errorf("failed to list system configs: %w", err)
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	return configs, nil
@@ -93,11 +92,11 @@ func (r *systemConfigRepository) List(ctx context.Context, filter *request.ListS
 func (r *systemConfigRepository) Update(ctx context.Context, config *model.SystemConfig) error {
 	result := r.db.WithContext(ctx).Save(config)
 	if result.Error != nil {
-		return fmt.Errorf("failed to update system config: %w", result.Error)
+		return errors.NewAppErrorWrapError(result.Error, errors.CodeRecordUpdateFailed)
 	}
 
 	if result.RowsAffected == 0 {
-		return fmt.Errorf("system config with ID %d not found", config.ID)
+		return errors.NewAppError(errors.CodeRecordNoAffected)
 	}
 
 	return nil
@@ -111,11 +110,11 @@ func (r *systemConfigRepository) UpdateValue(ctx context.Context, key, value str
 		Update("config_value", value)
 
 	if result.Error != nil {
-		return fmt.Errorf("failed to update system config value: %w", result.Error)
+		return errors.NewAppErrorWrapError(result.Error, errors.CodeRecordUpdateFailed)
 	}
 
 	if result.RowsAffected == 0 {
-		return fmt.Errorf("system config with key '%s' not found", key)
+		return errors.NewAppError(errors.CodeRecordNoAffected)
 	}
 
 	return nil
@@ -125,11 +124,11 @@ func (r *systemConfigRepository) UpdateValue(ctx context.Context, key, value str
 func (r *systemConfigRepository) Delete(ctx context.Context, id uint) error {
 	result := r.db.WithContext(ctx).Delete(&model.SystemConfig{}, id)
 	if result.Error != nil {
-		return fmt.Errorf("failed to delete system config: %w", result.Error)
+		return errors.NewAppErrorWrapError(result.Error, errors.CodeRecordDeleteFailed)
 	}
 
 	if result.RowsAffected == 0 {
-		return fmt.Errorf("system config with ID %d not found", id)
+		return errors.NewAppError(errors.CodeRecordNoAffected)
 	}
 
 	return nil

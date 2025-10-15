@@ -93,6 +93,7 @@ resource:
   record_is_disabled: "Record is disabled"
   record_no_affected: "No rows affected"
   record_delete_denied: "Record delete denied"
+  record_export_failed: "Record export failed"
 business:
   server_offline: "Server offline, cannot operate"
   app_deployment_failed: "Application deployment failed"

@@ -273,6 +273,7 @@ func GetModuleTableName(module string) string {
 		ModuleNotification:   "notifications",
 		ModuleAdminSetting:   "system_configs",
 		ModuleTag:            "tags",
+		ModuleSystem:         "system",
 	}
 
 	if tableName, exists := moduleToTableName[module]; exists {
@@ -317,6 +318,8 @@ func GetModuleType(module string) string {
 		"platform-settings": ModulePlatformSetting,
 		"security":          ModuleSecurity,
 		"system-configs":    ModuleAdminSetting,
+		"tags":              ModuleTag,
+		"system":            ModuleSystem,
 	}
 	if moduleName, exists := module_type_map[module]; exists {
 		return moduleName
@@ -345,7 +348,7 @@ const (
 const (
 	ExcelRowOffset        = 2      // Excel data starts from row 2 (after header)
 	ExcelColumnDivisor    = 26     // Excel column calculation divisor (A-Z = 26 letters)
-	MaxTimeRangeDays      = 7      // Maximum time range in days for export
+	MaxTimeRangeDays      = 7      // Maximum allowed time range in days (configurable)
 	MinPathSegments       = 3      // Minimum path segments for valid API path
 	DefaultTimeRangeHours = 7 * 24 // Default time range in hours (7 days)
 )

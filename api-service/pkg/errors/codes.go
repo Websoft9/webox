@@ -65,6 +65,7 @@ const (
 	CodeRecordIsDisabled           ErrorCode = 4011 // Record is disabled
 	CodeRecordNoAffected           ErrorCode = 4012 // Record is not affected
 	CodeRecordDeleteDenied         ErrorCode = 4013 // Record delete denied
+	CodeRecordExportFailed         ErrorCode = 4014 // Record export failed
 
 	// Business logic error codes (5000-5999)
 	CodeServerOffline                  = 5001 // Server offline, cannot operate
@@ -167,6 +168,7 @@ var CodeToI18nKey = map[ErrorCode]string{
 	CodeRecordIsDisabled:           "resource.record_is_disabled",
 	CodeRecordNoAffected:           "resource.record_no_affected",
 	CodeRecordDeleteDenied:         "resource.record_delete_denied",
+	CodeRecordExportFailed:         "resource.record_export_failed",
 
 	// Business logic errors (5000-5999)
 	CodeServerOffline:                  "business.server_offline",

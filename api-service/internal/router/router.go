@@ -282,7 +282,7 @@ func setupAuditLogRoutes(protected *gin.RouterGroup, auditLogController *control
 	auditLogs := protected.Group("/audit-logs")
 	auditLogs.GET("", auditLogController.ListAuditLogs)
 	auditLogs.GET("/:id", auditLogController.GetAuditLog)
-	auditLogs.GET("/statistics", auditLogController.GetAuditLogStatistics)
+
 	auditLogs.GET("/export", auditLogController.ExportAuditLogs)
 }
 
