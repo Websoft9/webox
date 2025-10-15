@@ -10,4 +10,5 @@
 .*.drawio.bkp
 
 # swagger docs
-api-service/docs
+api-service/docs/swagger.json
+api-service/docs/swagger.yaml
