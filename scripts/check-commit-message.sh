@@ -79,7 +79,7 @@ check_commit_message() {
 
     # Conventional Commits 正则表达式
     # 格式: <type>[optional scope]: <description>
-    local regex="^(${valid_types})(\([a-zA-Z0-9_-]+\))?: .{1,100}$"
+    local regex="^(${valid_types})(\([a-zA-Z0-9_-]+\))?: .{1,200}$"
 
     if [[ ! "$message" =~ $regex ]]; then
         log_error "Incorrect commit message format"
@@ -93,7 +93,7 @@ check_commit_message() {
         echo ""
         echo "Requirements:"
         echo "  - Type must be: ${valid_types//|/, }"
-        echo "  - Description length: 1-100 characters"
+        echo "  - Description length: 1-200 characters"
         echo "  - Format: type(optional scope): description"
         echo ""
         return 1
