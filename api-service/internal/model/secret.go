@@ -13,12 +13,30 @@ import (
 type SecretKeyType string
 
 const (
-	SecretKeyTypeAPIKey      SecretKeyType = "API_KEY"
-	SecretKeyTypeDatabase    SecretKeyType = "DATABASE"
-	SecretKeyTypeSSH         SecretKeyType = "SSH"
-	SecretKeyTypeCertificate SecretKeyType = "CERTIFICATE"
-	SecretKeyTypeCustom      SecretKeyType = "CUSTOM"
+	SecretKeyTypeSecretKey SecretKeyType = "SECRET_KEY"
+	SecretKeyTypeAccount   SecretKeyType = "ACCOUNT"
+	SecretKeyTypeFile      SecretKeyType = "FILE"
 )
+
+// ValidSecretKeyTypes returns all valid secret key types
+func ValidSecretKeyTypes() []SecretKeyType {
+	return []SecretKeyType{
+		SecretKeyTypeSecretKey,
+		SecretKeyTypeAccount,
+		SecretKeyTypeFile,
+	}
+}
+
+// IsValidSecretKeyType checks if a given type is valid
+func IsValidSecretKeyType(keyType SecretKeyType) bool {
+	validTypes := ValidSecretKeyTypes()
+	for _, t := range validTypes {
+		if t == keyType {
+			return true
+		}
+	}
+	return false
+}
 
 // CustomFields represents JSON custom fields
 type CustomFields map[string]interface{}
@@ -51,7 +69,6 @@ type SecretKey struct {
 	ID              uint          `json:"id" gorm:"primaryKey;autoIncrement"`
 	Name            string        `json:"name" gorm:"size:64;not null"`
 	KeyType         SecretKeyType `json:"key_type" gorm:"size:20;not null"`
-	EncryptedValue  string        `json:"encrypted_value" gorm:"type:text;not null"`
 	Description     *string       `json:"description" gorm:"type:text"`
 	CustomFields    CustomFields  `json:"custom_fields" gorm:"type:text"`
 	ExpiresAt       *time.Time    `json:"expires_at"`
@@ -69,6 +86,19 @@ func (SecretKey) TableName() string {
 	return "secret_keys"
 }
 
+// SecretReference represents secret key reference record
+type SecretReference struct {
+	ID           uint      `gorm:"primarykey" json:"id"`
+	SecretID     uint      `gorm:"not null;index:idx_secret_references_secret_id;uniqueIndex:idx_secret_references_secret_resource" json:"secret_id"`
+	ResourceCode string    `gorm:"type:varchar(64);not null;index:idx_secret_references_resource_code;uniqueIndex:idx_secret_references_secret_resource" json:"resource_code"`
+	CreatedAt    time.Time `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt    time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+
+	// Associations
+	SecretKey SecretKey `gorm:"foreignKey:SecretID" json:"-"`
+}
+
+// UserSecret represents the relationship between users and secret keys
 type UserSecret struct {
 	ID          uint       `gorm:"primaryKey;autoIncrement" json:"id"`
 	UserID      uint       `gorm:"not null;index" json:"user_id"`
@@ -83,7 +113,7 @@ type UserSecret struct {
 	GrantedByUser *User     `gorm:"foreignKey:GrantedBy;references:ID" json:"granted_by_user,omitempty"`
 }
 
-// TableName
+// TableName returns the table name for GORM
 func (UserSecret) TableName() string {
 	return "user_secret"
 }
@@ -96,11 +126,19 @@ func (s *SecretKey) BeforeCreate(tx *gorm.DB) error {
 	if s.KeyType == "" {
 		return errors.New("secret key type is required")
 	}
-	if s.EncryptedValue == "" {
-		return errors.New("secret key value is required")
+	if !IsValidSecretKeyType(s.KeyType) {
+		return errors.New("invalid secret key type")
 	}
 	if s.OwnerID == 0 {
 		return errors.New("secret key owner is required")
+	}
+	return nil
+}
+
+// BeforeUpdate hook for GORM
+func (s *SecretKey) BeforeUpdate(tx *gorm.DB) error {
+	if s.KeyType != "" && !IsValidSecretKeyType(s.KeyType) {
+		return errors.New("invalid secret key type")
 	}
 	return nil
 }
@@ -111,4 +149,21 @@ func (s *SecretKey) IsExpired() bool {
 		return false
 	}
 	return time.Now().After(*s.ExpiresAt)
+}
+
+// GetCustomFieldValue gets a value from custom fields
+func (s *SecretKey) GetCustomFieldValue(key string) (interface{}, bool) {
+	if s.CustomFields == nil {
+		return nil, false
+	}
+	value, exists := s.CustomFields[key]
+	return value, exists
+}
+
+// SetCustomFieldValue sets a value in custom fields
+func (s *SecretKey) SetCustomFieldValue(key string, value interface{}) {
+	if s.CustomFields == nil {
+		s.CustomFields = make(CustomFields)
+	}
+	s.CustomFields[key] = value
 }

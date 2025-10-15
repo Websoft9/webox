@@ -10,6 +10,7 @@ import (
 	"api-service/pkg/logger"
 	"context"
 	"io"
+	"mime/multipart"
 	"testing"
 	"time"
 
@@ -178,6 +179,24 @@ func (m *MockSecretKeyService) ExportSecretKeys(ctx context.Context, req *reques
 
 func (m *MockSecretKeyService) ValidateSecretKeyOwnership(ctx context.Context, secretKeyID, userID uint) error {
 	args := m.Called(ctx, secretKeyID, userID)
+	return args.Error(0)
+}
+
+func (m *MockSecretKeyService) UploadSecretFile(ctx context.Context, file *multipart.FileHeader, fileType string) (*response.SecretFileUploadResponse, error) {
+	args := m.Called(ctx, file, fileType)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*response.SecretFileUploadResponse), args.Error(1)
+}
+
+func (m *MockSecretKeyService) DownloadSecretFile(ctx context.Context, filename string) (string, string, error) {
+	args := m.Called(ctx, filename)
+	return args.String(0), args.String(1), args.Error(2)
+}
+
+func (m *MockSecretKeyService) DeleteSecretFile(ctx context.Context, filename string) error {
+	args := m.Called(ctx, filename)
 	return args.Error(0)
 }
 

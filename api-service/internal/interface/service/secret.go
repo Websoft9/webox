@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"mime/multipart"
 
 	"api-service/internal/dto/common"
 	"api-service/internal/dto/request"
@@ -33,4 +34,13 @@ type SecretKeyService interface {
 
 	// ValidateSecretKeyOwnership checks if user owns the secret key
 	ValidateSecretKeyOwnership(ctx context.Context, secretKeyID, userID uint) error
+
+	// UploadSecretFile uploads a secret key file
+	UploadSecretFile(ctx context.Context, file *multipart.FileHeader, fileType string) (*response.SecretFileUploadResponse, error)
+
+	// DownloadSecretFile downloads a secret key file
+	DownloadSecretFile(ctx context.Context, filename string) (filePath string, originalName string, err error)
+
+	// DeleteSecretFile deletes a secret key file
+	DeleteSecretFile(ctx context.Context, filename string) error
 }

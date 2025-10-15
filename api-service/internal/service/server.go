@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net"
 	"path/filepath"
@@ -798,23 +797,39 @@ func (s *serverService) getSSHCredentials(ctx context.Context, server *model.Ser
 		return nil, err
 	}
 
-	// Parse JSON credentials
-	var creds sshCredentials
-	if err := json.Unmarshal([]byte(secretValue.Value), &creds); err != nil {
-		s.logger.ErrorContext(ctx, "Failed to parse SSH credentials JSON",
+	// Validate secret key type - should be ACCOUNT type for SSH credentials
+	if secretValue.KeyType != "ACCOUNT" {
+		s.logger.ErrorContext(ctx, "Invalid secret key type for SSH credentials",
 			logger.Uint("credentialId", uint(credentialID)),
-			logger.ErrorField(err))
-		return nil, errors.NewAppErrorWrapError(err, errors.CodeValidationFailed)
-	}
-
-	// Validate credentials
-	if creds.Username == "" {
+			logger.String("keyType", string(secretValue.KeyType)))
 		return nil, errors.NewAppError(errors.CodeValidationFailed)
 	}
 
-	// Must have either password or private key
+	// Extract credentials from CustomFields
+	var creds sshCredentials
+
+	// Get username
+	if username, ok := secretValue.CustomFields["username"].(string); ok {
+		creds.Username = username
+	} else {
+		s.logger.ErrorContext(ctx, "SSH credentials missing username field",
+			logger.Uint("credentialId", uint(credentialID)))
+		return nil, errors.NewAppError(errors.CodeValidationFailed)
+	}
+
+	// Get password (optional)
+	if password, ok := secretValue.CustomFields["password"].(string); ok {
+		creds.Password = password
+	}
+
+	// Get private_key (optional)
+	if privateKey, ok := secretValue.CustomFields["private_key"].(string); ok {
+		creds.PrivateKey = privateKey
+	}
+
+	// Validate credentials - must have either password or private key
 	if creds.Password == "" && creds.PrivateKey == "" {
-		s.logger.ErrorContext(ctx, "SSH credentials missing both password and private key",
+		s.logger.ErrorContext(ctx, "SSH credentials missing both password and private_key",
 			logger.Uint("credentialId", uint(credentialID)))
 		return nil, errors.NewAppError(errors.CodeValidationFailed)
 	}
@@ -1113,48 +1128,38 @@ func (s *serverService) validateSSHCredential(ctx context.Context, credentialID 
 		logger.String("credentialId", credentialID),
 		logger.Uint("userId", userID))
 
-	// Convert string credential ID to uint
-	// 注意：这里简化处理，实际应该使用 strconv.ParseUint
-	// 假设 credentialID 格式为数字字符串
-	var credID uint
-	// 简化的转换逻辑，实际中应该使用 strconv.ParseUint
-	switch credentialID {
-	case "1":
-		credID = 1
-	case "2":
-		credID = 2
-	case "3":
-		credID = 3
-	default:
+	// Convert string credential ID to uint using strconv.ParseUint
+	credID, err := strconv.ParseUint(credentialID, 10, 64)
+	if err != nil {
 		s.logger.ErrorContext(ctx, "Invalid credential ID format",
-			logger.String("credentialId", credentialID))
-		return errors.NewAppError(errors.CodeValidationFailed)
+			logger.String("credentialId", credentialID),
+			logger.ErrorField(err))
+		return errors.NewAppError(errors.CodeInvalidParameterFormat)
 	}
 
 	// Validate credential ownership using SecretKeyService
-	if err := s.secretKeyService.ValidateSecretKeyOwnership(ctx, credID, userID); err != nil {
+	if err := s.secretKeyService.ValidateSecretKeyOwnership(ctx, uint(credID), userID); err != nil {
 		s.logger.ErrorContext(ctx, "SSH credential validation failed",
-			logger.Uint("credentialId", credID),
+			logger.Uint("credentialId", uint(credID)),
 			logger.Uint("userId", userID),
 			logger.ErrorField(err))
 		return errors.NewAppError(errors.CodeResourceNotFound)
 	}
 
 	// Get credential details to ensure it's valid for SSH
-	credential, err := s.secretKeyService.GetSecretKey(ctx, credID, userID)
+	credential, err := s.secretKeyService.GetSecretKey(ctx, uint(credID), userID)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to get SSH credential details",
-			logger.Uint("credentialId", credID),
+			logger.Uint("credentialId", uint(credID)),
 			logger.ErrorField(err))
 		return errors.NewAppError(errors.CodeResourceNotFound)
 	}
 
-	// Check if credential type is suitable for SSH
-	keyTypeStr := string(credential.KeyType)
-	if keyTypeStr != constants.SecretTypeSSHKey && keyTypeStr != constants.SecretTypePassword {
-		s.logger.WarnContext(ctx, "Invalid credential type for SSH",
-			logger.Uint("credentialId", credID),
-			logger.String("keyType", keyTypeStr))
+	// Check if credential type is ACCOUNT (suitable for SSH)
+	if credential.KeyType != "ACCOUNT" {
+		s.logger.WarnContext(ctx, "Invalid credential type for SSH - expected ACCOUNT type",
+			logger.Uint("credentialId", uint(credID)),
+			logger.String("keyType", string(credential.KeyType)))
 		return errors.NewAppError(errors.CodeValidationFailed)
 	}
 

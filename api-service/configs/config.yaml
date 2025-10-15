@@ -16,6 +16,9 @@ server:
     max_header_bytes: 1048576
     
 
+  upload:
+    secret_storage: "/home/appuser/data"
+    
 security:
   aes_key: "your-32-char-aes-key-here!" # Must be 32 characters for AES-256
   rsa_private_key: |

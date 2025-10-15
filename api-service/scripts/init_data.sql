@@ -269,7 +269,10 @@ INSERT INTO `permissions` (`parent_code`,`scope`,`name`,`code`,`module`,`action`
    ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_update','d4e5f6a7-b8c9-4012-d345-6789abcdef01','secret_key','update','/secret-keys/*',NULL,'Secret key update permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
    ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_delete','e5f6a7b8-c9d0-4123-e456-789abcdef012','secret_key','delete','/secret-keys/*',NULL,'Secret key delete permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
    ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_query','f6a7b8c9-d0e1-4234-f567-89abcdef0123','secret_key','query','/secret-keys/export',NULL,'Secret key export permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
-   ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_query','a7b8c9d0-e1f2-4345-a678-9abcdef01234','secret_key','query','/secret-keys/*/value',NULL,'Secret key value decrypt permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19');
+   ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_query','a7b8c9d0-e1f2-4345-a678-9abcdef01234','secret_key','query','/secret-keys/*/value',NULL,'Secret key value decrypt permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+   ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_create','b8c9d0e1-f2a3-4456-b789-abcdef012345','secret_key','create','/secret-keys/files/upload',NULL,'Secret key file upload permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+   ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_query','c9d0e1f2-a3b4-4567-c890-bcdef0123456','secret_key','query','/secret-keys/files/download',NULL,'Secret key file download permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+   ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_delete','d0e1f2a3-b4c5-4678-d901-cdef01234567','secret_key','delete','/secret-keys/files/delete',NULL,'Secret key file delete permission',1,0,0,1,1,1,'2025-09-01 12:11:19','2025-09-01 12:11:19');
 
 -- Insert default users and role permissions
 INSERT INTO `users` (`id`,`username`,`email`,`password_hash`,`nickname`,`avatar`,`phone`,`gender`,`signature`,`status`,`last_login_at`,`last_login_ip`,`timezone`,`language`,`created_at`,`updated_at`) VALUES
@@ -496,7 +499,10 @@ INSERT INTO `role_permissions` (`role_id`,`permission_code`,`granted_by`,`grante
          (1, 'd4e5f6a7-b8c9-4012-d345-6789abcdef01',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
          (1, 'e5f6a7b8-c9d0-4123-e456-789abcdef012',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
          (1, 'f6a7b8c9-d0e1-4234-f567-89abcdef0123',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
-         (1, 'a7b8c9d0-e1f2-4345-a678-9abcdef01234',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19');
+         (1, 'a7b8c9d0-e1f2-4345-a678-9abcdef01234',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, 'b8c9d0e1-f2a3-4456-b789-abcdef012345',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, 'c9d0e1f2-a3b4-4567-c890-bcdef0123456',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19'),
+         (1, 'd0e1f2a3-b4c5-4678-d901-cdef01234567',1,'2025-09-01 12:11:19',1,'2025-09-01 12:11:19','2025-09-01 12:11:19');
 
 -- Insert default application categories
 INSERT INTO `app_store_categories` (`name`, `code`, `description`, `sort_order`, `status`) VALUES
@@ -561,9 +567,46 @@ INSERT INTO `system_configs` (`config_key`, `config_value`, `config_type`, `cate
 ('server.custom_allowed_extensions', '[]', 'JSON', 'security', 'Custom allowed file extensions (whitelist mode)', 0, 59);
 
 -- Insert default notification templates
-INSERT INTO `notification_templates` (`name`, `type`, `subject`, `content`, `variables`, `is_system`, `status`) VALUES
-('User Registration Notification', 'EMAIL', 'Welcome to {{system_name}}', 'Dear {{username}},\n\nWelcome to {{system_name}}!\n\nYour account has been successfully created and you can now start using our services.\n\nIf you have any questions, please contact our support team.\n\nEnjoy using our platform!\n\n{{system_name}} Team', '["username", "system_name"]', 1, 1),
-('Password Reset Notification', 'EMAIL', '{{system_name}} Password Reset', 'Dear {{username}},\n\nYour password has been successfully reset.\n\nIf this was not your action, please contact our support team immediately.\n\n{{system_name}} Team', '["username", "system_name"]', 1, 1),
-('System Alert Notification', 'EMAIL', '{{system_name}} System Alert', 'Alert Title: {{alert_title}}\nAlert Description: {{alert_description}}\nTriggered At: {{fired_at}}\nAlert Level: {{alert_level}}\n\nPlease handle this promptly.', '["alert_title", "alert_description", "fired_at", "alert_level", "system_name"]', 1, 1),
-('Application Deployment Success', 'EMAIL', 'Application Deployment Success Notification', 'Dear {{username}},\n\nYour application {{app_name}} has been successfully deployed to server {{server_name}}.\n\nAccess URL: {{app_url}}\nDeployment Time: {{deployed_at}}\n\n{{system_name}} Team', '["username", "app_name", "server_name", "app_url", "deployed_at", "system_name"]', 1, 1),
-('Application Deployment Failure', 'EMAIL', 'Application Deployment Failure Notification', 'Dear {{username}},\n\nYour application {{app_name}} deployment has failed.\n\nError Message: {{error_message}}\nFailure Time: {{failed_at}}\n\nPlease check the configuration and try again.\n\n{{system_name}} Team', '["username", "app_name", "error_message", "failed_at", "system_name"]', 1, 1);
+INSERT INTO `notification_templates` (`name`, `template_type`, `subject`, `content`, `is_system`, `status`) VALUES
+('User Registration Notification', 'EMAIL', 'Welcome to {{system_name}}', 'Dear {{username}},
+
+Welcome to {{system_name}}!
+
+Your account has been successfully created and you can now start using our services.
+
+If you have any questions, please contact our support team.
+
+Enjoy using our platform!
+
+{{system_name}} Team', 1, 1),
+('Password Reset Notification', 'EMAIL', '{{system_name}} Password Reset', 'Dear {{username}},
+
+Your password has been successfully reset.
+
+If this was not your action, please contact our support team immediately.
+
+{{system_name}} Team', 1, 1),
+('System Alert Notification', 'EMAIL', '{{system_name}} System Alert', 'Alert Title: {{alert_title}}
+Alert Description: {{alert_description}}
+Triggered At: {{fired_at}}
+Alert Level: {{alert_level}}
+
+Please handle this promptly.', 1, 1),
+('Application Deployment Success', 'EMAIL', 'Application Deployment Success Notification', 'Dear {{username}},
+
+Your application {{app_name}} has been successfully deployed to server {{server_name}}.
+
+Access URL: {{app_url}}
+Deployment Time: {{deployed_at}}
+
+{{system_name}} Team', 1, 1),
+('Application Deployment Failure', 'EMAIL', 'Application Deployment Failure Notification', 'Dear {{username}},
+
+Your application {{app_name}} deployment has failed.
+
+Error Message: {{error_message}}
+Failure Time: {{failed_at}}
+
+Please check the configuration and try again.
+
+{{system_name}} Team', 1, 1);

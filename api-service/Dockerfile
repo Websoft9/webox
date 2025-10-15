@@ -28,6 +28,9 @@ RUN go env -w GOPROXY=https://goproxy.cn,direct
 # Copy go mod files
 COPY go.mod go.sum ./
 
+# Set Go proxy for faster dependency resolution
+ENV GOPROXY=https://goproxy.cn,direct
+
 # Download dependencies
 RUN go mod download
 

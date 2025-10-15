@@ -24,10 +24,11 @@ type SecretKeyResponse struct {
 	UpdatedAt       time.Time  `json:"updated_at" example:"2024-06-15T10:30:00Z"`
 }
 
-// SecretKeyValueResponse represents the response for secret key value
+// SecretKeyValueResponse represents the response containing secret key value
 type SecretKeyValueResponse struct {
-	Value     string     `json:"value" example:"sk-1234567890abcdef"`
-	ExpiresAt *time.Time `json:"expires_at" example:"2025-12-31T23:59:59Z"`
+	KeyType      model.SecretKeyType    `json:"key_type"`
+	CustomFields map[string]interface{} `json:"custom_fields"`
+	ExpiresAt    *time.Time             `json:"expires_at,omitempty"`
 }
 
 // SecretKeyListResponse represents the paginated list response
@@ -87,10 +88,18 @@ func ToSecretKeyListResponse(secretKeys []*model.SecretKey, total int64, page, p
 	)
 }
 
-// ToSecretKeyValueResponse creates a value response
-func ToSecretKeyValueResponse(value string, expiresAt *time.Time) *SecretKeyValueResponse {
+// ToSecretKeyValueResponse converts decrypted custom fields to response
+func ToSecretKeyValueResponse(keyType model.SecretKeyType, customFields map[string]interface{}, expiresAt *time.Time) *SecretKeyValueResponse {
 	return &SecretKeyValueResponse{
-		Value:     value,
-		ExpiresAt: expiresAt,
+		KeyType:      keyType,
+		CustomFields: customFields,
+		ExpiresAt:    expiresAt,
 	}
+}
+
+// SecretFileUploadResponse represents the response for secret file upload
+type SecretFileUploadResponse struct {
+	Filename     string `json:"filename" example:"2345678ioasjhhdvgajdjknasd.key"`
+	OriginalName string `json:"original_name" example:"my-certificate.key"`
+	FilePath     string `json:"file_path" example:"/home/appuser/data/2345678ioasjhhdvgajdjknasd.key"`
 }

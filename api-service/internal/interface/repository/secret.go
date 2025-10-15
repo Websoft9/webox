@@ -24,6 +24,9 @@ type SecretKeyRepository interface {
 	// List retrieves secret keys with pagination and filtering
 	List(ctx context.Context, req *request.SecretKeyQueryRequest, userID uint) ([]*model.SecretKey, int64, error)
 
+	// ListAll retrieves all secret keys for a user without pagination (for export)
+	ListAll(ctx context.Context, userID uint) ([]*model.SecretKey, error)
+
 	// GetByOwnerID retrieves secret keys by owner ID
 	GetByOwnerID(ctx context.Context, ownerID uint) ([]*model.SecretKey, error)
 
@@ -41,4 +44,10 @@ type SecretKeyRepository interface {
 
 	// CheckUserSecretAccess checks if a user has access to a secret key
 	CheckUserSecretAccess(ctx context.Context, userID, secretKeyID uint) (bool, error)
+
+	// CreateSecretReference creates a secret reference record
+	CreateSecretReference(ctx context.Context, reference *model.SecretReference) error
+
+	// DeleteSecretReferencesBySecretID deletes all references for a secret key
+	DeleteSecretReferencesBySecretID(ctx context.Context, secretID uint) error
 }

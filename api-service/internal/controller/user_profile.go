@@ -176,7 +176,7 @@ func (c *UserProfileController) GetLoginHistories(ctx *gin.Context) {
 	// Bind request parameters
 	var req request.LoginHistoryRequest
 	// Bind and validate request
-	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
+	if !BindAndValidateQuery(ctx, &req, c.validator, c.logger) {
 		return
 	}
 

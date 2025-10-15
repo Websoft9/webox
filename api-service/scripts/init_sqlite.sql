@@ -319,7 +319,6 @@ CREATE TABLE IF NOT EXISTS secret_keys (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name VARCHAR(64) NOT NULL,
     key_type VARCHAR(20) NOT NULL, -- API_KEY, DATABASE, SSH, CERTIFICATE, CUSTOM
-    encrypted_value TEXT NOT NULL,
     description TEXT,
     custom_fields TEXT, -- JSON format
     expires_at DATETIME,
@@ -829,22 +828,18 @@ CREATE TABLE IF NOT EXISTS system_configs (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- Service configuration parameters table
-CREATE TABLE IF NOT EXISTS service_configs (
+-- Notification channels table
+CREATE TABLE IF NOT EXISTS notification_channels (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    code TEXT NOT NULL UNIQUE, -- Configuration code (unique identifier)
-    config_key TEXT NOT NULL, -- Configuration key
-    config_value TEXT, -- Configuration value
-    config_type TEXT NOT NULL DEFAULT 'STRING' CHECK (config_type IN ('STRING', 'INTEGER', 'BOOLEAN', 'JSON', 'FLOAT')), -- Configuration type
-    category TEXT NOT NULL, -- Configuration category
-    description TEXT, -- Configuration description
-    is_readonly INTEGER NOT NULL DEFAULT 0 CHECK (is_readonly IN (0, 1)), -- Whether read-only
-    is_encrypted INTEGER NOT NULL DEFAULT 0 CHECK (is_encrypted IN (0, 1)), -- Whether encrypted
-    default_value TEXT, -- Default value
-    sort_order INTEGER NOT NULL DEFAULT 0, -- Sort order
-    owner_id INTEGER NOT NULL, -- Owner ID
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, -- Creation time
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP -- Update time
+    code VARCHAR(64) NOT NULL UNIQUE,
+    name VARCHAR(128) NOT NULL,
+    description TEXT,
+    channel_type VARCHAR(20) NOT NULL CHECK (channel_type IN ('EMAIL', 'WEBHOOK')),
+    channel_config TEXT NOT NULL, -- JSON format
+    owner_id INTEGER NOT NULL REFERENCES users(id),
+    status INTEGER DEFAULT 1, --  0-disabled, 1-enabled
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Alert rules table
@@ -886,10 +881,9 @@ CREATE TABLE IF NOT EXISTS alert_records (
 CREATE TABLE IF NOT EXISTS notification_templates (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name VARCHAR(64) NOT NULL,
-    type VARCHAR(20) NOT NULL,
+    template_type VARCHAR(20) NOT NULL,
     subject VARCHAR(255),
     content TEXT NOT NULL,
-    variables TEXT, -- JSON format
     is_system INTEGER DEFAULT 0,
     status INTEGER DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -900,7 +894,7 @@ CREATE TABLE IF NOT EXISTS notification_templates (
 CREATE TABLE IF NOT EXISTS notification_records (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     template_id INTEGER REFERENCES notification_templates(id),
-    type VARCHAR(20) NOT NULL,
+    channel_type VARCHAR(20) NOT NULL,
     recipient VARCHAR(255) NOT NULL,
     subject VARCHAR(255),
     content TEXT NOT NULL,
@@ -993,6 +987,16 @@ CREATE TABLE IF NOT EXISTS taggings (
     FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
 );
 
+-- Secret references table
+CREATE TABLE IF NOT EXISTS secret_references (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    secret_id INTEGER NOT NULL,
+    resource_code VARCHAR(64) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (secret_id) REFERENCES secret_keys(id) ON DELETE CASCADE
+);
+
 -- ========================================
 -- Index creation
 -- ========================================
@@ -1006,10 +1010,10 @@ CREATE INDEX IF NOT EXISTS idx_project_files_project ON project_files(project_id
 CREATE INDEX IF NOT EXISTS idx_project_files_parent ON project_files(parent_id);
 CREATE INDEX IF NOT EXISTS idx_project_activities_project ON project_activities(project_id);
 
--- Create service_onfigs indexes
-CREATE INDEX IF NOT EXISTS idx_service_configs_category ON service_configs (category);
-CREATE INDEX IF NOT EXISTS idx_service_configs_config_type ON service_configs (config_type);
-CREATE INDEX IF NOT EXISTS idx_service_configs_sort_order ON service_configs (sort_order);
+-- Notification channels related indexes
+CREATE INDEX IF NOT EXISTS idx_notification_channels_type ON notification_channels(channel_type);
+CREATE INDEX IF NOT EXISTS idx_notification_channels_owner ON notification_channels(owner_id);
+CREATE INDEX IF NOT EXISTS idx_notification_channels_code ON notification_channels(code);
 
 -- User permissions related indexes
 CREATE INDEX IF NOT EXISTS idx_user_roles_user ON user_roles(user_id);
@@ -1054,6 +1058,11 @@ CREATE INDEX IF NOT EXISTS idx_server_agents_deployment_type ON server_agents(de
 CREATE INDEX IF NOT EXISTS idx_app_instances_server ON app_instances(server_id);
 CREATE INDEX IF NOT EXISTS idx_app_instances_template ON app_instances(template_id);
 
+-- secret_references indexes
+CREATE INDEX IF NOT EXISTS idx_secret_references_secret_id ON secret_references(secret_id);
+CREATE INDEX IF NOT EXISTS idx_secret_references_resource_code ON secret_references(resource_code);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_secret_references_secret_resource ON secret_references(secret_id, resource_code);
+
 -- Audit log indexes
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user ON audit_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action);
@@ -1094,13 +1103,12 @@ CREATE TRIGGER IF NOT EXISTS update_project_files_updated_at
         UPDATE project_files SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
     END;
 
--- Create trigger for updating updated_at timestamp
-CREATE TRIGGER IF NOT EXISTS update_service_configs_updated_at
-    AFTER UPDATE ON service_configs
-    FOR EACH ROW
-BEGIN
-    UPDATE service_configs SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
-END;
+-- Create trigger for notification_channels updated_at
+CREATE TRIGGER IF NOT EXISTS update_notification_channels_updated_at
+    AFTER UPDATE ON notification_channels
+    BEGIN
+        UPDATE notification_channels SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+    END;
 
 -- App store related triggers
 CREATE TRIGGER IF NOT EXISTS update_app_store_categories_updated_at

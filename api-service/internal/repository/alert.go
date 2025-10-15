@@ -3,6 +3,7 @@ package repository
 import (
 	"api-service/internal/dto/request"
 	"api-service/internal/model"
+	"api-service/pkg/errors"
 	"context"
 
 	"gorm.io/gorm"
@@ -23,7 +24,7 @@ func NewAlertRepository(db *gorm.DB) *alertRepository {
 // CreateAlertRule creates an alert rule.
 func (r *alertRepository) CreateAlertRule(ctx context.Context, rule *model.AlertRule) error {
 	if err := r.db.WithContext(ctx).Create(rule).Error; err != nil {
-		return err
+		return errors.NewAppErrorWrapError(err, errors.CodeRecordCreateFailed)
 	}
 
 	return nil
@@ -34,7 +35,10 @@ func (r *alertRepository) GetAlertRuleByID(ctx context.Context, id uint) (*model
 	var rule model.AlertRule
 	err := r.db.WithContext(ctx).Where("id = ?", id).First(&rule).Error
 	if err != nil {
-		return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.NewAppError(errors.CodeRecordNotFound)
+		}
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	return &rule, nil
@@ -90,7 +94,7 @@ func (r *alertRepository) UpdateAlertRule(ctx context.Context, id uint, updates 
 		Model(&model.AlertRule{}).
 		Where("id = ?", id).
 		Updates(updates).Error; err != nil {
-		return err
+		return errors.NewAppErrorWrapError(err, errors.CodeRecordUpdateFailed)
 	}
 
 	return nil
@@ -100,7 +104,7 @@ func (r *alertRepository) UpdateAlertRule(ctx context.Context, id uint, updates 
 func (r *alertRepository) DeleteAlertRule(ctx context.Context, id uint) error {
 	if err := r.db.WithContext(ctx).
 		Delete(&model.AlertRule{}, id).Error; err != nil {
-		return err
+		return errors.NewAppErrorWrapError(err, errors.CodeRecordDeleteFailed)
 	}
 
 	return nil
@@ -143,7 +147,7 @@ func (r *alertRepository) ListAlertRecords(ctx context.Context, req *request.Ale
 		Find(&records).Error
 
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	return records, total, nil
@@ -153,12 +157,12 @@ func (r *alertRepository) ListAlertRecords(ctx context.Context, req *request.Ale
 func (r *alertRepository) GetAlertRecordByID(ctx context.Context, id uint) (*model.AlertRecord, error) {
 	var record model.AlertRecord
 
-	err := r.db.First(&record, id).Error
+	err := r.db.WithContext(ctx).First(&record, id).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.NewAppError(errors.CodeRecordNotFound)
 		}
-		return nil, err
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	return &record, nil
@@ -168,7 +172,7 @@ func (r *alertRepository) GetAlertRecordByID(ctx context.Context, id uint) (*mod
 func (r *alertRepository) CreateAlertRecord(ctx context.Context, record *model.AlertRecord) error {
 	err := r.db.Create(record).Error
 	if err != nil {
-		return err
+		return errors.NewAppErrorWrapError(err, errors.CodeRecordCreateFailed)
 	}
 	return nil
 }
@@ -177,7 +181,7 @@ func (r *alertRepository) CreateAlertRecord(ctx context.Context, record *model.A
 func (r *alertRepository) UpdateAlertRecord(ctx context.Context, id uint, updateData map[string]interface{}) error {
 	err := r.db.Model(&model.AlertRecord{}).Where("id = ?", id).Updates(updateData).Error
 	if err != nil {
-		return err
+		return errors.NewAppErrorWrapError(err, errors.CodeRecordUpdateFailed)
 	}
 	return nil
 }
@@ -186,7 +190,7 @@ func (r *alertRepository) UpdateAlertRecord(ctx context.Context, id uint, update
 func (r *alertRepository) DeleteAlertRecord(ctx context.Context, id uint) error {
 	err := r.db.Delete(&model.AlertRecord{}, id).Error
 	if err != nil {
-		return err
+		return errors.NewAppErrorWrapError(err, errors.CodeRecordDeleteFailed)
 	}
 	return nil
 }
