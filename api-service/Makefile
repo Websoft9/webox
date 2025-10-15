@@ -2,6 +2,7 @@
 
 # 构建应用
 build:
+	swag init -g cmd/server/main.go
 	go build -v -o api-service ./cmd/server
 
 # 构建用户创建工具

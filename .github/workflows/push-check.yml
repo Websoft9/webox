@@ -24,15 +24,15 @@ jobs:
         id: changes
         run: |
           echo "Checking for code changes..."
-          
+
           # Get list of modified files
           changed_files=$(git diff --name-only HEAD^ HEAD)
           echo "Modified files:"
           echo "$changed_files"
-          
+
           # Define code file extensions
           code_extensions="\.(go|js|ts|vue|jsx|tsx|py|java|c|cpp|h|hpp|rs|php|rb|swift|kt|scala|cs|sh|sql|yaml|yml|json|toml|dockerfile|Dockerfile)$"
-          
+
           # Check for code file modifications
           has_code_changes=false
           while IFS= read -r file; do
@@ -42,7 +42,7 @@ jobs:
               break
             fi
           done <<< "$changed_files"
-          
+
           # Check special files
           special_files="Makefile|makefile|go.mod|go.sum|package.json|package-lock.json|yarn.lock|pom.xml|build.gradle|Cargo.toml|Cargo.lock|requirements.txt|composer.json|composer.lock"
           while IFS= read -r file; do
@@ -52,7 +52,7 @@ jobs:
               break
             fi
           done <<< "$changed_files"
-          
+
           if [ "$has_code_changes" = true ]; then
             echo "✅ Code changes detected, proceeding with subsequent checks"
             echo "has-code-changes=true" >> $GITHUB_OUTPUT
@@ -214,6 +214,7 @@ jobs:
           echo "Switched to directory: $(pwd)"
 
           # Download dependencies
+          go install github.com/swaggo/swag/cmd/swag@latest
           go mod download
 
           # Build

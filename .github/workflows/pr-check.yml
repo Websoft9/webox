@@ -403,6 +403,7 @@ jobs:
           echo "Switched to directory: $(pwd)"
 
           # Download dependencies
+          go install github.com/swaggo/swag/cmd/swag@latest
           go mod download
 
           # Build
