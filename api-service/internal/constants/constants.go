@@ -419,3 +419,18 @@ var AllowedSecretFileExtensions = []string{
 	FileTypeRsa,
 	FileTypeCrt,
 }
+
+// NotificationRecordStatus enum values
+const (
+	NotificationStatusPending = "PENDING"
+	NotificationStatusSent    = "SENT"
+	NotificationStatusFailed  = "FAILED"
+	NotificationStatusRetry   = "RETRY"
+)
+
+// NotificationChannelType enum values
+const (
+	NotificationChannelEmail    = "EMAIL"
+	NotificationChannelWebhook  = "WEBHOOK"
+	NotificationChannelInternal = "INTERNAL"
+)

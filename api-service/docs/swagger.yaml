@@ -19,18 +19,18 @@ definitions:
   common.PaginationResponse:
     properties:
       items:
-        description: 数据列表
+        description: data list
       page:
-        description: 当前页码
+        description: current page number
         type: integer
       page_size:
-        description: 每页数量
+        description: page size
         type: integer
       total:
-        description: 总记录数
+        description: total record count
         type: integer
       total_pages:
-        description: 总页数
+        description: total pages
         type: integer
     type: object
   common.Response:
@@ -60,6 +60,9 @@ definitions:
     - AlertRuleTypeLog
     - AlertRuleTypeEvent
   model.CustomFields:
+    additionalProperties: true
+    type: object
+  model.JSON:
     additionalProperties: true
     type: object
   model.SecretKeyType:
@@ -173,6 +176,110 @@ definitions:
     required:
     - code
     type: object
+  request.CreateEmailChannelRequest:
+    properties:
+      code:
+        example: email-channel-001
+        maxLength: 50
+        minLength: 3
+        type: string
+      description:
+        example: Email notification channel for alerts
+        maxLength: 500
+        type: string
+      encoding:
+        enum:
+        - utf-8
+        - gbk
+        - gb2312
+        example: utf-8
+        type: string
+      name:
+        example: My Email Channel
+        maxLength: 100
+        minLength: 1
+        type: string
+      quiet_hours:
+        example: 22:00-08:00
+        maxLength: 100
+        type: string
+      rate_limit:
+        example: 3
+        maximum: 1000
+        minimum: 0
+        type: integer
+      retry_count:
+        example: 3
+        maximum: 10
+        minimum: 0
+        type: integer
+      sender_email:
+        example: noreply@example.com
+        type: string
+      sender_name:
+        example: System Notifications
+        type: string
+      smtp_host:
+        example: smtp.gmail.com
+        type: string
+      smtp_password:
+        example: your-password
+        type: string
+      smtp_port:
+        example: 587
+        maximum: 65535
+        minimum: 1
+        type: integer
+      smtp_security:
+        enum:
+        - none
+        - tls
+        - ssl
+        example: tls
+        type: string
+      smtp_timeout:
+        example: 30
+        maximum: 300
+        minimum: 0
+        type: integer
+      smtp_username:
+        example: user@example.com
+        type: string
+    required:
+    - code
+    - name
+    - sender_email
+    - sender_name
+    - smtp_host
+    - smtp_password
+    - smtp_port
+    - smtp_security
+    - smtp_username
+    type: object
+  request.CreateNotificationTemplateRequest:
+    properties:
+      content:
+        type: string
+      name:
+        maxLength: 64
+        minLength: 2
+        type: string
+      subject:
+        maxLength: 255
+        minLength: 2
+        type: string
+      template_type:
+        enum:
+        - EMAIL
+        - WEBHOOK
+        - INTERNAL
+        type: string
+    required:
+    - content
+    - name
+    - subject
+    - template_type
+    type: object
   request.CreatePermissionRequest:
     properties:
       action:
@@ -237,6 +344,74 @@ definitions:
     required:
     - code
     - name
+    type: object
+  request.CreateWebhookChannelRequest:
+    properties:
+      code:
+        example: webhook-channel-001
+        maxLength: 50
+        minLength: 3
+        type: string
+      description:
+        example: Webhook notification channel for alerts
+        maxLength: 500
+        type: string
+      encoding:
+        enum:
+        - utf-8
+        - gbk
+        - gb2312
+        example: utf-8
+        type: string
+      headers:
+        additionalProperties:
+          type: string
+        type: object
+      method:
+        enum:
+        - GET
+        - POST
+        - PUT
+        - PATCH
+        - DELETE
+        example: POST
+        type: string
+      name:
+        example: My Webhook Channel
+        maxLength: 100
+        minLength: 1
+        type: string
+      quiet_hours:
+        example: 22:00-08:00
+        maxLength: 100
+        type: string
+      rate_limit:
+        example: 3
+        maximum: 1000
+        minimum: 0
+        type: integer
+      retry_count:
+        example: 3
+        maximum: 10
+        minimum: 0
+        type: integer
+      secret:
+        example: your-webhook-secret
+        maxLength: 100
+        type: string
+      timeout:
+        example: 30
+        maximum: 300
+        minimum: 0
+        type: integer
+      url:
+        example: https://api.example.com/webhook
+        type: string
+    required:
+    - code
+    - method
+    - name
+    - url
     type: object
   request.DisableTOTPRequest:
     properties:
@@ -633,12 +808,47 @@ definitions:
     required:
     - name
     type: object
+  request.TestEmailChannelRequest:
+    properties:
+      code:
+        type: string
+      content:
+        type: string
+      recipient:
+        type: string
+      subject:
+        type: string
+    required:
+    - code
+    - recipient
+    type: object
+  request.TestNotificationTemplateRequest:
+    properties:
+      code:
+        type: string
+      recipient:
+        type: string
+      variable_data:
+        additionalProperties: true
+        type: object
+    required:
+    - code
+    - recipient
+    type: object
   request.TestSMTPRequest:
     properties:
       test_email:
         type: string
     required:
     - test_email
+    type: object
+  request.TestWebhookChannelRequest:
+    properties:
+      code:
+        type: string
+      payload: {}
+    required:
+    - code
     type: object
   request.TokenAuthRequest:
     properties:
@@ -679,6 +889,87 @@ definitions:
         $ref: '#/definitions/request.SessionConfigRequest'
       user_auth:
         $ref: '#/definitions/request.UserAuthRequest'
+    type: object
+  request.UpdateEmailChannelRequest:
+    properties:
+      description:
+        example: Updated email notification channel
+        maxLength: 500
+        type: string
+      encoding:
+        enum:
+        - utf-8
+        - gbk
+        - gb2312
+        example: utf-8
+        type: string
+      name:
+        example: Updated Email Channel
+        maxLength: 100
+        minLength: 1
+        type: string
+      quiet_hours:
+        example: 22:00-08:00
+        maxLength: 100
+        type: string
+      rate_limit:
+        example: 3
+        maximum: 1000
+        minimum: 0
+        type: integer
+      retry_count:
+        example: 3
+        maximum: 10
+        minimum: 0
+        type: integer
+      sender_email:
+        example: noreply@example.com
+        type: string
+      sender_name:
+        example: System Notifications
+        type: string
+      smtp_host:
+        example: smtp.gmail.com
+        type: string
+      smtp_password:
+        example: your-password
+        type: string
+      smtp_port:
+        example: 587
+        maximum: 65535
+        minimum: 1
+        type: integer
+      smtp_security:
+        enum:
+        - none
+        - tls
+        - ssl
+        example: tls
+        type: string
+      smtp_timeout:
+        example: 30
+        maximum: 300
+        minimum: 0
+        type: integer
+      smtp_username:
+        example: user@example.com
+        type: string
+    type: object
+  request.UpdateNotificationTemplateRequest:
+    properties:
+      content:
+        type: string
+      name:
+        maxLength: 64
+        minLength: 2
+        type: string
+      subject:
+        maxLength: 255
+        minLength: 2
+        type: string
+    required:
+    - content
+    - subject
     type: object
   request.UpdatePermissionRequest:
     properties:
@@ -730,8 +1021,9 @@ definitions:
         enum:
         - STRING
         - BOOLEAN
-        - NUMBER
+        - INTEGER
         - JSON
+        - FLOAT
         type: string
       config_value:
         type: string
@@ -744,6 +1036,64 @@ definitions:
     - config_key
     - config_type
     - config_value
+    type: object
+  request.UpdateWebhookChannelRequest:
+    properties:
+      description:
+        example: Updated webhook notification channel
+        maxLength: 500
+        type: string
+      encoding:
+        enum:
+        - utf-8
+        - gbk
+        - gb2312
+        example: utf-8
+        type: string
+      headers:
+        additionalProperties:
+          type: string
+        type: object
+      method:
+        enum:
+        - GET
+        - POST
+        - PUT
+        - PATCH
+        - DELETE
+        example: POST
+        type: string
+      name:
+        example: Updated Webhook Channel
+        maxLength: 100
+        minLength: 1
+        type: string
+      quiet_hours:
+        example: 22:00-08:00
+        maxLength: 100
+        type: string
+      rate_limit:
+        example: 3
+        maximum: 1000
+        minimum: 0
+        type: integer
+      retry_count:
+        example: 3
+        maximum: 10
+        minimum: 0
+        type: integer
+      secret:
+        example: your-webhook-secret
+        maxLength: 100
+        type: string
+      timeout:
+        example: 30
+        maximum: 300
+        minimum: 0
+        type: integer
+      url:
+        example: https://api.example.com/webhook
+        type: string
     type: object
   request.UserAuthRequest:
     properties:
@@ -773,14 +1123,81 @@ definitions:
         description: Two-factor authentication configuration
     type: object
   request.UserCreateRequest:
+    properties:
+      avatar:
+        description: Avatar URL (optional)
+        example: https://example.com/avatar.jpg
+        type: string
+      email:
+        description: Email address, must be unique
+        example: john@example.com
+        type: string
+      gender:
+        description: 'Gender: 1-male, 2-female, 0-unknown (optional)'
+        example: 1
+        maximum: 2
+        minimum: 0
+        type: integer
+      language:
+        description: Language, default zh-CN (optional)
+        example: zh-CN
+        maxLength: 10
+        type: string
+      nickname:
+        description: User nickname (optional)
+        example: John Doe
+        maxLength: 64
+        type: string
+      password:
+        description: Password, 8-32 characters, must contain uppercase
+        example: password123
+        type: string
+      phone:
+        description: Phone number (optional)
+        example: "+1234567890"
+        maxLength: 20
+        type: string
+      role_ids:
+        description: Array of role IDs to assign (optional)
+        example:
+        - 1
+        - 2
+        items:
+          type: integer
+        type: array
+      signature:
+        description: Personal signature (optional)
+        example: This is my signature
+        maxLength: 255
+        type: string
+      status:
+        description: 'Status: 0-disabled, 1-enabled (optional)'
+        example: 1
+        maximum: 1
+        minimum: 0
+        type: integer
+      timezone:
+        description: Timezone, default UTC (optional)
+        example: Asia/Shanghai
+        maxLength: 64
+        type: string
+      username:
+        description: Username, 3-32 characters, letters, numbers, underscore
+        example: johndoe
+        maxLength: 64
+        type: string
+    required:
+    - email
+    - password
+    - username
     type: object
   request.UserLoginRequest:
     properties:
       password:
-        example: "123456"
+        example: Websoft9
         type: string
       username:
-        example: john@example.com or johndoe
+        example: admin@websoft9.com
         type: string
     required:
     - password
@@ -836,6 +1253,47 @@ definitions:
     - username
     type: object
   request.UserUpdateRequest:
+    properties:
+      avatar:
+        example: https://example.com/avatar.jpg
+        type: string
+      email:
+        example: newemail@example.com
+        type: string
+      gender:
+        example: 1
+        maximum: 2
+        minimum: 0
+        type: integer
+      language:
+        example: zh-CN
+        maxLength: 10
+        type: string
+      nickname:
+        example: John Doe
+        maxLength: 64
+        type: string
+      phone:
+        example: "+1234567890"
+        maxLength: 20
+        type: string
+      role_ids:
+        description: Array of role IDs to assign (optional)
+        items:
+          type: integer
+        type: array
+      signature:
+        example: This is my signature
+        maxLength: 255
+        type: string
+      timezone:
+        example: Asia/Shanghai
+        maxLength: 64
+        type: string
+      username:
+        example: johndoe
+        maxLength: 64
+        type: string
     type: object
   request.UserUpdateStatusRequest:
     properties:
@@ -894,15 +1352,6 @@ definitions:
         type: integer
       username:
         type: string
-    type: object
-  response.ActionStatItem:
-    properties:
-      action:
-        example: READ
-        type: string
-      count:
-        example: 800
-        type: integer
     type: object
   response.AlertRecordListResponse:
     properties:
@@ -997,7 +1446,7 @@ definitions:
         example: "2025-07-15T10:30:00Z"
         type: string
       description:
-        example: 创建应用实例：我的博客
+        example: Created a new application instance
         type: string
       error_message:
         type: string
@@ -1021,7 +1470,7 @@ definitions:
         example: 123
         type: integer
       resource_name:
-        example: 我的博客
+        example: My Blog
         type: string
       resource_type:
         example: APP_INSTANCE
@@ -1041,40 +1490,13 @@ definitions:
         example: Mozilla/5.0
         type: string
     type: object
-  response.AuditLogStatisticsResponse:
-    properties:
-      failed_operations:
-        example: 50
-        type: integer
-      success_operations:
-        example: 1200
-        type: integer
-      success_rate:
-        example: 96
-        type: number
-      timeline:
-        items:
-          $ref: '#/definitions/response.TimelineStatItem'
-        type: array
-      top_actions:
-        items:
-          $ref: '#/definitions/response.ActionStatItem'
-        type: array
-      top_users:
-        items:
-          $ref: '#/definitions/response.UserStatItem'
-        type: array
-      total_operations:
-        example: 1250
-        type: integer
-    type: object
   response.AuditLogUserResponse:
     properties:
       id:
         example: 1
         type: integer
       nickname:
-        example: 管理员
+        example: Administrator
         type: string
       username:
         example: admin
@@ -1185,6 +1607,60 @@ definitions:
       max_login_attempts:
         type: integer
     type: object
+  response.NotificationChannelResponse:
+    properties:
+      channel_config:
+        $ref: '#/definitions/model.JSON'
+      channel_type:
+        type: string
+      code:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      owner_id:
+        type: integer
+      status:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  response.NotificationRecordResponse:
+    properties:
+      channel_type:
+        type: string
+      content:
+        type: string
+      created_at:
+        type: string
+      error_msg:
+        type: string
+      id:
+        type: integer
+      recipient:
+        type: string
+      reference_id:
+        type: string
+      reference_type:
+        type: string
+      retry_count:
+        type: integer
+      sent_at:
+        type: string
+      status:
+        type: string
+      subject:
+        type: string
+      template_id:
+        type: integer
+      updated_at:
+        type: string
+    type: object
   response.NotificationSettingsResponse:
     properties:
       email_notifications:
@@ -1195,6 +1671,25 @@ definitions:
         type: boolean
       sms_notifications:
         type: boolean
+    type: object
+  response.NotificationTemplateResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      is_system:
+        type: integer
+      name:
+        type: string
+      status:
+        type: integer
+      subject:
+        type: string
+      template_type:
+        type: string
+      updated_at:
+        type: string
     type: object
   response.OAuth2LoginResponse:
     properties:
@@ -1642,15 +2137,6 @@ definitions:
           $ref: '#/definitions/response.TagSimpleResponse'
         type: array
     type: object
-  response.TimelineStatItem:
-    properties:
-      count:
-        example: 150
-        type: integer
-      date:
-        example: "2025-01-22"
-        type: string
-    type: object
   response.TokenAuthResponse:
     properties:
       algorithm:
@@ -1861,18 +2347,6 @@ definitions:
       id:
         type: integer
       username:
-        type: string
-    type: object
-  response.UserStatItem:
-    properties:
-      operation_count:
-        example: 500
-        type: integer
-      user_id:
-        example: 1
-        type: integer
-      username:
-        example: admin
         type: string
     type: object
 info:
@@ -2329,6 +2803,10 @@ paths:
         in: query
         name: ip_address
         type: string
+      - description: Success Status
+        in: query
+        name: success
+        type: boolean
       responses:
         "200":
           description: OK
@@ -2428,48 +2906,6 @@ paths:
       security:
       - BearerAuth: []
       summary: Export audit logs
-      tags:
-      - Audit Log
-  /api/v1/audit-logs/statistics:
-    get:
-      description: Get audit log statistical analysis data
-      parameters:
-      - description: Start Time
-        format: date-time
-        in: query
-        name: start_time
-        type: string
-      - description: End Time
-        format: date-time
-        in: query
-        name: end_time
-        type: string
-      - default: day
-        description: Group By
-        enum:
-        - hour
-        - day
-        - week
-        - month
-        in: query
-        name: group_by
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/response.AuditLogStatisticsResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/common.APIResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/common.APIResponse'
-      security:
-      - BearerAuth: []
-      summary: Get audit log statistics
       tags:
       - Audit Log
   /api/v1/auth-config:
@@ -2870,6 +3306,810 @@ paths:
       summary: Get supported languages
       tags:
       - Internationalization
+  /api/v1/notifications/channels:
+    get:
+      consumes:
+      - application/json
+      description: Get paginated list of notification channels with filtering
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      - description: Channel type filter
+        enum:
+        - EMAIL
+        - WEBHOOK
+        in: query
+        name: channel_type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Test Success
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get notification channels list
+      tags:
+      - Notification Channels
+  /api/v1/notifications/channels/{code}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an existing notification channel by code
+      parameters:
+      - description: Channel code
+        in: path
+        name: code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete notification channel
+      tags:
+      - Notification Channels
+    get:
+      consumes:
+      - application/json
+      description: Get detailed information about a specific notification channel
+      parameters:
+      - description: Channel code
+        in: path
+        name: code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.NotificationChannelResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get notification channel by code
+      tags:
+      - Notification Channels
+  /api/v1/notifications/channels/{code}/email:
+    put:
+      consumes:
+      - application/json
+      description: Update an existing email notification channel configuration
+      parameters:
+      - description: Channel code
+        in: path
+        name: code
+        required: true
+        type: string
+      - description: Updated email channel configuration
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.UpdateEmailChannelRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.NotificationChannelResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update email notification channel
+      tags:
+      - Notification Channels
+  /api/v1/notifications/channels/{code}/webhook:
+    put:
+      consumes:
+      - application/json
+      description: Update an existing webhook notification channel configuration
+      parameters:
+      - description: Channel code
+        in: path
+        name: code
+        required: true
+        type: string
+      - description: Updated webhook channel configuration
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.UpdateWebhookChannelRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.NotificationChannelResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update webhook notification channel
+      tags:
+      - Notification Channels
+  /api/v1/notifications/channels/email:
+    post:
+      consumes:
+      - application/json
+      description: Create a new email notification channel with SMTP configuration
+      parameters:
+      - description: Email channel configuration
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CreateEmailChannelRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.NotificationChannelResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create email notification channel
+      tags:
+      - Notification Channels
+  /api/v1/notifications/channels/test/email:
+    post:
+      consumes:
+      - application/json
+      description: Test an email notification channel by sending a test message
+      parameters:
+      - description: Test email configuration
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.TestEmailChannelRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Test email notification channel
+      tags:
+      - Notification Channels
+  /api/v1/notifications/channels/test/webhook:
+    post:
+      consumes:
+      - application/json
+      description: Test a webhook notification channel by sending a test message
+      parameters:
+      - description: Test webhook configuration
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.TestWebhookChannelRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Test webhook notification channel
+      tags:
+      - Notification Channels
+  /api/v1/notifications/channels/webhook:
+    post:
+      consumes:
+      - application/json
+      description: Create a new webhook notification channel with URL and headers
+        configuration
+      parameters:
+      - description: Webhook channel configuration
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CreateWebhookChannelRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.NotificationChannelResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create webhook notification channel
+      tags:
+      - Notification Channels
+  /api/v1/notifications/records:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve notification records list with pagination and filtering
+        options
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: page_size
+        type: integer
+      - description: Channel type filter
+        enum:
+        - EMAIL
+        - WEBHOOK
+        - INTERNAL
+        in: query
+        name: channel_type
+        type: string
+      - description: Status filter
+        enum:
+        - PENDING
+        - SENT
+        - FAILED
+        - RETRY
+        in: query
+        name: status
+        type: string
+      - description: Recipient filter
+        in: query
+        name: recipient
+        type: string
+      - description: Sent time start filter
+        format: "2006-01-02 15:04:05"
+        in: query
+        name: sent_start
+        type: string
+      - description: Sent time end filter
+        format: "2006-01-02 15:04:05"
+        in: query
+        name: sent_end
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/response.NotificationRecordResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get notification records list
+      tags:
+      - Notification Records
+  /api/v1/notifications/records/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve detailed information of a specific notification record
+      parameters:
+      - description: Notification record ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.NotificationRecordResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get notification record details
+      tags:
+      - Notification Records
+  /api/v1/notifications/templates:
+    get:
+      consumes:
+      - application/json
+      description: Get paginated list of notification templates with filtering
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: Search keyword
+        in: query
+        name: keyword
+        type: string
+      - description: Template type filter
+        enum:
+        - EMAIL
+        - WEBHOOK
+        - INTERNAL
+        in: query
+        name: template_type
+        type: string
+      - description: Template status filter
+        enum:
+        - 0
+        - 1
+        in: query
+        name: status
+        type: integer
+      - description: System template filter
+        enum:
+        - 0
+        - 1
+        in: query
+        name: is_system
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/response.NotificationTemplateResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get notification templates list
+      tags:
+      - Notification Templates
+    post:
+      consumes:
+      - application/json
+      description: Create a new notification template with title, content and variables
+      parameters:
+      - description: Notification template configuration
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CreateNotificationTemplateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.NotificationTemplateResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create notification template
+      tags:
+      - Notification Templates
+  /api/v1/notifications/templates/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an existing notification template by ID
+      parameters:
+      - description: Template ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete notification template
+      tags:
+      - Notification Templates
+    get:
+      consumes:
+      - application/json
+      description: Get detailed information about a specific notification template
+      parameters:
+      - description: Template ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.NotificationTemplateResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get notification template by ID
+      tags:
+      - Notification Templates
+    put:
+      consumes:
+      - application/json
+      description: Update an existing notification template configuration
+      parameters:
+      - description: Template ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated notification template configuration
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.UpdateNotificationTemplateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.NotificationTemplateResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update notification template
+      tags:
+      - Notification Templates
+  /api/v1/notifications/templates/{id}/test:
+    post:
+      consumes:
+      - application/json
+      description: Test a notification template by sending a test notification
+      parameters:
+      - description: Template ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Test template configuration
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.TestNotificationTemplateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Test notification template
+      tags:
+      - Notification Templates
   /api/v1/permissions:
     get:
       consumes:

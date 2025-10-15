@@ -159,6 +159,10 @@ jobs:
         run: |
           echo "Building ${{ matrix.service }}..."
 
+          # Download dependencies
+          go install github.com/swaggo/swag/cmd/swag@latest
+          go mod download
+
           # Build binary file
           if [ -f "Makefile" ]; then
             make build

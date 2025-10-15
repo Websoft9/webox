@@ -17,18 +17,21 @@ import (
 
 // Controllers controller collection
 type Controllers struct {
-	UserController           *controller.UserController
-	UserAuthController       *controller.UserAuthController
-	I18nController           *controller.I18nController
-	RolePermissionController *controller.RolePermissionController
-	SecurityController       *controller.SecurityController
-	HealthController         *controller.HealthController
-	AuditLogController       *controller.AuditLogController
-	UserProfileController    *controller.UserProfileController
-	SystemConfigController   *controller.SystemConfigController
-	AlertController          *controller.AlertController
-	TagController            *controller.TagController
-	SecretKeyController      *controller.SecretKeyController
+	UserController                 *controller.UserController
+	UserAuthController             *controller.UserAuthController
+	I18nController                 *controller.I18nController
+	RolePermissionController       *controller.RolePermissionController
+	SecurityController             *controller.SecurityController
+	HealthController               *controller.HealthController
+	AuditLogController             *controller.AuditLogController
+	UserProfileController          *controller.UserProfileController
+	SystemConfigController         *controller.SystemConfigController
+	AlertController                *controller.AlertController
+	TagController                  *controller.TagController
+	SecretKeyController            *controller.SecretKeyController
+	NotificationRecordController   *controller.NotificationRecordController
+	NotificationChannelController  *controller.NotificationChannelController
+	NotificationTemplateController *controller.NotificationTemplateController
 	// More controllers can be added
 	// AppController  *controller.ApplicationController
 }
@@ -146,6 +149,7 @@ func setupAPIRoutes(v1 *gin.RouterGroup, controllers *Controllers) {
 	setupAuditLogRoutes(protected, controllers.AuditLogController)
 	setupUserProfileRoutes(protected, controllers.UserProfileController)
 	setupSystemConfigRoutes(protected, controllers.SystemConfigController)
+	setupNotificationRoutes(protected, controllers.NotificationRecordController, controllers.NotificationChannelController, controllers.NotificationTemplateController)
 	setupTagRoutes(protected, controllers.TagController)
 	setupAlertRoutes(protected, controllers.AlertController)
 	setupSecretKeyRoutes(protected, controllers.SecretKeyController)
@@ -310,11 +314,58 @@ func setupSystemConfigRoutes(protected *gin.RouterGroup, systemConfigController 
 	// System configuration routes
 	systemConfigs := protected.Group("/system-configs")
 	systemConfigs.GET("", systemConfigController.ListSystemConfigs)
-	systemConfigs.PUT("", systemConfigController.BatchUpdateSystemConfigs)
+	systemConfigs.POST("/batch", systemConfigController.BatchUpdateSystemConfigs)
+	systemConfigs.POST("/smtp/test", systemConfigController.TestSMTP)
+
+	// Category-specific configuration routes
 	systemConfigs.GET("/basic", systemConfigController.ListBasicConfigs)
 	systemConfigs.GET("/security", systemConfigController.ListSecurityConfigs)
 	systemConfigs.GET("/email", systemConfigController.ListEmailConfigs)
-	systemConfigs.POST("/smtp/test", systemConfigController.TestSMTP)
+}
+
+// setupNotificationRoutes sets up notification management routes
+func setupNotificationRoutes(
+	protected *gin.RouterGroup,
+	notificationController *controller.NotificationRecordController,
+	channelController *controller.NotificationChannelController,
+	templateController *controller.NotificationTemplateController,
+) {
+	notifications := protected.Group("/notifications")
+
+	// Notification record routes
+	if notificationController != nil {
+		notifications.GET("/records", notificationController.GetNotificationRecords)
+		notifications.GET("/records/:id", notificationController.GetNotificationRecord)
+	}
+
+	// Notification channel routes
+	if channelController != nil {
+		// Channel management routes
+		notifications.GET("/channels", channelController.GetChannelList)
+		notifications.GET("/channels/:code", channelController.GetChannelByCode)
+		notifications.POST("/channels/email", channelController.CreateEmailChannel)
+		notifications.POST("/channels/webhook", channelController.CreateWebhookChannel)
+		notifications.PUT("/channels/:code/email", channelController.UpdateEmailChannel)
+		notifications.PUT("/channels/:code/webhook", channelController.UpdateWebhookChannel)
+		notifications.DELETE("/channels/:code", channelController.DeleteChannel)
+
+		// Channel testing routes
+		notifications.POST("/channels/test/email", channelController.TestEmailChannel)
+		notifications.POST("/channels/test/webhook", channelController.TestWebhookChannel)
+	}
+
+	// Notification template routes
+	if templateController != nil {
+		// Template management routes
+		notifications.GET("/templates", templateController.GetTemplateList)
+		notifications.GET("/templates/:id", templateController.GetTemplate)
+		notifications.POST("/templates", templateController.CreateTemplate)
+		notifications.PUT("/templates/:id", templateController.UpdateTemplate)
+		notifications.DELETE("/templates/:id", templateController.DeleteTemplate)
+
+		// Template test route
+		notifications.POST("/templates/:id/test", templateController.TestTemplate)
+	}
 }
 
 // setupTagRoutes sets up tag management routes
