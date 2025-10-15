@@ -30,7 +30,10 @@ func (r *tagRepository) GetTagByID(ctx context.Context, id uint) (*model.Tag, er
 	var tag model.Tag
 	err := r.db.WithContext(ctx).First(&tag, id).Error
 	if err != nil {
-		return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.NewAppError(errors.CodeRecordNotFound)
+		}
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 	return &tag, nil
 }
@@ -40,7 +43,10 @@ func (r *tagRepository) GetTagByName(ctx context.Context, name string) (*model.T
 	var tag model.Tag
 	err := r.db.WithContext(ctx).Where("name = ?", name).First(&tag).Error
 	if err != nil {
-		return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.NewAppError(errors.CodeRecordNotFound)
+		}
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 	return &tag, nil
 }

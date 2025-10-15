@@ -40,7 +40,7 @@ func (r *secretKeyRepository) GetByID(ctx context.Context, id uint) (*model.Secr
 		First(&secretKey).Error
 
 	if err != nil {
-		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordNotFound)
 	}
 
 	return &secretKey, nil

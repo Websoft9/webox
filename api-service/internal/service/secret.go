@@ -270,7 +270,7 @@ func (s *secretKeyService) CreateSecretKey(ctx context.Context, req *request.Sec
 	// Encrypt sensitive fields in custom_fields based on key_type
 	encryptedCustomFields, err := s.encryptCustomFields(ctx, req.KeyType, req.CustomFields)
 	if err != nil {
-		return nil, err
+		return nil, errors.NewAppError(errors.CodeEncryptFailed)
 	}
 
 	// Create the secret key model

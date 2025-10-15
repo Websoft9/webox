@@ -184,6 +184,22 @@ CREATE INDEX idx_role_permissions_status ON role_permissions(status);
 
 COMMENT ON TABLE role_permissions IS 'Role permissions association table';
 
+-- Secret references table
+CREATE TABLE IF NOT EXISTS secret_references (
+    id BIGSERIAL PRIMARY KEY,
+    secret_id BIGINT NOT NULL,
+    resource_code VARCHAR(64) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_secret_references_secret FOREIGN KEY (secret_id) REFERENCES secret_keys(id) ON DELETE CASCADE
+);
+
+-- Create indexes
+CREATE INDEX IF NOT EXISTS idx_secret_references_secret_id ON secret_references(secret_id);
+CREATE INDEX IF NOT EXISTS idx_secret_references_resource_code ON secret_references(resource_code);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_secret_references_secret_resource ON secret_references(secret_id, resource_code);
+
+
 -- Add foreign key constraints
 ALTER TABLE app_shortcuts ADD CONSTRAINT fk_app_shortcuts_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 ALTER TABLE projects ADD CONSTRAINT fk_projects_owner FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE RESTRICT;
