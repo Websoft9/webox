@@ -78,9 +78,12 @@ linters-settings:
 
   godox:
     keywords:
-      - NOTE
+      - TODO
+      - FIXME
+      - BUG
       - OPTIMIZE
       - HACK
+    # Note: 排除 NOTE，因为它常用于文档说明而非待办事项
 
   dogsled:
     max-blank-identifiers: 2
@@ -170,6 +173,20 @@ issues:
     # Exclude complexity check for main function
     - text: "cyclomatic complexity"
       source: "func main\\("
+    
+    # Exclude TODO comments for specific files (features under development)
+    - path: "internal/service/auth_config.go"
+      linters:
+        - godox
+    - path: "internal/service/two_factor.go"
+      linters:
+        - godox
+    - path: "internal/service/user.go"
+      linters:
+        - godox
+    - path: "internal/controller/security.go"
+      linters:
+        - godox
 
   max-issues-per-linter: 0
   max-same-issues: 0

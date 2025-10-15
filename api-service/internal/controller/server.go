@@ -26,21 +26,21 @@ const (
 
 // ServerController handles server management HTTP endpoints
 type ServerController struct {
-	serverService      service.ServerService
-	serverAgentService service.ServerAgentService
-	logger             logger.Logger
+	serverService service.ServerService
+	// Note: serverAgentService removed - not used until Agent module is implemented
+	logger logger.Logger
 }
 
 // NewServerController creates a new server controller
 func NewServerController(
 	serverService service.ServerService,
-	serverAgentService service.ServerAgentService,
+	// serverAgentService service.ServerAgentService, // Removed: unused until Agent implementation
 	logger logger.Logger,
 ) *ServerController {
 	return &ServerController{
-		serverService:      serverService,
-		serverAgentService: serverAgentService,
-		logger:             logger,
+		serverService: serverService,
+		// serverAgentService: serverAgentService, // Removed
+		logger: logger,
 	}
 }
 
@@ -56,7 +56,7 @@ func NewServerController(
 // @Failure 400 {object} common.APIResponse
 // @Failure 409 {object} common.APIResponse
 // @Failure 500 {object} common.APIResponse
-// @Router /servers [post]
+// @Router /api/v1/servers [post]
 func (c *ServerController) CreateServer(ctx *gin.Context) {
 	var req request.CreateServerRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -66,7 +66,13 @@ func (c *ServerController) CreateServer(ctx *gin.Context) {
 		return
 	}
 
-	server, err := c.serverService.CreateServer(ctx.Request.Context(), &req)
+	// Get current user ID from JWT token
+	userID, exists := GetUserID(ctx)
+	if !exists {
+		return // GetUserID already handles the error response
+	}
+
+	server, err := c.serverService.CreateServer(ctx.Request.Context(), &req, userID)
 	if err != nil {
 		c.logger.ErrorContext(ctx.Request.Context(), "Failed to create server",
 			logger.ErrorField(err))
@@ -89,7 +95,7 @@ func (c *ServerController) CreateServer(ctx *gin.Context) {
 // @Failure 400 {object} common.APIResponse
 // @Failure 404 {object} common.APIResponse
 // @Failure 500 {object} common.APIResponse
-// @Router /servers/{id} [get]
+// @Router /api/v1/servers/{id} [get]
 func (c *ServerController) GetServer(ctx *gin.Context) {
 	idParam := ctx.Param("id")
 	id, err := strconv.ParseUint(idParam, 10, 32)
@@ -124,7 +130,7 @@ func (c *ServerController) GetServer(ctx *gin.Context) {
 // @Failure 404 {object} common.APIResponse
 // @Failure 409 {object} common.APIResponse
 // @Failure 500 {object} common.APIResponse
-// @Router /servers/{id} [put]
+// @Router /api/v1/servers/{id} [put]
 func (c *ServerController) UpdateServer(ctx *gin.Context) {
 	idParam := ctx.Param("id")
 	id, err := strconv.ParseUint(idParam, 10, 32)
@@ -164,7 +170,7 @@ func (c *ServerController) UpdateServer(ctx *gin.Context) {
 // @Failure 400 {object} common.APIResponse
 // @Failure 404 {object} common.APIResponse
 // @Failure 500 {object} common.APIResponse
-// @Router /servers/{id} [delete]
+// @Router /api/v1/servers/{id} [delete]
 func (c *ServerController) DeleteServer(ctx *gin.Context) {
 	idParam := ctx.Param("id")
 	id, err := strconv.ParseUint(idParam, 10, 32)
@@ -200,7 +206,7 @@ func (c *ServerController) DeleteServer(ctx *gin.Context) {
 // @Success 200 {object} response.ServerListResponse
 // @Failure 400 {object} common.APIResponse
 // @Failure 500 {object} common.APIResponse
-// @Router /servers [get]
+// @Router /api/v1/servers [get]
 func (c *ServerController) ListServers(ctx *gin.Context) {
 	var req request.ListServersRequest
 	if err := ctx.ShouldBindQuery(&req); err != nil {
@@ -240,7 +246,7 @@ func (c *ServerController) ListServers(ctx *gin.Context) {
 // @Failure 400 {object} common.APIResponse
 // @Failure 404 {object} common.APIResponse
 // @Failure 500 {object} common.APIResponse
-// @Router /servers/{id}/status [get]
+// @Router /api/v1/servers/{id}/status [get]
 func (c *ServerController) GetServerStatus(ctx *gin.Context) {
 	idParam := ctx.Param("id")
 	id, err := strconv.ParseUint(idParam, 10, 32)
@@ -272,7 +278,7 @@ func (c *ServerController) GetServerStatus(ctx *gin.Context) {
 // @Success 200 {object} response.BatchServerStatusResponse
 // @Failure 400 {object} common.APIResponse
 // @Failure 500 {object} common.APIResponse
-// @Router /servers/status [post]
+// @Router /api/v1/servers/status [post]
 func (c *ServerController) CheckServersStatus(ctx *gin.Context) {
 	var req request.ServerStatusCheckRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -304,7 +310,7 @@ func (c *ServerController) CheckServersStatus(ctx *gin.Context) {
 // @Success 200 {object} response.ServerActionResponse
 // @Failure 400 {object} common.APIResponse
 // @Failure 500 {object} common.APIResponse
-// @Router /servers/actions [post]
+// @Router /api/v1/servers/actions [post]
 func (c *ServerController) ExecuteServerActions(ctx *gin.Context) {
 	var req request.ServerActionRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -339,7 +345,7 @@ func (c *ServerController) ExecuteServerActions(ctx *gin.Context) {
 // @Failure 400 {object} common.APIResponse
 // @Failure 404 {object} common.APIResponse
 // @Failure 500 {object} common.APIResponse
-// @Router /servers/{id}/files [post]
+// @Router /api/v1/servers/{id}/files [post]
 func (c *ServerController) UploadFile(ctx *gin.Context) {
 	idParam := ctx.Param("id")
 	id, err := strconv.ParseUint(idParam, 10, 32)
@@ -411,7 +417,7 @@ func (c *ServerController) UploadFile(ctx *gin.Context) {
 // @Failure 400 {object} common.APIResponse
 // @Failure 404 {object} common.APIResponse
 // @Failure 500 {object} common.APIResponse
-// @Router /servers/{id}/files/download [get]
+// @Router /api/v1/servers/{id}/files/download [get]
 func (c *ServerController) DownloadFile(ctx *gin.Context) {
 	idParam := ctx.Param("id")
 	id, err := strconv.ParseUint(idParam, 10, 32)
@@ -467,7 +473,7 @@ func (c *ServerController) DownloadFile(ctx *gin.Context) {
 // @Failure 400 {object} common.APIResponse
 // @Failure 404 {object} common.APIResponse
 // @Failure 500 {object} common.APIResponse
-// @Router /servers/{id}/files [delete]
+// @Router /api/v1/servers/{id}/files [delete]
 func (c *ServerController) DeleteFile(ctx *gin.Context) {
 	idParam := ctx.Param("id")
 	id, err := strconv.ParseUint(idParam, 10, 32)

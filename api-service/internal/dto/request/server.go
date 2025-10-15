@@ -3,12 +3,11 @@ package request
 import "api-service/internal/dto/common"
 
 // CreateServerRequest represents the request to create a server
+// Note: hostname, internal_ip, ipv6_address are NOT included in the request
+// These fields will be automatically collected by the Agent after server registration
 type CreateServerRequest struct {
 	Name            string  `json:"name" binding:"required,max=64" validate:"required,max=64"`
-	Hostname        string  `json:"hostname" binding:"required,max=255" validate:"required,max=255"`
-	Host            string  `json:"host" binding:"required,max=255" validate:"required,max=255"`
-	InternalIP      *string `json:"internal_ip" binding:"omitempty,ip" validate:"omitempty,ip"`
-	IPv6Address     *string `json:"ipv6_address" binding:"omitempty,ipv6" validate:"omitempty,ipv6"`
+	Host            string  `json:"host" binding:"required,max=255" validate:"required,max=255"` // Public IP or domain for SSH/Agent connection
 	SSHPort         int     `json:"ssh_port" binding:"omitempty,min=1,max=65535" validate:"omitempty,min=1,max=65535"`
 	SSHCredentialID *string `json:"ssh_credential_id" binding:"omitempty,max=64" validate:"omitempty,max=64"`
 	// Direct credential fields for creation (will be stored via credential management)
@@ -16,17 +15,15 @@ type CreateServerRequest struct {
 	SSHPassword     string `json:"ssh_password" binding:"omitempty" validate:"omitempty"`
 	SSHKey          string `json:"ssh_key" binding:"omitempty" validate:"omitempty"`
 	ResourceGroupID *uint  `json:"resource_group_id" binding:"omitempty" validate:"omitempty"`
-	OwnerID         uint   `json:"owner_id" binding:"required" validate:"required"`
 	Description     string `json:"description" binding:"omitempty" validate:"omitempty"`
+	// Note: owner_id is automatically set from JWT token, not from request body
 }
 
 // UpdateServerRequest represents the request to update a server
+// Note: hostname, internal_ip, ipv6_address should be updated by Agent, not manually
 type UpdateServerRequest struct {
 	Name            *string `json:"name" binding:"omitempty,max=64" validate:"omitempty,max=64"`
-	Hostname        *string `json:"hostname" binding:"omitempty,max=255" validate:"omitempty,max=255"`
 	Host            *string `json:"host" binding:"omitempty,max=255" validate:"omitempty,max=255"`
-	InternalIP      *string `json:"internal_ip" binding:"omitempty,ip" validate:"omitempty,ip"`
-	IPv6Address     *string `json:"ipv6_address" binding:"omitempty,ipv6" validate:"omitempty,ipv6"`
 	SSHPort         *int    `json:"ssh_port" binding:"omitempty,min=1,max=65535" validate:"omitempty,min=1,max=65535"`
 	SSHCredentialID *string `json:"ssh_credential_id" binding:"omitempty,max=64" validate:"omitempty,max=64"`
 	// Direct credential fields for updates (will be stored via credential management)

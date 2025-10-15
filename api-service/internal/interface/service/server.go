@@ -10,7 +10,7 @@ import (
 // ServerService defines the interface for server business operations
 type ServerService interface {
 	// Basic CRUD operations
-	CreateServer(ctx context.Context, req *request.CreateServerRequest) (*response.ServerResponse, error)
+	CreateServer(ctx context.Context, req *request.CreateServerRequest, currentUserID uint) (*response.ServerResponse, error)
 	GetServer(ctx context.Context, id uint) (*response.ServerResponse, error)
 	UpdateServer(ctx context.Context, id uint, req *request.UpdateServerRequest) (*response.ServerResponse, error)
 	DeleteServer(ctx context.Context, id uint) error

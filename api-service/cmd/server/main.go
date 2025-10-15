@@ -507,7 +507,7 @@ func initControllers(
 		SecretKeyController: controller.NewSecretKeyController(services.secretKeyService, zapLogger, i18nInstance, validatorInstance),
 		ServerController: controller.NewServerController(
 			services.serverService,
-			services.serverAgentService,
+			// services.serverAgentService, // Removed: unused until Agent module is implemented
 			zapLogger,
 		),
 	}

@@ -211,11 +211,11 @@ func TestCreateServer(t *testing.T) {
 		{
 			name: "successful server creation",
 			request: &request.CreateServerRequest{
-				Name:     "test-server",
-				Hostname: "test.example.com",
-				Host:     "192.168.1.100",
-				SSHPort:  22,
-				OwnerID:  1,
+				Name:    "test-server",
+				Host:    "192.168.1.100",
+				SSHPort: 22,
+				// Note: Hostname removed - dynamically collected by Agent
+				// Note: OwnerID removed - auto-populated from JWT token
 			},
 			setupMocks: func(repo *MockServerRepository) {
 				repo.On("ExistsServerByName", mock.Anything, "test-server", mock.Anything).Return(false, nil)
@@ -233,11 +233,11 @@ func TestCreateServer(t *testing.T) {
 		{
 			name: "server name already exists",
 			request: &request.CreateServerRequest{
-				Name:     "existing-server",
-				Hostname: "test.example.com",
-				Host:     "192.168.1.100",
-				SSHPort:  22,
-				OwnerID:  1,
+				Name:    "existing-server",
+				Host:    "192.168.1.100",
+				SSHPort: 22,
+				// Note: Hostname removed - dynamically collected by Agent
+				// Note: OwnerID removed - auto-populated from JWT token
 			},
 			setupMocks: func(repo *MockServerRepository) {
 				repo.On("ExistsServerByName", mock.Anything, "existing-server", mock.Anything).Return(true, nil)
@@ -252,7 +252,8 @@ func TestCreateServer(t *testing.T) {
 			service, mockRepo, _ := setupTestServerService()
 			tt.setupMocks(mockRepo)
 
-			result, err := service.CreateServer(context.Background(), tt.request)
+			// CreateServer now requires currentUserID parameter
+			result, err := service.CreateServer(context.Background(), tt.request, uint(1))
 
 			if tt.expectedError {
 				assert.Error(t, err)
@@ -403,8 +404,8 @@ func TestUpdateServer(t *testing.T) {
 	}
 
 	updateReq := &request.UpdateServerRequest{
-		Name:     stringPtr("updated-server"),
-		Hostname: stringPtr("updated.example.com"),
+		Name: stringPtr("updated-server"),
+		// Note: Hostname removed - dynamically collected by Agent, not updated via API
 	}
 
 	mockRepo.On("GetServerByID", mock.Anything, uint(1)).Return(existingServer, nil)

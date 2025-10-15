@@ -74,11 +74,11 @@ func NewServerService(config ServerServiceConfig) service.ServerService {
 	}
 }
 
-// CreateServer creates a new server
-func (s *serverService) CreateServer(ctx context.Context, req *request.CreateServerRequest) (*response.ServerResponse, error) {
+// CreateServer creates a new server with the current user as owner
+func (s *serverService) CreateServer(ctx context.Context, req *request.CreateServerRequest, currentUserID uint) (*response.ServerResponse, error) {
 	s.logger.InfoContext(ctx, "Creating new server",
 		logger.String("name", req.Name),
-		logger.String("hostname", req.Hostname))
+		logger.Uint("owner_id", currentUserID))
 
 	// Check if server name already exists
 	exists, err := s.serverRepo.ExistsServerByName(ctx, req.Name)
@@ -92,25 +92,23 @@ func (s *serverService) CreateServer(ctx context.Context, req *request.CreateSer
 
 	// Validate SSH credential if provided
 	if req.SSHCredentialID != nil {
-		if err := s.validateSSHCredential(ctx, *req.SSHCredentialID, req.OwnerID); err != nil {
+		if err := s.validateSSHCredential(ctx, *req.SSHCredentialID, currentUserID); err != nil {
 			return nil, err
 		}
 	}
 
-	// Create server model
+	// Create server model with owner_id from JWT token
 	server := &model.Server{
 		Name:            req.Name,
-		Hostname:        req.Hostname,
 		Host:            req.Host,
-		InternalIP:      req.InternalIP,
-		IPv6Address:     req.IPv6Address,
 		SSHPort:         req.SSHPort,
 		SSHCredentialID: req.SSHCredentialID,
 		ResourceGroupID: req.ResourceGroupID,
-		OwnerID:         req.OwnerID,
+		OwnerID:         currentUserID, // Auto-populated from current user
 		Description:     &req.Description,
 		CreatedAt:       time.Now(),
 		UpdatedAt:       time.Now(),
+		// Note: Hostname, InternalIP, IPv6Address are dynamically collected by Agent
 	}
 
 	// Create server in database
@@ -173,9 +171,7 @@ func (s *serverService) UpdateServer(ctx context.Context, id uint, req *request.
 	}
 
 	// Update other fields
-	if req.Hostname != nil {
-		server.Hostname = *req.Hostname
-	}
+	// Note: Hostname, InternalIP, IPv6Address are dynamically collected by Agent, not updated via API
 	if req.Host != nil {
 		server.Host = *req.Host
 	}
