@@ -845,7 +845,7 @@ func (s *secretKeyService) DownloadSecretFile(ctx context.Context, filename stri
 	if !exists {
 		s.logger.WarnContext(ctx, "File not found",
 			logger.String("filename", filename))
-		return "", "", errors.NewAppError(errors.CodeRecordNotFound)
+		return "", "", errors.NewAppError(errors.CodeResourceNotFound)
 	}
 
 	s.logger.InfoContext(ctx, "Secret file download prepared",
