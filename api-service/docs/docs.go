@@ -6090,6 +6090,11 @@ const docTemplate = `{
         },
         "/servers": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "List servers with pagination and filtering",
                 "produces": [
                     "application/json"
@@ -6154,6 +6159,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Create a new server in the system",
                 "consumes": [
                     "application/json"
@@ -6206,6 +6216,11 @@ const docTemplate = `{
         },
         "/servers/actions": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Execute operations on single or multiple servers (restart, shutdown, etc.)",
                 "consumes": [
                     "application/json"
@@ -6252,6 +6267,11 @@ const docTemplate = `{
         },
         "/servers/status": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Check SSH, Agent, Docker status of multiple servers",
                 "consumes": [
                     "application/json"
@@ -6298,6 +6318,11 @@ const docTemplate = `{
         },
         "/servers/{id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Get server details by ID",
                 "produces": [
                     "application/json"
@@ -6343,6 +6368,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Update server details",
                 "consumes": [
                     "application/json"
@@ -6406,6 +6436,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Delete a server from the system",
                 "produces": [
                     "application/json"
@@ -6450,6 +6485,11 @@ const docTemplate = `{
         },
         "/servers/{id}/files": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Upload a single file to server via SSH",
                 "consumes": [
                     "multipart/form-data"
@@ -6512,6 +6552,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Delete a single file from server via SSH",
                 "produces": [
                     "application/json"
@@ -6566,6 +6611,11 @@ const docTemplate = `{
         },
         "/servers/{id}/files/download": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Download a single file from server via SSH",
                 "produces": [
                     "application/octet-stream"
@@ -6620,6 +6670,11 @@ const docTemplate = `{
         },
         "/servers/{id}/status": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Check SSH, Agent, Docker status of a single server",
                 "produces": [
                     "application/json"

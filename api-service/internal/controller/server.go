@@ -48,6 +48,7 @@ func NewServerController(
 // @Summary Create a new server
 // @Description Create a new server in the system
 // @Tags servers
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param request body request.CreateServerRequest true "Server creation request"
@@ -81,6 +82,7 @@ func (c *ServerController) CreateServer(ctx *gin.Context) {
 // @Summary Get server by ID
 // @Description Get server details by ID
 // @Tags servers
+// @Security BearerAuth
 // @Produce json
 // @Param id path int true "Server ID"
 // @Success 200 {object} response.ServerResponse
@@ -112,6 +114,7 @@ func (c *ServerController) GetServer(ctx *gin.Context) {
 // @Summary Update server
 // @Description Update server details
 // @Tags servers
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param id path int true "Server ID"
@@ -154,6 +157,7 @@ func (c *ServerController) UpdateServer(ctx *gin.Context) {
 // @Summary Delete server
 // @Description Delete a server from the system
 // @Tags servers
+// @Security BearerAuth
 // @Produce json
 // @Param id path int true "Server ID"
 // @Success 204 "No Content"
@@ -186,6 +190,7 @@ func (c *ServerController) DeleteServer(ctx *gin.Context) {
 // @Summary List servers
 // @Description List servers with pagination and filtering
 // @Tags servers
+// @Security BearerAuth
 // @Produce json
 // @Param page query int false "Page number" default(1)
 // @Param page_size query int false "Page size" default(10)
@@ -228,6 +233,7 @@ func (c *ServerController) ListServers(ctx *gin.Context) {
 // @Summary Get server status
 // @Description Check SSH, Agent, Docker status of a single server
 // @Tags servers
+// @Security BearerAuth
 // @Produce json
 // @Param id path int true "Server ID"
 // @Success 200 {object} response.ServerStatusCheckResult
@@ -259,6 +265,7 @@ func (c *ServerController) GetServerStatus(ctx *gin.Context) {
 // @Summary Check multiple servers status
 // @Description Check SSH, Agent, Docker status of multiple servers
 // @Tags servers
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param request body request.ServerStatusCheckRequest true "Status check request"
@@ -290,6 +297,7 @@ func (c *ServerController) CheckServersStatus(ctx *gin.Context) {
 // @Summary Execute server actions
 // @Description Execute operations on single or multiple servers (restart, shutdown, etc.)
 // @Tags servers
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param request body request.ServerActionRequest true "Server action request"
@@ -321,6 +329,7 @@ func (c *ServerController) ExecuteServerActions(ctx *gin.Context) {
 // @Summary Upload file to server
 // @Description Upload a single file to server via SSH
 // @Tags servers
+// @Security BearerAuth
 // @Accept multipart/form-data
 // @Produce json
 // @Param id path int true "Server ID"
@@ -394,6 +403,7 @@ func (c *ServerController) UploadFile(ctx *gin.Context) {
 // @Summary Download file from server
 // @Description Download a single file from server via SSH
 // @Tags servers
+// @Security BearerAuth
 // @Produce application/octet-stream
 // @Param id path int true "Server ID"
 // @Param path query string true "File path on server"
@@ -449,6 +459,7 @@ func (c *ServerController) DownloadFile(ctx *gin.Context) {
 // @Summary Delete file from server
 // @Description Delete a single file from server via SSH
 // @Tags servers
+// @Security BearerAuth
 // @Produce json
 // @Param id path int true "Server ID"
 // @Param path query string true "File path on server"

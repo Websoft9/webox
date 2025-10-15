@@ -6037,6 +6037,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
       summary: List servers
       tags:
       - servers
@@ -6070,6 +6072,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
       summary: Create a new server
       tags:
       - servers
@@ -6099,6 +6103,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
       summary: Delete server
       tags:
       - servers
@@ -6129,6 +6135,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
       summary: Get server by ID
       tags:
       - servers
@@ -6171,6 +6179,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
       summary: Update server
       tags:
       - servers
@@ -6207,6 +6217,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
       summary: Delete file from server
       tags:
       - servers
@@ -6249,6 +6261,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
       summary: Upload file to server
       tags:
       - servers
@@ -6285,6 +6299,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
       summary: Download file from server
       tags:
       - servers
@@ -6316,6 +6332,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
       summary: Get server status
       tags:
       - servers
@@ -6347,6 +6365,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
       summary: Execute server actions
       tags:
       - servers
@@ -6377,6 +6397,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
       summary: Check multiple servers status
       tags:
       - servers
