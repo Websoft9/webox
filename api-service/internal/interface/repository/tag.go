@@ -26,15 +26,15 @@ type TagRepository interface {
 
 	// Tagging operations
 	CreateTagging(ctx context.Context, tagging *model.Tagging) error
-	GetTaggingsByResourceID(ctx context.Context, resourceID uint) ([]*model.Tagging, error)
+	GetTaggingsByResourceCode(ctx context.Context, resourceCode string) ([]*model.Tagging, error)
 	GetTaggingsByTagID(ctx context.Context, tagID uint) ([]*model.Tagging, error)
-	DeleteTagging(ctx context.Context, tagID, resourceID uint) error
-	DeleteTaggingsByResourceID(ctx context.Context, resourceID uint) error
-	DeleteTaggingsByTagIDs(ctx context.Context, resourceID uint, tagIDs []uint) error
+	DeleteTagging(ctx context.Context, tagID uint, resourceCode string) error
+	DeleteTaggingsByResourceCode(ctx context.Context, resourceCode string) error
+	DeleteTaggingsByTagIDs(ctx context.Context, resourceCode string, tagIDs []uint) error
 
 	// Bulk operations
 	CreateTaggingsBatch(ctx context.Context, taggings []*model.Tagging) error
-	ExistsTagging(ctx context.Context, tagID, resourceID uint) (bool, error)
+	ExistsTagging(ctx context.Context, tagID uint, resourceCode string) (bool, error)
 
 	// Search operations
 	SearchResourcesByTags(ctx context.Context, req *request.TagSearchRequest) ([]*model.Tagging, int64, error)

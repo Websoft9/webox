@@ -45,7 +45,7 @@ type TagUnassignResponse struct {
 
 // TaggedResource represents a resource with its associated tags
 type TaggedResource struct {
-	ResourceID   uint                `json:"resourceId" example:"1"`
+	ResourceCode string              `json:"resourceCode" example:"SERVER_001"`
 	ResourceName string              `json:"resourceName" example:"WordPress Blog"`
 	Tags         []TagSimpleResponse `json:"tags"`
 	MatchedTags  []uint              `json:"matchedTags"`
