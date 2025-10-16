@@ -66,12 +66,8 @@ func (r *auditLogRepository) List(ctx context.Context, filter *request.ListAudit
 		query = query.Where("action = ?", filter.Action)
 	}
 
-	if filter.ResourceType != "" {
-		query = query.Where("resource_type = ?", filter.ResourceType)
-	}
-
-	if filter.ResourceID != nil {
-		query = query.Where("resource_id = ?", *filter.ResourceID)
+	if filter.Module != "" {
+		query = query.Where("module = ?", filter.Module)
 	}
 
 	if filter.IPAddress != "" {

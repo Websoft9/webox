@@ -1466,15 +1466,6 @@ definitions:
       request_url:
         example: /api/v1/applications
         type: string
-      resource_id:
-        example: 123
-        type: integer
-      resource_name:
-        example: My Blog
-        type: string
-      resource_type:
-        example: APP_INSTANCE
-        type: string
       response_status:
         example: 200
         type: integer
@@ -1495,9 +1486,6 @@ definitions:
       id:
         example: 1
         type: integer
-      nickname:
-        example: Administrator
-        type: string
       username:
         example: admin
         type: string
@@ -2781,14 +2769,10 @@ paths:
         in: query
         name: action
         type: string
-      - description: Resource Type
+      - description: Module
         in: query
-        name: resource_type
+        name: module
         type: string
-      - description: Resource ID
-        in: query
-        name: resource_id
-        type: integer
       - description: Start Time
         format: date-time
         in: query

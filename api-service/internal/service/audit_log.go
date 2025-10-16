@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"encoding/json"
-	"strconv"
 	"strings"
 	"time"
 
@@ -20,53 +19,69 @@ import (
 	"api-service/internal/model"
 	"api-service/pkg/auth"
 	"api-service/pkg/errors"
+	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
 	"api-service/pkg/utils"
 )
 
 const (
 	// Content types
-	contentTypeCSV   = "text/csv"
-	contentTypeExcel = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+	contentTypeCSV         = "text/csv"
+	contentTypeOctetStream = "application/octet-stream"
 
 	// Response limits
 	maxErrorMessageLength = 200
 
 	// Password masking constants
-	maskedPassword       = "******"
-	passwordField        = "password"
-	newPasswordField     = "new_password"
-	oldPasswordField     = "old_password"
-	confirmPasswordField = "confirm_password"
+	maskedPassword = "******"
 )
 
-// passwordFieldNames contains field names that should be masked
-var passwordFieldNames = []string{passwordField, confirmPasswordField, oldPasswordField, newPasswordField}
+// Sensitive field names that should be masked
+var sensitiveFieldNames = []string{
+	// Password fields
+	"password", "confirm_password", "old_password", "new_password",
+	// Token and key fields
+	"token", "access_token", "refresh_token", "api_token", "bearer_token",
+	"api_key", "apikey", "secret", "secret_key", "api_secret",
+	// Authorization fields
+	"authorization", "auth", "credential", "credentials",
+	// Certificate fields
+	"private_key", "public_key", "certificate", "cert",
+}
 
 // auditLogService audit log service implementation
 type auditLogService struct {
 	auditLogRepo repository.AuditLogRepository
+	moduleRepo   repository.ModuleRepository
 	userService  service.UserService
 	db           *gorm.DB
 	logger       logger.Logger
 	config       *config.Config
+	workerPool   *AuditLogWorkerPool
 }
 
 // NewAuditLogService creates audit log service instance
 func NewAuditLogService(
 	auditLogRepo repository.AuditLogRepository,
+	moduleRepo repository.ModuleRepository,
 	userService service.UserService,
 	db *gorm.DB,
 	logger logger.Logger,
 	config *config.Config,
 ) service.AuditLogService {
-	return &auditLogService{
+	svc := &auditLogService{
 		auditLogRepo: auditLogRepo,
+		moduleRepo:   moduleRepo,
 		userService:  userService,
 		db:           db,
 		logger:       logger,
 		config:       config,
 	}
+
+	// Initialize worker pool
+	svc.workerPool = NewAuditLogWorkerPool(svc, logger)
+
+	return svc
 }
 
 // RecordLog records audit log (internal use)
@@ -76,20 +91,11 @@ func (s *auditLogService) RecordLog(ctx context.Context, req *request.CreateAudi
 		return errors.NewAppError(errors.CodeInvalidParameterFormat)
 	}
 
-	s.logger.InfoContext(ctx, "Recording audit log",
-		logger.String("service", "audit_log"),
-		logger.String("operation", "RecordLog"),
-		logger.String("action", req.Action),
-		logger.String("module", req.Module))
-
 	auditLog := &model.AuditLog{
 		UserID:         req.UserID,
 		Username:       req.Username,
 		Action:         req.Action,
 		Module:         req.Module,
-		ResourceType:   req.ResourceType,
-		ResourceID:     req.ResourceID,
-		ResourceName:   req.ResourceName,
 		Description:    req.Description,
 		IPAddress:      req.IPAddress,
 		UserAgent:      req.UserAgent,
@@ -106,8 +112,6 @@ func (s *auditLogService) RecordLog(ctx context.Context, req *request.CreateAudi
 		return err
 	}
 
-	s.logger.InfoContext(ctx, "Audit log recorded successfully",
-		logger.Uint("audit_log_id", auditLog.ID))
 	return nil
 }
 
@@ -133,7 +137,6 @@ func (s *auditLogService) GetAuditLog(ctx context.Context, id uint) (*response.A
 		if userInfo, err := s.userService.GetUser(ctx, resp.User.ID); err == nil {
 			resp.User.ID = userInfo.ID
 			resp.User.Username = userInfo.Username
-			resp.User.Nickname = userInfo.Nickname
 		}
 	}
 
@@ -181,7 +184,6 @@ func (s *auditLogService) ListAuditLogs(ctx context.Context, req *request.ListAu
 		if responses[i].User != nil && responses[i].User.ID > 0 {
 			if userInfo, exists := userInfoMap[responses[i].User.ID]; exists {
 				responses[i].User.ID = userInfo.ID
-				responses[i].User.Nickname = userInfo.Nickname
 				responses[i].User.Username = userInfo.Username
 			}
 		}
@@ -213,7 +215,7 @@ func (s *auditLogService) ExportAuditLogs(ctx context.Context, ginCtx *gin.Conte
 	}
 
 	// Handle user ID based on permissions and request
-	userID := s.resolveExportUserID(ginCtx, req.UserID)
+	userID := req.UserID
 
 	// Build query conditions using QueryBuilder pattern
 	queryBuilder := s.buildExportQueryBuilder(userID, startTime, endTime)
@@ -228,10 +230,10 @@ func (s *auditLogService) ExportAuditLogs(ctx context.Context, ginCtx *gin.Conte
 	switch format {
 	case constants.FormatJSON:
 		exportFormat = utils.FormatJSON
-		contentType = "application/json"
+		contentType = contentTypeOctetStream
 	case constants.FormatExcel:
 		exportFormat = utils.FormatExcel
-		contentType = contentTypeExcel
+		contentType = contentTypeOctetStream
 	case constants.FormatCSV:
 		exportFormat = utils.FormatCSV
 		contentType = contentTypeCSV
@@ -279,24 +281,6 @@ func (s *auditLogService) buildExportQueryBuilder(userID *uint, startTime, endTi
 	return utils.CombineQueryBuilders(builders...)
 }
 
-// resolveExportUserID resolves the user ID for export - if not specified, use current user
-func (s *auditLogService) resolveExportUserID(ginCtx *gin.Context, requestUserID *uint) *uint {
-	// If user ID is explicitly provided in request, use it
-	if requestUserID != nil {
-		return requestUserID
-	}
-
-	// Fallback: try to get user ID from context (legacy support)
-	if userIDInterface, exists := ginCtx.Get("user_id"); exists {
-		if currentUserID, ok := userIDInterface.(uint); ok {
-			return &currentUserID
-		}
-	}
-
-	// Return nil if no user context (export all)
-	return nil
-}
-
 // CleanupExpiredLogs cleanup expired audit logs (system scheduled task)
 func (s *auditLogService) CleanupExpiredLogs(ctx context.Context, retentionDays int) (int64, error) {
 	if retentionDays <= 0 {
@@ -318,29 +302,6 @@ func (s *auditLogService) CleanupExpiredLogs(ctx context.Context, retentionDays 
 		logger.Field{Key: "before_date", Value: beforeDate.Format("2006-01-02")})
 
 	return deletedCount, nil
-}
-
-// LogUserAction records user operation (convenience method)
-func (s *auditLogService) LogUserAction(
-	ctx context.Context,
-	userID *uint,
-	username, action, module, description, ipAddress, userAgent string,
-	success bool,
-	errorMsg string,
-) error {
-	req := &request.CreateAuditLogRequest{
-		UserID:       userID,
-		Username:     username,
-		Action:       action,
-		Module:       module,
-		Description:  description,
-		IPAddress:    ipAddress,
-		UserAgent:    userAgent,
-		Success:      success,
-		ErrorMessage: errorMsg,
-	}
-
-	return s.RecordLog(ctx, req)
 }
 
 // ShouldSkipAudit determines whether to skip audit recording based on method and path
@@ -425,15 +386,24 @@ func (s *auditLogService) RecordAuditFromRequest(backgroundCtx context.Context, 
 	// Extract audit information from request context
 	auditReq := s.extractAuditInfoFromRequest(ginCtx, responseBody, responseTime)
 
-	// For login requests, try to get username from request body if not available from user context
-	if auditReq.Action == constants.ActionLogin && auditReq.Username == "" {
-		if username := s.extractUsernameFromRequestBody(ginCtx); username != "" {
-			auditReq.Username = username
-		}
-	}
-
 	// Record audit log using existing method with background context
 	return s.RecordLog(backgroundCtx, auditReq)
+}
+
+// SubmitAuditJob submits audit job to worker pool (non-blocking)
+func (s *auditLogService) SubmitAuditJob(ginCtx *gin.Context, responseBody []byte, responseTime int) bool {
+	if s.workerPool == nil {
+		s.logger.Error("Worker pool not initialized")
+		return false
+	}
+
+	job := &AuditJob{
+		ginCtx:       ginCtx,
+		responseBody: responseBody,
+		responseTime: responseTime,
+	}
+
+	return s.workerPool.Submit(job)
 }
 
 // extractAuditInfoFromRequest extracts audit information from HTTP request context
@@ -449,14 +419,9 @@ func (s *auditLogService) extractAuditInfoFromRequest(ctx *gin.Context, response
 	}
 
 	action := s.getActionFromMethod(ctx.Request.Method, ctx.Request.RequestURI)
-	if action == constants.ActionLogin && username == "" {
-		// For login operations, try to extract username from request body
-		username = s.extractUsernameFromRequestBody(ctx)
-	}
 
 	// Determine module
-	module := s.getModuleFromPath(ctx.Request.RequestURI)
-	module_type := constants.GetModuleType(module)
+	module := s.getModuleName(ctx, ctx.Request.RequestURI)
 
 	// Build description
 	description := s.buildDescription(ctx.Request.Method, ctx.Request.RequestURI, ctx.Writer.Status())
@@ -480,9 +445,6 @@ func (s *auditLogService) extractAuditInfoFromRequest(ctx *gin.Context, response
 		Username:       username,
 		Action:         action,
 		Module:         module,
-		ResourceType:   module_type,
-		ResourceID:     s.extractResourceID(ctx),
-		ResourceName:   constants.GetModuleTableName(module_type),
 		Description:    description,
 		IPAddress:      utils.GetRealIP(ctx),
 		UserAgent:      ctx.Request.UserAgent(),
@@ -497,19 +459,7 @@ func (s *auditLogService) extractAuditInfoFromRequest(ctx *gin.Context, response
 }
 
 // getActionFromMethod determines action type based on HTTP method and path
-func (s *auditLogService) getActionFromMethod(method, path string) string {
-	// Check for specific auth operations
-	switch {
-	case strings.HasSuffix(path, "/auth/login") || path == "/auth/login":
-		return constants.ActionLogin
-	case strings.HasSuffix(path, "/auth/logout") || path == "/auth/logout":
-		return constants.ActionLogout
-	case strings.HasSuffix(path, "/auth/register") || path == "/auth/register":
-		return constants.ActionRegister
-	case strings.HasSuffix(path, "/auth/refresh") || path == "/auth/refresh":
-		return constants.ActionRefresh
-	}
-
+func (s *auditLogService) getActionFromMethod(method, _ string) string {
 	switch method {
 	case constants.HTTPMethodPOST:
 		return constants.ActionCreate
@@ -534,17 +484,30 @@ func (s *auditLogService) buildDescription(method, path string, statusCode int) 
 	return action + " failed"
 }
 
-// getModuleFromPath extracts module from URL path in format /api/v1/{module}
-func (s *auditLogService) getModuleFromPath(path string) string {
+// getModuleName extracts module code from URL path and returns translated name
+func (s *auditLogService) getModuleName(ctx context.Context, path string) string {
 	// Remove query parameters first
 	pathWithoutQuery := s.extractPathWithoutQuery(path)
 	pathSegments := strings.Split(strings.Trim(pathWithoutQuery, "/"), "/")
 
 	// Expected format: /api/v1/{module}/...
 	if len(pathSegments) < constants.MinPathSegments {
-		return "unknown"
+		return i18n.T("common.unknown", constants.DefaultLanguage)
 	}
-	return pathSegments[2]
+
+	moduleCode := pathSegments[2]
+
+	// Query module name from database
+	if moduleRecord, err := s.moduleRepo.GetByCode(ctx, moduleCode); err == nil && moduleRecord != nil {
+		return i18n.T(moduleRecord.Name, constants.DefaultLanguage)
+	} else if err != nil {
+		s.logger.Warn("Failed to query module by code",
+			logger.Field{Key: "code", Value: moduleCode},
+			logger.Field{Key: "error", Value: err})
+	}
+
+	// Fallback to unknown
+	return i18n.T("common.unknown", constants.DefaultLanguage)
 }
 
 // getRequestParams gets request parameters with special handling for exports
@@ -583,10 +546,10 @@ func (s *auditLogService) addPostParams(params map[string]interface{}, ctx *gin.
 	s.addJSONBodyData(params, ctx)
 }
 
-// addFormData adds form data to params with password masking
+// addFormData adds form data to params with sensitive data masking
 func (s *auditLogService) addFormData(params map[string]interface{}, ctx *gin.Context) {
 	for key, values := range ctx.Request.PostForm {
-		if s.isPasswordField(key) {
+		if s.isSensitiveField(key) {
 			params[key] = maskedPassword
 		} else {
 			params[key] = s.getValueFromSlice(values)
@@ -616,20 +579,54 @@ func (s *auditLogService) addJSONBodyData(params map[string]interface{}, ctx *gi
 
 	var jsonParams map[string]interface{}
 	if err := json.Unmarshal(requestBody, &jsonParams); err == nil {
-		for key, value := range jsonParams {
-			if s.isPasswordField(key) {
-				params[key] = maskedPassword
-			} else {
-				params[key] = value
-			}
+		// Recursively mask sensitive fields in nested JSON
+		s.maskSensitiveData(jsonParams, params)
+	}
+}
+
+// maskSensitiveData recursively masks sensitive fields in nested structures
+func (s *auditLogService) maskSensitiveData(source, dest map[string]interface{}) {
+	for key, value := range source {
+		if s.isSensitiveField(key) {
+			dest[key] = maskedPassword
+			continue
+		}
+
+		switch v := value.(type) {
+		case map[string]interface{}:
+			// Recursively handle nested objects
+			maskedNested := make(map[string]interface{})
+			s.maskSensitiveData(v, maskedNested)
+			dest[key] = maskedNested
+		case []interface{}:
+			// Handle arrays
+			dest[key] = s.maskSensitiveArray(v)
+		default:
+			dest[key] = value
 		}
 	}
 }
 
-// isPasswordField checks if a field name is a password field
-func (s *auditLogService) isPasswordField(key string) bool {
-	for _, field := range passwordFieldNames {
-		if key == field {
+// maskSensitiveArray masks sensitive data in arrays
+func (s *auditLogService) maskSensitiveArray(arr []interface{}) []interface{} {
+	result := make([]interface{}, len(arr))
+	for i, item := range arr {
+		if itemMap, ok := item.(map[string]interface{}); ok {
+			maskedItem := make(map[string]interface{})
+			s.maskSensitiveData(itemMap, maskedItem)
+			result[i] = maskedItem
+		} else {
+			result[i] = item
+		}
+	}
+	return result
+}
+
+// isSensitiveField checks if a field name is sensitive and should be masked
+func (s *auditLogService) isSensitiveField(key string) bool {
+	lowerKey := strings.ToLower(key)
+	for _, field := range sensitiveFieldNames {
+		if lowerKey == field || strings.Contains(lowerKey, field) {
 			return true
 		}
 	}
@@ -670,37 +667,4 @@ func (s *auditLogService) extractErrorMessage(responseBody []byte) string {
 		return string(responseBody[:maxErrorMessageLength]) + "..."
 	}
 	return string(responseBody)
-}
-
-// extractResourceID extracts resource ID from URL parameters
-func (s *auditLogService) extractResourceID(ctx *gin.Context) *uint {
-	if id := ctx.Param("id"); id != "" {
-		if parsedID, err := strconv.ParseUint(id, 10, 32); err == nil {
-			resourceID := uint(parsedID)
-			return &resourceID
-		}
-	}
-	return nil
-}
-
-// extractUsernameFromRequestBody extracts username from JSON request body only
-func (s *auditLogService) extractUsernameFromRequestBody(ctx *gin.Context) string {
-	// Extract from JSON body stored in context by middleware
-	if requestBodyInterface, exists := ctx.Get("audit_request_body"); exists {
-		if requestBody, ok := requestBodyInterface.([]byte); ok && len(requestBody) > 0 {
-			var loginReq struct {
-				Username string `json:"username"`
-				Email    string `json:"email"`
-			}
-			if err := json.Unmarshal(requestBody, &loginReq); err == nil {
-				if loginReq.Username != "" {
-					return loginReq.Username
-				}
-				if loginReq.Email != "" {
-					return loginReq.Email
-				}
-			}
-		}
-	}
-	return ""
 }

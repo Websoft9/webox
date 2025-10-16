@@ -690,14 +690,8 @@
                     },
                     {
                         "type": "string",
-                        "description": "Resource Type",
-                        "name": "resource_type",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Resource ID",
-                        "name": "resource_id",
+                        "description": "Module",
+                        "name": "module",
                         "in": "query"
                     },
                     {
@@ -9396,18 +9390,6 @@
                     "type": "string",
                     "example": "/api/v1/applications"
                 },
-                "resource_id": {
-                    "type": "integer",
-                    "example": 123
-                },
-                "resource_name": {
-                    "type": "string",
-                    "example": "My Blog"
-                },
-                "resource_type": {
-                    "type": "string",
-                    "example": "APP_INSTANCE"
-                },
                 "response_status": {
                     "type": "integer",
                     "example": 200
@@ -9435,10 +9417,6 @@
                 "id": {
                     "type": "integer",
                     "example": 1
-                },
-                "nickname": {
-                    "type": "string",
-                    "example": "Administrator"
                 },
                 "username": {
                     "type": "string",
