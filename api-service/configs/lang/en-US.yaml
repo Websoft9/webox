@@ -58,6 +58,7 @@ auth:
 common:
   success: "Operation successful"
   validation_failed: "Validation failed"
+  unknown: "Unknown"
 error:
   database_error: "Database operation failed"
   unknown_error: "Unknown error occurred"

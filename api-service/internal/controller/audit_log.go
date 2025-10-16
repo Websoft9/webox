@@ -71,8 +71,7 @@ func (c *AuditLogController) GetAuditLog(ctx *gin.Context) {
 // @Param page_size query int false "Page Size" default(20)
 // @Param user_id query int false "User ID"
 // @Param action query string false "Action Type"
-// @Param resource_type query string false "Resource Type"
-// @Param resource_id query int false "Resource ID"
+// @Param module query string false "Module"
 // @Param start_time query string false "Start Time" format(date-time)
 // @Param end_time query string false "End Time" format(date-time)
 // @Param ip_address query string false "IP Address"

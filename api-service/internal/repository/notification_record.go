@@ -2,9 +2,7 @@ package repository
 
 import (
 	"context"
-	"time"
 
-	"api-service/internal/constants"
 	"api-service/internal/dto/request"
 	"api-service/internal/interface/repository"
 	"api-service/internal/model"
@@ -53,17 +51,10 @@ func (r *notificationRecordRepository) GetList(ctx context.Context, req *request
 		query = query.Where("recipient LIKE ?", "%"+req.Recipient+"%")
 	}
 	if req.SentStart != "" {
-		sentStart, err := time.Parse(constants.DefaultTimeFormat, req.SentStart)
-
-		if err == nil {
-			query = query.Where("sent_at >= ?", sentStart)
-		}
+		query = query.Where("sent_at >= ?", req.SentStart)
 	}
 	if req.SentEnd != "" {
-		sentEnd, err := time.Parse(constants.DefaultTimeFormat, req.SentEnd)
-		if err == nil {
-			query = query.Where("sent_at <= ?", sentEnd)
-		}
+		query = query.Where("sent_at <= ?", req.SentEnd)
 	}
 
 	// Count total records

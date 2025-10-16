@@ -357,6 +357,7 @@ type repositories struct {
 	userRepo                 repoInterface.UserRepository
 	roleRepo                 repoInterface.RoleRepository
 	permissionRepo           repoInterface.PermissionRepository
+	moduleRepo               repoInterface.ModuleRepository
 	apiTokenRepo             repoInterface.APITokenRepository
 	twoFactorRepo            repoInterface.UserTwoFactorRepository
 	auditLogRepo             repoInterface.AuditLogRepository
@@ -377,6 +378,7 @@ func initRepositories(db *gorm.DB, zapLogger logger.Logger) *repositories {
 		userRepo:                 repoImpl.NewUserRepository(db),
 		roleRepo:                 repoImpl.NewRoleRepository(db),
 		permissionRepo:           repoImpl.NewPermissionRepository(db),
+		moduleRepo:               repoImpl.NewModuleRepository(db),
 		apiTokenRepo:             repoImpl.NewAPITokenRepository(db),
 		twoFactorRepo:            repoImpl.NewTwoFactorRepository(db),
 		auditLogRepo:             repoImpl.NewAuditLogRepository(db),
@@ -447,7 +449,7 @@ func initBusinessServices(
 		apiTokenService:            serviceImpl.NewAPITokenService(repos.apiTokenRepo, authConfigManager, db, zapLogger),
 		authConfigService:          serviceImpl.NewAuthConfigService(authConfigManager, zapLogger),
 		twoFactorService:           serviceImpl.NewTwoFactorService(repos.twoFactorRepo, db, zapLogger),
-		auditLogService:            serviceImpl.NewAuditLogService(repos.auditLogRepo, userService, db, zapLogger, cfg),
+		auditLogService:            serviceImpl.NewAuditLogService(repos.auditLogRepo, repos.moduleRepo, userService, db, zapLogger, cfg),
 		systemConfigService:        serviceImpl.NewSystemConfigService(repos.systemConfigRepo, cfg, db, zapLogger),
 		userProfileService:         serviceImpl.NewUserProfileService(repos.userProfileRepo, zapLogger, i18nInstance),
 		tagService:                 serviceImpl.NewTagService(repos.tagRepo, db, zapLogger, i18nInstance),
