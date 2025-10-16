@@ -416,7 +416,7 @@ func setupSecretKeyRoutes(protected *gin.RouterGroup, secretKeyController *contr
 	}
 
 	// Secret key routes
-	secretKeys := protected.Group("/secret-keys")
+	secretKeys := protected.Group("/secrets")
 	secretKeys.GET("", secretKeyController.ListSecretKeys)              // GET /api/v1/secret-keys
 	secretKeys.POST("", secretKeyController.CreateSecretKey)            // POST /api/v1/secret-keys
 	secretKeys.GET("/export", secretKeyController.ExportSecretKeys)     // GET /api/v1/secret-keys/export
