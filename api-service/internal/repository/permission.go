@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"api-service/internal/constants"
 	"api-service/internal/dto/request"
 	"api-service/internal/interface/repository"
 	"api-service/internal/model"
@@ -9,7 +8,6 @@ import (
 	"api-service/pkg/i18n"
 	"context"
 	"strings"
-	"time"
 
 	"gorm.io/gorm"
 )
@@ -181,9 +179,11 @@ func (r *permissionRepository) List(ctx context.Context, req *request.ListPermis
 		query = query.Where("status = ?", *req.Status)
 	}
 
-	if req.StartTime != "" && req.EndTime != "" {
-		startTime, _ := time.Parse(constants.DefaultTimeFormat, req.StartTime)
-		endTime, _ := time.Parse(constants.DefaultTimeFormat, req.EndTime)
+	startTime, endTime, parseErr := req.GetTimeRange(true)
+	if parseErr != nil {
+		return nil, 0, errors.NewAppErrorWrapError(parseErr, errors.CodeRecordQueryFailed)
+	}
+	if !startTime.IsZero() && !endTime.IsZero() {
 		query = query.Where("updated_at BETWEEN ? AND ?", startTime, endTime)
 	}
 

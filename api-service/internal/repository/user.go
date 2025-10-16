@@ -6,7 +6,6 @@ import (
 	"api-service/internal/model"
 	"api-service/pkg/errors"
 	"context"
-	"time"
 
 	"gorm.io/gorm"
 )
@@ -106,7 +105,7 @@ func (r *userRepository) GetByUsernameOrEmail(ctx context.Context, usernameOrEma
 
 // Update updates a user
 func (r *userRepository) Update(ctx context.Context, user *model.User) error {
-	if err := r.db.WithContext(ctx).Save(user).Error; err != nil {
+	if err := r.db.WithContext(ctx).Updates(user).Error; err != nil {
 		return errors.NewAppErrorWrapError(err, errors.CodeRecordUpdateFailed)
 	}
 	return nil
@@ -116,8 +115,7 @@ func (r *userRepository) Update(ctx context.Context, user *model.User) error {
 func (r *userRepository) Delete(ctx context.Context, id uint) error {
 	// soft delete: set status = -1 and update updated_at
 	updates := map[string]interface{}{
-		"status":     -1,
-		"updated_at": time.Now(),
+		"status": -1,
 	}
 	return r.db.WithContext(ctx).Model(&model.User{}).Where("id = ?", id).Updates(updates).Error
 }

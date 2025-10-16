@@ -69,7 +69,11 @@ LABEL version="0.1.6"
 ARG INFLUXDB_VERSION
 
 # Install CA Certificates and Time zone Data
-RUN apk --no-cache add ca-certificates bash sqlite curl supervisor redis
+RUN apk --no-cache add ca-certificates bash sqlite curl supervisor redis tzdata
+
+# Set timezone to UTC
+ENV TZ=UTC
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # Create non-privileged user and prepare directories
 RUN adduser -D -s /bin/sh appuser && \

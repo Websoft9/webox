@@ -10,10 +10,10 @@ type RoleResponse struct {
 	ID              uint                 `json:"id"`
 	Name            string               `json:"name"`
 	Code            string               `json:"code"`
-	Description     string               `json:"description"`
-	IsSystem        bool                 `json:"is_system"`
-	SortOrder       int                  `json:"sort_order"`
-	Status          int                  `json:"status"`
+	Description     string               `json:"description,omitempty"`
+	IsSystem        bool                 `json:"is_system,omitempty"`
+	SortOrder       int                  `json:"sort_order,omitempty"`
+	Status          int                  `json:"status,omitempty"`
 	PermissionCount int64                `json:"permission_count,omitempty"`
 	UserCount       int64                `json:"user_count,omitempty"`
 	CreatedAt       time.Time            `json:"created_at"`

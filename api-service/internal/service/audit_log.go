@@ -206,7 +206,7 @@ func (s *auditLogService) ExportAuditLogs(ctx context.Context, ginCtx *gin.Conte
 		StartTime: req.StartTime,
 		EndTime:   req.EndTime,
 	}
-	startTime, endTime, err := timeRange.GetParsedTimeRange()
+	startTime, endTime, err := timeRange.GetTimeRange(false)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Invalid time range parameters", logger.ErrorField(err))
 		return nil, "", errors.NewAppError(errors.CodeInvalidParameterFormat)

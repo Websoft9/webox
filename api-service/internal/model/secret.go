@@ -71,11 +71,11 @@ type SecretKey struct {
 	KeyType         SecretKeyType `json:"key_type" gorm:"size:20;not null"`
 	Description     *string       `json:"description" gorm:"type:text"`
 	CustomFields    CustomFields  `json:"custom_fields" gorm:"type:text"`
-	ExpiresAt       *time.Time    `json:"expires_at"`
+	ExpiresAt       *time.Time    `json:"expires_at" gorm:"type:datetime;serializer:datetime"`
 	ResourceGroupID *uint         `json:"resource_group_id"`
 	OwnerID         uint          `json:"owner_id" gorm:"not null"`
-	CreatedAt       time.Time     `json:"created_at" gorm:"autoCreateTime"`
-	UpdatedAt       time.Time     `json:"updated_at" gorm:"autoUpdateTime"`
+	CreatedAt       time.Time     `json:"created_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`
+	UpdatedAt       time.Time     `json:"updated_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`
 
 	// Relationships
 	Owner *User `json:"owner,omitempty" gorm:"foreignKey:OwnerID"`
@@ -91,8 +91,8 @@ type SecretReference struct {
 	ID           uint      `gorm:"primarykey" json:"id"`
 	SecretID     uint      `gorm:"not null;index:idx_secret_references_secret_id;uniqueIndex:idx_secret_references_secret_resource" json:"secret_id"`
 	ResourceCode string    `gorm:"type:varchar(64);not null;index:idx_secret_references_resource_code;uniqueIndex:idx_secret_references_secret_resource" json:"resource_code"`
-	CreatedAt    time.Time `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt    time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+	CreatedAt    time.Time `json:"created_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`
+	UpdatedAt    time.Time `json:"updated_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`
 
 	// Associations
 	SecretKey SecretKey `gorm:"foreignKey:SecretID" json:"-"`
@@ -104,9 +104,9 @@ type UserSecret struct {
 	UserID      uint       `gorm:"not null;index" json:"user_id"`
 	SecretKeyID uint       `gorm:"not null;index" json:"secret_key_id"`
 	GrantedBy   *uint      `gorm:"index" json:"granted_by,omitempty"`
-	GrantedAt   time.Time  `gorm:"default:CURRENT_TIMESTAMP" json:"granted_at"`
-	ExpiresAt   *time.Time `json:"expires_at,omitempty"`
-	CreatedAt   time.Time  `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
+	GrantedAt   time.Time  `json:"granted_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP;not null;serializer:datetime"`
+	ExpiresAt   *time.Time `json:"expires_at" gorm:"type:datetime;serializer:datetime"`
+	CreatedAt   time.Time  `json:"created_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`
 
 	User          User      `gorm:"foreignKey:UserID;references:ID" json:"user,omitempty"`
 	SecretKey     SecretKey `gorm:"foreignKey:SecretKeyID;references:ID" json:"secret_key,omitempty"`

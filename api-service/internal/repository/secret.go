@@ -48,7 +48,7 @@ func (r *secretKeyRepository) GetByID(ctx context.Context, id uint) (*model.Secr
 
 // Update updates an existing secret key
 func (r *secretKeyRepository) Update(ctx context.Context, secretKey *model.SecretKey) error {
-	if err := r.db.WithContext(ctx).Save(secretKey).Error; err != nil {
+	if err := r.db.WithContext(ctx).Updates(secretKey).Error; err != nil {
 		return errors.NewAppErrorWrapError(err, errors.CodeRecordUpdateFailed)
 	}
 	return nil

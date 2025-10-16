@@ -1,10 +1,8 @@
 package common
 
 import (
-	"time"
-
-	"api-service/internal/constants"
 	"api-service/internal/validator"
+	"time"
 )
 
 // pagination related constants
@@ -101,38 +99,47 @@ type SearchRequest struct {
 
 // TimeRangeRequest represents a time range request with validation
 type TimeRangeRequest struct {
-	StartTime string `form:"start_time" json:"start_time" validate:"omitempty,time_range" example:"2023-01-01T00:00:00Z"`
-	EndTime   string `form:"end_time" json:"end_time" validate:"omitempty,time_range" example:"2023-01-31T23:59:59Z"`
+	StartTime string `form:"start_time" json:"start_time" validate:"omitempty,time_range" example:"2025-10-01T10:16:08+08:00"`
+	EndTime   string `form:"end_time" json:"end_time" validate:"omitempty,time_range" example:"2025-10-01T10:16:08+08:00"`
 }
 
-// GetParsedTimeRange parses and returns the time range with validation and adjustment
-func (t *TimeRangeRequest) GetParsedTimeRange() (startTime, endTime time.Time, err error) {
-	// Parse start time or use default (24 hours ago)
-	if t.StartTime != "" {
-		startTime, err = time.Parse(constants.DefaultTimeFormat, t.StartTime)
-		if err != nil {
-			return time.Time{}, time.Time{}, err
-		}
-	} else {
-		startTime = time.Now().AddDate(0, 0, -1) // Default: 24 hours ago
+// formatDateTime formats a datetime string
+func formatDateTime(datetimeStr string) (time.Time, error) {
+	if datetimeStr == "" {
+		return time.Time{}, nil
 	}
 
-	// Parse end time or use current time
-	if t.EndTime != "" {
-		endTime, err = time.Parse(constants.DefaultTimeFormat, t.EndTime)
-		if err != nil {
-			return time.Time{}, time.Time{}, err
-		}
-	} else {
-		endTime = time.Now()
+	datetime, err := validator.ParseTimeWithURLDecoding(datetimeStr)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return datetime, nil
+}
+
+// GetStartTime retrieves the start time
+func (t *TimeRangeRequest) GetStartTime() (time.Time, error) {
+	return formatDateTime(t.StartTime)
+}
+
+// GetEndTime retrieves the end time
+func (t *TimeRangeRequest) GetEndTime() (time.Time, error) {
+	return formatDateTime(t.EndTime)
+}
+
+// GetUTCTimeRange retrieves the UTC time range
+func (t *TimeRangeRequest) GetTimeRange(useUTC bool) (startTime, endTime time.Time, err error) {
+	startTime, err = t.GetStartTime()
+	if err != nil {
+		return time.Time{}, time.Time{}, err
 	}
 
-	// Validate and adjust time range (limit to configured maximum duration)
-	maxDuration := validator.GetMaxTimeRangeDuration()
-	if endTime.Sub(startTime) > maxDuration {
-		endTime = startTime.Add(maxDuration)
+	endTime, err = t.GetEndTime()
+	if err != nil {
+		return time.Time{}, time.Time{}, err
 	}
-
+	if useUTC {
+		return startTime.UTC(), endTime.UTC(), nil
+	}
 	return startTime, endTime, nil
 }
 
