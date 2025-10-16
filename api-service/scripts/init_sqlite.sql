@@ -207,6 +207,7 @@ CREATE TABLE IF NOT EXISTS resource_groups (
 CREATE TABLE IF NOT EXISTS database_connections (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name VARCHAR(64) NOT NULL,
+    code VARCHAR(64) NOT NULL,
     db_type VARCHAR(20) NOT NULL, -- mysql, postgresql, redis
     host VARCHAR(255) NOT NULL,
     port INTEGER NOT NULL,
@@ -231,6 +232,7 @@ CREATE TABLE IF NOT EXISTS database_connections (
 CREATE TABLE IF NOT EXISTS servers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name VARCHAR(64) NOT NULL,
+    code VARCHAR(64) NOT NULL,
     hostname VARCHAR(255) NOT NULL,
     host VARCHAR(255) NOT NULL,
     internal_ip VARCHAR(45),
@@ -344,6 +346,7 @@ CREATE TABLE IF NOT EXISTS user_secret (
 CREATE TABLE IF NOT EXISTS app_gateways (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name VARCHAR(64) NOT NULL,
+    code VARCHAR(64) NOT NULL,
     server_id INTEGER NOT NULL REFERENCES servers(id),
     container_id VARCHAR(64),
     description TEXT,

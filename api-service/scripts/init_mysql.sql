@@ -253,6 +253,7 @@ CREATE TABLE IF NOT EXISTS `resource_groups` (
 CREATE TABLE IF NOT EXISTS `database_connections` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(64) NOT NULL COMMENT 'Connection name',
+    `code` VARCHAR(64) NOT NULL COMMENT 'Connection code',
     `db_type` ENUM('mysql', 'postgresql', 'redis', 'mongodb') NOT NULL COMMENT 'Database type',
     `host` VARCHAR(255) NOT NULL COMMENT 'Host address',
     `port` INT NOT NULL COMMENT 'Port number',
@@ -273,6 +274,7 @@ CREATE TABLE IF NOT EXISTS `database_connections` (
     `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update time',
     PRIMARY KEY (`id`),
     KEY `idx_owner_id` (`owner_id`),
+    KEY `idx_database_code` (`code`),
     KEY `idx_resource_group_id` (`resource_group_id`),
     KEY `idx_status` (`status`),
     CONSTRAINT `fk_db_connections_resource_group` FOREIGN KEY (`resource_group_id`) REFERENCES `resource_groups` (`id`) ON DELETE SET NULL
@@ -282,6 +284,7 @@ CREATE TABLE IF NOT EXISTS `database_connections` (
 CREATE TABLE IF NOT EXISTS `servers` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(64) NOT NULL COMMENT 'Server name',
+    `code` VARCHAR(64) NOT NULL COMMENT 'Server code',
     `hostname` VARCHAR(255) NOT NULL COMMENT 'Hostname',
     `host` VARCHAR(255) NOT NULL COMMENT 'Host address (IP or domain) for SSH/Agent priority connection',
     `internal_ip` VARCHAR(45) NULL COMMENT 'Internal IP address',
@@ -303,6 +306,7 @@ CREATE TABLE IF NOT EXISTS `servers` (
     `deleted_at` DATETIME NULL COMMENT 'Soft delete time',
     PRIMARY KEY (`id`),
     KEY `idx_name` (`name`),
+    KEY `idx_server_code` (`code`),
     KEY `idx_host` (`host`),
     KEY `idx_owner_id` (`owner_id`),
     KEY `idx_resource_group_id` (`resource_group_id`),
@@ -418,6 +422,7 @@ CREATE TABLE IF NOT EXISTS `secret_keys` (
 CREATE TABLE IF NOT EXISTS `app_gateways` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(64) NOT NULL COMMENT 'Gateway name',
+    `code` VARCHAR(64) NOT NULL COMMENT 'Gateway code',
     `server_id` BIGINT UNSIGNED NOT NULL COMMENT 'Server ID',
     `container_id` VARCHAR(64) NULL COMMENT 'Gateway container ID',
     `description` TEXT NULL COMMENT 'Gateway description',
@@ -430,6 +435,7 @@ CREATE TABLE IF NOT EXISTS `app_gateways` (
     `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update time',
     PRIMARY KEY (`id`),
     KEY `idx_server_id` (`server_id`),
+    KEY `idx_gateways_code` (`code`),
     KEY `idx_owner_id` (`owner_id`),
     KEY `idx_resource_group_id` (`resource_group_id`),
     KEY `idx_status` (`status`),
