@@ -63,7 +63,7 @@ func (r *apiTokenRepository) GetByToken(ctx context.Context, tokenHash string) (
 
 // Update update API token
 func (r *apiTokenRepository) Update(ctx context.Context, token *model.APIToken) error {
-	result := r.db.WithContext(ctx).Save(token)
+	result := r.db.WithContext(ctx).Updates(token)
 	if result.Error != nil {
 		return errors.NewAppErrorWrapError(result.Error, errors.CodeRecordUpdateFailed)
 	}
@@ -110,7 +110,7 @@ func (r *apiTokenRepository) GetActiveTokenByUserID(ctx context.Context, userID 
 	err := r.db.WithContext(ctx).
 		Preload("User").
 		Where("user_id = ?", userID).
-		Where("expires_at IS NULL OR expires_at > ?", time.Now()).
+		Where("expires_at IS NULL OR expires_at > ?", time.Now().Format(time.DateTime)).
 		Order("created_at desc").
 		First(&token).Error
 
@@ -131,7 +131,7 @@ func (r *apiTokenRepository) GetActiveTokenByUserID(ctx context.Context, userID 
 
 // UpdateLastUsed update token last used time
 func (r *apiTokenRepository) UpdateLastUsed(ctx context.Context, id uint, ip string) error {
-	now := time.Now()
+	now := time.Now().Format(time.DateTime)
 	return r.db.WithContext(ctx).
 		Model(&model.APIToken{}).
 		Where("id = ?", id).
@@ -144,7 +144,7 @@ func (r *apiTokenRepository) UpdateLastUsed(ctx context.Context, id uint, ip str
 // CleanExpiredTokens clean expired tokens
 func (r *apiTokenRepository) CleanExpiredTokens(ctx context.Context) error {
 	return r.db.WithContext(ctx).
-		Where("expires_at IS NOT NULL AND expires_at < ?", time.Now()).
+		Where("expires_at IS NOT NULL AND expires_at < ?", time.Now().Format(time.DateTime)).
 		Delete(&model.APIToken{}).Error
 }
 
@@ -155,5 +155,5 @@ func (r *apiTokenRepository) CreateWithTx(ctx context.Context, tx *gorm.DB, toke
 
 // UpdateWithTx update API token with transaction
 func (r *apiTokenRepository) UpdateWithTx(ctx context.Context, tx *gorm.DB, token *model.APIToken) error {
-	return tx.WithContext(ctx).Save(token).Error
+	return tx.WithContext(ctx).Updates(token).Error
 }

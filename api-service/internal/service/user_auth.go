@@ -235,9 +235,12 @@ func (s *userAuthService) Login(ctx context.Context, req *request.UserLoginReque
 
 	// 7. Update last login time and IP
 	now := time.Now()
-	user.LastLoginAt = &now
-	user.LastLoginIP = clientIP
-	if err := s.userRepo.Update(ctx, user); err != nil {
+	updateUser := model.User{
+		ID:          user.ID,
+		LastLoginAt: &now,
+		LastLoginIP: clientIP,
+	}
+	if err := s.userRepo.Update(ctx, &updateUser); err != nil {
 		s.logger.WarnContext(ctx, "Failed to update login info", logger.ErrorField(err))
 		// Don't return error as login is already successful
 	}
@@ -363,7 +366,6 @@ func (s *userAuthService) ResetPassword(ctx context.Context, req *request.ResetP
 
 	// 4. Update password
 	user.PasswordHash = auth.HashToken(req.NewPassword)
-	user.UpdatedAt = time.Now()
 
 	if err := s.userRepo.Update(ctx, user); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to update password", logger.ErrorField(err))
@@ -424,7 +426,6 @@ func (s *userAuthService) VerifyEmail(ctx context.Context, req *request.VerifyEm
 
 	// 4. Update user status
 	user.Status = UserStatusActive // Activate account
-	user.UpdatedAt = time.Now()
 
 	if err := s.userRepo.Update(ctx, user); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to update email verification status", logger.ErrorField(err))
@@ -567,10 +568,12 @@ func (s *userAuthService) OAuth2Login(ctx context.Context, req *request.OAuth2Lo
 
 	// 8. Update last login time
 	now := time.Now()
-	user.LastLoginAt = &now
-	user.LastLoginIP = clientIP
-
-	if err := s.userRepo.Update(ctx, user); err != nil {
+	updateUser := model.User{
+		ID:          user.ID,
+		LastLoginAt: &now,
+		LastLoginIP: clientIP,
+	}
+	if err := s.userRepo.Update(ctx, &updateUser); err != nil {
 		s.logger.WarnContext(ctx, "Failed to update login info", logger.ErrorField(err))
 		// Don't return error as login is already successful
 	}

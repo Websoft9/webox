@@ -11,8 +11,8 @@ type Tag struct {
 	Color       string    `json:"color" gorm:"size:16" example:"#ff0000"`
 	Description string    `json:"description" gorm:"type:text" example:"Production environment tag"`
 	CreatedBy   uint      `json:"created_by" gorm:"default:0" example:"1"`
-	CreatedAt   time.Time `json:"created_at" gorm:"autoCreateTime"`
-	UpdatedAt   time.Time `json:"updated_at" gorm:"autoUpdateTime"`
+	CreatedAt   time.Time `json:"created_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`
+	UpdatedAt   time.Time `json:"updated_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`
 
 	// Relations
 	Taggings []Tagging `json:"taggings,omitempty" gorm:"foreignKey:TagID"`
@@ -29,7 +29,7 @@ type Tagging struct {
 	TagID        uint      `json:"tag_id" gorm:"not null;index" example:"1"`
 	ResourceCode string    `json:"resource_code" gorm:"not null;index;size:64" example:"SERVER_001"`
 	CreatedBy    uint      `json:"created_by" gorm:"default:0" example:"1"`
-	CreatedAt    time.Time `json:"created_at" gorm:"autoCreateTime"`
+	CreatedAt    time.Time `json:"created_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`
 
 	// Relations
 	Tag *Tag `json:"tag,omitempty" gorm:"foreignKey:TagID"`

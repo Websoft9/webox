@@ -147,7 +147,7 @@ func (r *userProfileRepository) SaveUserConfig(ctx context.Context, userProfile 
 
 	existing.ConfigValue = userProfile.ConfigValue
 	existing.Description = userProfile.Description
-	if err := r.db.WithContext(ctx).Save(&existing).Error; err != nil {
+	if err := r.db.WithContext(ctx).Updates(&existing).Error; err != nil {
 		return err
 	}
 	return nil

@@ -19,7 +19,6 @@ type TimezonePlugin struct {
 	name              string          // Plugin name identifier
 	db                *gorm.DB        // Database connection for timezone queries
 	convertibleFields map[string]bool // Map of field names that should be converted
-	logger            logger.Logger   // Logger instance for debugging and monitoring
 }
 
 // TimezonePluginOption defines configuration options for the timezone plugin
@@ -32,7 +31,6 @@ func NewTimezonePlugin(db *gorm.DB, opts ...TimezonePluginOption) *TimezonePlugi
 		name:              "timezone_converter",
 		db:                db,
 		convertibleFields: make(map[string]bool),
-		logger:            logger.GetDefault(),
 	}
 
 	// Initialize convertible fields mapping from constants
@@ -47,14 +45,6 @@ func NewTimezonePlugin(db *gorm.DB, opts ...TimezonePluginOption) *TimezonePlugi
 	}
 
 	return plugin
-}
-
-// WithLogger sets a custom logger for the timezone plugin
-// This allows using a specific logger instance instead of the default one
-func WithLogger(log logger.Logger) TimezonePluginOption {
-	return func(p *TimezonePlugin) {
-		p.logger = log
-	}
 }
 
 // WithCustomFields adds custom field names to the convertible fields list
@@ -81,7 +71,7 @@ func (p *TimezonePlugin) Initialize(db *gorm.DB) error {
 	// This handles SELECT queries and converts time fields in the results
 	err := db.Callback().Query().After("gorm:after_query").Register("timezone:convert_after_query", p.afterQueryCallback)
 	if err != nil {
-		p.logger.Error("Failed to register after query callback", logger.ErrorField(err))
+		logger.Error("Failed to register after query callback", logger.ErrorField(err))
 		return err
 	}
 
@@ -89,18 +79,18 @@ func (p *TimezonePlugin) Initialize(db *gorm.DB) error {
 	// This handles Find, First, Take and similar operations
 	err = db.Callback().Query().After("gorm:after_find").Register("timezone:convert_after_find", p.afterQueryCallback)
 	if err != nil {
-		p.logger.Error("Failed to register after find callback", logger.ErrorField(err))
+		logger.Error("Failed to register after find callback", logger.ErrorField(err))
 		return err
 	}
 
-	p.logger.Info("Timezone plugin initialized successfully")
+	logger.Info("Timezone plugin initialized successfully")
 	return nil
 }
 
 // afterQueryCallback is the main callback function executed after query operations
 // It automatically converts time fields from UTC to the user's preferred timezone
 func (p *TimezonePlugin) afterQueryCallback(db *gorm.DB) {
-	p.logger.Debug("Timezone plugin callback triggered")
+	logger.Debug("Timezone plugin callback triggered")
 
 	// Check if timezone conversion should be skipped for this query
 	// This includes write operations, count queries, and explicitly skipped queries
@@ -111,12 +101,12 @@ func (p *TimezonePlugin) afterQueryCallback(db *gorm.DB) {
 	// Retrieve the user's preferred timezone from context and database
 	// Falls back to system timezone if user timezone is not available
 	timezone := p.getUserTimezone(db.Statement.Context)
-	p.logger.DebugContext(db.Statement.Context, "Retrieved timezone for conversion",
+	logger.Debug("Retrieved timezone for conversion",
 		logger.String(constants.UserTimezone, timezone))
 
 	// Skip conversion if timezone is empty or already UTC
 	if timezone == "" || timezone == constants.DefaultTimeZone {
-		p.logger.DebugContext(db.Statement.Context, "No timezone conversion needed",
+		logger.Debug("No timezone conversion needed",
 			logger.String("reason", "timezone is empty or UTC"))
 		return
 	}
@@ -125,14 +115,14 @@ func (p *TimezonePlugin) afterQueryCallback(db *gorm.DB) {
 	// This validates the timezone string and creates a time.Location object
 	targetTZ, err := time.LoadLocation(timezone)
 	if err != nil {
-		p.logger.WarnContext(db.Statement.Context, "Invalid timezone, using UTC",
+		logger.Warn("Invalid timezone, using UTC",
 			logger.String(constants.UserTimezone, timezone),
 			logger.ErrorField(err))
 		return
 	}
 
 	// Convert time fields in the query results to the target timezone
-	p.logger.DebugContext(db.Statement.Context, "Starting timezone conversion",
+	logger.Debug("Starting timezone conversion",
 		logger.String("targetTimezone", targetTZ.String()))
 	p.convertTimezoneInResult(db, targetTZ)
 }
@@ -140,7 +130,7 @@ func (p *TimezonePlugin) afterQueryCallback(db *gorm.DB) {
 // shouldSkipConversion determines whether timezone conversion should be skipped
 // It checks for explicit skip flags, write operations, and aggregate queries
 func (p *TimezonePlugin) shouldSkipConversion(db *gorm.DB) bool {
-	return shouldSkipQuery(db, "timezone:skip", p.logger)
+	return shouldSkipQuery(db, "timezone:skip")
 }
 
 // getUserTimezone retrieves the user's preferred timezone from Redis cache first, then database
@@ -153,11 +143,11 @@ func (p *TimezonePlugin) getUserTimezone(ctx context.Context) string {
 	// Extract user ID from the request context
 	userID, exists := utils.GetUserIDFromContext(ctx)
 	if !exists {
-		p.logger.DebugContext(ctx, "No user ID found in context, using system timezone")
+		logger.Debug("No user ID found in context, using system timezone")
 		return p.getSystemTimezone(ctx)
 	}
 
-	p.logger.DebugContext(ctx, "Found user ID in context for timezone lookup",
+	logger.Debug("Found user ID in context for timezone lookup",
 		logger.Uint("userID", userID))
 
 	// Priority 1: Try to get timezone from Redis cache
@@ -165,7 +155,7 @@ func (p *TimezonePlugin) getUserTimezone(ctx context.Context) string {
 	timezone, err := redis.HGet(ctx, redisKey, constants.UserTimezone)
 
 	if err == nil && timezone != "" {
-		p.logger.DebugContext(ctx, "Found user timezone in Redis cache",
+		logger.Debug("Found user timezone in Redis cache",
 			logger.Uint("userID", userID),
 			logger.String(constants.UserTimezone, timezone),
 			logger.String("redisKey", redisKey))
@@ -173,7 +163,7 @@ func (p *TimezonePlugin) getUserTimezone(ctx context.Context) string {
 	}
 
 	if err != nil && err.Error() != redis.RedisNilError {
-		p.logger.DebugContext(ctx, "Failed to get timezone from Redis cache",
+		logger.Debug("Failed to get timezone from Redis cache",
 			logger.Uint("userID", userID),
 			logger.String("redisKey", redisKey),
 			logger.ErrorField(err))
@@ -192,14 +182,14 @@ func (p *TimezonePlugin) getUserTimezone(ctx context.Context) string {
 		First(&userProfile).Error
 
 	if err == nil && userProfile.ConfigValue != "" {
-		p.logger.DebugContext(ctx, "Found user timezone preference in database",
+		logger.Debug("Found user timezone preference in database",
 			logger.Uint("userID", userID),
 			logger.String(constants.UserTimezone, userProfile.ConfigValue))
 		return userProfile.ConfigValue
 	}
 
 	if err != nil && err != gorm.ErrRecordNotFound {
-		p.logger.DebugContext(ctx, "Failed to get user timezone preference from database",
+		logger.Debug("Failed to get user timezone preference from database",
 			logger.Uint("userID", userID),
 			logger.ErrorField(err))
 	}
@@ -227,18 +217,18 @@ func (p *TimezonePlugin) getSystemTimezone(ctx context.Context) string {
 		First(&systemConfig).Error
 
 	if err == nil && systemConfig.ConfigValue != "" {
-		p.logger.DebugContext(ctx, "Found system timezone setting",
+		logger.Debug("Found system timezone setting",
 			logger.String(constants.UserTimezone, systemConfig.ConfigValue))
 		return systemConfig.ConfigValue
 	}
 
 	if err != nil && err != gorm.ErrRecordNotFound {
-		p.logger.DebugContext(ctx, "Failed to get system timezone setting",
+		logger.Debug("Failed to get system timezone setting",
 			logger.ErrorField(err))
 	}
 
 	// Final fallback to UTC timezone
-	p.logger.DebugContext(ctx, "Using default timezone",
+	logger.Debug("Using default timezone",
 		logger.String("defaultTimezone", constants.DefaultTimeZone))
 	return constants.DefaultTimeZone
 }
@@ -246,7 +236,7 @@ func (p *TimezonePlugin) getSystemTimezone(ctx context.Context) string {
 // convertTimezoneInResult processes the query result and converts time fields
 // It handles both single struct results and slice results (collections)
 func (p *TimezonePlugin) convertTimezoneInResult(db *gorm.DB, targetTZ *time.Location) {
-	processQueryResult(db, p.logger, func(item reflect.Value) {
+	processQueryResult(db, func(item reflect.Value) {
 		p.convertStructTimezone(item, targetTZ)
 	})
 }
@@ -254,7 +244,7 @@ func (p *TimezonePlugin) convertTimezoneInResult(db *gorm.DB, targetTZ *time.Loc
 // convertStructTimezone processes a single struct and converts its time fields
 // It handles embedded structs recursively and respects field visibility rules
 func (p *TimezonePlugin) convertStructTimezone(structValue reflect.Value, targetTZ *time.Location) {
-	p.logger.Debug("Starting struct timezone conversion",
+	logger.Debug("Starting struct timezone conversion",
 		logger.String("structType", structValue.Type().String()),
 		logger.String("structKind", structValue.Kind().String()),
 		logger.Bool("canSet", structValue.CanSet()))
@@ -265,7 +255,7 @@ func (p *TimezonePlugin) convertStructTimezone(structValue reflect.Value, target
 			return
 		}
 		structValue = structValue.Elem()
-		p.logger.Debug("Dereferenced struct pointer",
+		logger.Debug("Dereferenced struct pointer",
 			logger.String("actualType", structValue.Type().String()),
 			logger.String("actualKind", structValue.Kind().String()),
 			logger.Bool("canSet", structValue.CanSet()))
@@ -273,25 +263,25 @@ func (p *TimezonePlugin) convertStructTimezone(structValue reflect.Value, target
 
 	// Ensure we're working with a struct
 	if structValue.Kind() != reflect.Struct {
-		p.logger.Debug("Value is not a struct after dereferencing", logger.String("kind", structValue.Kind().String()))
+		logger.Debug("Value is not a struct after dereferencing", logger.String("kind", structValue.Kind().String()))
 		return
 	}
 
 	// Check if the struct can be modified
 	if !structValue.CanSet() {
-		p.logger.Debug("Struct cannot be set, skipping conversion")
+		logger.Debug("Struct cannot be set, skipping conversion")
 		return
 	}
 
 	structType := structValue.Type()
-	p.logger.Debug("Processing struct fields", logger.Int("numFields", structValue.NumField()))
+	logger.Debug("Processing struct fields", logger.Int("numFields", structValue.NumField()))
 
 	// Iterate through all fields in the struct
 	for i := 0; i < structValue.NumField(); i++ {
 		field := structValue.Field(i)
 		fieldType := structType.Field(i)
 
-		p.logger.Debug("Examining field",
+		logger.Debug("Examining field",
 			logger.Int("index", i),
 			logger.String("fieldName", fieldType.Name),
 			logger.String("fieldType", field.Type().String()),
@@ -300,7 +290,7 @@ func (p *TimezonePlugin) convertStructTimezone(structValue reflect.Value, target
 
 		// Skip unexported fields (cannot be modified)
 		if !field.CanSet() {
-			p.logger.Debug("Skipping field - cannot set", logger.String("fieldName", fieldType.Name))
+			logger.Debug("Skipping field - cannot set", logger.String("fieldName", fieldType.Name))
 			continue
 		}
 
@@ -333,7 +323,7 @@ func (p *TimezonePlugin) convertStructTimezone(structValue reflect.Value, target
 			continue
 		}
 
-		p.logger.DebugContext(context.Background(), "Converting time field",
+		logger.Debug("Converting time field",
 			logger.String("fieldName", fieldName),
 			logger.String("structFieldName", fieldType.Name))
 
@@ -358,7 +348,7 @@ func (p *TimezonePlugin) convertTimeField(field reflect.Value, targetTZ *time.Lo
 			if timeVal := field.Interface().(time.Time); !timeVal.IsZero() {
 				// Convert the time to the target timezone
 				convertedTime := timeVal.In(targetTZ)
-				p.logger.Debug("Converting time.Time field",
+				logger.Debug("Converting time.Time field",
 					logger.String("original", timeVal.String()),
 					logger.String("converted", convertedTime.String()),
 					logger.String("targetTZ", targetTZ.String()))
@@ -373,7 +363,7 @@ func (p *TimezonePlugin) convertTimeField(field reflect.Value, targetTZ *time.Lo
 				if !timePtr.IsZero() {
 					// Convert the time to the target timezone
 					convertedTime := timePtr.In(targetTZ)
-					p.logger.Debug("Converting *time.Time field",
+					logger.Debug("Converting *time.Time field",
 						logger.String("original", timePtr.String()),
 						logger.String("converted", convertedTime.String()),
 						logger.String("targetTZ", targetTZ.String()))

@@ -66,23 +66,3 @@ func ParseIDParam(ctx *gin.Context, paramName string) (uint, bool) {
 	}
 	return uint(id), true
 }
-
-// GetPaginationParams extracts pagination parameters from query string
-func GetPaginationParams(ctx *gin.Context) (page, pageSize int) {
-	page = 1
-	pageSize = 20
-
-	if pageStr := ctx.Query("page"); pageStr != "" {
-		if p, parseErr := strconv.Atoi(pageStr); parseErr == nil && p > 0 {
-			page = p
-		}
-	}
-
-	if pageSizeStr := ctx.Query("page_size"); pageSizeStr != "" {
-		if ps, parseErr := strconv.Atoi(pageSizeStr); parseErr == nil && ps > 0 && ps <= 100 {
-			pageSize = ps
-		}
-	}
-
-	return page, pageSize
-}

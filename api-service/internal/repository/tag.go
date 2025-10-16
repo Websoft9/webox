@@ -53,7 +53,7 @@ func (r *tagRepository) GetTagByName(ctx context.Context, name string) (*model.T
 
 // UpdateTag updates an existing tag
 func (r *tagRepository) UpdateTag(ctx context.Context, tag *model.Tag) error {
-	return r.db.WithContext(ctx).Save(tag).Error
+	return r.db.WithContext(ctx).Updates(tag).Error
 }
 
 // DeleteTag deletes a tag by ID

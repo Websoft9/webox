@@ -253,7 +253,7 @@ func startServer(
 	validatorInstance := validator.New()
 
 	// Register custom validators
-	if err := customValidator.RegisterCustomValidators(validatorInstance); err != nil {
+	if err := customValidator.RegisterTimeRangeValidator(validatorInstance); err != nil {
 		return fmt.Errorf("failed to register custom validators: %w", err)
 	}
 
