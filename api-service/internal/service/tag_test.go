@@ -79,8 +79,8 @@ func (m *MockTagRepository) CreateTagging(ctx context.Context, tagging *model.Ta
 	return args.Error(0)
 }
 
-func (m *MockTagRepository) GetTaggingsByResourceID(ctx context.Context, resourceID uint) ([]*model.Tagging, error) {
-	args := m.Called(ctx, resourceID)
+func (m *MockTagRepository) GetTaggingsByResourceCode(ctx context.Context, resourceCode string) ([]*model.Tagging, error) {
+	args := m.Called(ctx, resourceCode)
 	var taggings []*model.Tagging
 	if args.Get(0) != nil {
 		taggings = args.Get(0).([]*model.Tagging)
@@ -93,18 +93,18 @@ func (m *MockTagRepository) GetTaggingsByTagID(ctx context.Context, tagID uint) 
 	return args.Get(0).([]*model.Tagging), args.Error(1)
 }
 
-func (m *MockTagRepository) DeleteTagging(ctx context.Context, tagID, resourceID uint) error {
-	args := m.Called(ctx, tagID, resourceID)
+func (m *MockTagRepository) DeleteTagging(ctx context.Context, tagID uint, resourceCode string) error {
+	args := m.Called(ctx, tagID, resourceCode)
 	return args.Error(0)
 }
 
-func (m *MockTagRepository) DeleteTaggingsByResourceID(ctx context.Context, resourceID uint) error {
-	args := m.Called(ctx, resourceID)
+func (m *MockTagRepository) DeleteTaggingsByResourceCode(ctx context.Context, resourceCode string) error {
+	args := m.Called(ctx, resourceCode)
 	return args.Error(0)
 }
 
-func (m *MockTagRepository) DeleteTaggingsByTagIDs(ctx context.Context, resourceID uint, tagIDs []uint) error {
-	args := m.Called(ctx, resourceID, tagIDs)
+func (m *MockTagRepository) DeleteTaggingsByTagIDs(ctx context.Context, resourceCode string, tagIDs []uint) error {
+	args := m.Called(ctx, resourceCode, tagIDs)
 	return args.Error(0)
 }
 
@@ -113,8 +113,8 @@ func (m *MockTagRepository) CreateTaggingsBatch(ctx context.Context, taggings []
 	return args.Error(0)
 }
 
-func (m *MockTagRepository) ExistsTagging(ctx context.Context, tagID, resourceID uint) (bool, error) {
-	args := m.Called(ctx, tagID, resourceID)
+func (m *MockTagRepository) ExistsTagging(ctx context.Context, tagID uint, resourceCode string) (bool, error) {
+	args := m.Called(ctx, tagID, resourceCode)
 	return args.Bool(0), args.Error(1)
 }
 
@@ -596,11 +596,11 @@ func TestTagService_GetResourceTags(t *testing.T) {
 	now := time.Now()
 	expectedTaggings := []*model.Tagging{
 		{
-			ID:         1,
-			TagID:      1,
-			ResourceID: 123,
-			CreatedBy:  1,
-			CreatedAt:  now,
+			ID:           1,
+			TagID:        1,
+			ResourceCode: "123",
+			CreatedBy:    1,
+			CreatedAt:    now,
 			Tag: &model.Tag{
 				ID:          1,
 				Name:        "tag1",
@@ -609,11 +609,11 @@ func TestTagService_GetResourceTags(t *testing.T) {
 			},
 		},
 		{
-			ID:         2,
-			TagID:      2,
-			ResourceID: 123,
-			CreatedBy:  1,
-			CreatedAt:  now,
+			ID:           2,
+			TagID:        2,
+			ResourceCode: "123",
+			CreatedBy:    1,
+			CreatedAt:    now,
 			Tag: &model.Tag{
 				ID:          2,
 				Name:        "tag2",
@@ -633,10 +633,10 @@ func TestTagService_GetResourceTags(t *testing.T) {
 		{
 			name: "successful resource tags retrieval",
 			req: &request.TaggingListRequest{
-				ResourceID: 123,
+				ResourceCode: "123",
 			},
 			setupMocks: func() {
-				mockRepo.On("GetTaggingsByResourceID", ctx, uint(123)).Return(expectedTaggings, nil)
+				mockRepo.On("GetTaggingsByResourceCode", ctx, "123").Return(expectedTaggings, nil)
 			},
 			expectedErr: nil,
 			expectedLen: 2,
@@ -644,10 +644,10 @@ func TestTagService_GetResourceTags(t *testing.T) {
 		{
 			name: "no tags for resource",
 			req: &request.TaggingListRequest{
-				ResourceID: 456,
+				ResourceCode: "456",
 			},
 			setupMocks: func() {
-				mockRepo.On("GetTaggingsByResourceID", ctx, uint(456)).Return([]*model.Tagging{}, nil)
+				mockRepo.On("GetTaggingsByResourceCode", ctx, "456").Return([]*model.Tagging{}, nil)
 			},
 			expectedErr: nil,
 			expectedLen: 0,
@@ -779,8 +779,8 @@ func TestTagService_AssignTags_Logic(t *testing.T) {
 		{
 			name: "validate request processing with existing tags",
 			req: &request.TagAssignRequest{
-				ResourceID: 123,
-				TagNames:   []string{"production"},
+				ResourceCode: "123",
+				TagNames:     []string{"production"},
 			},
 			setupMocks: func() {
 				// Mock validating the request would work with existing tag
@@ -793,8 +793,8 @@ func TestTagService_AssignTags_Logic(t *testing.T) {
 		{
 			name: "validate request with empty tag names",
 			req: &request.TagAssignRequest{
-				ResourceID: 123,
-				TagNames:   []string{},
+				ResourceCode: "123",
+				TagNames:     []string{},
 			},
 			setupMocks: func() {
 				// No mocks needed for empty array
@@ -815,7 +815,7 @@ func TestTagService_AssignTags_Logic(t *testing.T) {
 			// We can't test the full AssignTags method due to transactions,
 			// but we can validate the request structure and basic logic
 			assert.NotNil(t, tt.req)
-			assert.Greater(t, tt.req.ResourceID, uint(0))
+			assert.NotEmpty(t, tt.req.ResourceCode)
 			assert.NotNil(t, tt.req.TagNames)
 		})
 	}
@@ -825,30 +825,30 @@ func TestTagService_GetResourceTags_Extended(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
-		name        string
-		resourceID  uint
-		setupMocks  func()
-		expectedErr error
-		expectedLen int
+		name         string
+		resourceCode string
+		setupMocks   func()
+		expectedErr  error
+		expectedLen  int
 	}{
 		{
-			name:       "resource with multiple tags",
-			resourceID: 456,
+			name:         "resource with multiple tags",
+			resourceCode: "456",
 			setupMocks: func() {
-				mockRepo.On("GetTaggingsByResourceID", ctx, uint(456)).Return([]*model.Tagging{
-					{TagID: 1, ResourceID: 456, Tag: &model.Tag{ID: 1, Name: "production"}},
-					{TagID: 2, ResourceID: 456, Tag: &model.Tag{ID: 2, Name: "mysql"}},
-					{TagID: 3, ResourceID: 456, Tag: &model.Tag{ID: 3, Name: "backend"}},
+				mockRepo.On("GetTaggingsByResourceCode", ctx, "456").Return([]*model.Tagging{
+					{TagID: 1, ResourceCode: "456", Tag: &model.Tag{ID: 1, Name: "production"}},
+					{TagID: 2, ResourceCode: "456", Tag: &model.Tag{ID: 2, Name: "mysql"}},
+					{TagID: 3, ResourceCode: "456", Tag: &model.Tag{ID: 3, Name: "backend"}},
 				}, nil)
 			},
 			expectedErr: nil,
 			expectedLen: 3,
 		},
 		{
-			name:       "database error scenario",
-			resourceID: 789,
+			name:         "database error scenario",
+			resourceCode: "789",
 			setupMocks: func() {
-				mockRepo.On("GetTaggingsByResourceID", ctx, uint(789)).Return(nil, stderrors.New("connection failed"))
+				mockRepo.On("GetTaggingsByResourceCode", ctx, "789").Return(nil, stderrors.New("connection failed"))
 			},
 			expectedErr: errors.NewAppError(errors.CodeInternalError),
 			expectedLen: 0,
@@ -866,7 +866,7 @@ func TestTagService_GetResourceTags_Extended(t *testing.T) {
 
 			// Execute test
 			result, err := service.GetResourceTags(ctx, &request.TaggingListRequest{
-				ResourceID: tt.resourceID,
+				ResourceCode: tt.resourceCode,
 			}) // Assertions
 			if tt.expectedErr != nil {
 				assert.Error(t, err)
@@ -892,9 +892,9 @@ func TestTagService_SearchResourcesByTags(t *testing.T) {
 	// Create test taggings
 	expectedTaggings := []*model.Tagging{
 		{
-			ID:         1,
-			TagID:      1,
-			ResourceID: 100,
+			ID:           1,
+			TagID:        1,
+			ResourceCode: "100",
 			Tag: &model.Tag{
 				ID:    1,
 				Name:  "production",
@@ -902,9 +902,9 @@ func TestTagService_SearchResourcesByTags(t *testing.T) {
 			},
 		},
 		{
-			ID:         2,
-			TagID:      2,
-			ResourceID: 100,
+			ID:           2,
+			TagID:        2,
+			ResourceCode: "100",
 			Tag: &model.Tag{
 				ID:    2,
 				Name:  "backend",

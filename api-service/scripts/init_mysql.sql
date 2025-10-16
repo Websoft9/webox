@@ -1091,6 +1091,7 @@ CREATE TABLE IF NOT EXISTS `user_two_factor` (
 CREATE TABLE IF NOT EXISTS `user_profile` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `user_id` BIGINT UNSIGNED NOT NULL COMMENT 'User ID',
+    `category` VARCHAR(64) NOT NULL DEFAULT 'general' COMMENT 'Profile category',
     `config_key` VARCHAR(64) NOT NULL COMMENT 'Configuration key',
     `config_value` TEXT NULL COMMENT 'Configuration value',
     `description` TEXT NULL COMMENT 'Configuration description',
@@ -1329,12 +1330,12 @@ CREATE TABLE tags (
 CREATE TABLE taggings (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     tag_id BIGINT NOT NULL COMMENT 'Tag ID',
-    resource_id BIGINT NOT NULL COMMENT 'Resource ID',
+    resource_code VARCHAR(64) NOT NULL COMMENT 'Resource code',
     created_by BIGINT DEFAULT 0 COMMENT 'Association creator',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     INDEX idx_tag_id (tag_id),
-    INDEX idx_resource_id (resource_id),
+    INDEX idx_resource_code (resource_code),
     FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Tag-Resource association table';
 

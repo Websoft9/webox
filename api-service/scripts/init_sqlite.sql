@@ -981,7 +981,7 @@ CREATE TABLE IF NOT EXISTS tags (
 CREATE TABLE IF NOT EXISTS taggings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     tag_id INTEGER NOT NULL, -- Tag ID
-    resource_id INTEGER NOT NULL, -- Resource ID
+    resource_code VARCHAR(64) NOT NULL, -- Resource code
     created_by INTEGER DEFAULT 0, -- Association creator
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
@@ -1072,7 +1072,7 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON audit_logs(created_at);
 CREATE INDEX IF NOT EXISTS idx_tags_name ON tags(name);
 CREATE INDEX IF NOT EXISTS idx_tags_created_by ON tags(created_by);
 CREATE INDEX IF NOT EXISTS idx_taggings_tag_id ON taggings(tag_id);
-CREATE INDEX IF NOT EXISTS idx_taggings_resource_id ON taggings(resource_id);
+CREATE INDEX IF NOT EXISTS idx_taggings_resource_code ON taggings(resource_code);
 
 -- ========================================
 -- Create triggers for automatic updated_at field update
