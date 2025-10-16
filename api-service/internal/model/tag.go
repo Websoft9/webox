@@ -25,11 +25,11 @@ func (Tag) TableName() string {
 
 // Tagging represents the association between tags and resources
 type Tagging struct {
-	ID         uint      `json:"id" gorm:"primarykey"`
-	TagID      uint      `json:"tag_id" gorm:"not null;index" example:"1"`
-	ResourceID uint      `json:"resource_id" gorm:"not null;index" example:"123"`
-	CreatedBy  uint      `json:"created_by" gorm:"default:0" example:"1"`
-	CreatedAt  time.Time `json:"created_at" gorm:"autoCreateTime"`
+	ID           uint      `json:"id" gorm:"primarykey"`
+	TagID        uint      `json:"tag_id" gorm:"not null;index" example:"1"`
+	ResourceCode string    `json:"resource_code" gorm:"not null;index;size:64" example:"SERVER_001"`
+	CreatedBy    uint      `json:"created_by" gorm:"default:0" example:"1"`
+	CreatedAt    time.Time `json:"created_at" gorm:"autoCreateTime"`
 
 	// Relations
 	Tag *Tag `json:"tag,omitempty" gorm:"foreignKey:TagID"`

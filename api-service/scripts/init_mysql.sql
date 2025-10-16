@@ -1311,12 +1311,12 @@ CREATE TABLE tags (
 CREATE TABLE taggings (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     tag_id BIGINT NOT NULL COMMENT 'Tag ID',
-    resource_id BIGINT NOT NULL COMMENT 'Resource ID',
+    resource_code VARCHAR(64) NOT NULL COMMENT 'Resource code',
     created_by BIGINT DEFAULT 0 COMMENT 'Association creator',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     INDEX idx_tag_id (tag_id),
-    INDEX idx_resource_id (resource_id),
+    INDEX idx_resource_code (resource_code),
     FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Tag-Resource association table';
 
