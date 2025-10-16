@@ -261,7 +261,7 @@ func setDatabaseDefaults() {
 	viper.SetDefault("database.ssl_mode", "disable")
 	viper.SetDefault("database.connect_timeout", constants.DefaultConnectTimeout)
 	viper.SetDefault("database.charset", "utf8mb4")
-	viper.SetDefault("database.timezone", "Local")
+	viper.SetDefault("database.timezone", constants.DefaultTimeZone)
 }
 
 func setRedisDefaults() {

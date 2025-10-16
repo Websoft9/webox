@@ -88,7 +88,7 @@ func (r *notificationTemplateRepository) GetList(ctx context.Context, req *reque
 
 // Update updates an existing notification template
 func (r *notificationTemplateRepository) Update(ctx context.Context, template *model.NotificationTemplate) error {
-	if err := r.db.WithContext(ctx).Save(template).Error; err != nil {
+	if err := r.db.WithContext(ctx).Updates(template).Error; err != nil {
 		return errors.NewAppErrorWrapError(err, errors.CodeRecordUpdateFailed)
 	}
 

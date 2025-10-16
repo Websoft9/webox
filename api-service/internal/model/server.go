@@ -18,6 +18,7 @@ const (
 type Server struct {
 	ID              uint            `json:"id" gorm:"primaryKey;autoIncrement"`
 	Name            string          `json:"name" gorm:"type:varchar(64);not null;index"`
+	Code            string          `json:"code" gorm:"type:varchar(64);not null;uniqueIndex;comment:Server unique code for resource reference"`
 	Hostname        string          `json:"hostname" gorm:"type:varchar(255);not null"`
 	Host            string          `json:"host" gorm:"type:varchar(255);not null;index;comment:Host address (IP or domain) for SSH/Agent priority connection"`
 	InternalIP      *string         `json:"internal_ip" gorm:"type:varchar(45);comment:Internal IP address"`
@@ -34,8 +35,8 @@ type Server struct {
 	ResourceGroupID *uint           `json:"resource_group_id" gorm:"index;comment:Resource group ID"`
 	OwnerID         uint            `json:"owner_id" gorm:"not null;index;comment:Owner user ID"`
 	Description     *string         `json:"description" gorm:"type:text;comment:Server description"`
-	CreatedAt       time.Time       `json:"created_at" gorm:"not null;default:CURRENT_TIMESTAMP"`
-	UpdatedAt       time.Time       `json:"updated_at" gorm:"not null;default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"`
+	CreatedAt       time.Time       `json:"created_at" gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP"`
+	UpdatedAt       time.Time       `json:"updated_at" gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP"`
 	DeletedAt       *gorm.DeletedAt `json:"deleted_at" gorm:"index;comment:Soft delete time"`
 }
 
@@ -61,8 +62,8 @@ type ServerAgent struct {
 	PullMode        bool                `json:"pull_mode" gorm:"default:true;comment:Whether Pull mode is enabled"`
 	PullInterval    int                 `json:"pull_interval" gorm:"default:30;comment:Pull interval in seconds"`
 	LastHeartbeatAt *time.Time          `json:"last_heartbeat_at" gorm:"comment:Last heartbeat time"`
-	CreatedAt       time.Time           `json:"created_at" gorm:"not null;default:CURRENT_TIMESTAMP"`
-	UpdatedAt       time.Time           `json:"updated_at" gorm:"not null;default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"`
+	CreatedAt       time.Time           `json:"created_at" gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP"`
+	UpdatedAt       time.Time           `json:"updated_at" gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP"`
 
 	// Relations
 	Server *Server `json:"server,omitempty" gorm:"foreignKey:ServerID;constraint:OnDelete:CASCADE"`

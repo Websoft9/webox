@@ -48,7 +48,7 @@ func (r *secretKeyRepository) GetByID(ctx context.Context, id uint) (*model.Secr
 
 // Update updates an existing secret key
 func (r *secretKeyRepository) Update(ctx context.Context, secretKey *model.SecretKey) error {
-	if err := r.db.WithContext(ctx).Save(secretKey).Error; err != nil {
+	if err := r.db.WithContext(ctx).Updates(secretKey).Error; err != nil {
 		return errors.NewAppErrorWrapError(err, errors.CodeRecordUpdateFailed)
 	}
 	return nil
@@ -198,4 +198,23 @@ func (r *secretKeyRepository) CreateSecretReference(ctx context.Context, referen
 // DeleteSecretReferencesBySecretID deletes all references for a secret key
 func (r *secretKeyRepository) DeleteSecretReferencesBySecretID(ctx context.Context, secretID uint) error {
 	return r.db.WithContext(ctx).Where("secret_id = ?", secretID).Delete(&model.SecretReference{}).Error
+}
+
+// DeleteSecretReferencesByResourceCode deletes secret references by resource code
+func (r *secretKeyRepository) DeleteSecretReferencesByResourceCode(ctx context.Context, resourceCode string) error {
+	return r.db.WithContext(ctx).Where("resource_code = ?", resourceCode).Delete(&model.SecretReference{}).Error
+}
+
+// GetSecretReferencesByResourceCode gets secret references by resource code
+func (r *secretKeyRepository) GetSecretReferencesByResourceCode(ctx context.Context, resourceCode string) ([]*model.SecretReference, error) {
+	var references []*model.SecretReference
+	err := r.db.WithContext(ctx).
+		Where("resource_code = ?", resourceCode).
+		Find(&references).Error
+
+	if err != nil {
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
+	}
+
+	return references, nil
 }

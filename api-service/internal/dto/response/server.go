@@ -8,6 +8,7 @@ import (
 type ServerResponse struct {
 	ID              uint    `json:"id"`
 	Name            string  `json:"name"`
+	Code            string  `json:"code"`
 	Hostname        string  `json:"hostname"`
 	Host            string  `json:"host"`
 	InternalIP      *string `json:"internal_ip"`

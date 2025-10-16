@@ -90,7 +90,7 @@ func (r *systemConfigRepository) List(ctx context.Context, filter *request.ListS
 
 // Update updates an existing system configuration
 func (r *systemConfigRepository) Update(ctx context.Context, config *model.SystemConfig) error {
-	result := r.db.WithContext(ctx).Save(config)
+	result := r.db.WithContext(ctx).Updates(config)
 	if result.Error != nil {
 		return errors.NewAppErrorWrapError(result.Error, errors.CodeRecordUpdateFailed)
 	}

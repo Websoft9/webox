@@ -51,7 +51,7 @@ func NewSecretKeyController(
 // @Failure 401 {object} common.APIResponse
 // @Failure 422 {object} common.APIResponse
 // @Failure 500 {object} common.APIResponse
-// @Router /api/v1/secret-keys [post]
+// @Router /api/v1/secrets [post]
 func (c *SecretKeyController) CreateSecretKey(ctx *gin.Context) {
 	// Parse request parameters
 	var req request.SecretKeyCreateRequest
@@ -103,7 +103,7 @@ func (c *SecretKeyController) CreateSecretKey(ctx *gin.Context) {
 // @Failure 403 {object} common.APIResponse
 // @Failure 404 {object} common.APIResponse
 // @Failure 500 {object} common.APIResponse
-// @Router /api/v1/secret-keys/{id} [get]
+// @Router /api/v1/secrets/{id} [get]
 func (c *SecretKeyController) GetSecretKey(ctx *gin.Context) {
 	// Parse path parameter
 	id, Success := ParseIDParam(ctx, "id")
@@ -146,7 +146,7 @@ func (c *SecretKeyController) GetSecretKey(ctx *gin.Context) {
 // @Failure 404 {object} common.APIResponse
 // @Failure 422 {object} common.APIResponse
 // @Failure 500 {object} common.APIResponse
-// @Router /api/v1/secret-keys/{id}/value [get]
+// @Router /api/v1/secrets/{id}/value [get]
 func (c *SecretKeyController) GetSecretKeyValue(ctx *gin.Context) {
 	// Parse path parameter
 	id, Success := ParseIDParam(ctx, "id")
@@ -190,7 +190,7 @@ func (c *SecretKeyController) GetSecretKeyValue(ctx *gin.Context) {
 // @Failure 404 {object} common.APIResponse
 // @Failure 422 {object} common.APIResponse
 // @Failure 500 {object} common.APIResponse
-// @Router /api/v1/secret-keys/{id} [put]
+// @Router /api/v1/secrets/{id} [put]
 func (c *SecretKeyController) UpdateSecretKey(ctx *gin.Context) {
 	// Parse path parameter
 	id, Success := ParseIDParam(ctx, "id")
@@ -248,7 +248,7 @@ func (c *SecretKeyController) UpdateSecretKey(ctx *gin.Context) {
 // @Failure 403 {object} common.APIResponse
 // @Failure 404 {object} common.APIResponse
 // @Failure 500 {object} common.APIResponse
-// @Router /api/v1/secret-keys/{id} [delete]
+// @Router /api/v1/secrets/{id} [delete]
 func (c *SecretKeyController) DeleteSecretKey(ctx *gin.Context) {
 	// Parse path parameter
 	id, Success := ParseIDParam(ctx, "id")
@@ -290,7 +290,7 @@ func (c *SecretKeyController) DeleteSecretKey(ctx *gin.Context) {
 // @Failure 400 {object} common.APIResponse
 // @Failure 401 {object} common.APIResponse
 // @Failure 500 {object} common.APIResponse
-// @Router /api/v1/secret-keys [get]
+// @Router /api/v1/secrets [get]
 func (c *SecretKeyController) ListSecretKeys(ctx *gin.Context) {
 	// Bind request parameters
 	var req request.SecretKeyQueryRequest
@@ -331,7 +331,7 @@ func (c *SecretKeyController) ListSecretKeys(ctx *gin.Context) {
 // @Failure 400 {object} common.APIResponse
 // @Failure 401 {object} common.APIResponse
 // @Failure 500 {object} common.APIResponse
-// @Router /api/v1/secret-keys/export [get]
+// @Router /api/v1/secrets/export [get]
 func (c *SecretKeyController) ExportSecretKeys(ctx *gin.Context) {
 	// Bind request parameters
 	var req request.SecretKeyExportRequest
@@ -380,7 +380,7 @@ func (c *SecretKeyController) ExportSecretKeys(ctx *gin.Context) {
 // @Failure 401 {object} common.APIResponse
 // @Failure 413 {object} common.APIResponse
 // @Failure 500 {object} common.APIResponse
-// @Router /api/v1/secret-keys/files/upload [post]
+// @Router /api/v1/secrets/files/upload [post]
 func (c *SecretKeyController) UploadSecretFile(ctx *gin.Context) {
 	// Get file from request
 	file, err := ctx.FormFile("file")
@@ -420,7 +420,7 @@ func (c *SecretKeyController) UploadSecretFile(ctx *gin.Context) {
 // @Failure 401 {object} common.APIResponse
 // @Failure 404 {object} common.APIResponse
 // @Failure 500 {object} common.APIResponse
-// @Router /api/v1/secret-keys/files/download [get]
+// @Router /api/v1/secrets/files/download [get]
 func (c *SecretKeyController) DownloadSecretFile(ctx *gin.Context) {
 	// Get filename from query parameter
 	filename := ctx.Query("filename")
@@ -462,7 +462,7 @@ func (c *SecretKeyController) DownloadSecretFile(ctx *gin.Context) {
 // @Failure 403 {object} common.APIResponse
 // @Failure 404 {object} common.APIResponse
 // @Failure 500 {object} common.APIResponse
-// @Router /api/v1/secret-keys/files/delete [delete]
+// @Router /api/v1/secrets/files/delete [delete]
 func (c *SecretKeyController) DeleteSecretFile(ctx *gin.Context) {
 	// Get filename from query parameter
 	filename := ctx.Query("filename")

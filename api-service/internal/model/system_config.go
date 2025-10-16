@@ -27,8 +27,8 @@ type SystemConfig struct {
 	IsEncrypted  bool       `json:"is_encrypted" gorm:"default:false"`
 	DefaultValue string     `json:"default_value" gorm:"type:text"`
 	SortOrder    int        `json:"sort_order" gorm:"default:0"`
-	CreatedAt    time.Time  `json:"created_at" gorm:"autoCreateTime"`
-	UpdatedAt    time.Time  `json:"updated_at" gorm:"autoUpdateTime"`
+	CreatedAt    time.Time  `json:"created_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`
+	UpdatedAt    time.Time  `json:"updated_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`
 }
 
 // TableName specifies the table name for the SystemConfig model

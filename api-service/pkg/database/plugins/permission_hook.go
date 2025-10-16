@@ -15,16 +15,14 @@ import (
 // PermissionI18nHook is a GORM hook for automatic i18n translation of Permission.Name field
 // It translates the Name field in Permission query results based on user's language preference
 type PermissionI18nHook struct {
-	db     *gorm.DB      // Database connection for language preference queries
-	logger logger.Logger // Logger instance for debugging and monitoring
+	db *gorm.DB // Database connection for language preference queries
 }
 
 // NewPermissionI18nHook creates a new Permission i18n hook instance
 // It initializes the hook with database connection and default logger
 func NewPermissionI18nHook(db *gorm.DB) *PermissionI18nHook {
 	return &PermissionI18nHook{
-		db:     db,
-		logger: logger.GetDefault(),
+		db: db,
 	}
 }
 
@@ -37,7 +35,7 @@ func RegisterPermissionI18nHook(db *gorm.DB) error {
 	// This handles SELECT queries and translates Name fields in the results
 	err := db.Callback().Query().After("gorm:after_query").Register("permission:i18n_translate", hook.afterQueryCallback)
 	if err != nil {
-		hook.logger.Error("Failed to register after query callback", logger.ErrorField(err))
+		logger.Error("Failed to register after query callback", logger.ErrorField(err))
 		return err
 	}
 
@@ -45,11 +43,11 @@ func RegisterPermissionI18nHook(db *gorm.DB) error {
 	// This handles Find, First, Take and similar operations
 	err = db.Callback().Query().After("gorm:after_find").Register("permission:i18n_translate_find", hook.afterQueryCallback)
 	if err != nil {
-		hook.logger.Error("Failed to register after find callback", logger.ErrorField(err))
+		logger.Error("Failed to register after find callback", logger.ErrorField(err))
 		return err
 	}
 
-	hook.logger.Info("Permission i18n hook initialized successfully")
+	logger.Info("Permission i18n hook initialized successfully")
 	return nil
 }
 
@@ -97,7 +95,7 @@ func (h *PermissionI18nHook) isPermissionQuery(db *gorm.DB) bool {
 // shouldSkipTranslation determines whether i18n translation should be skipped
 // It checks for explicit skip flags, write operations, and aggregate queries
 func (h *PermissionI18nHook) shouldSkipTranslation(db *gorm.DB) bool {
-	return shouldSkipQuery(db, "permission:skip_i18n", h.logger)
+	return shouldSkipQuery(db, "permission:skip_i18n")
 }
 
 // getUserLanguage retrieves the user's preferred language from Redis cache first, then database
@@ -118,7 +116,7 @@ func (h *PermissionI18nHook) getUserLanguage(ctx context.Context) string {
 	language, err := redis.HGet(ctx, redisKey, constants.UserLanguage)
 
 	if err == nil && language != "" {
-		h.logger.DebugContext(ctx, "Found user language in Redis cache",
+		logger.Debug("Found user language in Redis cache",
 			logger.Uint("userID", userID),
 			logger.String(constants.UserLanguage, language),
 			logger.String("redisKey", redisKey))
@@ -126,7 +124,7 @@ func (h *PermissionI18nHook) getUserLanguage(ctx context.Context) string {
 	}
 
 	if err != nil && err.Error() != redis.RedisNilError {
-		h.logger.DebugContext(ctx, "Failed to get language from Redis cache",
+		logger.Debug("Failed to get language from Redis cache",
 			logger.Uint("userID", userID),
 			logger.String("redisKey", redisKey),
 			logger.ErrorField(err))
@@ -145,14 +143,14 @@ func (h *PermissionI18nHook) getUserLanguage(ctx context.Context) string {
 		First(&userProfile).Error
 
 	if err == nil && userProfile.ConfigValue != "" {
-		h.logger.DebugContext(ctx, "Found user language preference in database",
+		logger.Debug("Found user language preference in database",
 			logger.Uint("userID", userID),
 			logger.String(constants.UserLanguage, userProfile.ConfigValue))
 		return userProfile.ConfigValue
 	}
 
 	if err != nil && err != gorm.ErrRecordNotFound {
-		h.logger.DebugContext(ctx, "Failed to get user language preference from database",
+		logger.Debug("Failed to get user language preference from database",
 			logger.Uint("userID", userID),
 			logger.ErrorField(err))
 	}
@@ -165,7 +163,7 @@ func (h *PermissionI18nHook) getUserLanguage(ctx context.Context) string {
 // This serves as a fallback when user-specific language is not available
 func (h *PermissionI18nHook) getSystemLanguage(ctx context.Context) string {
 	if h.db == nil {
-		h.logger.DebugContext(ctx, "Database connection is nil, using default language")
+		logger.Debug("Database connection is nil, using default language")
 		return constants.DefaultLanguage
 	}
 
@@ -191,7 +189,7 @@ func (h *PermissionI18nHook) getSystemLanguage(ctx context.Context) string {
 // translatePermissionNames processes the query result and translates Permission.Name fields
 // It handles both single struct results and slice results (collections)
 func (h *PermissionI18nHook) translatePermissionNames(db *gorm.DB, language string) {
-	processQueryResult(db, h.logger, func(item reflect.Value) {
+	processQueryResult(db, func(item reflect.Value) {
 		h.translatePermissionName(item, language)
 	})
 }
@@ -199,7 +197,7 @@ func (h *PermissionI18nHook) translatePermissionNames(db *gorm.DB, language stri
 // translatePermissionName processes a single Permission struct and translates its Name field
 // It handles embedded structs recursively and respects field visibility rules
 func (h *PermissionI18nHook) translatePermissionName(structValue reflect.Value, language string) {
-	h.logger.Debug("Starting Permission struct Name field translation",
+	logger.Debug("Starting Permission struct Name field translation",
 		logger.String("structType", structValue.Type().String()),
 		logger.String("structKind", structValue.Kind().String()),
 		logger.Bool("canSet", structValue.CanSet()))
@@ -207,18 +205,18 @@ func (h *PermissionI18nHook) translatePermissionName(structValue reflect.Value, 
 	// Safely handle pointer types by dereferencing them
 	for structValue.Kind() == reflect.Ptr {
 		if structValue.IsNil() {
-			h.logger.Debug("Encountered nil pointer, skipping translation")
+			logger.Debug("Encountered nil pointer, skipping translation")
 			return
 		}
 		structValue = structValue.Elem()
-		h.logger.Debug("Dereferenced struct pointer",
+		logger.Debug("Dereferenced struct pointer",
 			logger.String("actualType", structValue.Type().String()),
 			logger.String("actualKind", structValue.Kind().String()))
 	}
 
 	// Ensure we're working with a struct
 	if structValue.Kind() != reflect.Struct {
-		h.logger.Debug("Value is not a struct after dereferencing",
+		logger.Debug("Value is not a struct after dereferencing",
 			logger.String("kind", structValue.Kind().String()))
 		return
 	}
@@ -226,13 +224,13 @@ func (h *PermissionI18nHook) translatePermissionName(structValue reflect.Value, 
 	// Try to find the Name field in the Permission struct
 	nameField := structValue.FieldByName("Name")
 	if !nameField.IsValid() {
-		h.logger.Debug("Name field not found in struct")
+		logger.Debug("Name field not found in struct")
 		return
 	}
 
 	// Check if it's a string field and can be modified
 	if nameField.Kind() != reflect.String || !nameField.CanSet() {
-		h.logger.Debug("Name field is not a settable string field",
+		logger.Debug("Name field is not a settable string field",
 			logger.String("fieldKind", nameField.Kind().String()),
 			logger.Bool("canSet", nameField.CanSet()))
 		return
@@ -241,11 +239,11 @@ func (h *PermissionI18nHook) translatePermissionName(structValue reflect.Value, 
 	// Get the original Name field value
 	originalName := nameField.String()
 	if originalName == "" {
-		h.logger.Debug("Name field is empty, skipping translation")
+		logger.Debug("Name field is empty, skipping translation")
 		return
 	}
 
-	h.logger.Debug("Found Permission.Name field for translation",
+	logger.Debug("Found Permission.Name field for translation",
 		logger.String("originalName", originalName),
 		logger.String("targetLanguage", language))
 
@@ -255,7 +253,7 @@ func (h *PermissionI18nHook) translatePermissionName(structValue reflect.Value, 
 		defer func() {
 			if r := recover(); r != nil {
 				// If translation panics, use original name as fallback
-				h.logger.Warn("Translation panicked, using original name",
+				logger.Warn("Translation panicked, using original name",
 					logger.String("originalName", originalName),
 					logger.Any("panicValue", r))
 				translatedName = originalName
@@ -268,7 +266,7 @@ func (h *PermissionI18nHook) translatePermissionName(structValue reflect.Value, 
 	nameField.SetString(translatedName)
 
 	// Log the successful translation
-	h.logger.Debug("Successfully translated Permission.Name field",
+	logger.Debug("Successfully translated Permission.Name field",
 		logger.String("original", originalName),
 		logger.String("translated", translatedName),
 		logger.String(constants.UserLanguage, language))

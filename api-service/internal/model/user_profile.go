@@ -13,9 +13,9 @@ type UserLoginHistory struct {
 	Location   string     `json:"location" gorm:"column:location;size:100"`
 	Device     string     `json:"device" gorm:"column:device;size:100"`
 	Browser    string     `json:"browser" gorm:"column:browser;size:100"`
-	LoginTime  time.Time  `json:"login_time" gorm:"column:login_time;not null;default:CURRENT_TIMESTAMP"`
-	LogoutTime *time.Time `json:"logout_time" gorm:"column:logout_time"`
-	CreatedAt  time.Time  `json:"created_at" gorm:"column:created_at;autoCreateTime"`
+	LoginTime  time.Time  `json:"login_time" gorm:"column:login_time;not null;default:CURRENT_TIMESTAMP;type:datetime;serializer:datetime"`
+	LogoutTime *time.Time `json:"logout_time" gorm:"column:logout_time;type:datetime;serializer:datetime"`
+	CreatedAt  time.Time  `json:"created_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`
 
 	// Association
 	User *User `json:"user,omitempty" gorm:"foreignKey:UserID"`
@@ -33,8 +33,8 @@ type UserProfile struct {
 	IsEncrypted  bool      `gorm:"column:is_encrypted;default:0" json:"is_encrypted"`
 	DefaultValue string    `gorm:"column:default_value;type:text" json:"default_value"`
 	SortOrder    int       `gorm:"column:sort_order;default:0" json:"sort_order"`
-	CreatedAt    time.Time `gorm:"column:created_at;autoCreateTime" json:"created_at"`
-	UpdatedAt    time.Time `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
+	CreatedAt    time.Time `json:"created_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`
+	UpdatedAt    time.Time `json:"updated_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`
 }
 
 // TableName specifies the table name

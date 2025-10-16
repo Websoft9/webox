@@ -42,8 +42,8 @@ type AlertRule struct {
 	NotificationChannels string        `gorm:"type:text"`
 	IsEnabled            bool          `gorm:"default:true"`
 	OwnerID              uint          `gorm:"not null;index"`
-	CreatedAt            time.Time     `gorm:"not null;default:CURRENT_TIMESTAMP"`
-	UpdatedAt            time.Time     `gorm:"not null;default:CURRENT_TIMESTAMP;ON UPDATE CURRENT_TIMESTAMP"`
+	CreatedAt            time.Time     `json:"created_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`
+	UpdatedAt            time.Time     `json:"updated_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`
 }
 
 // TableName specifies the table name.
@@ -59,16 +59,16 @@ type AlertRecord struct {
 	Title                string     `json:"title" gorm:"not null;size:255"`
 	Description          string     `json:"description" gorm:"type:text"`
 	Status               string     `json:"status" gorm:"default:'FIRING'"`
-	FiredAt              time.Time  `json:"fired_at" gorm:"not null"`
-	ResolvedAt           *time.Time `json:"resolved_at"`
-	AcknowledgedAt       *time.Time `json:"acknowledged_at"`
+	FiredAt              time.Time  `json:"fired_at" gorm:"type:datetime;serializer:datetime;not null"`
+	ResolvedAt           *time.Time `json:"resolved_at" gorm:"type:datetime;serializer:datetime"`
+	AcknowledgedAt       *time.Time `json:"acknowledged_at" gorm:"type:datetime;serializer:datetime"`
 	AcknowledgedBy       *uint      `json:"acknowledged_by"`
 	AcknowledgeNote      string     `json:"acknowledge_note" gorm:"type:text"`
 	ResolutionNote       string     `json:"resolution_note" gorm:"type:text"`
 	NotificationSent     bool       `json:"notification_sent" gorm:"default:false"`
 	NotificationChannels string     `json:"notification_channels" gorm:"type:json"`
-	CreatedAt            time.Time  `json:"created_at" gorm:"autoCreateTime"`
-	UpdatedAt            time.Time  `json:"updated_at" gorm:"autoUpdateTime"`
+	CreatedAt            time.Time  `json:"created_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`
+	UpdatedAt            time.Time  `json:"updated_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`
 }
 
 // TableName specifies the table name for AlertRecord

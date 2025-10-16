@@ -906,3 +906,42 @@ func (s *secretKeyService) DeleteSecretFile(ctx context.Context, filename string
 
 	return nil
 }
+
+// CreateSecretReference creates a secret reference record
+func (s *secretKeyService) CreateSecretReference(ctx context.Context, reference *model.SecretReference) error {
+	s.logger.InfoContext(ctx, "Creating secret reference",
+		logger.Uint("secretId", reference.SecretID),
+		logger.String("resourceCode", reference.ResourceCode))
+
+	if err := s.secretKeyRepo.CreateSecretReference(ctx, reference); err != nil {
+		s.logger.ErrorContext(ctx, "Failed to create secret reference",
+			logger.Uint("secretId", reference.SecretID),
+			logger.String("resourceCode", reference.ResourceCode),
+			logger.ErrorField(err))
+		return err
+	}
+
+	s.logger.InfoContext(ctx, "Secret reference created successfully",
+		logger.Uint("secretId", reference.SecretID),
+		logger.String("resourceCode", reference.ResourceCode))
+
+	return nil
+}
+
+// DeleteSecretReferencesByResourceCode deletes secret references by resource code
+func (s *secretKeyService) DeleteSecretReferencesByResourceCode(ctx context.Context, resourceCode string) error {
+	s.logger.InfoContext(ctx, "Deleting secret references by resource code",
+		logger.String("resourceCode", resourceCode))
+
+	if err := s.secretKeyRepo.DeleteSecretReferencesByResourceCode(ctx, resourceCode); err != nil {
+		s.logger.ErrorContext(ctx, "Failed to delete secret references",
+			logger.String("resourceCode", resourceCode),
+			logger.ErrorField(err))
+		return err
+	}
+
+	s.logger.InfoContext(ctx, "Secret references deleted successfully",
+		logger.String("resourceCode", resourceCode))
+
+	return nil
+}

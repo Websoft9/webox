@@ -200,6 +200,16 @@ func (m *MockSecretKeyService) DeleteSecretFile(ctx context.Context, filename st
 	return args.Error(0)
 }
 
+func (m *MockSecretKeyService) CreateSecretReference(ctx context.Context, reference *model.SecretReference) error {
+	args := m.Called(ctx, reference)
+	return args.Error(0)
+}
+
+func (m *MockSecretKeyService) DeleteSecretReferencesByResourceCode(ctx context.Context, resourceCode string) error {
+	args := m.Called(ctx, resourceCode)
+	return args.Error(0)
+}
+
 // setupServerService creates a server service with mock dependencies
 func setupTestServerService() (*serverService, *MockServerRepository, *MockSystemConfigRepository) {
 	mockRepo := new(MockServerRepository)
@@ -443,19 +453,24 @@ func TestUpdateServer(t *testing.T) {
 // TestDeleteServer tests server deletion
 func TestDeleteServer(t *testing.T) {
 	service, mockRepo, _ := setupTestServerService()
+	mockSecretKeyService := new(MockSecretKeyService)
+	service.secretKeyService = mockSecretKeyService
 
 	existingServer := &model.Server{
 		ID:   1,
+		Code: "srv123",
 		Name: "test-server",
 	}
 
 	mockRepo.On("GetServerByID", mock.Anything, uint(1)).Return(existingServer, nil)
+	mockSecretKeyService.On("DeleteSecretReferencesByResourceCode", mock.Anything, "srv123").Return(nil)
 	mockRepo.On("DeleteServer", mock.Anything, uint(1)).Return(nil)
 
 	err := service.DeleteServer(context.Background(), 1)
 
 	assert.NoError(t, err)
 	mockRepo.AssertExpectations(t)
+	mockSecretKeyService.AssertExpectations(t)
 }
 
 // TestListServers tests server listing functionality

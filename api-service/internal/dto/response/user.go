@@ -70,6 +70,8 @@ func BuildUserResponse(user *model.User) *UserResponse {
 				Name:        role.Name,
 				Code:        role.Code,
 				Description: role.Description,
+				CreatedAt:   role.CreatedAt,
+				UpdatedAt:   role.UpdatedAt,
 			}
 		}
 	}

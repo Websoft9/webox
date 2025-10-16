@@ -26,6 +26,9 @@ const (
 	// 状态常量
 	statusFailed = "failed"
 
+	// Secret key type constants
+	secretKeyTypeAccount = "ACCOUNT"
+
 	// 服务器操作时间常量
 	serverRestartTime  = 2 * time.Second
 	serverShutdownTime = 3 * time.Second
@@ -42,6 +45,10 @@ const (
 	mockServerUptime    = 86400 // 24小时，单位秒
 	mockContainersCount = 5
 	mockImagesCount     = 12
+
+	// Server code 前缀
+	serverCodePrefix = "srv"
+	serverCodeLength = 16 // srv + 13位时间戳 = 16字符
 )
 
 // serverService implements service.ServerService
@@ -96,9 +103,13 @@ func (s *serverService) CreateServer(ctx context.Context, req *request.CreateSer
 		}
 	}
 
+	// Generate unique server code
+	serverCode := s.generateServerCode()
+
 	// Create server model with owner_id from JWT token
 	server := &model.Server{
 		Name:            req.Name,
+		Code:            serverCode,
 		Host:            req.Host,
 		SSHPort:         req.SSHPort,
 		SSHCredentialID: req.SSHCredentialID,
@@ -116,12 +127,24 @@ func (s *serverService) CreateServer(ctx context.Context, req *request.CreateSer
 		return nil, errors.NewAppError(errors.CodeRecordCreateFailed)
 	}
 
+	// Create secret reference if SSH credential is provided
+	if req.SSHCredentialID != nil && *req.SSHCredentialID != "" {
+		if err := s.createSecretReference(ctx, serverCode, *req.SSHCredentialID); err != nil {
+			// Log warning but don't fail server creation
+			s.logger.WarnContext(ctx, "Failed to create secret reference for server",
+				logger.String("serverCode", serverCode),
+				logger.String("credentialId", *req.SSHCredentialID),
+				logger.ErrorField(err))
+		}
+	}
+
 	// Test connectivity asynchronously
 	go s.testServerConnectivity(context.Background(), server.ID)
 
 	s.logger.InfoContext(ctx, "Server created successfully",
 		logger.Uint("id", server.ID),
-		logger.String("name", server.Name))
+		logger.String("name", server.Name),
+		logger.String("code", serverCode))
 
 	// Convert to response
 	return s.convertToServerResponse(server), nil
@@ -148,6 +171,8 @@ func (s *serverService) GetServer(ctx context.Context, id uint) (*response.Serve
 }
 
 // UpdateServer updates an existing server
+//
+//nolint:gocyclo,gocognit // Complex business logic requires multiple conditional checks
 func (s *serverService) UpdateServer(ctx context.Context, id uint, req *request.UpdateServerRequest) (*response.ServerResponse, error) {
 	s.logger.InfoContext(ctx, "Updating server", logger.Uint("id", id))
 
@@ -156,6 +181,10 @@ func (s *serverService) UpdateServer(ctx context.Context, id uint, req *request.
 	if err != nil {
 		return nil, err
 	}
+
+	// Track if SSH credential changed
+	oldCredentialID := server.SSHCredentialID
+	var credentialChanged bool
 
 	// Check if new name conflicts with existing servers (excluding current server)
 	if req.Name != nil && *req.Name != server.Name {
@@ -178,11 +207,18 @@ func (s *serverService) UpdateServer(ctx context.Context, id uint, req *request.
 		server.SSHPort = *req.SSHPort
 	}
 	if req.SSHCredentialID != nil {
-		// Validate SSH credential if provided
-		if err := s.validateSSHCredential(ctx, *req.SSHCredentialID, server.OwnerID); err != nil {
-			return nil, err
+		// Check if credential actually changed
+		if oldCredentialID == nil || *oldCredentialID != *req.SSHCredentialID {
+			credentialChanged = true
+
+			// Validate SSH credential if provided and not empty
+			if *req.SSHCredentialID != "" {
+				if err := s.validateSSHCredential(ctx, *req.SSHCredentialID, server.OwnerID); err != nil {
+					return nil, err
+				}
+			}
+			server.SSHCredentialID = req.SSHCredentialID
 		}
-		server.SSHCredentialID = req.SSHCredentialID
 	}
 	// OSDistro field doesn't exist in UpdateServerRequest, skip this update
 	if req.Description != nil {
@@ -196,7 +232,25 @@ func (s *serverService) UpdateServer(ctx context.Context, id uint, req *request.
 		return nil, err
 	}
 
-	s.logger.InfoContext(ctx, "Server updated successfully", logger.Uint("id", id))
+	// Update secret reference if SSH credential changed
+	if credentialChanged {
+		// Delete old reference
+		s.deleteSecretReferencesByServerCode(ctx, server.Code)
+
+		// Create new reference if credential is not empty
+		if server.SSHCredentialID != nil && *server.SSHCredentialID != "" {
+			if err := s.createSecretReference(ctx, server.Code, *server.SSHCredentialID); err != nil {
+				s.logger.WarnContext(ctx, "Failed to create new secret reference",
+					logger.String("serverCode", server.Code),
+					logger.String("credentialId", *server.SSHCredentialID),
+					logger.ErrorField(err))
+			}
+		}
+	}
+
+	s.logger.InfoContext(ctx, "Server updated successfully",
+		logger.Uint("id", id),
+		logger.Bool("credentialChanged", credentialChanged))
 
 	return s.convertToServerResponse(server), nil
 }
@@ -205,18 +259,23 @@ func (s *serverService) UpdateServer(ctx context.Context, id uint, req *request.
 func (s *serverService) DeleteServer(ctx context.Context, id uint) error {
 	s.logger.InfoContext(ctx, "Deleting server", logger.Uint("id", id))
 
-	// Check if server exists
-	_, err := s.serverRepo.GetServerByID(ctx, id)
+	// Get server first to retrieve server code
+	server, err := s.serverRepo.GetServerByID(ctx, id)
 	if err != nil {
 		return err
 	}
+
+	// Delete secret references for this server
+	s.deleteSecretReferencesByServerCode(ctx, server.Code)
 
 	// Delete server from database
 	if err := s.serverRepo.DeleteServer(ctx, id); err != nil {
 		return err
 	}
 
-	s.logger.InfoContext(ctx, "Server deleted successfully", logger.Uint("id", id))
+	s.logger.InfoContext(ctx, "Server deleted successfully",
+		logger.Uint("id", id),
+		logger.String("code", server.Code))
 
 	return nil
 }
@@ -741,6 +800,7 @@ func (s *serverService) convertToServerResponse(server *model.Server) *response.
 	resp := &response.ServerResponse{
 		ID:              server.ID,
 		Name:            server.Name,
+		Code:            server.Code,
 		Hostname:        server.Hostname,
 		Host:            server.Host,
 		InternalIP:      server.InternalIP,
@@ -798,7 +858,7 @@ func (s *serverService) getSSHCredentials(ctx context.Context, server *model.Ser
 	}
 
 	// Validate secret key type - should be ACCOUNT type for SSH credentials
-	if secretValue.KeyType != "ACCOUNT" {
+	if secretValue.KeyType != secretKeyTypeAccount {
 		s.logger.ErrorContext(ctx, "Invalid secret key type for SSH credentials",
 			logger.Uint("credentialId", uint(credentialID)),
 			logger.String("keyType", string(secretValue.KeyType)))
@@ -1138,11 +1198,11 @@ func (s *serverService) validateSSHCredential(ctx context.Context, credentialID 
 	}
 
 	// Validate credential ownership using SecretKeyService
-	if err := s.secretKeyService.ValidateSecretKeyOwnership(ctx, uint(credID), userID); err != nil {
+	if validateErr := s.secretKeyService.ValidateSecretKeyOwnership(ctx, uint(credID), userID); validateErr != nil {
 		s.logger.ErrorContext(ctx, "SSH credential validation failed",
 			logger.Uint("credentialId", uint(credID)),
 			logger.Uint("userId", userID),
-			logger.ErrorField(err))
+			logger.ErrorField(validateErr))
 		return errors.NewAppError(errors.CodeResourceNotFound)
 	}
 
@@ -1156,7 +1216,7 @@ func (s *serverService) validateSSHCredential(ctx context.Context, credentialID 
 	}
 
 	// Check if credential type is ACCOUNT (suitable for SSH)
-	if credential.KeyType != "ACCOUNT" {
+	if credential.KeyType != secretKeyTypeAccount {
 		s.logger.WarnContext(ctx, "Invalid credential type for SSH - expected ACCOUNT type",
 			logger.Uint("credentialId", uint(credID)),
 			logger.String("keyType", string(credential.KeyType)))
@@ -1654,4 +1714,58 @@ func splitBy(s, sep string) []string {
 	}
 	result = append(result, s[start:])
 	return result
+}
+
+// generateServerCode generates a unique server code
+// Format: srv + timestamp (srv1234567890123)
+func (s *serverService) generateServerCode() string {
+	// Use timestamp to ensure uniqueness
+	timestamp := time.Now().UnixMilli()
+	return fmt.Sprintf("%s%d", serverCodePrefix, timestamp)
+}
+
+// createSecretReference creates a secret reference for SSH credential
+func (s *serverService) createSecretReference(ctx context.Context, serverCode, credentialID string) error {
+	// Parse credential ID from string to uint
+	credID, err := strconv.ParseUint(credentialID, 10, 64)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Invalid SSH credential ID format",
+			logger.String("credentialId", credentialID),
+			logger.ErrorField(err))
+		return errors.NewAppErrorWrapError(err, errors.CodeInvalidParameterFormat)
+	}
+
+	// Create secret reference record
+	reference := &model.SecretReference{
+		SecretID:     uint(credID),
+		ResourceCode: serverCode,
+	}
+
+	if err := s.secretKeyService.CreateSecretReference(ctx, reference); err != nil {
+		s.logger.ErrorContext(ctx, "Failed to create secret reference",
+			logger.String("serverCode", serverCode),
+			logger.Uint("secretId", uint(credID)),
+			logger.ErrorField(err))
+		return err
+	}
+
+	s.logger.InfoContext(ctx, "Secret reference created successfully",
+		logger.String("serverCode", serverCode),
+		logger.Uint("secretId", uint(credID)))
+
+	return nil
+}
+
+// deleteSecretReferencesByServerCode deletes all secret references for a server
+func (s *serverService) deleteSecretReferencesByServerCode(ctx context.Context, serverCode string) {
+	if err := s.secretKeyService.DeleteSecretReferencesByResourceCode(ctx, serverCode); err != nil {
+		s.logger.WarnContext(ctx, "Failed to delete secret references for server",
+			logger.String("serverCode", serverCode),
+			logger.ErrorField(err))
+		// Don't fail server deletion if reference cleanup fails
+		return
+	}
+
+	s.logger.InfoContext(ctx, "Secret references deleted successfully",
+		logger.String("serverCode", serverCode))
 }

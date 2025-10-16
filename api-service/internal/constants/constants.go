@@ -375,8 +375,16 @@ const (
 // These field names will be automatically converted to user's timezone in API responses
 const (
 	// Common timestamp fields
-	TimeFieldCreatedAt = "created_at"
-	TimeFieldUpdatedAt = "updated_at"
+	TimeFieldCreatedAt  = "created_at"
+	TimeFieldUpdatedAt  = "updated_at"
+	TimeFieldLoginAt    = "last_login_at"
+	TimeFieldUsedAt     = "last_used_at"
+	TimeFieldExpiresAt  = "expires_at"
+	TimeFieldGrantedAt  = "granted_at"
+	TimeFieldVerifiedAt = "verified_at"
+	TimeFieldSentAt     = "sent_at"
+	TimeFieldLogin      = "login_time"
+	TimeFieldLogout     = "logout_time"
 )
 
 // GetTimezoneConvertibleFields returns a list of all time field names that should be converted to user's timezone
@@ -385,6 +393,14 @@ func GetTimezoneConvertibleFields() []string {
 		// Common timestamp fields
 		TimeFieldCreatedAt,
 		TimeFieldUpdatedAt,
+		TimeFieldLoginAt,
+		TimeFieldUsedAt,
+		TimeFieldExpiresAt,
+		TimeFieldGrantedAt,
+		TimeFieldVerifiedAt,
+		TimeFieldSentAt,
+		TimeFieldLogin,
+		TimeFieldLogout,
 	}
 }
 

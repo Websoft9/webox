@@ -26,6 +26,11 @@ const docTemplate = `{
     "paths": {
         "/api/v1/alert/records": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Get a list of alert records with optional filtering",
                 "consumes": [
                     "application/json"
@@ -117,6 +122,11 @@ const docTemplate = `{
         },
         "/api/v1/alert/records/{id}/acknowledge": {
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Acknowledge an existing alert record",
                 "consumes": [
                     "application/json"
@@ -176,6 +186,11 @@ const docTemplate = `{
         },
         "/api/v1/alert/records/{id}/resolve": {
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Resolve an existing alert record",
                 "consumes": [
                     "application/json"
@@ -235,6 +250,11 @@ const docTemplate = `{
         },
         "/api/v1/alert/rules": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Get a list of alert rules with optional filtering",
                 "consumes": [
                     "application/json"
@@ -318,6 +338,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Create a new alert rule",
                 "consumes": [
                     "application/json"
@@ -376,6 +401,11 @@ const docTemplate = `{
         },
         "/api/v1/alert/rules/{id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Get details of a specific alert rule",
                 "consumes": [
                     "application/json"
@@ -436,6 +466,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Update an existing alert rule",
                 "consumes": [
                     "application/json"
@@ -505,6 +540,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Delete an existing alert rule",
                 "consumes": [
                     "application/json"
@@ -1518,6 +1558,1294 @@ const docTemplate = `{
                                     }
                                 }
                             ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/notifications/channels": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get paginated list of notification channels with filtering",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification Channels"
+                ],
+                "summary": "Get notification channels list",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Page size",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search keyword",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "EMAIL",
+                            "WEBHOOK"
+                        ],
+                        "type": "string",
+                        "description": "Channel type filter",
+                        "name": "channel_type",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Test Success",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/notifications/channels/email": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new email notification channel with SMTP configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification Channels"
+                ],
+                "summary": "Create email notification channel",
+                "parameters": [
+                    {
+                        "description": "Email channel configuration",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.CreateEmailChannelRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.NotificationChannelResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/notifications/channels/test/email": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Test an email notification channel by sending a test message",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification Channels"
+                ],
+                "summary": "Test email notification channel",
+                "parameters": [
+                    {
+                        "description": "Test email configuration",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.TestEmailChannelRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/notifications/channels/test/webhook": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Test a webhook notification channel by sending a test message",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification Channels"
+                ],
+                "summary": "Test webhook notification channel",
+                "parameters": [
+                    {
+                        "description": "Test webhook configuration",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.TestWebhookChannelRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/notifications/channels/webhook": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new webhook notification channel with URL and headers configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification Channels"
+                ],
+                "summary": "Create webhook notification channel",
+                "parameters": [
+                    {
+                        "description": "Webhook channel configuration",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.CreateWebhookChannelRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.NotificationChannelResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/notifications/channels/{code}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get detailed information about a specific notification channel",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification Channels"
+                ],
+                "summary": "Get notification channel by code",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Channel code",
+                        "name": "code",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.NotificationChannelResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete an existing notification channel by code",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification Channels"
+                ],
+                "summary": "Delete notification channel",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Channel code",
+                        "name": "code",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/notifications/channels/{code}/email": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update an existing email notification channel configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification Channels"
+                ],
+                "summary": "Update email notification channel",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Channel code",
+                        "name": "code",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated email channel configuration",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.UpdateEmailChannelRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.NotificationChannelResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/notifications/channels/{code}/webhook": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update an existing webhook notification channel configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification Channels"
+                ],
+                "summary": "Update webhook notification channel",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Channel code",
+                        "name": "code",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated webhook channel configuration",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.UpdateWebhookChannelRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.NotificationChannelResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/notifications/records": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve notification records list with pagination and filtering options",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification Records"
+                ],
+                "summary": "Get notification records list",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Items per page",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "EMAIL",
+                            "WEBHOOK",
+                            "INTERNAL"
+                        ],
+                        "type": "string",
+                        "description": "Channel type filter",
+                        "name": "channel_type",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "PENDING",
+                            "SENT",
+                            "FAILED",
+                            "RETRY"
+                        ],
+                        "type": "string",
+                        "description": "Status filter",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Recipient filter",
+                        "name": "recipient",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "2006-01-02 15:04:05",
+                        "description": "Sent time start filter",
+                        "name": "sent_start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "2006-01-02 15:04:05",
+                        "description": "Sent time end filter",
+                        "name": "sent_end",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.NotificationRecordResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/notifications/records/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve detailed information of a specific notification record",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification Records"
+                ],
+                "summary": "Get notification record details",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Notification record ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.NotificationRecordResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/notifications/templates": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get paginated list of notification templates with filtering",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification Templates"
+                ],
+                "summary": "Get notification templates list",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Page size",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search keyword",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "EMAIL",
+                            "WEBHOOK",
+                            "INTERNAL"
+                        ],
+                        "type": "string",
+                        "description": "Template type filter",
+                        "name": "template_type",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            0,
+                            1
+                        ],
+                        "type": "integer",
+                        "description": "Template status filter",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            0,
+                            1
+                        ],
+                        "type": "integer",
+                        "description": "System template filter",
+                        "name": "is_system",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.NotificationTemplateResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new notification template with title, content and variables",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification Templates"
+                ],
+                "summary": "Create notification template",
+                "parameters": [
+                    {
+                        "description": "Notification template configuration",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.CreateNotificationTemplateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.NotificationTemplateResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/notifications/templates/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get detailed information about a specific notification template",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification Templates"
+                ],
+                "summary": "Get notification template by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Template ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.NotificationTemplateResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update an existing notification template configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification Templates"
+                ],
+                "summary": "Update notification template",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Template ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated notification template configuration",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.UpdateNotificationTemplateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.NotificationTemplateResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete an existing notification template by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification Templates"
+                ],
+                "summary": "Delete notification template",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Template ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/notifications/templates/{id}/test": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Test a notification template by sending a test notification",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification Templates"
+                ],
+                "summary": "Test notification template",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Template ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Test template configuration",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.TestNotificationTemplateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
                         }
                     },
                     "500": {
@@ -3103,7 +4431,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/secret-keys": {
+        "/api/v1/secrets": {
             "get": {
                 "security": [
                     {
@@ -3138,11 +4466,9 @@ const docTemplate = `{
                     },
                     {
                         "enum": [
-                            "API_KEY",
-                            "DATABASE",
-                            "SSH",
-                            "CERTIFICATE",
-                            "CUSTOM"
+                            "SECRET_KEY",
+                            "ACCOUNT",
+                            "FILE"
                         ],
                         "type": "string",
                         "description": "Key type filter",
@@ -3263,7 +4589,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/secret-keys/export": {
+        "/api/v1/secrets/export": {
             "get": {
                 "security": [
                     {
@@ -3323,7 +4649,221 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/secret-keys/{id}": {
+        "/api/v1/secrets/files/delete": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete a secret key file by filename",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Secret Keys"
+                ],
+                "summary": "Delete secret key file",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filename to delete",
+                        "name": "filename",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/secrets/files/download": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Download a secret key file by filename",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "Secret Keys"
+                ],
+                "summary": "Download secret key file",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filename to download",
+                        "name": "filename",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "File content",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/secrets/files/upload": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Upload a secret key file (certificate, private key, etc.)",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Secret Keys"
+                ],
+                "summary": "Upload secret key file",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "File to upload",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            ".key",
+                            ".pem",
+                            ".rsa",
+                            ".crt"
+                        ],
+                        "type": "string",
+                        "default": ".key",
+                        "description": "File type",
+                        "name": "type",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.SecretFileUploadResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "413": {
+                        "description": "Request Entity Too Large",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/secrets/{id}": {
             "get": {
                 "security": [
                     {
@@ -3559,7 +5099,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/secret-keys/{id}/value": {
+        "/api/v1/secrets/{id}/value": {
             "get": {
                 "security": [
                     {
@@ -3656,7 +5196,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "servers"
+                    "Servers"
                 ],
                 "summary": "List servers",
                 "parameters": [
@@ -3728,7 +5268,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "servers"
+                    "Servers"
                 ],
                 "summary": "Create a new server",
                 "parameters": [
@@ -3785,7 +5325,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "servers"
+                    "Servers"
                 ],
                 "summary": "Execute server actions",
                 "parameters": [
@@ -3836,7 +5376,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "servers"
+                    "Servers"
                 ],
                 "summary": "Check multiple servers status",
                 "parameters": [
@@ -3884,7 +5424,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "servers"
+                    "Servers"
                 ],
                 "summary": "Get server by ID",
                 "parameters": [
@@ -3937,7 +5477,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "servers"
+                    "Servers"
                 ],
                 "summary": "Update server",
                 "parameters": [
@@ -4002,7 +5542,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "servers"
+                    "Servers"
                 ],
                 "summary": "Delete server",
                 "parameters": [
@@ -4054,7 +5594,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "servers"
+                    "Servers"
                 ],
                 "summary": "Upload file to server",
                 "parameters": [
@@ -4118,7 +5658,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "servers"
+                    "Servers"
                 ],
                 "summary": "Delete file from server",
                 "parameters": [
@@ -4177,7 +5717,7 @@ const docTemplate = `{
                     "application/octet-stream"
                 ],
                 "tags": [
-                    "servers"
+                    "Servers"
                 ],
                 "summary": "Download file from server",
                 "parameters": [
@@ -4236,7 +5776,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "servers"
+                    "Servers"
                 ],
                 "summary": "Get server status",
                 "parameters": [
@@ -6765,21 +8305,21 @@ const docTemplate = `{
             "type": "object",
             "additionalProperties": true
         },
+        "model.JSON": {
+            "type": "object",
+            "additionalProperties": true
+        },
         "model.SecretKeyType": {
             "type": "string",
             "enum": [
-                "API_KEY",
-                "DATABASE",
-                "SSH",
-                "CERTIFICATE",
-                "CUSTOM"
+                "SECRET_KEY",
+                "ACCOUNT",
+                "FILE"
             ],
             "x-enum-varnames": [
-                "SecretKeyTypeAPIKey",
-                "SecretKeyTypeDatabase",
-                "SecretKeyTypeSSH",
-                "SecretKeyTypeCertificate",
-                "SecretKeyTypeCustom"
+                "SecretKeyTypeSecretKey",
+                "SecretKeyTypeAccount",
+                "SecretKeyTypeFile"
             ]
         },
         "model.TargetType": {
@@ -6930,6 +8470,138 @@ const docTemplate = `{
                 }
             }
         },
+        "request.CreateEmailChannelRequest": {
+            "type": "object",
+            "required": [
+                "code",
+                "name",
+                "sender_email",
+                "sender_name",
+                "smtp_host",
+                "smtp_password",
+                "smtp_port",
+                "smtp_security",
+                "smtp_username"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 3,
+                    "example": "email-channel-001"
+                },
+                "description": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "example": "Email notification channel for alerts"
+                },
+                "encoding": {
+                    "type": "string",
+                    "enum": [
+                        "utf-8",
+                        "gbk",
+                        "gb2312"
+                    ],
+                    "example": "utf-8"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1,
+                    "example": "My Email Channel"
+                },
+                "quiet_hours": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "example": "22:00-08:00"
+                },
+                "rate_limit": {
+                    "type": "integer",
+                    "maximum": 1000,
+                    "minimum": 0,
+                    "example": 3
+                },
+                "retry_count": {
+                    "type": "integer",
+                    "maximum": 10,
+                    "minimum": 0,
+                    "example": 3
+                },
+                "sender_email": {
+                    "type": "string",
+                    "example": "noreply@example.com"
+                },
+                "sender_name": {
+                    "type": "string",
+                    "example": "System Notifications"
+                },
+                "smtp_host": {
+                    "type": "string",
+                    "example": "smtp.gmail.com"
+                },
+                "smtp_password": {
+                    "type": "string",
+                    "example": "your-password"
+                },
+                "smtp_port": {
+                    "type": "integer",
+                    "maximum": 65535,
+                    "minimum": 1,
+                    "example": 587
+                },
+                "smtp_security": {
+                    "type": "string",
+                    "enum": [
+                        "none",
+                        "tls",
+                        "ssl"
+                    ],
+                    "example": "tls"
+                },
+                "smtp_timeout": {
+                    "type": "integer",
+                    "maximum": 300,
+                    "minimum": 0,
+                    "example": 30
+                },
+                "smtp_username": {
+                    "type": "string",
+                    "example": "user@example.com"
+                }
+            }
+        },
+        "request.CreateNotificationTemplateRequest": {
+            "type": "object",
+            "required": [
+                "content",
+                "name",
+                "subject",
+                "template_type"
+            ],
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "minLength": 2
+                },
+                "subject": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 2
+                },
+                "template_type": {
+                    "type": "string",
+                    "enum": [
+                        "EMAIL",
+                        "WEBHOOK",
+                        "INTERNAL"
+                    ]
+                }
+            }
+        },
         "request.CreatePermissionRequest": {
             "type": "object",
             "required": [
@@ -7059,6 +8731,92 @@ const docTemplate = `{
                     "description": "Direct credential fields for creation (will be stored via credential management)",
                     "type": "string",
                     "maxLength": 64
+                }
+            }
+        },
+        "request.CreateWebhookChannelRequest": {
+            "type": "object",
+            "required": [
+                "code",
+                "method",
+                "name",
+                "url"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 3,
+                    "example": "webhook-channel-001"
+                },
+                "description": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "example": "Webhook notification channel for alerts"
+                },
+                "encoding": {
+                    "type": "string",
+                    "enum": [
+                        "utf-8",
+                        "gbk",
+                        "gb2312"
+                    ],
+                    "example": "utf-8"
+                },
+                "headers": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "method": {
+                    "type": "string",
+                    "enum": [
+                        "GET",
+                        "POST",
+                        "PUT",
+                        "PATCH",
+                        "DELETE"
+                    ],
+                    "example": "POST"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1,
+                    "example": "My Webhook Channel"
+                },
+                "quiet_hours": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "example": "22:00-08:00"
+                },
+                "rate_limit": {
+                    "type": "integer",
+                    "maximum": 1000,
+                    "minimum": 0,
+                    "example": 3
+                },
+                "retry_count": {
+                    "type": "integer",
+                    "maximum": 10,
+                    "minimum": 0,
+                    "example": 3
+                },
+                "secret": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "example": "your-webhook-secret"
+                },
+                "timeout": {
+                    "type": "integer",
+                    "maximum": 300,
+                    "minimum": 0,
+                    "example": 30
+                },
+                "url": {
+                    "type": "string",
+                    "example": "https://api.example.com/webhook"
                 }
             }
         },
@@ -7396,90 +9154,74 @@ const docTemplate = `{
         "request.SecretKeyCreateRequest": {
             "type": "object",
             "required": [
-                "encrypted_value",
                 "key_type",
                 "name"
             ],
             "properties": {
                 "authorized_users": {
-                    "description": "@Schema(example=\"[1,2,3]\")",
                     "type": "array",
                     "items": {
                         "type": "integer"
                     }
                 },
                 "custom_fields": {
-                    "description": "@Schema(example=\"{\\\"rotation_interval\\\":90}\")",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/model.CustomFields"
-                        }
-                    ]
+                    "type": "object",
+                    "additionalProperties": true
                 },
                 "description": {
                     "type": "string",
-                    "example": "MySQL database connection credentials"
-                },
-                "encrypted_value": {
-                    "type": "string",
-                    "example": "username:password or key content"
+                    "maxLength": 500
                 },
                 "expires_at": {
-                    "type": "string",
-                    "example": "2025-12-31T23:59:59Z"
+                    "type": "string"
                 },
                 "key_type": {
                     "enum": [
-                        "API_KEY",
-                        "DATABASE",
-                        "SSH",
-                        "CERTIFICATE",
-                        "CUSTOM"
+                        "SECRET_KEY",
+                        "ACCOUNT",
+                        "FILE"
                     ],
                     "allOf": [
                         {
                             "$ref": "#/definitions/model.SecretKeyType"
                         }
-                    ],
-                    "example": "DATABASE"
+                    ]
                 },
                 "name": {
                     "type": "string",
                     "maxLength": 64,
-                    "minLength": 1,
-                    "example": "Database Connection Key"
+                    "minLength": 1
+                },
+                "resource_code": {
+                    "type": "string",
+                    "maxLength": 64
                 },
                 "resource_group_id": {
-                    "type": "integer",
-                    "example": 1
+                    "type": "integer"
                 }
             }
         },
         "request.SecretKeyUpdateRequest": {
             "type": "object",
             "required": [
-                "encrypted_value",
                 "key_type"
             ],
             "properties": {
-                "encrypted_value": {
-                    "type": "string",
-                    "example": "new_username:new_password"
+                "custom_fields": {
+                    "type": "object",
+                    "additionalProperties": true
                 },
                 "key_type": {
                     "enum": [
-                        "API_KEY",
-                        "DATABASE",
-                        "SSH",
-                        "CERTIFICATE",
-                        "CUSTOM"
+                        "SECRET_KEY",
+                        "ACCOUNT",
+                        "FILE"
                     ],
                     "allOf": [
                         {
                             "$ref": "#/definitions/model.SecretKeyType"
                         }
-                    ],
-                    "example": "DATABASE"
+                    ]
                 }
             }
         },
@@ -7696,6 +9438,46 @@ const docTemplate = `{
                 }
             }
         },
+        "request.TestEmailChannelRequest": {
+            "type": "object",
+            "required": [
+                "code",
+                "recipient"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "recipient": {
+                    "type": "string"
+                },
+                "subject": {
+                    "type": "string"
+                }
+            }
+        },
+        "request.TestNotificationTemplateRequest": {
+            "type": "object",
+            "required": [
+                "code",
+                "recipient"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "recipient": {
+                    "type": "string"
+                },
+                "variable_data": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            }
+        },
         "request.TestSMTPRequest": {
             "type": "object",
             "required": [
@@ -7705,6 +9487,18 @@ const docTemplate = `{
                 "test_email": {
                     "type": "string"
                 }
+            }
+        },
+        "request.TestWebhookChannelRequest": {
+            "type": "object",
+            "required": [
+                "code"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "payload": {}
             }
         },
         "request.TokenAuthRequest": {
@@ -7766,6 +9560,111 @@ const docTemplate = `{
                 },
                 "user_auth": {
                     "$ref": "#/definitions/request.UserAuthRequest"
+                }
+            }
+        },
+        "request.UpdateEmailChannelRequest": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "example": "Updated email notification channel"
+                },
+                "encoding": {
+                    "type": "string",
+                    "enum": [
+                        "utf-8",
+                        "gbk",
+                        "gb2312"
+                    ],
+                    "example": "utf-8"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1,
+                    "example": "Updated Email Channel"
+                },
+                "quiet_hours": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "example": "22:00-08:00"
+                },
+                "rate_limit": {
+                    "type": "integer",
+                    "maximum": 1000,
+                    "minimum": 0,
+                    "example": 3
+                },
+                "retry_count": {
+                    "type": "integer",
+                    "maximum": 10,
+                    "minimum": 0,
+                    "example": 3
+                },
+                "sender_email": {
+                    "type": "string",
+                    "example": "noreply@example.com"
+                },
+                "sender_name": {
+                    "type": "string",
+                    "example": "System Notifications"
+                },
+                "smtp_host": {
+                    "type": "string",
+                    "example": "smtp.gmail.com"
+                },
+                "smtp_password": {
+                    "type": "string",
+                    "example": "your-password"
+                },
+                "smtp_port": {
+                    "type": "integer",
+                    "maximum": 65535,
+                    "minimum": 1,
+                    "example": 587
+                },
+                "smtp_security": {
+                    "type": "string",
+                    "enum": [
+                        "none",
+                        "tls",
+                        "ssl"
+                    ],
+                    "example": "tls"
+                },
+                "smtp_timeout": {
+                    "type": "integer",
+                    "maximum": 300,
+                    "minimum": 0,
+                    "example": 30
+                },
+                "smtp_username": {
+                    "type": "string",
+                    "example": "user@example.com"
+                }
+            }
+        },
+        "request.UpdateNotificationTemplateRequest": {
+            "type": "object",
+            "required": [
+                "content",
+                "subject"
+            ],
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "minLength": 2
+                },
+                "subject": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 2
                 }
             }
         },
@@ -7897,6 +9796,80 @@ const docTemplate = `{
                 },
                 "sort_order": {
                     "type": "integer"
+                }
+            }
+        },
+        "request.UpdateWebhookChannelRequest": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "example": "Updated webhook notification channel"
+                },
+                "encoding": {
+                    "type": "string",
+                    "enum": [
+                        "utf-8",
+                        "gbk",
+                        "gb2312"
+                    ],
+                    "example": "utf-8"
+                },
+                "headers": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "method": {
+                    "type": "string",
+                    "enum": [
+                        "GET",
+                        "POST",
+                        "PUT",
+                        "PATCH",
+                        "DELETE"
+                    ],
+                    "example": "POST"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1,
+                    "example": "Updated Webhook Channel"
+                },
+                "quiet_hours": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "example": "22:00-08:00"
+                },
+                "rate_limit": {
+                    "type": "integer",
+                    "maximum": 1000,
+                    "minimum": 0,
+                    "example": 3
+                },
+                "retry_count": {
+                    "type": "integer",
+                    "maximum": 10,
+                    "minimum": 0,
+                    "example": 3
+                },
+                "secret": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "example": "your-webhook-secret"
+                },
+                "timeout": {
+                    "type": "integer",
+                    "maximum": 300,
+                    "minimum": 0,
+                    "example": 30
+                },
+                "url": {
+                    "type": "string",
+                    "example": "https://api.example.com/webhook"
                 }
             }
         },
@@ -8048,11 +10021,11 @@ const docTemplate = `{
             "properties": {
                 "password": {
                     "type": "string",
-                    "example": "123456"
+                    "example": "Websoft9"
                 },
                 "username": {
                     "type": "string",
-                    "example": "john@example.com or johndoe"
+                    "example": "admin@websoft9.com"
                 }
             }
         },
@@ -8125,7 +10098,60 @@ const docTemplate = `{
             }
         },
         "request.UserUpdateRequest": {
-            "type": "object"
+            "type": "object",
+            "properties": {
+                "avatar": {
+                    "type": "string",
+                    "example": "https://example.com/avatar.jpg"
+                },
+                "email": {
+                    "type": "string",
+                    "example": "newemail@example.com"
+                },
+                "gender": {
+                    "type": "integer",
+                    "maximum": 2,
+                    "minimum": 0,
+                    "example": 1
+                },
+                "language": {
+                    "type": "string",
+                    "maxLength": 10,
+                    "example": "zh-CN"
+                },
+                "nickname": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "example": "John Doe"
+                },
+                "phone": {
+                    "type": "string",
+                    "maxLength": 20,
+                    "example": "+1234567890"
+                },
+                "role_ids": {
+                    "description": "Array of role IDs to assign (optional)",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "signature": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "example": "This is my signature"
+                },
+                "timezone": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "example": "Asia/Shanghai"
+                },
+                "username": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "example": "johndoe"
+                }
+            }
         },
         "request.UserUpdateStatusRequest": {
             "type": "object",
@@ -8608,6 +10634,88 @@ const docTemplate = `{
                 }
             }
         },
+        "response.NotificationChannelResponse": {
+            "type": "object",
+            "properties": {
+                "channel_config": {
+                    "$ref": "#/definitions/model.JSON"
+                },
+                "channel_type": {
+                    "type": "string"
+                },
+                "code": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "owner_id": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.NotificationRecordResponse": {
+            "type": "object",
+            "properties": {
+                "channel_type": {
+                    "type": "string"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "error_msg": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "recipient": {
+                    "type": "string"
+                },
+                "reference_id": {
+                    "type": "string"
+                },
+                "reference_type": {
+                    "type": "string"
+                },
+                "retry_count": {
+                    "type": "integer"
+                },
+                "sent_at": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "subject": {
+                    "type": "string"
+                },
+                "template_id": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
         "response.NotificationSettingsResponse": {
             "type": "object",
             "properties": {
@@ -8622,6 +10730,35 @@ const docTemplate = `{
                 },
                 "sms_notifications": {
                     "type": "boolean"
+                }
+            }
+        },
+        "response.NotificationTemplateResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_system": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "integer"
+                },
+                "subject": {
+                    "type": "string"
+                },
+                "template_type": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -8939,6 +11076,23 @@ const docTemplate = `{
                 }
             }
         },
+        "response.SecretFileUploadResponse": {
+            "type": "object",
+            "properties": {
+                "file_path": {
+                    "type": "string",
+                    "example": "/home/appuser/data/2345678ioasjhhdvgajdjknasd.key"
+                },
+                "filename": {
+                    "type": "string",
+                    "example": "2345678ioasjhhdvgajdjknasd.key"
+                },
+                "original_name": {
+                    "type": "string",
+                    "example": "my-certificate.key"
+                }
+            }
+        },
         "response.SecretKeyListResponse": {
             "type": "object",
             "properties": {
@@ -9026,13 +11180,15 @@ const docTemplate = `{
         "response.SecretKeyValueResponse": {
             "type": "object",
             "properties": {
-                "expires_at": {
-                    "type": "string",
-                    "example": "2025-12-31T23:59:59Z"
+                "custom_fields": {
+                    "type": "object",
+                    "additionalProperties": true
                 },
-                "value": {
-                    "type": "string",
-                    "example": "sk-1234567890abcdef"
+                "expires_at": {
+                    "type": "string"
+                },
+                "key_type": {
+                    "$ref": "#/definitions/model.SecretKeyType"
                 }
             }
         },
@@ -9196,6 +11352,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "architecture": {
+                    "type": "string"
+                },
+                "code": {
                     "type": "string"
                 },
                 "cpu_cores": {

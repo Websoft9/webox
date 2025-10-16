@@ -61,7 +61,7 @@ func (r *notificationChannelRepository) GetByCode(ctx context.Context, code stri
 
 // Update updates a notification channel
 func (r *notificationChannelRepository) Update(ctx context.Context, channel *model.NotificationChannelConfig) error {
-	if err := r.db.WithContext(ctx).Save(channel).Error; err != nil {
+	if err := r.db.WithContext(ctx).Updates(channel).Error; err != nil {
 		return errors.NewAppErrorWrapError(err, errors.CodeRecordUpdateFailed)
 	}
 
