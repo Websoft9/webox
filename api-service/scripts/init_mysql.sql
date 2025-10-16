@@ -1091,6 +1091,7 @@ CREATE TABLE IF NOT EXISTS `user_two_factor` (
 CREATE TABLE IF NOT EXISTS `user_profile` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `user_id` BIGINT UNSIGNED NOT NULL COMMENT 'User ID',
+    `category` VARCHAR(64) NOT NULL DEFAULT 'general' COMMENT 'Profile category',
     `config_key` VARCHAR(64) NOT NULL COMMENT 'Configuration key',
     `config_value` TEXT NULL COMMENT 'Configuration value',
     `description` TEXT NULL COMMENT 'Configuration description',
