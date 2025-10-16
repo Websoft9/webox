@@ -19,6 +19,11 @@
     "paths": {
         "/api/v1/alert/records": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Get a list of alert records with optional filtering",
                 "consumes": [
                     "application/json"
@@ -110,6 +115,11 @@
         },
         "/api/v1/alert/records/{id}/acknowledge": {
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Acknowledge an existing alert record",
                 "consumes": [
                     "application/json"
@@ -169,6 +179,11 @@
         },
         "/api/v1/alert/records/{id}/resolve": {
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Resolve an existing alert record",
                 "consumes": [
                     "application/json"
@@ -228,6 +243,11 @@
         },
         "/api/v1/alert/rules": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Get a list of alert rules with optional filtering",
                 "consumes": [
                     "application/json"
@@ -311,6 +331,11 @@
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Create a new alert rule",
                 "consumes": [
                     "application/json"
@@ -369,6 +394,11 @@
         },
         "/api/v1/alert/rules/{id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Get details of a specific alert rule",
                 "consumes": [
                     "application/json"
@@ -429,6 +459,11 @@
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Update an existing alert rule",
                 "consumes": [
                     "application/json"
@@ -498,6 +533,11 @@
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Delete an existing alert rule",
                 "consumes": [
                     "application/json"
@@ -4384,7 +4424,7 @@
                 }
             }
         },
-        "/api/v1/secret-keys": {
+        "/api/v1/secrets": {
             "get": {
                 "security": [
                     {
@@ -4419,11 +4459,9 @@
                     },
                     {
                         "enum": [
-                            "API_KEY",
-                            "DATABASE",
-                            "SSH",
-                            "CERTIFICATE",
-                            "CUSTOM"
+                            "SECRET_KEY",
+                            "ACCOUNT",
+                            "FILE"
                         ],
                         "type": "string",
                         "description": "Key type filter",
@@ -4544,7 +4582,7 @@
                 }
             }
         },
-        "/api/v1/secret-keys/export": {
+        "/api/v1/secrets/export": {
             "get": {
                 "security": [
                     {
@@ -4604,7 +4642,221 @@
                 }
             }
         },
-        "/api/v1/secret-keys/{id}": {
+        "/api/v1/secrets/files/delete": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete a secret key file by filename",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Secret Keys"
+                ],
+                "summary": "Delete secret key file",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filename to delete",
+                        "name": "filename",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/secrets/files/download": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Download a secret key file by filename",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "Secret Keys"
+                ],
+                "summary": "Download secret key file",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filename to download",
+                        "name": "filename",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "File content",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/secrets/files/upload": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Upload a secret key file (certificate, private key, etc.)",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Secret Keys"
+                ],
+                "summary": "Upload secret key file",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "File to upload",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            ".key",
+                            ".pem",
+                            ".rsa",
+                            ".crt"
+                        ],
+                        "type": "string",
+                        "default": ".key",
+                        "description": "File type",
+                        "name": "type",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.SecretFileUploadResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "413": {
+                        "description": "Request Entity Too Large",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/secrets/{id}": {
             "get": {
                 "security": [
                     {
@@ -4840,7 +5092,7 @@
                 }
             }
         },
-        "/api/v1/secret-keys/{id}/value": {
+        "/api/v1/secrets/{id}/value": {
             "get": {
                 "security": [
                     {
@@ -5575,9 +5827,9 @@
                 "summary": "Get resource tags",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "Resource ID",
-                        "name": "resourceId",
+                        "type": "string",
+                        "description": "ResourceCode",
+                        "name": "resourceCode",
                         "in": "query",
                         "required": true
                     }
@@ -7421,18 +7673,14 @@
         "model.SecretKeyType": {
             "type": "string",
             "enum": [
-                "API_KEY",
-                "DATABASE",
-                "SSH",
-                "CERTIFICATE",
-                "CUSTOM"
+                "SECRET_KEY",
+                "ACCOUNT",
+                "FILE"
             ],
             "x-enum-varnames": [
-                "SecretKeyTypeAPIKey",
-                "SecretKeyTypeDatabase",
-                "SecretKeyTypeSSH",
-                "SecretKeyTypeCertificate",
-                "SecretKeyTypeCustom"
+                "SecretKeyTypeSecretKey",
+                "SecretKeyTypeAccount",
+                "SecretKeyTypeFile"
             ]
         },
         "model.TargetType": {
@@ -8223,90 +8471,74 @@
         "request.SecretKeyCreateRequest": {
             "type": "object",
             "required": [
-                "encrypted_value",
                 "key_type",
                 "name"
             ],
             "properties": {
                 "authorized_users": {
-                    "description": "@Schema(example=\"[1,2,3]\")",
                     "type": "array",
                     "items": {
                         "type": "integer"
                     }
                 },
                 "custom_fields": {
-                    "description": "@Schema(example=\"{\\\"rotation_interval\\\":90}\")",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/model.CustomFields"
-                        }
-                    ]
+                    "type": "object",
+                    "additionalProperties": true
                 },
                 "description": {
                     "type": "string",
-                    "example": "MySQL database connection credentials"
-                },
-                "encrypted_value": {
-                    "type": "string",
-                    "example": "username:password or key content"
+                    "maxLength": 500
                 },
                 "expires_at": {
-                    "type": "string",
-                    "example": "2025-12-31T23:59:59Z"
+                    "type": "string"
                 },
                 "key_type": {
                     "enum": [
-                        "API_KEY",
-                        "DATABASE",
-                        "SSH",
-                        "CERTIFICATE",
-                        "CUSTOM"
+                        "SECRET_KEY",
+                        "ACCOUNT",
+                        "FILE"
                     ],
                     "allOf": [
                         {
                             "$ref": "#/definitions/model.SecretKeyType"
                         }
-                    ],
-                    "example": "DATABASE"
+                    ]
                 },
                 "name": {
                     "type": "string",
                     "maxLength": 64,
-                    "minLength": 1,
-                    "example": "Database Connection Key"
+                    "minLength": 1
+                },
+                "resource_code": {
+                    "type": "string",
+                    "maxLength": 64
                 },
                 "resource_group_id": {
-                    "type": "integer",
-                    "example": 1
+                    "type": "integer"
                 }
             }
         },
         "request.SecretKeyUpdateRequest": {
             "type": "object",
             "required": [
-                "encrypted_value",
                 "key_type"
             ],
             "properties": {
-                "encrypted_value": {
-                    "type": "string",
-                    "example": "new_username:new_password"
+                "custom_fields": {
+                    "type": "object",
+                    "additionalProperties": true
                 },
                 "key_type": {
                     "enum": [
-                        "API_KEY",
-                        "DATABASE",
-                        "SSH",
-                        "CERTIFICATE",
-                        "CUSTOM"
+                        "SECRET_KEY",
+                        "ACCOUNT",
+                        "FILE"
                     ],
                     "allOf": [
                         {
                             "$ref": "#/definitions/model.SecretKeyType"
                         }
-                    ],
-                    "example": "DATABASE"
+                    ]
                 }
             }
         },
@@ -8378,16 +8610,16 @@
         "request.TagAssignRequest": {
             "type": "object",
             "required": [
-                "resourceId"
+                "resourceCode"
             ],
             "properties": {
                 "replaceAll": {
                     "type": "boolean",
                     "example": false
                 },
-                "resourceId": {
-                    "type": "integer",
-                    "example": 123
+                "resourceCode": {
+                    "type": "string",
+                    "example": "SERVER_001"
                 },
                 "tagIds": {
                     "type": "array",
@@ -8429,13 +8661,13 @@
         "request.TagUnassignRequest": {
             "type": "object",
             "required": [
-                "resourceId",
+                "resourceCode",
                 "tagIds"
             ],
             "properties": {
-                "resourceId": {
-                    "type": "integer",
-                    "example": 123
+                "resourceCode": {
+                    "type": "string",
+                    "example": "SERVER_001"
                 },
                 "tagIds": {
                     "type": "array",
@@ -10050,6 +10282,23 @@
                 }
             }
         },
+        "response.SecretFileUploadResponse": {
+            "type": "object",
+            "properties": {
+                "file_path": {
+                    "type": "string",
+                    "example": "/home/appuser/data/2345678ioasjhhdvgajdjknasd.key"
+                },
+                "filename": {
+                    "type": "string",
+                    "example": "2345678ioasjhhdvgajdjknasd.key"
+                },
+                "original_name": {
+                    "type": "string",
+                    "example": "my-certificate.key"
+                }
+            }
+        },
         "response.SecretKeyListResponse": {
             "type": "object",
             "properties": {
@@ -10137,13 +10386,15 @@
         "response.SecretKeyValueResponse": {
             "type": "object",
             "properties": {
-                "expires_at": {
-                    "type": "string",
-                    "example": "2025-12-31T23:59:59Z"
+                "custom_fields": {
+                    "type": "object",
+                    "additionalProperties": true
                 },
-                "value": {
-                    "type": "string",
-                    "example": "sk-1234567890abcdef"
+                "expires_at": {
+                    "type": "string"
+                },
+                "key_type": {
+                    "$ref": "#/definitions/model.SecretKeyType"
                 }
             }
         },
@@ -10388,9 +10639,9 @@
                         "type": "integer"
                     }
                 },
-                "resourceId": {
-                    "type": "integer",
-                    "example": 1
+                "resourceCode": {
+                    "type": "string",
+                    "example": "SERVER_001"
                 },
                 "resourceName": {
                     "type": "string",

@@ -67,18 +67,14 @@ definitions:
     type: object
   model.SecretKeyType:
     enum:
-    - API_KEY
-    - DATABASE
-    - SSH
-    - CERTIFICATE
-    - CUSTOM
+    - SECRET_KEY
+    - ACCOUNT
+    - FILE
     type: string
     x-enum-varnames:
-    - SecretKeyTypeAPIKey
-    - SecretKeyTypeDatabase
-    - SecretKeyTypeSSH
-    - SecretKeyTypeCertificate
-    - SecretKeyTypeCustom
+    - SecretKeyTypeSecretKey
+    - SecretKeyTypeAccount
+    - SecretKeyTypeFile
   model.TargetType:
     enum:
     - SERVER
@@ -640,63 +636,50 @@ definitions:
   request.SecretKeyCreateRequest:
     properties:
       authorized_users:
-        description: '@Schema(example="[1,2,3]")'
         items:
           type: integer
         type: array
       custom_fields:
-        allOf:
-        - $ref: '#/definitions/model.CustomFields'
-        description: '@Schema(example="{\"rotation_interval\":90}")'
+        additionalProperties: true
+        type: object
       description:
-        example: MySQL database connection credentials
-        type: string
-      encrypted_value:
-        example: username:password or key content
+        maxLength: 500
         type: string
       expires_at:
-        example: "2025-12-31T23:59:59Z"
         type: string
       key_type:
         allOf:
         - $ref: '#/definitions/model.SecretKeyType'
         enum:
-        - API_KEY
-        - DATABASE
-        - SSH
-        - CERTIFICATE
-        - CUSTOM
-        example: DATABASE
+        - SECRET_KEY
+        - ACCOUNT
+        - FILE
       name:
-        example: Database Connection Key
         maxLength: 64
         minLength: 1
         type: string
+      resource_code:
+        maxLength: 64
+        type: string
       resource_group_id:
-        example: 1
         type: integer
     required:
-    - encrypted_value
     - key_type
     - name
     type: object
   request.SecretKeyUpdateRequest:
     properties:
-      encrypted_value:
-        example: new_username:new_password
-        type: string
+      custom_fields:
+        additionalProperties: true
+        type: object
       key_type:
         allOf:
         - $ref: '#/definitions/model.SecretKeyType'
         enum:
-        - API_KEY
-        - DATABASE
-        - SSH
-        - CERTIFICATE
-        - CUSTOM
-        example: DATABASE
+        - SECRET_KEY
+        - ACCOUNT
+        - FILE
     required:
-    - encrypted_value
     - key_type
     type: object
   request.SecuritySettingsRequest:
@@ -747,9 +730,9 @@ definitions:
       replaceAll:
         example: false
         type: boolean
-      resourceId:
-        example: 123
-        type: integer
+      resourceCode:
+        example: SERVER_001
+        type: string
       tagIds:
         items:
           type: integer
@@ -759,7 +742,7 @@ definitions:
           type: string
         type: array
     required:
-    - resourceId
+    - resourceCode
     type: object
   request.TagCreateRequest:
     properties:
@@ -780,15 +763,15 @@ definitions:
     type: object
   request.TagUnassignRequest:
     properties:
-      resourceId:
-        example: 123
-        type: integer
+      resourceCode:
+        example: SERVER_001
+        type: string
       tagIds:
         items:
           type: integer
         type: array
     required:
-    - resourceId
+    - resourceCode
     - tagIds
     type: object
   request.TagUpdateRequest:
@@ -1898,6 +1881,18 @@ definitions:
       name:
         type: string
     type: object
+  response.SecretFileUploadResponse:
+    properties:
+      file_path:
+        example: /home/appuser/data/2345678ioasjhhdvgajdjknasd.key
+        type: string
+      filename:
+        example: 2345678ioasjhhdvgajdjknasd.key
+        type: string
+      original_name:
+        example: my-certificate.key
+        type: string
+    type: object
   response.SecretKeyListResponse:
     properties:
       items:
@@ -1956,12 +1951,13 @@ definitions:
     type: object
   response.SecretKeyValueResponse:
     properties:
+      custom_fields:
+        additionalProperties: true
+        type: object
       expires_at:
-        example: "2025-12-31T23:59:59Z"
         type: string
-      value:
-        example: sk-1234567890abcdef
-        type: string
+      key_type:
+        $ref: '#/definitions/model.SecretKeyType'
     type: object
   response.SecuritySettingsResponse:
     properties:
@@ -2126,9 +2122,9 @@ definitions:
         items:
           type: integer
         type: array
-      resourceId:
-        example: 1
-        type: integer
+      resourceCode:
+        example: SERVER_001
+        type: string
       resourceName:
         example: WordPress Blog
         type: string
@@ -2416,6 +2412,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
       summary: Get alert records list
       tags:
       - Alert
@@ -2455,6 +2453,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
       summary: Acknowledge alert record
       tags:
       - Alert
@@ -2494,6 +2494,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
       summary: Resolve alert record
       tags:
       - Alert
@@ -2547,6 +2549,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
       summary: Get alert rules list
       tags:
       - Alert
@@ -2581,6 +2585,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
       summary: Create alert rule
       tags:
       - Alert
@@ -2614,6 +2620,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
       summary: Delete alert rule
       tags:
       - Alert
@@ -2651,6 +2659,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
       summary: Get alert rule by ID
       tags:
       - Alert
@@ -2694,6 +2704,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
       summary: Update alert rule
       tags:
       - Alert
@@ -5079,7 +5091,7 @@ paths:
       summary: Get users associated with role
       tags:
       - Role Management
-  /api/v1/secret-keys:
+  /api/v1/secrets:
     get:
       consumes:
       - application/json
@@ -5097,11 +5109,9 @@ paths:
         type: integer
       - description: Key type filter
         enum:
-        - API_KEY
-        - DATABASE
-        - SSH
-        - CERTIFICATE
-        - CUSTOM
+        - SECRET_KEY
+        - ACCOUNT
+        - FILE
         in: query
         name: key_type
         type: string
@@ -5178,7 +5188,7 @@ paths:
       summary: Create secret key
       tags:
       - Secret Keys
-  /api/v1/secret-keys/{id}:
+  /api/v1/secrets/{id}:
     delete:
       consumes:
       - application/json
@@ -5325,7 +5335,7 @@ paths:
       summary: Update secret key
       tags:
       - Secret Keys
-  /api/v1/secret-keys/{id}/value:
+  /api/v1/secrets/{id}/value:
     get:
       consumes:
       - application/json
@@ -5377,7 +5387,7 @@ paths:
       summary: Get secret key value
       tags:
       - Secret Keys
-  /api/v1/secret-keys/export:
+  /api/v1/secrets/export:
     get:
       consumes:
       - application/json
@@ -5414,6 +5424,142 @@ paths:
       security:
       - BearerAuth: []
       summary: Export secret keys
+      tags:
+      - Secret Keys
+  /api/v1/secrets/files/delete:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a secret key file by filename
+      parameters:
+      - description: Filename to delete
+        in: query
+        name: filename
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete secret key file
+      tags:
+      - Secret Keys
+  /api/v1/secrets/files/download:
+    get:
+      consumes:
+      - application/json
+      description: Download a secret key file by filename
+      parameters:
+      - description: Filename to download
+        in: query
+        name: filename
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: File content
+          schema:
+            type: file
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Download secret key file
+      tags:
+      - Secret Keys
+  /api/v1/secrets/files/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a secret key file (certificate, private key, etc.)
+      parameters:
+      - description: File to upload
+        in: formData
+        name: file
+        required: true
+        type: file
+      - default: .key
+        description: File type
+        enum:
+        - .key
+        - .pem
+        - .rsa
+        - .crt
+        in: formData
+        name: type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.SecretFileUploadResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "413":
+          description: Request Entity Too Large
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Upload secret key file
       tags:
       - Secret Keys
   /api/v1/system-configs:
@@ -5941,11 +6087,11 @@ paths:
     get:
       description: Get all tags assigned to a specific resource
       parameters:
-      - description: Resource ID
+      - description: ResourceCode
         in: query
-        name: resourceId
+        name: resourceCode
         required: true
-        type: integer
+        type: string
       produces:
       - application/json
       responses:

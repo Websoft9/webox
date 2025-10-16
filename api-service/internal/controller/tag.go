@@ -365,7 +365,7 @@ func (c *TagController) SearchTags(ctx *gin.Context) {
 // @Tags Tags
 // @Produce json
 // @Security BearerAuth
-// @Param resourceCode query int true "ResourceCode"
+// @Param resourceCode query string true "ResourceCode"
 // @Success 200 {object} common.APIResponse{data=[]response.TagSimpleResponse}
 // @Failure 400 {object} common.APIResponse
 // @Failure 401 {object} common.APIResponse
