@@ -90,8 +90,8 @@ func (suite *PermissionServiceTestSuite) TestCreatePermission_CodeAlreadyExists(
 
 	// Mock existing permission
 	existingPerm := &model.Permission{
-		BaseModel: model.BaseModel{ID: 1},
-		Code:      req.Code,
+		ID:   1,
+		Code: req.Code,
 	}
 	suite.mockPermissionRepo.On("GetByCode", ctx, req.Code).Return(existingPerm, nil)
 
@@ -115,7 +115,7 @@ func (suite *PermissionServiceTestSuite) TestGetPermissionTree_Success() {
 
 	// Mock permissions with parent-child relationship
 	childPermission := &model.Permission{
-		BaseModel:  model.BaseModel{ID: 2},
+		ID:         2,
 		ParentCode: "user:manage",
 		Name:       "Create User",
 		Code:       "user:create",
@@ -123,7 +123,7 @@ func (suite *PermissionServiceTestSuite) TestGetPermissionTree_Success() {
 
 	permissions := []*model.Permission{
 		{
-			BaseModel:  model.BaseModel{ID: 1},
+			ID:         1,
 			ParentCode: "",
 			Name:       "User Management",
 			Code:       "user:manage",
@@ -158,14 +158,14 @@ func (suite *PermissionServiceTestSuite) TestListPermissions_Success() {
 
 	permissions := []*model.Permission{
 		{
-			BaseModel: model.BaseModel{ID: 1},
-			Name:      "User Management",
-			Code:      "user:manage",
+			ID:   1,
+			Name: "User Management",
+			Code: "user:manage",
 		},
 		{
-			BaseModel: model.BaseModel{ID: 2},
-			Name:      "User Create",
-			Code:      "user:create",
+			ID:   2,
+			Name: "User Create",
+			Code: "user:create",
 		},
 	}
 	total := int64(2)
@@ -201,17 +201,17 @@ func (suite *PermissionServiceTestSuite) TestUpdatePermission_Success() {
 
 	// Mock existing permission
 	existingPerm := &model.Permission{
-		BaseModel: model.BaseModel{ID: permissionID},
-		Name:      "Original Permission",
-		Code:      "test:permission",
-		IsSystem:  false,
+		ID:       permissionID,
+		Name:     "Original Permission",
+		Code:     "test:permission",
+		IsSystem: false,
 	}
 	suite.mockPermissionRepo.On("GetByID", ctx, permissionID).Return(existingPerm, nil)
 	suite.mockPermissionRepo.On("Update", ctx, mock.AnythingOfType("*model.Permission")).Return(nil)
 
 	// Mock updated permission for return
 	updatedPerm := &model.Permission{
-		BaseModel:   model.BaseModel{ID: permissionID},
+		ID:          permissionID,
 		Name:        req.Name,
 		Code:        existingPerm.Code,
 		Description: req.Description,
@@ -242,10 +242,10 @@ func (suite *PermissionServiceTestSuite) TestUpdatePermission_SystemPermission()
 
 	// Mock system permission
 	systemPerm := &model.Permission{
-		BaseModel: model.BaseModel{ID: permissionID},
-		Name:      "System Permission",
-		Code:      "system:permission",
-		IsSystem:  true,
+		ID:       permissionID,
+		Name:     "System Permission",
+		Code:     "system:permission",
+		IsSystem: true,
 	}
 	suite.mockPermissionRepo.On("GetByID", ctx, permissionID).Return(systemPerm, nil)
 
@@ -266,10 +266,10 @@ func (suite *PermissionServiceTestSuite) TestDeletePermission_Success() {
 
 	// Mock permission that is not system and has no associated roles
 	permission := &model.Permission{
-		BaseModel: model.BaseModel{ID: permissionID},
-		Name:      "Test Permission",
-		Code:      "test:permission",
-		IsSystem:  false,
+		ID:       permissionID,
+		Name:     "Test Permission",
+		Code:     "test:permission",
+		IsSystem: false,
 	}
 
 	suite.mockPermissionRepo.On("GetByID", ctx, permissionID).Return(permission, nil)
@@ -309,14 +309,14 @@ func (suite *PermissionServiceTestSuite) TestGetUserPermissions_Success() {
 
 	permissions := []*model.Permission{
 		{
-			BaseModel: model.BaseModel{ID: 1},
-			Name:      "User Management",
-			Code:      "user:manage",
+			ID:   1,
+			Name: "User Management",
+			Code: "user:manage",
 		},
 		{
-			BaseModel: model.BaseModel{ID: 2},
-			Name:      "User Create",
-			Code:      "user:create",
+			ID:   2,
+			Name: "User Create",
+			Code: "user:create",
 		},
 	}
 
@@ -384,9 +384,9 @@ func BenchmarkPermissionService_CreatePermission(b *testing.B) {
 			perm.ID = 1
 		}).Return(nil)
 	mockPermissionRepo.On("GetByID", ctx, mock.AnythingOfType("uint")).Return(&model.Permission{
-		BaseModel: model.BaseModel{ID: 1},
-		Name:      req.Name,
-		Code:      req.Code,
+		ID:   1,
+		Name: req.Name,
+		Code: req.Code,
 	}, nil)
 
 	b.ResetTimer()

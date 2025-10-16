@@ -12,8 +12,8 @@ type NotificationChannelConfig struct {
 	ChannelConfig JSON      `json:"channel_config" gorm:"type:json;comment:Channel configuration data"`
 	OwnerID       uint      `json:"owner_id" gorm:"not null;comment:Channel owner user ID"`
 	Status        int8      `json:"status" gorm:"default:1;comment:Channel status (0:disabled, 1:enabled)"`
-	CreatedAt     time.Time `json:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at"`
+	CreatedAt     time.Time `json:"created_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`
+	UpdatedAt     time.Time `json:"updated_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`
 }
 
 // EmailConfig represents email channel configuration

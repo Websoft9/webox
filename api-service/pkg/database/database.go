@@ -3,6 +3,7 @@ package database
 import (
 	"api-service/internal/config"
 	"api-service/internal/constants"
+	"api-service/pkg/database/plugins"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -14,6 +15,7 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"
+	"gorm.io/gorm/schema"
 )
 
 // Database type constants
@@ -98,6 +100,9 @@ func InitDB(cfg *config.Config) (*gorm.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize %s database: %v", cfg.Database.Type, err)
 	}
+
+	// Register custom serializers
+	schema.RegisterSerializer("datetime", plugins.DateTimeSerializer{})
 
 	// Configure connection pool (SQLite already configured in initSQLite)
 	if cfg.Database.Type != DatabaseTypeSQLite {

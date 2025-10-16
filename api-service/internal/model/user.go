@@ -16,12 +16,12 @@ type User struct {
 	Gender       int        `json:"gender" gorm:"default:0"` // 0:unknown, 1:male, 2:female
 	Signature    string     `json:"signature" gorm:"size:255"`
 	Status       int        `json:"status" gorm:"default:1"` // 1:active, 0:inactive
-	LastLoginAt  *time.Time `json:"last_login_at"`
+	LastLoginAt  *time.Time `json:"last_login_at" gorm:"type:datetime;serializer:datetime"`
 	LastLoginIP  string     `json:"last_login_ip" gorm:"size:45"`
 	Timezone     string     `json:"timezone" gorm:"size:64;default:UTC"`
 	Language     string     `json:"language" gorm:"size:10;default:zh-CN"`
-	CreatedAt    time.Time  `json:"created_at" gorm:"autoCreateTime"`
-	UpdatedAt    time.Time  `json:"updated_at" gorm:"autoUpdateTime"`
+	CreatedAt    time.Time  `json:"created_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`
+	UpdatedAt    time.Time  `json:"updated_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`
 
 	// Association fields (not directly mapped to the database, loaded via Preload when needed)
 	Roles      []Role          `json:"roles,omitempty" gorm:"many2many:user_roles"`

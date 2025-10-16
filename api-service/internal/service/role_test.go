@@ -290,9 +290,9 @@ func TestRoleService_CreateRole_Success(t *testing.T) {
 	// Mock expectations
 	mockRoleRepo.On("GetByCode", ctx, req.Code).Return(nil, errors.ErrRecordNotFound)
 	mockPermissionRepo.On("GetByIDs", ctx, req.PermissionIDs).Return([]*model.Permission{
-		{BaseModel: model.BaseModel{ID: 1}},
-		{BaseModel: model.BaseModel{ID: 2}},
-		{BaseModel: model.BaseModel{ID: 3}},
+		{ID: 1},
+		{ID: 2},
+		{ID: 3},
 	}, nil)
 
 	// Mock transaction
@@ -305,7 +305,7 @@ func TestRoleService_CreateRole_Success(t *testing.T) {
 
 	// Mock GetRole call for return value
 	expectedRole := &model.Role{
-		BaseModel:       model.BaseModel{ID: 1},
+		ID:              1,
 		Name:            req.Name,
 		Code:            req.Code,
 		Description:     req.Description,
@@ -344,8 +344,8 @@ func TestRoleService_CreateRole_CodeAlreadyExists(t *testing.T) {
 
 	// Mock existing role
 	existingRole := &model.Role{
-		BaseModel: model.BaseModel{ID: 1},
-		Code:      req.Code,
+		ID:   1,
+		Code: req.Code,
 	}
 	mockRoleRepo.On("GetByCode", ctx, req.Code).Return(existingRole, nil)
 
@@ -374,8 +374,8 @@ func TestRoleService_CreateRole_InvalidPermissionIDs(t *testing.T) {
 	// Mock expectations
 	mockRoleRepo.On("GetByCode", ctx, req.Code).Return(nil, errors.ErrRecordNotFound)
 	mockPermissionRepo.On("GetByIDs", ctx, req.PermissionIDs).Return([]*model.Permission{
-		{BaseModel: model.BaseModel{ID: 1}},
-		{BaseModel: model.BaseModel{ID: 2}}, // Only 2 permissions found, not 3
+		{ID: 1},
+		{ID: 2}, // Only 2 permissions found, not 3
 	}, nil)
 
 	// Execute
@@ -406,15 +406,15 @@ func TestRoleService_UpdateRole_Success(t *testing.T) {
 
 	// Mock existing role
 	existingRole := &model.Role{
-		BaseModel: model.BaseModel{ID: roleID},
-		Name:      "Original Role",
-		Code:      "test_role",
-		IsSystem:  false,
+		ID:       roleID,
+		Name:     "Original Role",
+		Code:     "test_role",
+		IsSystem: false,
 	}
 	mockRoleRepo.On("GetByID", ctx, roleID).Return(existingRole, nil)
 	mockPermissionRepo.On("GetByIDs", ctx, req.PermissionIDs).Return([]*model.Permission{
-		{BaseModel: model.BaseModel{ID: 1}},
-		{BaseModel: model.BaseModel{ID: 2}},
+		{ID: 1},
+		{ID: 2},
 	}, nil)
 
 	// Mock update operations
@@ -423,7 +423,7 @@ func TestRoleService_UpdateRole_Success(t *testing.T) {
 
 	// Mock GetRole call for return value
 	updatedRole := &model.Role{
-		BaseModel:       model.BaseModel{ID: roleID},
+		ID:              roleID,
 		Name:            req.Name,
 		Code:            existingRole.Code,
 		Description:     req.Description,
@@ -462,10 +462,10 @@ func TestRoleService_UpdateRole_SystemRole(t *testing.T) {
 
 	// Mock system role
 	systemRole := &model.Role{
-		BaseModel: model.BaseModel{ID: roleID},
-		Name:      "Admin",
-		Code:      "admin",
-		IsSystem:  true,
+		ID:       roleID,
+		Name:     "Admin",
+		Code:     "admin",
+		IsSystem: true,
 	}
 	mockRoleRepo.On("GetByID", ctx, roleID).Return(systemRole, nil)
 
@@ -530,14 +530,14 @@ func TestRoleService_ListRoles_Success(t *testing.T) {
 	// Mock data
 	roles := []*model.Role{
 		{
-			BaseModel: model.BaseModel{ID: 1},
-			Name:      "Admin",
-			Code:      "admin",
+			ID:   1,
+			Name: "Admin",
+			Code: "admin",
 		},
 		{
-			BaseModel: model.BaseModel{ID: 2},
-			Name:      "User",
-			Code:      "user",
+			ID:   2,
+			Name: "User",
+			Code: "user",
 		},
 	}
 	total := int64(2)
@@ -573,15 +573,15 @@ func TestRoleService_AssignPermissions_Success(t *testing.T) {
 
 	// Mock role
 	role := &model.Role{
-		BaseModel: model.BaseModel{ID: roleID},
-		Name:      "Test Role",
-		IsSystem:  false,
+		ID:       roleID,
+		Name:     "Test Role",
+		IsSystem: false,
 	}
 	mockRoleRepo.On("GetByID", ctx, roleID).Return(role, nil)
 	mockPermissionRepo.On("GetByIDs", ctx, req.PermissionIDs).Return([]*model.Permission{
-		{BaseModel: model.BaseModel{ID: 1}},
-		{BaseModel: model.BaseModel{ID: 2}},
-		{BaseModel: model.BaseModel{ID: 3}},
+		{ID: 1},
+		{ID: 2},
+		{ID: 3},
 	}, nil)
 	mockRoleRepo.On("AssignPermissionsWithTx", ctx, mock.AnythingOfType("*gorm.DB"), roleID, req.PermissionIDs, grantedBy).Return(nil)
 
@@ -607,9 +607,9 @@ func TestRoleService_AssignPermissions_SystemRole(t *testing.T) {
 
 	// Mock system role
 	systemRole := &model.Role{
-		BaseModel: model.BaseModel{ID: roleID},
-		Name:      "Admin",
-		IsSystem:  true,
+		ID:       roleID,
+		Name:     "Admin",
+		IsSystem: true,
 	}
 	mockRoleRepo.On("GetByID", ctx, roleID).Return(systemRole, nil)
 
@@ -634,9 +634,9 @@ func TestRoleService_RemovePermissions_Success(t *testing.T) {
 
 	// Mock role
 	role := &model.Role{
-		BaseModel: model.BaseModel{ID: roleID},
-		Name:      "Test Role",
-		IsSystem:  false,
+		ID:       roleID,
+		Name:     "Test Role",
+		IsSystem: false,
 	}
 	mockRoleRepo.On("GetByID", ctx, roleID).Return(role, nil)
 	mockRoleRepo.On("RemovePermissions", ctx, roleID, req.PermissionIDs).Return(nil)
@@ -685,9 +685,9 @@ func BenchmarkRoleService_CreateRole(b *testing.B) {
 	// Setup mocks for benchmark
 	mockRoleRepo.On("GetByCode", ctx, mock.AnythingOfType("string")).Return(nil, errors.ErrRecordNotFound)
 	mockPermissionRepo.On("GetByIDs", ctx, mock.AnythingOfType("[]uint")).Return([]*model.Permission{
-		{BaseModel: model.BaseModel{ID: 1}},
-		{BaseModel: model.BaseModel{ID: 2}},
-		{BaseModel: model.BaseModel{ID: 3}},
+		{ID: 1},
+		{ID: 2},
+		{ID: 3},
 	}, nil)
 	mockRoleRepo.On("CreateWithTx", ctx, mock.AnythingOfType("*gorm.DB"), mock.AnythingOfType("*model.Role")).
 		Run(func(args mock.Arguments) {
@@ -696,9 +696,9 @@ func BenchmarkRoleService_CreateRole(b *testing.B) {
 		}).Return(nil)
 	mockRoleRepo.On("AssignPermissionsWithTx", ctx, mock.AnythingOfType("*gorm.DB"), mock.AnythingOfType("uint"), mock.AnythingOfType("[]uint"), mock.AnythingOfType("uint")).Return(nil)
 	mockRoleRepo.On("GetByID", ctx, mock.AnythingOfType("uint")).Return(&model.Role{
-		BaseModel: model.BaseModel{ID: 1},
-		Name:      req.Name,
-		Code:      req.Code,
+		ID:   1,
+		Name: req.Name,
+		Code: req.Code,
 	}, nil)
 	mockRoleRepo.On("CountPermissions", ctx, mock.AnythingOfType("uint")).Return(int64(3), nil)
 	mockRoleRepo.On("CountUsers", ctx, mock.AnythingOfType("uint")).Return(int64(0), nil)
