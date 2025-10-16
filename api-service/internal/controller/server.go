@@ -47,7 +47,7 @@ func NewServerController(
 // CreateServer handles POST /servers
 // @Summary Create a new server
 // @Description Create a new server in the system
-// @Tags servers
+// @Tags Servers
 // @Security BearerAuth
 // @Accept json
 // @Produce json
@@ -87,7 +87,7 @@ func (c *ServerController) CreateServer(ctx *gin.Context) {
 // GetServer handles GET /servers/:id
 // @Summary Get server by ID
 // @Description Get server details by ID
-// @Tags servers
+// @Tags Servers
 // @Security BearerAuth
 // @Produce json
 // @Param id path int true "Server ID"
@@ -119,7 +119,7 @@ func (c *ServerController) GetServer(ctx *gin.Context) {
 // UpdateServer handles PUT /servers/:id
 // @Summary Update server
 // @Description Update server details
-// @Tags servers
+// @Tags Servers
 // @Security BearerAuth
 // @Accept json
 // @Produce json
@@ -162,7 +162,7 @@ func (c *ServerController) UpdateServer(ctx *gin.Context) {
 // DeleteServer handles DELETE /servers/:id
 // @Summary Delete server
 // @Description Delete a server from the system
-// @Tags servers
+// @Tags Servers
 // @Security BearerAuth
 // @Produce json
 // @Param id path int true "Server ID"
@@ -195,7 +195,7 @@ func (c *ServerController) DeleteServer(ctx *gin.Context) {
 // ListServers handles GET /servers
 // @Summary List servers
 // @Description List servers with pagination and filtering
-// @Tags servers
+// @Tags Servers
 // @Security BearerAuth
 // @Produce json
 // @Param page query int false "Page number" default(1)
@@ -238,7 +238,7 @@ func (c *ServerController) ListServers(ctx *gin.Context) {
 // GetServerStatus handles GET /servers/:id/status (设计文档序号6.3.6)
 // @Summary Get server status
 // @Description Check SSH, Agent, Docker status of a single server
-// @Tags servers
+// @Tags Servers
 // @Security BearerAuth
 // @Produce json
 // @Param id path int true "Server ID"
@@ -270,7 +270,7 @@ func (c *ServerController) GetServerStatus(ctx *gin.Context) {
 // CheckServersStatus handles POST /servers/status (设计文档序号6)
 // @Summary Check multiple servers status
 // @Description Check SSH, Agent, Docker status of multiple servers
-// @Tags servers
+// @Tags Servers
 // @Security BearerAuth
 // @Accept json
 // @Produce json
@@ -302,7 +302,7 @@ func (c *ServerController) CheckServersStatus(ctx *gin.Context) {
 // ExecuteServerActions handles POST /servers/actions (设计文档序号7)
 // @Summary Execute server actions
 // @Description Execute operations on single or multiple servers (restart, shutdown, etc.)
-// @Tags servers
+// @Tags Servers
 // @Security BearerAuth
 // @Accept json
 // @Produce json
@@ -334,7 +334,7 @@ func (c *ServerController) ExecuteServerActions(ctx *gin.Context) {
 // UploadFile handles POST /servers/{id}/files (设计文档序号8)
 // @Summary Upload file to server
 // @Description Upload a single file to server via SSH
-// @Tags servers
+// @Tags Servers
 // @Security BearerAuth
 // @Accept multipart/form-data
 // @Produce json
@@ -408,7 +408,7 @@ func (c *ServerController) UploadFile(ctx *gin.Context) {
 // DownloadFile handles GET /servers/{id}/files/download (设计文档序号9)
 // @Summary Download file from server
 // @Description Download a single file from server via SSH
-// @Tags servers
+// @Tags Servers
 // @Security BearerAuth
 // @Produce application/octet-stream
 // @Param id path int true "Server ID"
@@ -464,7 +464,7 @@ func (c *ServerController) DownloadFile(ctx *gin.Context) {
 // DeleteFile handles DELETE /servers/{id}/files (设计文档序号10)
 // @Summary Delete file from server
 // @Description Delete a single file from server via SSH
-// @Tags servers
+// @Tags Servers
 // @Security BearerAuth
 // @Produce json
 // @Param id path int true "Server ID"
