@@ -28,7 +28,7 @@ type AuditLog struct {
 	ResponseTime   *int      `json:"response_time"`
 	Success        bool      `json:"success" gorm:"not null;index"`
 	ErrorMessage   string    `json:"error_message"`
-	CreatedAt      time.Time `json:"created_at" gorm:"not null;default:CURRENT_TIMESTAMP;index"`
+	CreatedAt      time.Time `json:"created_at" gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP;index"`
 }
 
 // TableName specifies the table name for AuditLog

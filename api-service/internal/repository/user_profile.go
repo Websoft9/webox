@@ -4,6 +4,7 @@ import (
 	"api-service/internal/dto/request"
 	"api-service/internal/interface/repository"
 	"api-service/internal/model"
+	"api-service/pkg/errors"
 	"context"
 
 	"gorm.io/gorm"
@@ -25,9 +26,12 @@ func NewUserProfileRepository(db *gorm.DB) repository.UserProfileRepository {
 func (r *userProfileRepository) GetUserProfileByID(ctx context.Context, userID uint) (*model.User, error) {
 	var user model.User
 	// add status != -1 condition to only query non-deleted users
-	result := r.db.Where("status != ?", -1).First(&user, userID)
-	if result.Error != nil {
-		return nil, result.Error
+	err := r.db.WithContext(ctx).Where("status != ?", -1).First(&user, userID).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.NewAppError(errors.CodeRecordNotFound)
+		}
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	return &user, nil
@@ -51,7 +55,7 @@ func (r *userProfileRepository) UpdateUserProfile(ctx context.Context, userID ui
 	}
 
 	if result.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
+		return errors.NewAppError(errors.CodeRecordNotFound)
 	}
 
 	return nil
@@ -65,7 +69,7 @@ func (r *userProfileRepository) UpdateUserPassword(ctx context.Context, userID u
 	}
 
 	if result.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
+		return errors.NewAppError(errors.CodeRecordNotFound)
 	}
 
 	return nil
@@ -92,7 +96,7 @@ func (r *userProfileRepository) GetLoginHistories(ctx context.Context, userID ui
 		Find(&records).Error
 
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 
 	return records, total, nil
@@ -104,10 +108,10 @@ func (r *userProfileRepository) GetUserConfig(ctx context.Context, userID uint, 
 	result := r.db.WithContext(ctx).Where("user_id = ? AND category = ? AND config_key = ?", userID, category, configKey).First(&config)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
-			return nil, result.Error
+			return nil, errors.NewAppError(errors.CodeRecordNotFound)
 		}
 
-		return nil, result.Error
+		return nil, errors.NewAppErrorWrapError(result.Error, errors.CodeRecordQueryFailed)
 	}
 
 	return &config, nil
@@ -118,7 +122,7 @@ func (r *userProfileRepository) GetUserConfigsByCategory(ctx context.Context, us
 	var configs []*model.UserProfile
 	result := r.db.WithContext(ctx).Where("user_id = ? AND category = ?", userID, category).Find(&configs)
 	if result.Error != nil {
-		return nil, result.Error
+		return nil, errors.NewAppErrorWrapError(result.Error, errors.CodeRecordQueryFailed)
 	}
 
 	return configs, nil
@@ -143,7 +147,7 @@ func (r *userProfileRepository) SaveUserConfig(ctx context.Context, userProfile 
 
 	existing.ConfigValue = userProfile.ConfigValue
 	existing.Description = userProfile.Description
-	if err := r.db.WithContext(ctx).Save(&existing).Error; err != nil {
+	if err := r.db.WithContext(ctx).Updates(&existing).Error; err != nil {
 		return err
 	}
 	return nil

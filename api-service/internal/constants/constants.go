@@ -234,8 +234,16 @@ const (
 // These field names will be automatically converted to user's timezone in API responses
 const (
 	// Common timestamp fields
-	TimeFieldCreatedAt = "created_at"
-	TimeFieldUpdatedAt = "updated_at"
+	TimeFieldCreatedAt  = "created_at"
+	TimeFieldUpdatedAt  = "updated_at"
+	TimeFieldLoginAt    = "last_login_at"
+	TimeFieldUsedAt     = "last_used_at"
+	TimeFieldExpiresAt  = "expires_at"
+	TimeFieldGrantedAt  = "granted_at"
+	TimeFieldVerifiedAt = "verified_at"
+	TimeFieldSentAt     = "sent_at"
+	TimeFieldLogin      = "login_time"
+	TimeFieldLogout     = "logout_time"
 )
 
 // GetTimezoneConvertibleFields returns a list of all time field names that should be converted to user's timezone
@@ -244,6 +252,14 @@ func GetTimezoneConvertibleFields() []string {
 		// Common timestamp fields
 		TimeFieldCreatedAt,
 		TimeFieldUpdatedAt,
+		TimeFieldLoginAt,
+		TimeFieldUsedAt,
+		TimeFieldExpiresAt,
+		TimeFieldGrantedAt,
+		TimeFieldVerifiedAt,
+		TimeFieldSentAt,
+		TimeFieldLogin,
+		TimeFieldLogout,
 	}
 }
 
@@ -272,13 +288,21 @@ const (
 	MaxSQLLogLength = 100
 )
 
+// Secret key file types
 const (
-	// Default limit for exporting all secret keys
-	DefaultExportPageSize = 1000
-	ExportFormatExcel     = "excel"
-	ExportFormatJson      = "json"
-	ExportFormatCsv       = "csv"
+	FileTypeKey = ".key" // Private key file
+	FileTypePem = ".pem" // PEM encoded certificate or key
+	FileTypeRsa = ".rsa" // RSA key file
+	FileTypeCrt = ".crt" // Certificate file
 )
+
+// Allowed secret file extensions
+var AllowedSecretFileExtensions = []string{
+	FileTypeKey,
+	FileTypePem,
+	FileTypeRsa,
+	FileTypeCrt,
+}
 
 // NotificationRecordStatus enum values
 const (

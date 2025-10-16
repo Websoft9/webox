@@ -14,6 +14,8 @@ server:
     idle_timeout: 60
     read_header_timeout: 60
     max_header_bytes: 1048576
+  upload:
+    secret_storage: "/home/appuser/data"
 
 security:
   aes_key: "your-32-char-aes-key-here!" # Must be 32 characters for AES-256
@@ -52,7 +54,7 @@ security:
     -----END RSA PUBLIC KEY-----
   #rsa_private_key_file: "/etc/websoft9/keys/rsa_private_key.pem"
   #rsa_public_key_file: "/etc/websoft9/keys/rsa_public_key.pem"
-  
+
 # Database configuration
 # Supported types: sqlite, mysql, postgres
 database:

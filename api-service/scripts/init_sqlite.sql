@@ -207,6 +207,7 @@ CREATE TABLE IF NOT EXISTS resource_groups (
 CREATE TABLE IF NOT EXISTS database_connections (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name VARCHAR(64) NOT NULL,
+    code VARCHAR(64) NOT NULL,
     db_type VARCHAR(20) NOT NULL, -- mysql, postgresql, redis
     host VARCHAR(255) NOT NULL,
     port INTEGER NOT NULL,
@@ -231,6 +232,7 @@ CREATE TABLE IF NOT EXISTS database_connections (
 CREATE TABLE IF NOT EXISTS servers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name VARCHAR(64) NOT NULL,
+    code VARCHAR(64) NOT NULL,
     hostname VARCHAR(255) NOT NULL,
     host VARCHAR(255) NOT NULL,
     internal_ip VARCHAR(45),
@@ -319,7 +321,6 @@ CREATE TABLE IF NOT EXISTS secret_keys (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name VARCHAR(64) NOT NULL,
     key_type VARCHAR(20) NOT NULL, -- API_KEY, DATABASE, SSH, CERTIFICATE, CUSTOM
-    encrypted_value TEXT NOT NULL,
     description TEXT,
     custom_fields TEXT, -- JSON format
     expires_at DATETIME,
@@ -345,6 +346,7 @@ CREATE TABLE IF NOT EXISTS user_secret (
 CREATE TABLE IF NOT EXISTS app_gateways (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name VARCHAR(64) NOT NULL,
+    code VARCHAR(64) NOT NULL,
     server_id INTEGER NOT NULL REFERENCES servers(id),
     container_id VARCHAR(64),
     description TEXT,
@@ -985,6 +987,16 @@ CREATE TABLE IF NOT EXISTS taggings (
     FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
 );
 
+-- Secret references table
+CREATE TABLE IF NOT EXISTS secret_references (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    secret_id INTEGER NOT NULL,
+    resource_code VARCHAR(64) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (secret_id) REFERENCES secret_keys(id) ON DELETE CASCADE
+);
+
 -- ========================================
 -- Index creation
 -- ========================================
@@ -1045,6 +1057,11 @@ CREATE INDEX IF NOT EXISTS idx_server_agents_last_heartbeat ON server_agents(las
 CREATE INDEX IF NOT EXISTS idx_server_agents_deployment_type ON server_agents(deployment_type);
 CREATE INDEX IF NOT EXISTS idx_app_instances_server ON app_instances(server_id);
 CREATE INDEX IF NOT EXISTS idx_app_instances_template ON app_instances(template_id);
+
+-- secret_references indexes
+CREATE INDEX IF NOT EXISTS idx_secret_references_secret_id ON secret_references(secret_id);
+CREATE INDEX IF NOT EXISTS idx_secret_references_resource_code ON secret_references(resource_code);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_secret_references_secret_resource ON secret_references(secret_id, resource_code);
 
 -- Audit log indexes
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user ON audit_logs(user_id);

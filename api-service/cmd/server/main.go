@@ -118,13 +118,13 @@ func main() {
 		zapLogger.Fatal("Failed to initialize services", logger.String("error", err.Error()))
 	}
 
-	// 7. Initialize repositories, services, controllers and start HTTP server
+	// 7. Initialize file storage
+	files.InitFileStorage()
+
+	// 8. Initialize repositories, services, controllers and start HTTP server
 	if err := startServer(cfg, authConfigManager, zapLogger, i18nInstance, dbWrapper.GetDB(), serviceConns); err != nil {
 		zapLogger.Fatal("Failed to start server", logger.String("error", err.Error()))
 	}
-
-	// 8. Initialize file storage
-	files.InitFileStorage()
 }
 
 // initAuthConfig creates and returns an authentication configuration manager
@@ -253,7 +253,7 @@ func startServer(
 	validatorInstance := validator.New()
 
 	// Register custom validators
-	if err := customValidator.RegisterCustomValidators(validatorInstance); err != nil {
+	if err := customValidator.RegisterTimeRangeValidator(validatorInstance); err != nil {
 		return fmt.Errorf("failed to register custom validators: %w", err)
 	}
 

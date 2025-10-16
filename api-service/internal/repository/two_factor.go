@@ -39,7 +39,7 @@ func (r *userTwoFactorRepository) GetByUserIDAndMethod(ctx context.Context, user
 
 // Update update two-factor authentication record
 func (r *userTwoFactorRepository) Update(ctx context.Context, twoFactor *model.UserTwoFactor) error {
-	return r.db.WithContext(ctx).Save(twoFactor).Error
+	return r.db.WithContext(ctx).Updates(twoFactor).Error
 }
 
 // Delete delete two-factor authentication record
@@ -80,9 +80,8 @@ func (r *userTwoFactorRepository) DisableMethod(ctx context.Context, userID uint
 		Model(&model.UserTwoFactor{}).
 		Where("user_id = ? AND method = ?", userID, method).
 		Updates(map[string]interface{}{
-			"enabled":    false,
-			"secret":     "",
-			"updated_at": time.Now(),
+			"enabled": false,
+			"secret":  "",
 		}).Error
 }
 
@@ -103,5 +102,5 @@ func (r *userTwoFactorRepository) CreateWithTx(ctx context.Context, tx *gorm.DB,
 
 // UpdateWithTx update two-factor authentication record with transaction
 func (r *userTwoFactorRepository) UpdateWithTx(ctx context.Context, tx *gorm.DB, twoFactor *model.UserTwoFactor) error {
-	return tx.WithContext(ctx).Save(twoFactor).Error
+	return tx.WithContext(ctx).Updates(twoFactor).Error
 }

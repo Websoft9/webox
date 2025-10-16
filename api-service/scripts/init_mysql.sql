@@ -253,6 +253,7 @@ CREATE TABLE IF NOT EXISTS `resource_groups` (
 CREATE TABLE IF NOT EXISTS `database_connections` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(64) NOT NULL COMMENT 'Connection name',
+    `code` VARCHAR(64) NOT NULL COMMENT 'Connection code',
     `db_type` ENUM('mysql', 'postgresql', 'redis', 'mongodb') NOT NULL COMMENT 'Database type',
     `host` VARCHAR(255) NOT NULL COMMENT 'Host address',
     `port` INT NOT NULL COMMENT 'Port number',
@@ -273,6 +274,7 @@ CREATE TABLE IF NOT EXISTS `database_connections` (
     `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update time',
     PRIMARY KEY (`id`),
     KEY `idx_owner_id` (`owner_id`),
+    KEY `idx_database_code` (`code`),
     KEY `idx_resource_group_id` (`resource_group_id`),
     KEY `idx_status` (`status`),
     CONSTRAINT `fk_db_connections_resource_group` FOREIGN KEY (`resource_group_id`) REFERENCES `resource_groups` (`id`) ON DELETE SET NULL
@@ -282,6 +284,7 @@ CREATE TABLE IF NOT EXISTS `database_connections` (
 CREATE TABLE IF NOT EXISTS `servers` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(64) NOT NULL COMMENT 'Server name',
+    `code` VARCHAR(64) NOT NULL COMMENT 'Server code',
     `hostname` VARCHAR(255) NOT NULL COMMENT 'Hostname',
     `host` VARCHAR(255) NOT NULL COMMENT 'Host address (IP or domain) for SSH/Agent priority connection',
     `internal_ip` VARCHAR(45) NULL COMMENT 'Internal IP address',
@@ -303,6 +306,7 @@ CREATE TABLE IF NOT EXISTS `servers` (
     `deleted_at` DATETIME NULL COMMENT 'Soft delete time',
     PRIMARY KEY (`id`),
     KEY `idx_name` (`name`),
+    KEY `idx_server_code` (`code`),
     KEY `idx_host` (`host`),
     KEY `idx_owner_id` (`owner_id`),
     KEY `idx_resource_group_id` (`resource_group_id`),
@@ -397,8 +401,7 @@ CREATE TABLE IF NOT EXISTS `ssl_certificates` (
 CREATE TABLE IF NOT EXISTS `secret_keys` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(64) NOT NULL COMMENT 'Secret key name',
-    `key_type` ENUM('API_KEY', 'DATABASE', 'SSH', 'CERTIFICATE', 'CUSTOM') NOT NULL COMMENT 'Secret key type',
-    `encrypted_value` TEXT NOT NULL COMMENT 'Encrypted value',
+    `key_type` ENUM('SECRET_KEY', 'ACCOUNT', 'FILE') NOT NULL COMMENT 'Secret key type',
     `description` TEXT NULL COMMENT 'Description',
     `custom_fields` JSON NULL COMMENT 'Custom fields',
     `expires_at` DATETIME NULL COMMENT 'Expiration time',
@@ -419,6 +422,7 @@ CREATE TABLE IF NOT EXISTS `secret_keys` (
 CREATE TABLE IF NOT EXISTS `app_gateways` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(64) NOT NULL COMMENT 'Gateway name',
+    `code` VARCHAR(64) NOT NULL COMMENT 'Gateway code',
     `server_id` BIGINT UNSIGNED NOT NULL COMMENT 'Server ID',
     `container_id` VARCHAR(64) NULL COMMENT 'Gateway container ID',
     `description` TEXT NULL COMMENT 'Gateway description',
@@ -431,6 +435,7 @@ CREATE TABLE IF NOT EXISTS `app_gateways` (
     `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update time',
     PRIMARY KEY (`id`),
     KEY `idx_server_id` (`server_id`),
+    KEY `idx_gateways_code` (`code`),
     KEY `idx_owner_id` (`owner_id`),
     KEY `idx_resource_group_id` (`resource_group_id`),
     KEY `idx_status` (`status`),
@@ -1312,6 +1317,19 @@ CREATE TABLE taggings (
     FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Tag-Resource association table';
 
+-- Secret references table
+CREATE TABLE IF NOT EXISTS `secret_references` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `secret_id` BIGINT UNSIGNED NOT NULL,
+    `resource_code` VARCHAR(64) NOT NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_secret_references_secret_id` (`secret_id`),
+    KEY `idx_secret_references_resource_code` (`resource_code`),
+    UNIQUE KEY `idx_secret_references_secret_resource` (`secret_id`, `resource_code`),
+    CONSTRAINT `fk_secret_references_secret` FOREIGN KEY (`secret_id`) REFERENCES `secret_keys` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Secret references table';
 -- ========================================
 -- Index optimization
 -- ========================================

@@ -4,7 +4,6 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
-	"time"
 )
 
 // JSON custom JSON type
@@ -41,11 +40,4 @@ func (j JSON) Value() (driver.Value, error) {
 		return "{}", nil
 	}
 	return json.Marshal(j)
-}
-
-// BaseModel base model
-type BaseModel struct {
-	ID        uint      `json:"id" gorm:"primarykey"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
 }

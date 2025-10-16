@@ -147,7 +147,6 @@ func (s *alertService) UpdateAlertRule(ctx context.Context, id uint, req *reques
 
 	// Update rule
 	if len(updates) > 0 {
-		updates["updated_at"] = time.Now()
 		// Use a different variable name to avoid shadowing
 		if updateErr := s.alertRepo.UpdateAlertRule(ctx, id, updates); updateErr != nil {
 			s.logger.ErrorContext(ctx, "Failed to update alert rule",

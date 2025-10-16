@@ -484,7 +484,7 @@ func (s *tagService) processTagNamesForAssignment(tx *gorm.DB, tagNames []string
 		var tag model.Tag
 		err := tx.Where("name = ?", tagName).First(&tag).Error
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil, err
+			return nil, nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 		}
 
 		// Create tag if not exists
@@ -494,7 +494,7 @@ func (s *tagService) processTagNamesForAssignment(tx *gorm.DB, tagNames []string
 				CreatedBy: userID,
 			}
 			if createErr := tx.Create(&tag).Error; createErr != nil {
-				return nil, nil, createErr
+				return nil, nil, errors.NewAppErrorWrapError(err, errors.CodeRecordCreateFailed)
 			}
 			results = append(results, response.TagAssignResult{
 				Name:    tagName,
@@ -546,7 +546,7 @@ func (s *tagService) collectTagIDs(ctx context.Context, req *request.TagSearchRe
 		tag, err := s.tagRepo.GetTagByName(ctx, tagName)
 		if err != nil {
 			if !errors.Is(err, gorm.ErrRecordNotFound) {
-				return nil, err
+				return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 			}
 			// Skip non-existent tags
 			continue

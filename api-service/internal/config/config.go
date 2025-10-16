@@ -18,6 +18,7 @@ type Config struct {
 	App      AppConfig       `mapstructure:"app"`
 	AuditLog AuditLogConfig  `mapstructure:"audit_log"`
 	Security SecurityConfig  `mapstructure:"security"`
+	Upload   UploadConfig    `mapstructure:"upload"`
 }
 
 type ServerConfig struct {
@@ -139,6 +140,11 @@ type SecurityConfig struct {
 	RSAPublicKeyFile  string `mapstructure:"rsa_public_key_file"`
 }
 
+// UploadConfig upload configuration
+type UploadConfig struct {
+	SecretStorage string `mapstructure:"secret_storage"`
+}
+
 func Load() (*Config, error) {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
@@ -218,7 +224,7 @@ func setDefaults() {
 	viper.SetDefault("database.ssl_mode", "disable")
 	viper.SetDefault("database.connect_timeout", constants.DefaultConnectTimeout)
 	viper.SetDefault("database.charset", "utf8mb4")
-	viper.SetDefault("database.timezone", "Local")
+	viper.SetDefault("database.timezone", constants.DefaultTimeZone)
 
 	// Redis defaults
 	viper.SetDefault("redis.host", "localhost")
@@ -258,9 +264,7 @@ func setDefaults() {
 
 	// Crypto defaults
 	viper.SetDefault("security.aes_key", "websoft9-default-encryption-key-change-in-production")
-	// RSA Crypto defaults
-	viper.SetDefault("security.rsa_private_key", "")
-	viper.SetDefault("security.rsa_public_key", "")
-	viper.SetDefault("security.rsa_private_key_file", "")
-	viper.SetDefault("security.rsa_public_key_file", "")
+
+	// Upload defaults
+	viper.SetDefault("upload.secret_storage", "/home/appuser/data")
 }

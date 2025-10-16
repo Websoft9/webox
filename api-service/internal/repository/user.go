@@ -4,8 +4,8 @@ import (
 	"api-service/internal/dto/request"
 	"api-service/internal/interface/repository"
 	"api-service/internal/model"
+	"api-service/pkg/errors"
 	"context"
-	"time"
 
 	"gorm.io/gorm"
 )
@@ -22,7 +22,10 @@ func NewUserRepository(db *gorm.DB) repository.UserRepository {
 
 // Create creates a user
 func (r *userRepository) Create(ctx context.Context, user *model.User) error {
-	return r.db.WithContext(ctx).Create(user).Error
+	if err := r.db.WithContext(ctx).Create(user).Error; err != nil {
+		return errors.NewAppErrorWrapError(err, errors.CodeRecordCreateFailed)
+	}
+	return nil
 }
 
 // GetByID gets a user by ID
@@ -30,7 +33,10 @@ func (r *userRepository) GetByID(ctx context.Context, id uint) (*model.User, err
 	var user model.User
 	err := r.db.WithContext(ctx).Where("status != ?", -1).First(&user, id).Error
 	if err != nil {
-		return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.NewAppError(errors.CodeRecordNotFound)
+		}
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 	return &user, nil
 }
@@ -43,7 +49,10 @@ func (r *userRepository) GetByIDWithRelations(ctx context.Context, id uint) (*mo
 		Preload("Roles").
 		First(&user, id).Error
 	if err != nil {
-		return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.NewAppError(errors.CodeRecordNotFound)
+		}
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 	return &user, nil
 }
@@ -53,7 +62,10 @@ func (r *userRepository) GetByUsername(ctx context.Context, username string) (*m
 	var user model.User
 	err := r.db.WithContext(ctx).Where("username = ? AND status != ?", username, -1).First(&user).Error
 	if err != nil {
-		return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.NewAppError(errors.CodeRecordNotFound)
+		}
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 	return &user, nil
 }
@@ -63,7 +75,10 @@ func (r *userRepository) GetByEmail(ctx context.Context, email string) (*model.U
 	var user model.User
 	err := r.db.WithContext(ctx).Where("email = ? AND status != ?", email, -1).First(&user).Error
 	if err != nil {
-		return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.NewAppError(errors.CodeRecordNotFound)
+		}
+		return nil, errors.NewAppErrorWrapError(err, errors.CodeRecordQueryFailed)
 	}
 	return &user, nil
 }
@@ -71,7 +86,7 @@ func (r *userRepository) GetByEmail(ctx context.Context, email string) (*model.U
 // CreateUserRole creates a user-role association record.
 func (r *userRepository) CreateUserRole(ctx context.Context, userRole *model.UserRole) error {
 	if err := r.db.WithContext(ctx).Create(userRole).Error; err != nil {
-		return err
+		return errors.NewAppErrorWrapError(err, errors.CodeRecordCreateFailed)
 	}
 	return nil
 }
@@ -90,15 +105,17 @@ func (r *userRepository) GetByUsernameOrEmail(ctx context.Context, usernameOrEma
 
 // Update updates a user
 func (r *userRepository) Update(ctx context.Context, user *model.User) error {
-	return r.db.WithContext(ctx).Save(user).Error
+	if err := r.db.WithContext(ctx).Updates(user).Error; err != nil {
+		return errors.NewAppErrorWrapError(err, errors.CodeRecordUpdateFailed)
+	}
+	return nil
 }
 
 // Delete deletes a user (soft delete)
 func (r *userRepository) Delete(ctx context.Context, id uint) error {
 	// soft delete: set status = -1 and update updated_at
 	updates := map[string]interface{}{
-		"status":     -1,
-		"updated_at": time.Now(),
+		"status": -1,
 	}
 	return r.db.WithContext(ctx).Model(&model.User{}).Where("id = ?", id).Updates(updates).Error
 }
