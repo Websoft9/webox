@@ -225,6 +225,10 @@ func setupTestServerService() (*serverService, *MockServerRepository, *MockSyste
 	mockSecretKeyService := new(MockSecretKeyService)
 	mockLogger := logger.NewZapLogger(logger.InfoLevel, io.Discard)
 
+	// Setup default mock for GetSecretReferencesByResourceCode to avoid unexpected call errors
+	mockSecretKeyService.On("GetSecretReferencesByResourceCode", mock.Anything, mock.Anything).
+		Return(nil, errors.NewAppError(errors.CodeRecordNotFound)).Maybe()
+
 	service := NewServerService(ServerServiceConfig{
 		Logger:           mockLogger,
 		ServerRepo:       mockRepo,
