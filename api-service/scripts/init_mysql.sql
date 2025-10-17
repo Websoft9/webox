@@ -1358,7 +1358,7 @@ CREATE TABLE IF NOT EXISTS `secret_references` (
 CREATE INDEX `idx_projects_owner_status` ON `projects` (`owner_id`, `status`);
 CREATE INDEX `idx_app_instances_project_status` ON `app_instances` (`project_id`, `status`);
 CREATE INDEX `idx_app_instances_server_status` ON `app_instances` (`server_id`, `status`);
-CREATE INDEX `idx_servers_owner_status` ON `servers` (`owner_id`, `status`);
+CREATE INDEX `idx_servers_owner_status` ON `servers` (`owner_id`);
 CREATE INDEX `idx_workflows_project_status` ON `workflows` (`project_id`, `status`);
 CREATE INDEX `idx_workflows_owner_status` ON `workflows` (`owner_id`, `status`);
 CREATE INDEX `idx_alert_records_rule_status` ON `alert_records` (`alert_rule_id`, `status`);

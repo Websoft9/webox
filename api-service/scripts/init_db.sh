@@ -220,6 +220,7 @@ import_sql_data() {
         mysql)
             print_info "Disabling foreign key constraints for MySQL import..."
             {
+                echo "SET time_zone = '+00:00';"
                 echo "SET FOREIGN_KEY_CHECKS=0;"
                 cat "$sql_file"
                 echo "SET FOREIGN_KEY_CHECKS=1;"
@@ -238,6 +239,7 @@ import_sql_data() {
             # Create a temporary SQL file with constraint management
             local temp_sql="/tmp/postgres_import_$$.sql"
             {
+                echo "SET timezone = 'UTC';"
                 echo "SET session_replication_role = replica;"
                 cat "$sql_file"
                 echo "SET session_replication_role = DEFAULT;"
@@ -394,11 +396,13 @@ case $DB_TYPE in
             exit 1
         fi
 
-        # Prepare PostgreSQL connection parameters
+        # Prepare PostgreSQL connection parameters with UTC timezone
         PSQL_CMD="psql -h $DB_HOST -p $DB_PORT -U $DB_USER"
         if [[ -n "$DB_PASS" ]]; then
             export PGPASSWORD="$DB_PASS"
         fi
+        # Set timezone to UTC for PostgreSQL
+        export PGTZ="UTC"
 
         # Test PostgreSQL connection
         print_info "Testing PostgreSQL connection..."

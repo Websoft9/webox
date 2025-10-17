@@ -258,9 +258,8 @@ func (s *userAuthService) Login(ctx context.Context, req *request.UserLoginReque
 		logger.String("email", user.Email))
 
 	return &response.UserLoginResponse{
-		Token:     token,
-		ExpiresAt: expiresAt,
-		User:      *response.BuildUserResponse(user),
+		Token: token,
+		User:  *response.BuildUserResponse(user),
 	}, nil
 }
 
@@ -583,9 +582,8 @@ func (s *userAuthService) OAuth2Login(ctx context.Context, req *request.OAuth2Lo
 		logger.String("provider", req.Provider))
 
 	return &response.UserLoginResponse{
-		Token:     token,
-		ExpiresAt: expiresAt,
-		User:      *response.BuildUserResponse(user),
+		Token: token,
+		User:  *response.BuildUserResponse(user),
 	}, nil
 }
 
