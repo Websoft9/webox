@@ -268,7 +268,7 @@ func (s *auditLogService) ExportAuditLogs(ctx context.Context, ginCtx *gin.Conte
 }
 
 // buildExportQueryBuilder builds query conditions for export
-func (s *auditLogService) buildExportQueryBuilder(userID *uint, startTime, endTime time.Time) utils.QueryBuilder {
+func (s *auditLogService) buildExportQueryBuilder(userID *uint, startTime, endTime string) utils.QueryBuilder {
 	builders := []utils.QueryBuilder{
 		utils.WhereBetween("created_at", startTime, endTime),
 	}

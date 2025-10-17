@@ -2,7 +2,7 @@ package errors
 
 import (
 	"api-service/pkg/i18n"
-	"fmt"
+	"api-service/pkg/utils"
 	"net/http"
 )
 
@@ -31,9 +31,9 @@ func (e *AppError) Error() string {
 	}
 
 	if e.Details != "" {
-		return fmt.Sprintf("Code: %d, Message: %s, Details: %s", e.Code, message, e.Details)
+		return e.Details
 	}
-	return fmt.Sprintf("Code: %d, Message: %s", e.Code, message)
+	return message
 }
 
 // GetI18nKey returns the internationalization key for this error
@@ -75,13 +75,14 @@ func NewAppErrorWithDetails(code ErrorCode, details string) *AppError {
 		Code:       code,
 		Details:    details,
 		HTTPStatus: getHTTPStatusByCode(code),
+		I18nKey:    getI18nKeyByCode(code),
 	}
 }
 
 // WrapError wraps a standard Go error into an AppError
 // This is useful for converting system errors into structured application errors
 func NewAppErrorWrapError(err error, code ErrorCode) *AppError {
-	return NewAppErrorWithDetails(code, err.Error())
+	return NewAppErrorWithDetails(code, utils.FormatErrorWithStack(err))
 }
 
 // getHTTPStatusByCode maps business error codes to appropriate HTTP status codes

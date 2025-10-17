@@ -32,9 +32,9 @@ func shouldSkipQuery(db *gorm.DB, skipKey string) bool {
 	}
 	logger.Debug("Checking SQL statement", logger.String("sql", sqlToLog))
 
-	// Skip write operations (INSERT, UPDATE, DELETE)
+	// Skip write operations (DELETE)
 	// These operations don't return data that needs processing
-	if strings.HasPrefix(sql, "INSERT") || strings.HasPrefix(sql, "UPDATE") || strings.HasPrefix(sql, "DELETE") {
+	if strings.HasPrefix(sql, "DELETE") {
 		logger.Debug("Skipping: write operation detected")
 		return true
 	}
