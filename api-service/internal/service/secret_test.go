@@ -151,9 +151,9 @@ func createTestSecretKey() *model.SecretKey {
 	return &model.SecretKey{
 		ID:          1,
 		Name:        "Test API Key",
-		KeyType:     model.SecretKeyTypeSecretKey,
+		KeyType:     model.SecretKeyTypeText,
 		Description: &description,
-		CustomFields: model.CustomFields{
+		SecretFields: model.SecretFields{
 			"secret_key": "encrypted-secret-key-value",
 		},
 		ResourceGroupID: &resourceGroupID,
@@ -172,9 +172,9 @@ func createTestSecretCreateRequest() *request.SecretKeyCreateRequest {
 
 	return &request.SecretKeyCreateRequest{
 		Name:        "Test API Key",
-		KeyType:     model.SecretKeyTypeSecretKey,
+		KeyType:     model.SecretKeyTypeText,
 		Description: &description,
-		CustomFields: map[string]interface{}{
+		SecretFields: map[string]interface{}{
 			"secret_key": "sk-1234567890abcdef",
 		},
 		ResourceGroupID: &resourceGroupID,
@@ -185,11 +185,13 @@ func createTestSecretCreateRequest() *request.SecretKeyCreateRequest {
 
 // createTestUpdateRequest creates a test request for updating a secret key
 func createTestUpdateRequest() *request.SecretKeyUpdateRequest {
+	name := "Updated Secret Key"
+	description := "Updated description"
+	expiresAt := time.Now().Add(90 * 24 * time.Hour)
 	return &request.SecretKeyUpdateRequest{
-		KeyType: model.SecretKeyTypeSecretKey,
-		CustomFields: map[string]interface{}{
-			"secret_key": "sk-new-value",
-		},
+		Name:        &name,
+		Description: &description,
+		ExpiresAt:   &expiresAt,
 	}
 }
 
@@ -381,8 +383,8 @@ func TestSecretKeyService_UpdateSecretKey_Success(t *testing.T) {
 	// Assert
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
-	assert.Equal(t, keyID, result.ID)
-	assert.Equal(t, updateReq.KeyType, result.KeyType)
+	assert.Equal(t, *updateReq.Name, result.Name)
+	assert.Equal(t, *updateReq.Description, *result.Description)
 	mockRepo.AssertExpectations(t)
 }
 

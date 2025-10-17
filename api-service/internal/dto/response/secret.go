@@ -15,7 +15,7 @@ type SecretKeyResponse struct {
 	Description *string             `json:"description" example:"MySQL database connection credentials"`
 	IsEncrypted bool                `json:"is_encrypted" example:"true"`
 	// @Schema(example="{\"rotation_interval\":90}")
-	CustomFields model.CustomFields `json:"custom_fields"`
+	SecretFields model.SecretFields `json:"secret_fields"`
 	// @Schema(example="[1,2,3]")
 	AuthorizedUsers []uint     `json:"authorized_users"`
 	ExpiresAt       *time.Time `json:"expires_at" example:"2025-12-31T23:59:59Z"`
@@ -27,7 +27,7 @@ type SecretKeyResponse struct {
 // SecretKeyValueResponse represents the response containing secret key value
 type SecretKeyValueResponse struct {
 	KeyType      model.SecretKeyType    `json:"key_type"`
-	CustomFields map[string]interface{} `json:"custom_fields"`
+	SecretFields map[string]interface{} `json:"secret_fields"`
 	ExpiresAt    *time.Time             `json:"expires_at,omitempty"`
 }
 
@@ -52,7 +52,7 @@ func ToSecretKeyResponse(secretKey *model.SecretKey) *SecretKeyResponse {
 		KeyType:      secretKey.KeyType,
 		Usage:        string(secretKey.KeyType) + "_CONNECTION", // Derived from KeyType
 		IsEncrypted:  true,                                      // Always true since we encrypt all values
-		CustomFields: secretKey.CustomFields,
+		SecretFields: secretKey.SecretFields,
 		ExpiresAt:    secretKey.ExpiresAt,
 		OwnerID:      secretKey.OwnerID,
 		CreatedAt:    secretKey.CreatedAt,
@@ -92,7 +92,7 @@ func ToSecretKeyListResponse(secretKeys []*model.SecretKey, total int64, page, p
 func ToSecretKeyValueResponse(keyType model.SecretKeyType, customFields map[string]interface{}, expiresAt *time.Time) *SecretKeyValueResponse {
 	return &SecretKeyValueResponse{
 		KeyType:      keyType,
-		CustomFields: customFields,
+		SecretFields: customFields,
 		ExpiresAt:    expiresAt,
 	}
 }

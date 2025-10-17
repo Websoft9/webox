@@ -41,7 +41,7 @@ func NewSecretKeyController(
 // CreateSecretKey creates a new secret key
 // @Summary Create secret key
 // @Description Create a new secret key with encryption
-// @Tags Secret Keys
+// @Tags Secrets
 // @Security BearerAuth
 // @Accept json
 // @Produce json
@@ -60,7 +60,7 @@ func (c *SecretKeyController) CreateSecretKey(ctx *gin.Context) {
 		return
 	}
 
-	// Validate custom_fields based on key_type
+	// Validate secret_fields based on key_type
 	if err := req.Validate(); err != nil {
 		c.logger.ErrorContext(ctx, "Custom fields validation failed",
 			logger.String("key_type", string(req.KeyType)),
@@ -92,7 +92,7 @@ func (c *SecretKeyController) CreateSecretKey(ctx *gin.Context) {
 // GetSecretKey retrieves a secret key by ID
 // @Summary Get secret key
 // @Description Get secret key information by ID
-// @Tags Secret Keys
+// @Tags Secrets
 // @Security BearerAuth
 // @Accept json
 // @Produce json
@@ -134,7 +134,7 @@ func (c *SecretKeyController) GetSecretKey(ctx *gin.Context) {
 // GetSecretKeyValue retrieves the decrypted value of a secret key
 // @Summary Get secret key value
 // @Description Get the decrypted value of a secret key
-// @Tags Secret Keys
+// @Tags Secrets
 // @Security BearerAuth
 // @Accept json
 // @Produce json
@@ -177,7 +177,7 @@ func (c *SecretKeyController) GetSecretKeyValue(ctx *gin.Context) {
 // UpdateSecretKey updates an existing secret key
 // @Summary Update secret key
 // @Description Update an existing secret key
-// @Tags Secret Keys
+// @Tags Secrets
 // @Security BearerAuth
 // @Accept json
 // @Produce json
@@ -205,16 +205,6 @@ func (c *SecretKeyController) UpdateSecretKey(ctx *gin.Context) {
 		return
 	}
 
-	// Validate custom_fields based on key_type
-	if err := req.Validate(); err != nil {
-		c.logger.ErrorContext(ctx, "Custom fields validation failed",
-			logger.Uint("secret_key_id", id),
-			logger.String("key_type", string(req.KeyType)),
-			logger.ErrorField(err))
-		response.WithError(ctx, err)
-		return
-	}
-
 	// Get current user ID
 	currentUserID, Success := GetUserID(ctx)
 	if !Success {
@@ -237,7 +227,7 @@ func (c *SecretKeyController) UpdateSecretKey(ctx *gin.Context) {
 // DeleteSecretKey deletes a secret key
 // @Summary Delete secret key
 // @Description Delete a secret key by ID
-// @Tags Secret Keys
+// @Tags Secrets
 // @Security BearerAuth
 // @Accept json
 // @Produce json
@@ -279,13 +269,15 @@ func (c *SecretKeyController) DeleteSecretKey(ctx *gin.Context) {
 // ListSecretKeys retrieves secret keys with pagination and filtering
 // @Summary List secret keys
 // @Description Get secret keys with pagination and filtering
-// @Tags Secret Keys
+// @Tags Secrets
 // @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param page query int false "Page number" default(1)
 // @Param page_size query int false "Page size" default(20)
 // @Param key_type query string false "Key type filter" Enums(SECRET_KEY,ACCOUNT,FILE)
+// @Param keyword query string false "Keyword for fuzzy search on name and description"
+// @Param resource_code query string false "Resource code to filter secrets by reference"
 // @Success 200 {object} common.APIResponse{data=response.SecretKeyListResponse}
 // @Failure 400 {object} common.APIResponse
 // @Failure 401 {object} common.APIResponse
@@ -322,7 +314,7 @@ func (c *SecretKeyController) ListSecretKeys(ctx *gin.Context) {
 // ExportSecretKeys exports secret keys in specified format
 // @Summary Export secret keys
 // @Description Export secret keys in CSV, JSON, or Excel format
-// @Tags Secret Keys
+// @Tags Secrets
 // @Security BearerAuth
 // @Accept json
 // @Produce application/octet-stream
@@ -369,7 +361,7 @@ func (c *SecretKeyController) ExportSecretKeys(ctx *gin.Context) {
 // UploadSecretFile uploads a secret key file
 // @Summary Upload secret key file
 // @Description Upload a secret key file (certificate, private key, etc.)
-// @Tags Secret Keys
+// @Tags Secrets
 // @Security BearerAuth
 // @Accept multipart/form-data
 // @Produce json
@@ -410,7 +402,7 @@ func (c *SecretKeyController) UploadSecretFile(ctx *gin.Context) {
 // DownloadSecretFile downloads a secret key file
 // @Summary Download secret key file
 // @Description Download a secret key file by filename
-// @Tags Secret Keys
+// @Tags Secrets
 // @Security BearerAuth
 // @Accept json
 // @Produce application/octet-stream
@@ -451,7 +443,7 @@ func (c *SecretKeyController) DownloadSecretFile(ctx *gin.Context) {
 // DeleteSecretFile deletes a secret key file
 // @Summary Delete secret key file
 // @Description Delete a secret key file by filename
-// @Tags Secret Keys
+// @Tags Secrets
 // @Security BearerAuth
 // @Accept json
 // @Produce json

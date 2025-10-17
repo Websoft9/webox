@@ -13,7 +13,7 @@ import (
 type SecretKeyType string
 
 const (
-	SecretKeyTypeSecretKey SecretKeyType = "SECRET_KEY"
+	SecretKeyTypeText SecretKeyType = "TEXT"
 	SecretKeyTypeAccount   SecretKeyType = "ACCOUNT"
 	SecretKeyTypeFile      SecretKeyType = "FILE"
 )
@@ -21,7 +21,7 @@ const (
 // ValidSecretKeyTypes returns all valid secret key types
 func ValidSecretKeyTypes() []SecretKeyType {
 	return []SecretKeyType{
-		SecretKeyTypeSecretKey,
+		SecretKeyTypeText,
 		SecretKeyTypeAccount,
 		SecretKeyTypeFile,
 	}
@@ -38,11 +38,11 @@ func IsValidSecretKeyType(keyType SecretKeyType) bool {
 	return false
 }
 
-// CustomFields represents JSON custom fields
-type CustomFields map[string]interface{}
+// SecretFields represents JSON custom fields
+type SecretFields map[string]interface{}
 
 // Value implements driver.Valuer interface for database storage
-func (cf CustomFields) Value() (driver.Value, error) {
+func (cf SecretFields) Value() (driver.Value, error) {
 	if cf == nil {
 		return nil, nil
 	}
@@ -50,7 +50,7 @@ func (cf CustomFields) Value() (driver.Value, error) {
 }
 
 // Scan implements sql.Scanner interface for database retrieval
-func (cf *CustomFields) Scan(value interface{}) error {
+func (cf *SecretFields) Scan(value interface{}) error {
 	if value == nil {
 		*cf = nil
 		return nil
@@ -70,7 +70,7 @@ type SecretKey struct {
 	Name            string        `json:"name" gorm:"size:64;not null"`
 	KeyType         SecretKeyType `json:"key_type" gorm:"size:20;not null"`
 	Description     *string       `json:"description" gorm:"type:text"`
-	CustomFields    CustomFields  `json:"custom_fields" gorm:"type:text"`
+	SecretFields    SecretFields  `json:"secret_fields" gorm:"type:text"`
 	ExpiresAt       *time.Time    `json:"expires_at" gorm:"type:datetime;serializer:datetime"`
 	ResourceGroupID *uint         `json:"resource_group_id"`
 	OwnerID         uint          `json:"owner_id" gorm:"not null"`
@@ -153,17 +153,17 @@ func (s *SecretKey) IsExpired() bool {
 
 // GetCustomFieldValue gets a value from custom fields
 func (s *SecretKey) GetCustomFieldValue(key string) (interface{}, bool) {
-	if s.CustomFields == nil {
+	if s.SecretFields == nil {
 		return nil, false
 	}
-	value, exists := s.CustomFields[key]
+	value, exists := s.SecretFields[key]
 	return value, exists
 }
 
 // SetCustomFieldValue sets a value in custom fields
 func (s *SecretKey) SetCustomFieldValue(key string, value interface{}) {
-	if s.CustomFields == nil {
-		s.CustomFields = make(CustomFields)
+	if s.SecretFields == nil {
+		s.SecretFields = make(SecretFields)
 	}
-	s.CustomFields[key] = value
+	s.SecretFields[key] = value
 }

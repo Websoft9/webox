@@ -88,13 +88,13 @@ func initRSACryptoFromConfig(securityConfig *config.SecurityConfig) (*crypto.RSA
 	return crypto.NewRSACryptoFromKeys(privateKeyPEM, publicKeyPEM)
 }
 
-// encryptCustomFields encrypts sensitive fields in custom_fields based on key_type
-func (s *secretKeyService) encryptCustomFields(ctx context.Context, keyType model.SecretKeyType, customFields map[string]interface{}) (model.CustomFields, error) {
+// encryptSecretFields encrypts sensitive fields in secret_fields based on key_type
+func (s *secretKeyService) encryptSecretFields(ctx context.Context, keyType model.SecretKeyType, customFields map[string]interface{}) (model.SecretFields, error) {
 	if customFields == nil {
-		return make(model.CustomFields), nil
+		return make(model.SecretFields), nil
 	}
 
-	encryptedFields := make(model.CustomFields)
+	encryptedFields := make(model.SecretFields)
 
 	// Copy all fields first
 	for k, v := range customFields {
@@ -103,7 +103,7 @@ func (s *secretKeyService) encryptCustomFields(ctx context.Context, keyType mode
 
 	// Encrypt specific fields based on key_type
 	switch keyType {
-	case model.SecretKeyTypeSecretKey:
+	case model.SecretKeyTypeText:
 		return s.encryptSecretKeyFields(ctx, encryptedFields)
 	case model.SecretKeyTypeAccount:
 		return s.encryptAccountFields(ctx, encryptedFields)
@@ -115,7 +115,7 @@ func (s *secretKeyService) encryptCustomFields(ctx context.Context, keyType mode
 }
 
 // encryptSecretKeyFields encrypts secret_key field for SECRET_KEY type
-func (s *secretKeyService) encryptSecretKeyFields(ctx context.Context, fields model.CustomFields) (model.CustomFields, error) {
+func (s *secretKeyService) encryptSecretKeyFields(ctx context.Context, fields model.SecretFields) (model.SecretFields, error) {
 	if secretKey, ok := fields["secret_key"].(string); ok && secretKey != "" {
 		encryptedSecretKey, err := s.rsaCrypto.EncryptString(secretKey)
 		if err != nil {
@@ -128,7 +128,7 @@ func (s *secretKeyService) encryptSecretKeyFields(ctx context.Context, fields mo
 }
 
 // encryptAccountFields encrypts password field for ACCOUNT type
-func (s *secretKeyService) encryptAccountFields(ctx context.Context, fields model.CustomFields) (model.CustomFields, error) {
+func (s *secretKeyService) encryptAccountFields(ctx context.Context, fields model.SecretFields) (model.SecretFields, error) {
 	if password, ok := fields["password"].(string); ok && password != "" {
 		encryptedPassword, err := s.rsaCrypto.EncryptString(password)
 		if err != nil {
@@ -141,7 +141,7 @@ func (s *secretKeyService) encryptAccountFields(ctx context.Context, fields mode
 }
 
 // encryptFileFields encrypts password field for FILE type (if provided)
-func (s *secretKeyService) encryptFileFields(ctx context.Context, fields model.CustomFields) (model.CustomFields, error) {
+func (s *secretKeyService) encryptFileFields(ctx context.Context, fields model.SecretFields) (model.SecretFields, error) {
 	if password, ok := fields["password"].(string); ok && password != "" {
 		encryptedPassword, err := s.rsaCrypto.EncryptString(password)
 		if err != nil {
@@ -186,8 +186,8 @@ func (s *secretKeyService) createUserSecretRelationships(ctx context.Context, se
 		logger.Int("total_users", len(authorizedUsers)))
 }
 
-// decryptCustomFields decrypts sensitive fields in custom_fields based on key_type
-func (s *secretKeyService) decryptCustomFields(ctx context.Context, keyType model.SecretKeyType, customFields model.CustomFields) (map[string]interface{}, error) {
+// decryptSecretFields decrypts sensitive fields in secret_fields based on key_type
+func (s *secretKeyService) decryptSecretFields(ctx context.Context, keyType model.SecretKeyType, customFields model.SecretFields) (map[string]interface{}, error) {
 	decryptedFields := make(map[string]interface{})
 
 	// Copy all fields first
@@ -197,7 +197,7 @@ func (s *secretKeyService) decryptCustomFields(ctx context.Context, keyType mode
 
 	// Decrypt specific fields based on key_type
 	switch keyType {
-	case model.SecretKeyTypeSecretKey:
+	case model.SecretKeyTypeText:
 		return s.decryptSecretKeyFields(ctx, decryptedFields)
 	case model.SecretKeyTypeAccount:
 		return s.decryptAccountFields(ctx, decryptedFields)
@@ -267,8 +267,8 @@ func (s *secretKeyService) CreateSecretKey(ctx context.Context, req *request.Sec
 		return nil, errors.NewAppError(errors.CodeResourceAlreadyExists)
 	}
 
-	// Encrypt sensitive fields in custom_fields based on key_type
-	encryptedCustomFields, err := s.encryptCustomFields(ctx, req.KeyType, req.CustomFields)
+	// Encrypt sensitive fields in secret_fields based on key_type
+	encryptedSecretFields, err := s.encryptSecretFields(ctx, req.KeyType, req.SecretFields)
 	if err != nil {
 		return nil, errors.NewAppError(errors.CodeEncryptFailed)
 	}
@@ -278,7 +278,7 @@ func (s *secretKeyService) CreateSecretKey(ctx context.Context, req *request.Sec
 		Name:            req.Name,
 		KeyType:         req.KeyType,
 		Description:     req.Description,
-		CustomFields:    encryptedCustomFields,
+		SecretFields:    encryptedSecretFields,
 		ExpiresAt:       req.ExpiresAt,
 		ResourceGroupID: req.ResourceGroupID,
 		OwnerID:         userID,
@@ -391,8 +391,8 @@ func (s *secretKeyService) GetSecretKeyValue(ctx context.Context, id, userID uin
 		return nil, errors.NewAppError(errors.CodeValidationFailed)
 	}
 
-	// Decrypt sensitive fields in custom_fields based on key_type
-	decryptedCustomFields, err := s.decryptCustomFields(ctx, secretKey.KeyType, secretKey.CustomFields)
+	// Decrypt sensitive fields in secret_fields based on key_type
+	decryptedSecretFields, err := s.decryptSecretFields(ctx, secretKey.KeyType, secretKey.SecretFields)
 	if err != nil {
 		return nil, err
 	}
@@ -401,7 +401,7 @@ func (s *secretKeyService) GetSecretKeyValue(ctx context.Context, id, userID uin
 		logger.Uint("secret_key_id", id),
 		logger.Uint("user_id", userID))
 
-	return response.ToSecretKeyValueResponse(secretKey.KeyType, decryptedCustomFields, secretKey.ExpiresAt), nil
+	return response.ToSecretKeyValueResponse(secretKey.KeyType, decryptedSecretFields, secretKey.ExpiresAt), nil
 }
 
 // UpdateSecretKey updates an existing secret key
@@ -423,19 +423,16 @@ func (s *secretKeyService) UpdateSecretKey(ctx context.Context, id, userID uint,
 		return nil, errors.NewAppError(errors.CodeAccessDenied)
 	}
 
-	// Encrypt sensitive fields in custom_fields based on key_type
-	encryptedCustomFields := make(model.CustomFields)
-	if req.CustomFields != nil {
-		var err error
-		encryptedCustomFields, err = s.encryptCustomFields(ctx, req.KeyType, req.CustomFields)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	// Update fields
-	secretKey.KeyType = req.KeyType
-	secretKey.CustomFields = encryptedCustomFields
+	if req.Name != nil {
+		secretKey.Name = *req.Name
+	}
+	if req.Description != nil {
+		secretKey.Description = req.Description
+	}
+	if req.ExpiresAt != nil {
+		secretKey.ExpiresAt = req.ExpiresAt
+	}
 
 	// Save changes
 	if err := s.secretKeyRepo.Update(ctx, secretKey); err != nil {
