@@ -242,7 +242,7 @@ func (c *TagController) AssignTags(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "Tags assigned successfully",
-		logger.Uint("resource_id", req.ResourceID),
+		logger.String("resource_code", req.ResourceCode),
 		logger.Int("tag_count", len(req.TagNames)))
 	response.SuccessWithData(ctx, result)
 }
@@ -282,7 +282,7 @@ func (c *TagController) ReplaceTags(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "Tags replaced successfully",
-		logger.Uint("resource_id", req.ResourceID),
+		logger.String("resource_code", req.ResourceCode),
 		logger.Int("tag_count", len(req.TagNames)))
 	response.SuccessWithData(ctx, result)
 }
@@ -322,7 +322,7 @@ func (c *TagController) UnassignTags(ctx *gin.Context) {
 	}
 
 	c.logger.InfoContext(ctx, "Tags unassigned successfully",
-		logger.Uint("resource_id", req.ResourceID),
+		logger.String("resource_code", req.ResourceCode),
 		logger.Int("tag_count", len(req.TagIDs)))
 	response.SuccessWithData(ctx, result)
 }
@@ -365,7 +365,7 @@ func (c *TagController) SearchTags(ctx *gin.Context) {
 // @Tags Tags
 // @Produce json
 // @Security BearerAuth
-// @Param resourceId query int true "Resource ID"
+// @Param resourceCode query string true "ResourceCode"
 // @Success 200 {object} common.APIResponse{data=[]response.TagSimpleResponse}
 // @Failure 400 {object} common.APIResponse
 // @Failure 401 {object} common.APIResponse
@@ -380,13 +380,13 @@ func (c *TagController) GetResourceTags(ctx *gin.Context) {
 
 	tags, err := c.tagService.GetResourceTags(ctx, &req)
 	if err != nil {
-		c.logger.ErrorContext(ctx, "Failed to get resource tags", logger.Uint("resource_id", req.ResourceID), logger.ErrorField(err))
+		c.logger.ErrorContext(ctx, "Failed to get resource tags", logger.String("resource_code", req.ResourceCode), logger.ErrorField(err))
 		response.WithError(ctx, err)
 		return
 	}
 
 	c.logger.InfoContext(ctx, "Resource tags retrieved successfully",
-		logger.Uint("resource_id", req.ResourceID),
+		logger.String("resource_code", req.ResourceCode),
 		logger.Int("tag_count", len(tags)))
 	response.SuccessWithData(ctx, tags)
 }

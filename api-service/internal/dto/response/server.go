@@ -14,7 +14,6 @@ type ServerResponse struct {
 	InternalIP      *string `json:"internal_ip"`
 	IPv6Address     *string `json:"ipv6_address"`
 	SSHPort         int     `json:"ssh_port"`
-	SSHCredentialID *string `json:"ssh_credential_id"`
 	OSDistro        *string `json:"os_distro"`
 	OSVersion       *string `json:"os_version"`
 	KernelVersion   *string `json:"kernel_version"`

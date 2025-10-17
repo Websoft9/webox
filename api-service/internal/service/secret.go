@@ -945,3 +945,23 @@ func (s *secretKeyService) DeleteSecretReferencesByResourceCode(ctx context.Cont
 
 	return nil
 }
+
+// GetSecretReferencesByResourceCode retrieves secret references by resource code
+func (s *secretKeyService) GetSecretReferencesByResourceCode(ctx context.Context, resourceCode string) ([]*model.SecretReference, error) {
+	s.logger.InfoContext(ctx, "Getting secret references by resource code",
+		logger.String("resourceCode", resourceCode))
+
+	references, err := s.secretKeyRepo.GetSecretReferencesByResourceCode(ctx, resourceCode)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to get secret references",
+			logger.String("resourceCode", resourceCode),
+			logger.ErrorField(err))
+		return nil, err
+	}
+
+	s.logger.InfoContext(ctx, "Secret references retrieved successfully",
+		logger.String("resourceCode", resourceCode),
+		logger.Int("count", len(references)))
+
+	return references, nil
+}

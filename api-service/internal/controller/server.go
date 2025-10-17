@@ -27,7 +27,7 @@ const (
 // ServerController handles server management HTTP endpoints
 type ServerController struct {
 	serverService service.ServerService
-	// Note: serverAgentService removed - not used until Agent module is implemented
+	// serverAgentService removed - not used until Agent module is implemented
 	logger logger.Logger
 }
 

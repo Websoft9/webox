@@ -210,6 +210,14 @@ func (m *MockSecretKeyService) DeleteSecretReferencesByResourceCode(ctx context.
 	return args.Error(0)
 }
 
+func (m *MockSecretKeyService) GetSecretReferencesByResourceCode(ctx context.Context, resourceCode string) ([]*model.SecretReference, error) {
+	args := m.Called(ctx, resourceCode)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*model.SecretReference), args.Error(1)
+}
+
 // setupServerService creates a server service with mock dependencies
 func setupTestServerService() (*serverService, *MockServerRepository, *MockSystemConfigRepository) {
 	mockRepo := new(MockServerRepository)

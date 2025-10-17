@@ -50,4 +50,7 @@ type SecretKeyService interface {
 
 	// DeleteSecretReferencesByResourceCode deletes secret references by resource code
 	DeleteSecretReferencesByResourceCode(ctx context.Context, resourceCode string) error
+
+	// GetSecretReferencesByResourceCode retrieves secret references by resource code
+	GetSecretReferencesByResourceCode(ctx context.Context, resourceCode string) ([]*model.SecretReference, error)
 }

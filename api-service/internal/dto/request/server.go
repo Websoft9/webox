@@ -3,30 +3,28 @@ package request
 import "api-service/internal/dto/common"
 
 // CreateServerRequest represents the request to create a server
-// Note: hostname, internal_ip, ipv6_address are NOT included in the request
-// These fields will be automatically collected by the Agent after server registration
+// hostname, internal_ip, ipv6_address are NOT included in the request.
+// These fields will be automatically collected by the Agent after server registration.
 type CreateServerRequest struct {
-	Name            string  `json:"name" binding:"required,max=64" validate:"required,max=64"`
-	Host            string  `json:"host" binding:"required,max=255" validate:"required,max=255"` // Public IP or domain for SSH/Agent connection
-	SSHPort         int     `json:"ssh_port" binding:"omitempty,min=1,max=65535" validate:"omitempty,min=1,max=65535"`
-	SSHCredentialID *string `json:"ssh_credential_id" binding:"omitempty,max=64" validate:"omitempty,max=64"`
-	// Direct credential fields for creation (will be stored via credential management)
+	Name    string `json:"name" binding:"required,max=64" validate:"required,max=64"`
+	Host    string `json:"host" binding:"required,max=255" validate:"required,max=255"` // Public IP or domain for SSH/Agent connection
+	SSHPort int    `json:"ssh_port" binding:"omitempty,min=1,max=65535" validate:"omitempty,min=1,max=65535"`
+	// SSH credential fields - will be stored via secret management and linked via secret_references table
 	SSHUsername     string `json:"ssh_username" binding:"omitempty,max=64" validate:"omitempty,max=64"`
 	SSHPassword     string `json:"ssh_password" binding:"omitempty" validate:"omitempty"`
 	SSHKey          string `json:"ssh_key" binding:"omitempty" validate:"omitempty"`
 	ResourceGroupID *uint  `json:"resource_group_id" binding:"omitempty" validate:"omitempty"`
 	Description     string `json:"description" binding:"omitempty" validate:"omitempty"`
-	// Note: owner_id is automatically set from JWT token, not from request body
+	// owner_id is automatically set from JWT token, not from request body
 }
 
 // UpdateServerRequest represents the request to update a server
-// Note: hostname, internal_ip, ipv6_address should be updated by Agent, not manually
+// hostname, internal_ip, ipv6_address should be updated by Agent, not manually.
 type UpdateServerRequest struct {
-	Name            *string `json:"name" binding:"omitempty,max=64" validate:"omitempty,max=64"`
-	Host            *string `json:"host" binding:"omitempty,max=255" validate:"omitempty,max=255"`
-	SSHPort         *int    `json:"ssh_port" binding:"omitempty,min=1,max=65535" validate:"omitempty,min=1,max=65535"`
-	SSHCredentialID *string `json:"ssh_credential_id" binding:"omitempty,max=64" validate:"omitempty,max=64"`
-	// Direct credential fields for updates (will be stored via credential management)
+	Name    *string `json:"name" binding:"omitempty,max=64" validate:"omitempty,max=64"`
+	Host    *string `json:"host" binding:"omitempty,max=255" validate:"omitempty,max=255"`
+	SSHPort *int    `json:"ssh_port" binding:"omitempty,min=1,max=65535" validate:"omitempty,min=1,max=65535"`
+	// SSH credential fields - will be stored via secret management and linked via secret_references table
 	SSHUsername     *string `json:"ssh_username" binding:"omitempty,max=64" validate:"omitempty,max=64"`
 	SSHPassword     *string `json:"ssh_password" binding:"omitempty" validate:"omitempty"`
 	SSHKey          *string `json:"ssh_key" binding:"omitempty" validate:"omitempty"`

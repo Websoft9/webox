@@ -110,25 +110,8 @@ main() {
 
     # Get absolute path of project root
     project_root=$(pwd)
-    
-    # Modules to skip lint check (under development)
-    skip_lint_modules="./websoft9-agent"
 
     for module_dir in $go_modules; do
-        # Skip modules under development
-        skip=0
-        for skip_module in $skip_lint_modules; do
-            if [ "$module_dir" = "$skip_module" ]; then
-                log_warning "Skipping golangci-lint for $module_dir (module under development)"
-                skip=1
-                break
-            fi
-        done
-        
-        if [ $skip -eq 1 ]; then
-            continue
-        fi
-        
         config_file=""
 
         # Check module-level config file
@@ -153,25 +136,8 @@ main() {
     # 3. Quick tests - run in each module directory
     log_info "Step 3/4: Running quick tests..."
     test_failed=0
-    
-    # Modules to skip tests (under development)
-    skip_test_modules="./websoft9-agent"
 
     for module_dir in $go_modules; do
-        # Skip modules under development
-        skip=0
-        for skip_module in $skip_test_modules; do
-            if [ "$module_dir" = "$skip_module" ]; then
-                log_warning "Skipping tests for $module_dir (module under development)"
-                skip=1
-                break
-            fi
-        done
-        
-        if [ $skip -eq 1 ]; then
-            continue
-        fi
-        
         if ! run_in_dir "$module_dir" "go test -short -race -timeout=30s ./..." "quick tests"; then
             test_failed=1
         fi
@@ -186,25 +152,8 @@ main() {
     # 4. Security scanning - run in each module directory
     log_info "Step 4/4: Running security scan with gosec..."
     security_failed=0
-    
-    # Modules to skip security scan (under development)
-    skip_security_modules="./websoft9-agent"
 
     for module_dir in $go_modules; do
-        # Skip modules under development
-        skip=0
-        for skip_module in $skip_security_modules; do
-            if [ "$module_dir" = "$skip_module" ]; then
-                log_warning "Skipping security scan for $module_dir (module under development)"
-                skip=1
-                break
-            fi
-        done
-        
-        if [ $skip -eq 1 ]; then
-            continue
-        fi
-        
         config_file=""
 
         # Check module-level config file

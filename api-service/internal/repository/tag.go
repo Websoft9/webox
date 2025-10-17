@@ -133,11 +133,11 @@ func (r *tagRepository) CreateTagging(ctx context.Context, tagging *model.Taggin
 }
 
 // GetTaggingsByResourceID retrieves all taggings for a resource
-func (r *tagRepository) GetTaggingsByResourceID(ctx context.Context, resourceID uint) ([]*model.Tagging, error) {
+func (r *tagRepository) GetTaggingsByResourceCode(ctx context.Context, resourceCode string) ([]*model.Tagging, error) {
 	var taggings []*model.Tagging
 	err := r.db.WithContext(ctx).
 		Preload("Tag").
-		Where("resource_id = ?", resourceID).
+		Where("resource_code = ?", resourceCode).
 		Find(&taggings).Error
 	return taggings, err
 }
@@ -150,23 +150,23 @@ func (r *tagRepository) GetTaggingsByTagID(ctx context.Context, tagID uint) ([]*
 }
 
 // DeleteTagging deletes a specific tag-resource association
-func (r *tagRepository) DeleteTagging(ctx context.Context, tagID, resourceID uint) error {
+func (r *tagRepository) DeleteTagging(ctx context.Context, tagID uint, resourceCode string) error {
 	return r.db.WithContext(ctx).
-		Where("tag_id = ? AND resource_id = ?", tagID, resourceID).
+		Where("tag_id = ? AND resource_code = ?", tagID, resourceCode).
 		Delete(&model.Tagging{}).Error
 }
 
 // DeleteTaggingsByResourceID deletes all taggings for a resource
-func (r *tagRepository) DeleteTaggingsByResourceID(ctx context.Context, resourceID uint) error {
+func (r *tagRepository) DeleteTaggingsByResourceCode(ctx context.Context, resourceCode string) error {
 	return r.db.WithContext(ctx).
-		Where("resource_id = ?", resourceID).
+		Where("resource_code = ?", resourceCode).
 		Delete(&model.Tagging{}).Error
 }
 
 // DeleteTaggingsByTagIDs deletes specific tag associations for a resource
-func (r *tagRepository) DeleteTaggingsByTagIDs(ctx context.Context, resourceID uint, tagIDs []uint) error {
+func (r *tagRepository) DeleteTaggingsByTagIDs(ctx context.Context, resourceCode string, tagIDs []uint) error {
 	return r.db.WithContext(ctx).
-		Where("resource_id = ? AND tag_id IN ?", resourceID, tagIDs).
+		Where("resource_code = ? AND tag_id IN ?", resourceCode, tagIDs).
 		Delete(&model.Tagging{}).Error
 }
 
@@ -179,10 +179,10 @@ func (r *tagRepository) CreateTaggingsBatch(ctx context.Context, taggings []*mod
 }
 
 // ExistsTagging checks if a tag-resource association exists
-func (r *tagRepository) ExistsTagging(ctx context.Context, tagID, resourceID uint) (bool, error) {
+func (r *tagRepository) ExistsTagging(ctx context.Context, tagID uint, resourceCode string) (bool, error) {
 	var count int64
 	err := r.db.WithContext(ctx).Model(&model.Tagging{}).
-		Where("tag_id = ? AND resource_id = ?", tagID, resourceID).Count(&count).Error
+		Where("tag_id = ? AND resource_code = ?", tagID, resourceCode).Count(&count).Error
 	return count > 0, err
 }
 
@@ -220,12 +220,12 @@ func (r *tagRepository) SearchResourcesByTags(ctx context.Context, req *request.
 	if req.Operation == "AND" && len(allTagIDs) > 1 {
 		// For AND operation, find resources that have ALL specified tags
 		subQuery := r.db.Model(&model.Tagging{}).
-			Select("resource_id").
+			Select("resource_code").
 			Where("tag_id IN (?)", allTagIDs).
-			Group("resource_id").
+			Group("resource_code").
 			Having("COUNT(DISTINCT tag_id) = ?", len(allTagIDs))
 
-		query = query.Where("resource_id IN (?)", subQuery)
+		query = query.Where("resource_code IN (?)", subQuery)
 	}
 
 	// Get total count

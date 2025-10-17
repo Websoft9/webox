@@ -187,7 +187,7 @@ func (s *tagService) ListTags(ctx context.Context, req *request.TagListRequest) 
 // AssignTags assigns tags to a resource
 func (s *tagService) AssignTags(ctx context.Context, req *request.TagAssignRequest, userID uint) (*response.TagAssignResponse, error) {
 	s.logger.InfoContext(ctx, "Assigning tags",
-		logger.Uint("resource_id", req.ResourceID),
+		logger.String("resource_code", req.ResourceCode),
 		logger.Uint("user_id", userID))
 
 	var allResults []response.TagAssignResult
@@ -196,7 +196,7 @@ func (s *tagService) AssignTags(ctx context.Context, req *request.TagAssignReque
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// Process tag IDs
 		if len(req.TagIDs) > 0 {
-			results1, tagIDs1, err := s.processTagIDsForAssignment(tx, req.TagIDs, req.ResourceID, userID)
+			results1, tagIDs1, err := s.processTagIDsForAssignment(tx, req.TagIDs, req.ResourceCode, userID)
 			if err != nil {
 				return err
 			}
@@ -206,7 +206,7 @@ func (s *tagService) AssignTags(ctx context.Context, req *request.TagAssignReque
 
 		// Process tag names
 		if len(req.TagNames) > 0 {
-			results2, tagIDs2, err := s.processTagNamesForAssignment(tx, req.TagNames, req.ResourceID, userID)
+			results2, tagIDs2, err := s.processTagNamesForAssignment(tx, req.TagNames, req.ResourceCode, userID)
 			if err != nil {
 				return err
 			}
@@ -222,7 +222,7 @@ func (s *tagService) AssignTags(ctx context.Context, req *request.TagAssignReque
 	}
 
 	// Get updated resource tags
-	resourceTags, err := s.GetResourceTags(ctx, &request.TaggingListRequest{ResourceID: req.ResourceID})
+	resourceTags, err := s.GetResourceTags(ctx, &request.TaggingListRequest{ResourceCode: req.ResourceCode})
 	if err != nil {
 		return nil, err
 	}
@@ -242,12 +242,12 @@ func (s *tagService) AssignTags(ctx context.Context, req *request.TagAssignReque
 // ReplaceTags replaces all tags for a resource
 func (s *tagService) ReplaceTags(ctx context.Context, req *request.TagAssignRequest, userID uint) (*response.TagAssignResponse, error) {
 	s.logger.InfoContext(ctx, "Replacing tags",
-		logger.Uint("resource_id", req.ResourceID),
+		logger.String("resource_code", req.ResourceCode),
 		logger.Uint("user_id", userID))
 
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// Remove all existing tags using transaction
-		if err := tx.Where("resource_id = ?", req.ResourceID).Delete(&model.Tagging{}).Error; err != nil {
+		if err := tx.Where("resource_code = ?", req.ResourceCode).Delete(&model.Tagging{}).Error; err != nil {
 			return err
 		}
 		return nil
@@ -264,11 +264,11 @@ func (s *tagService) ReplaceTags(ctx context.Context, req *request.TagAssignRequ
 // UnassignTags removes tag associations from a resource
 func (s *tagService) UnassignTags(ctx context.Context, req *request.TagUnassignRequest, userID uint) (*response.TagUnassignResponse, error) {
 	s.logger.InfoContext(ctx, "Unassigning tags",
-		logger.Uint("resource_id", req.ResourceID),
+		logger.String("resource_code", req.ResourceCode),
 		logger.Uint("user_id", userID))
 
 	// Remove specified tag associations
-	if err := s.tagRepo.DeleteTaggingsByTagIDs(ctx, req.ResourceID, req.TagIDs); err != nil {
+	if err := s.tagRepo.DeleteTaggingsByTagIDs(ctx, req.ResourceCode, req.TagIDs); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to remove tag associations", logger.ErrorField(err))
 		return nil, err
 	}
@@ -281,9 +281,9 @@ func (s *tagService) UnassignTags(ctx context.Context, req *request.TagUnassignR
 
 // GetResourceTags retrieves all tags for a resource
 func (s *tagService) GetResourceTags(ctx context.Context, req *request.TaggingListRequest) ([]*response.TagSimpleResponse, error) {
-	s.logger.InfoContext(ctx, "Getting resource tags", logger.Uint("resource_id", req.ResourceID))
+	s.logger.InfoContext(ctx, "Getting resource tags", logger.String("resource_code", req.ResourceCode))
 
-	taggings, err := s.tagRepo.GetTaggingsByResourceID(ctx, req.ResourceID)
+	taggings, err := s.tagRepo.GetTaggingsByResourceCode(ctx, req.ResourceCode)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to get resource tags", logger.ErrorField(err))
 		return nil, err
@@ -353,11 +353,11 @@ func (s *tagService) SearchResourcesByTags(ctx context.Context, req *request.Tag
 }
 
 // buildSimpleResourceMap builds a simple resource map from taggings
-func (s *tagService) buildSimpleResourceMap(taggings []*model.Tagging) map[uint]*response.TaggedResource {
-	resourceMap := make(map[uint]*response.TaggedResource)
+func (s *tagService) buildSimpleResourceMap(taggings []*model.Tagging) map[string]*response.TaggedResource {
+	resourceMap := make(map[string]*response.TaggedResource)
 
 	for _, tagging := range taggings {
-		if resource, exists := resourceMap[tagging.ResourceID]; exists {
+		if resource, exists := resourceMap[tagging.ResourceCode]; exists {
 			// Add tag to existing resource
 			if tagging.Tag != nil {
 				resource.Tags = append(resource.Tags, response.TagSimpleResponse{
@@ -369,8 +369,8 @@ func (s *tagService) buildSimpleResourceMap(taggings []*model.Tagging) map[uint]
 		} else {
 			// Create new resource entry
 			resource := &response.TaggedResource{
-				ResourceID:   tagging.ResourceID,
-				ResourceName: fmt.Sprintf("Resource %d", tagging.ResourceID),
+				ResourceCode: tagging.ResourceCode,
+				ResourceName: fmt.Sprintf("Resource %s", tagging.ResourceCode),
 				Tags:         []response.TagSimpleResponse{},
 				MatchedTags:  []uint{},
 				CreatedAt:    tagging.CreatedAt,
@@ -382,7 +382,7 @@ func (s *tagService) buildSimpleResourceMap(taggings []*model.Tagging) map[uint]
 					Color: tagging.Tag.Color,
 				})
 			}
-			resourceMap[tagging.ResourceID] = resource
+			resourceMap[tagging.ResourceCode] = resource
 		}
 	}
 
@@ -426,7 +426,7 @@ func (s *tagService) convertTagToResponse(tag *model.Tag) *response.TagResponse 
 }
 
 // processTagIDsForAssignment processes existing tag IDs and creates associations
-func (s *tagService) processTagIDsForAssignment(tx *gorm.DB, tagIDs []uint, resourceID, userID uint) ([]response.TagAssignResult, []uint, error) {
+func (s *tagService) processTagIDsForAssignment(tx *gorm.DB, tagIDs []uint, resourceCode string, userID uint) ([]response.TagAssignResult, []uint, error) {
 	results := make([]response.TagAssignResult, 0, len(tagIDs))
 	processedTagIDs := make([]uint, 0, len(tagIDs))
 
@@ -444,7 +444,7 @@ func (s *tagService) processTagIDsForAssignment(tx *gorm.DB, tagIDs []uint, reso
 		// Check if already associated using transaction
 		var count int64
 		err = tx.Model(&model.Tagging{}).
-			Where("tag_id = ? AND resource_id = ?", tagID, resourceID).
+			Where("tag_id = ? AND resource_code = ?", tagID, resourceCode).
 			Count(&count).Error
 		if err != nil {
 			return nil, nil, err
@@ -453,9 +453,9 @@ func (s *tagService) processTagIDsForAssignment(tx *gorm.DB, tagIDs []uint, reso
 		if count == 0 {
 			// Create association using transaction
 			tagging := &model.Tagging{
-				TagID:      tagID,
-				ResourceID: resourceID,
-				CreatedBy:  userID,
+				TagID:        tagID,
+				ResourceCode: resourceCode,
+				CreatedBy:    userID,
 			}
 			if err := tx.Create(tagging).Error; err != nil {
 				return nil, nil, err
@@ -475,7 +475,7 @@ func (s *tagService) processTagIDsForAssignment(tx *gorm.DB, tagIDs []uint, reso
 }
 
 // processTagNamesForAssignment processes tag names and creates new tags if needed
-func (s *tagService) processTagNamesForAssignment(tx *gorm.DB, tagNames []string, resourceID, userID uint) ([]response.TagAssignResult, []uint, error) {
+func (s *tagService) processTagNamesForAssignment(tx *gorm.DB, tagNames []string, resourceCode string, userID uint) ([]response.TagAssignResult, []uint, error) {
 	results := make([]response.TagAssignResult, 0, len(tagNames))
 	processedTagIDs := make([]uint, 0, len(tagNames))
 
@@ -514,7 +514,7 @@ func (s *tagService) processTagNamesForAssignment(tx *gorm.DB, tagNames []string
 		// Create association if not exists using transaction
 		var count int64
 		err = tx.Model(&model.Tagging{}).
-			Where("tag_id = ? AND resource_id = ?", tag.ID, resourceID).
+			Where("tag_id = ? AND resource_code = ?", tag.ID, resourceCode).
 			Count(&count).Error
 		if err != nil {
 			return nil, nil, err
@@ -522,9 +522,9 @@ func (s *tagService) processTagNamesForAssignment(tx *gorm.DB, tagNames []string
 
 		if count == 0 {
 			tagging := &model.Tagging{
-				TagID:      tag.ID,
-				ResourceID: resourceID,
-				CreatedBy:  userID,
+				TagID:        tag.ID,
+				ResourceCode: resourceCode,
+				CreatedBy:    userID,
 			}
 			if err := tx.Create(tagging).Error; err != nil {
 				return nil, nil, err

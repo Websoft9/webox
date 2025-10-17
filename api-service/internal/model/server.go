@@ -24,7 +24,6 @@ type Server struct {
 	InternalIP      *string         `json:"internal_ip" gorm:"type:varchar(45);comment:Internal IP address"`
 	IPv6Address     *string         `json:"ipv6_address" gorm:"type:varchar(45);comment:IPv6 address for future expansion"`
 	SSHPort         int             `json:"ssh_port" gorm:"default:22;comment:SSH port"`
-	SSHCredentialID *string         `json:"ssh_credential_id" gorm:"type:varchar(64);comment:SSH credential ID from key management"`
 	OSDistro        *string         `json:"os_distro" gorm:"type:varchar(32);comment:Operating system distribution"`
 	OSVersion       *string         `json:"os_version" gorm:"type:varchar(64);comment:Operating system version"`
 	KernelVersion   *string         `json:"kernel_version" gorm:"type:varchar(64);comment:Kernel version"`

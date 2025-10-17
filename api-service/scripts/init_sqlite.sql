@@ -238,7 +238,6 @@ CREATE TABLE IF NOT EXISTS servers (
     internal_ip VARCHAR(45),
     ipv6_address VARCHAR(45),
     ssh_port INTEGER DEFAULT 22,
-    ssh_credential_id VARCHAR(64),
     os_distro VARCHAR(32),
     os_version VARCHAR(64),
     kernel_version VARCHAR(64),
@@ -246,7 +245,7 @@ CREATE TABLE IF NOT EXISTS servers (
     memory_total INTEGER DEFAULT 0,
     disk_total INTEGER DEFAULT 0,
     architecture VARCHAR(16),
-    resource_group_id INTEGER REFERENCES resource_groups(id) ON DELETE SET NULL,
+    resource_group_id INTEGER,
     owner_id INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     description TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -984,7 +983,7 @@ CREATE TABLE IF NOT EXISTS tags (
 CREATE TABLE IF NOT EXISTS taggings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     tag_id INTEGER NOT NULL, -- Tag ID
-    resource_id INTEGER NOT NULL, -- Resource ID
+    resource_code VARCHAR(64) NOT NULL, -- Resource code
     created_by INTEGER DEFAULT 0, -- Association creator
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
@@ -1075,7 +1074,7 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON audit_logs(created_at);
 CREATE INDEX IF NOT EXISTS idx_tags_name ON tags(name);
 CREATE INDEX IF NOT EXISTS idx_tags_created_by ON tags(created_by);
 CREATE INDEX IF NOT EXISTS idx_taggings_tag_id ON taggings(tag_id);
-CREATE INDEX IF NOT EXISTS idx_taggings_resource_id ON taggings(resource_id);
+CREATE INDEX IF NOT EXISTS idx_taggings_resource_code ON taggings(resource_code);
 
 -- ========================================
 -- Create triggers for automatic updated_at field update
