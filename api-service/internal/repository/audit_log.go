@@ -66,12 +66,8 @@ func (r *auditLogRepository) List(ctx context.Context, filter *request.ListAudit
 		query = query.Where("action = ?", filter.Action)
 	}
 
-	if filter.ResourceType != "" {
-		query = query.Where("resource_type = ?", filter.ResourceType)
-	}
-
-	if filter.ResourceID != nil {
-		query = query.Where("resource_id = ?", *filter.ResourceID)
+	if filter.Module != "" {
+		query = query.Where("module = ?", filter.Module)
 	}
 
 	if filter.IPAddress != "" {
@@ -79,14 +75,16 @@ func (r *auditLogRepository) List(ctx context.Context, filter *request.ListAudit
 		query = query.Where("ip_address = ?", filter.IPAddress)
 	}
 
-	if filter.Success != nil {
-		query = query.Where("success = ?", *filter.Success)
+	startTime, endTime, parseErr := filter.GetTimeRange(true)
+	if parseErr != nil {
+		return nil, 0, errors.NewAppErrorWrapError(parseErr, errors.CodeRecordQueryFailed)
+	}
+	if !startTime.IsZero() && !endTime.IsZero() {
+		query = query.Where("created_at BETWEEN ? AND ?", startTime, endTime)
 	}
 
-	if filter.StartTime != "" && filter.EndTime != "" {
-		startTime, _ := time.Parse(constants.DefaultTimeFormat, filter.StartTime)
-		endTime, _ := time.Parse(constants.DefaultTimeFormat, filter.EndTime)
-		query = query.Where("created_at BETWEEN ? AND ?", startTime, endTime)
+	if filter.Success != nil {
+		query = query.Where("success = ?", *filter.Success)
 	}
 
 	// Count total records

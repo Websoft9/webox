@@ -357,6 +357,7 @@ type repositories struct {
 	userRepo                 repoInterface.UserRepository
 	roleRepo                 repoInterface.RoleRepository
 	permissionRepo           repoInterface.PermissionRepository
+	moduleRepo               repoInterface.ModuleRepository
 	apiTokenRepo             repoInterface.APITokenRepository
 	twoFactorRepo            repoInterface.UserTwoFactorRepository
 	auditLogRepo             repoInterface.AuditLogRepository
@@ -379,6 +380,7 @@ func initRepositories(db *gorm.DB, zapLogger logger.Logger) *repositories {
 		userRepo:                 repoImpl.NewUserRepository(db),
 		roleRepo:                 repoImpl.NewRoleRepository(db),
 		permissionRepo:           repoImpl.NewPermissionRepository(db),
+		moduleRepo:               repoImpl.NewModuleRepository(db),
 		apiTokenRepo:             repoImpl.NewAPITokenRepository(db),
 		twoFactorRepo:            repoImpl.NewTwoFactorRepository(db),
 		auditLogRepo:             repoImpl.NewAuditLogRepository(db),

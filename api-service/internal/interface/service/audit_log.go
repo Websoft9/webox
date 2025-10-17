@@ -17,6 +17,7 @@ type AuditLogService interface {
 	// Middleware support methods
 	ShouldSkipAudit(method, path string) bool
 	RecordAuditFromRequest(backgroundCtx context.Context, ginCtx *gin.Context, responseBody []byte, responseTime int) error
+	SubmitAuditJob(ginCtx *gin.Context, responseBody []byte, responseTime int) bool
 
 	// Query operations
 	GetAuditLog(ctx context.Context, id uint) (*response.AuditLogResponse, error)

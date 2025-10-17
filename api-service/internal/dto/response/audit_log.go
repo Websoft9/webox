@@ -13,9 +13,6 @@ type AuditLogResponse struct {
 	User           *AuditLogUserResponse `json:"user,omitempty"`
 	Action         string                `json:"action" example:"CREATE"`
 	Module         string                `json:"module" example:"APP"`
-	ResourceType   string                `json:"resource_type" example:"APP_INSTANCE"`
-	ResourceID     *uint                 `json:"resource_id,omitempty" example:"123"`
-	ResourceName   string                `json:"resource_name" example:"My Blog"`
 	Description    string                `json:"description" example:"Created a new application instance"`
 	IPAddress      string                `json:"ip_address" example:"192.168.1.100"`
 	UserAgent      string                `json:"user_agent" example:"Mozilla/5.0"`
@@ -32,7 +29,6 @@ type AuditLogResponse struct {
 type AuditLogUserResponse struct {
 	ID       uint   `json:"id" example:"1"`
 	Username string `json:"username" example:"admin"`
-	Nickname string `json:"nickname" example:"Administrator"`
 }
 
 // FromAuditLog converts audit log model to response structure
@@ -40,9 +36,6 @@ func (r *AuditLogResponse) FromAuditLog(audit *model.AuditLog) {
 	r.ID = audit.ID
 	r.Action = audit.Action
 	r.Module = audit.Module
-	r.ResourceType = audit.ResourceType
-	r.ResourceID = audit.ResourceID
-	r.ResourceName = audit.ResourceName
 	r.Description = audit.Description
 	r.IPAddress = audit.IPAddress
 	r.UserAgent = audit.UserAgent

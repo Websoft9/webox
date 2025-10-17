@@ -58,6 +58,7 @@ auth:
 common:
   success: "操作成功"
   validation_failed: "验证失败"
+  unknown: "未知"
 error:
   database_error: "数据库操作失败"
   unknown_error: "未知错误"
