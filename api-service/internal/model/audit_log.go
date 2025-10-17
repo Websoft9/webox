@@ -18,9 +18,6 @@ type AuditLog struct {
 	Username       string    `json:"username" gorm:"size:64;index"`
 	Action         string    `json:"action" gorm:"size:32;not null;index"`
 	Module         string    `json:"module" gorm:"size:32;not null;index"`
-	ResourceType   string    `json:"resource_type" gorm:"size:32"`
-	ResourceID     *uint     `json:"resource_id" gorm:"index"`
-	ResourceName   string    `json:"resource_name" gorm:"size:64"`
 	Description    string    `json:"description"`
 	IPAddress      string    `json:"ip_address" gorm:"size:45"`
 	UserAgent      string    `json:"user_agent" gorm:"size:255"`

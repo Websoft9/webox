@@ -1126,6 +1126,26 @@ CREATE TABLE IF NOT EXISTS `user_login_history` (
     CONSTRAINT `fk_user_login_history_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='User login history table';
 
+-- Notification channels table
+CREATE TABLE IF NOT EXISTS `notification_channels` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `code` VARCHAR(64) NOT NULL COMMENT 'Channel code (unique identifier)',
+    `name` VARCHAR(128) NOT NULL COMMENT 'Channel name',
+    `description` TEXT NULL COMMENT 'Channel description',
+    `channel_type` ENUM('EMAIL', 'WEBHOOK') NOT NULL COMMENT 'Channel type',
+    `channel_config` JSON NOT NULL COMMENT 'Channel configuration (JSON format)',
+    `owner_id` BIGINT UNSIGNED NOT NULL COMMENT 'Owner user ID',
+    `status` TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Status (0-disabled, 1-enabled)',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation time',
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update time',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_code` (`code`),
+    KEY `idx_owner_id` (`owner_id`),
+    KEY `idx_channel_type` (`channel_type`),
+    KEY `idx_status` (`status`),
+    CONSTRAINT `fk_notification_channels_owner` FOREIGN KEY (`owner_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Notification channels table';
+
 -- Alert rules table
 CREATE TABLE IF NOT EXISTS `alert_rules` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -1135,6 +1155,7 @@ CREATE TABLE IF NOT EXISTS `alert_rules` (
     `target_id` BIGINT UNSIGNED NULL COMMENT 'Target ID',
     `metric_name` VARCHAR(64) NULL COMMENT 'Metric name',
     `condition_expression` TEXT NOT NULL COMMENT 'Condition expression',
+    `notification_channels` JSON NULL COMMENT 'Notification channels (JSON format)',
     `is_enabled` TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Whether enabled',
     `owner_id` BIGINT UNSIGNED NOT NULL COMMENT 'Owner ID',
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation time',
@@ -1162,6 +1183,7 @@ CREATE TABLE IF NOT EXISTS `alert_records` (
     `acknowledged_by` BIGINT UNSIGNED NULL COMMENT 'Acknowledged by ID',
     `resolution_note` TEXT NULL COMMENT 'Resolution note',
     `notification_sent` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Notification sent',
+    `notification_channels` JSON NULL COMMENT 'Notification channels (JSON format)',
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation time',
     `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update time',
     PRIMARY KEY (`id`),
@@ -1177,16 +1199,15 @@ CREATE TABLE IF NOT EXISTS `alert_records` (
 CREATE TABLE IF NOT EXISTS `notification_templates` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(64) NOT NULL COMMENT 'Template name',
-    `type` ENUM('EMAIL', 'SMS', 'WEBHOOK', 'PUSH') NOT NULL COMMENT 'Notification type',
+    `template_type` VARCHAR(20) NOT NULL COMMENT 'Notification type',
     `subject` VARCHAR(255) NULL COMMENT 'Notification subject',
     `content` TEXT NOT NULL COMMENT 'Notification content template',
-    `variables` JSON NULL COMMENT 'Template variables',
     `is_system` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Whether system template',
     `status` TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Status: 0-disabled, 1-enabled',
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation time',
     `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update time',
     PRIMARY KEY (`id`),
-    KEY `idx_type` (`type`),
+    KEY `idx_template_type` (`template_type`),
     KEY `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Notification templates table';
 
@@ -1269,9 +1290,6 @@ CREATE TABLE IF NOT EXISTS `audit_logs` (
     `username` VARCHAR(64) NULL COMMENT 'Username',
     `action` VARCHAR(32) NOT NULL COMMENT 'Action',
     `module` VARCHAR(32) NOT NULL COMMENT 'Module name',
-    `resource_type` VARCHAR(32) NULL COMMENT 'Resource type',
-    `resource_id` BIGINT UNSIGNED NULL COMMENT 'Resource ID',
-    `resource_name` VARCHAR(64) NULL COMMENT 'Resource name',
     `description` TEXT NULL COMMENT 'Operation description',
     `ip_address` VARCHAR(45) NULL COMMENT 'IP address',
     `user_agent` VARCHAR(255) NULL COMMENT 'User agent',

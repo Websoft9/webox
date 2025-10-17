@@ -10,9 +10,6 @@ type CreateAuditLogRequest struct {
 	Username       string `json:"username"`
 	Action         string `json:"action" validate:"required"`
 	Module         string `json:"module" validate:"required,max=32"`
-	ResourceType   string `json:"resource_type" validate:"max=32"`
-	ResourceID     *uint  `json:"resource_id"`
-	ResourceName   string `json:"resource_name" validate:"max=64"`
 	Description    string `json:"description"`
 	IPAddress      string `json:"ip_address" validate:"max=45"`
 	UserAgent      string `json:"user_agent" validate:"max=255"`
@@ -28,10 +25,9 @@ type CreateAuditLogRequest struct {
 // ListAuditLogRequest request for querying audit log list
 type ListAuditLogRequest struct {
 	common.PaginationRequest
-	UserID       *uint  `form:"user_id" json:"user_id"`
-	Action       string `form:"action" json:"action" validate:"max=32"`
-	ResourceType string `form:"resource_type" json:"resource_type" validate:"max=32"`
-	ResourceID   *uint  `form:"resource_id" json:"resource_id"`
+	UserID *uint  `form:"user_id" json:"user_id"`
+	Action string `form:"action" json:"action" validate:"max=32"`
+	Module string `form:"module" json:"module" validate:"max=32"`
 	common.TimeRangeRequest
 	IPAddress string `form:"ip_address" json:"ip_address" validate:"max=45"`
 	Success   *bool  `form:"success" json:"success"`
