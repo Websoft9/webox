@@ -7,6 +7,7 @@ import (
 	"api-service/internal/dto/common"
 	"api-service/internal/dto/request"
 	"api-service/internal/dto/response"
+	"api-service/internal/model"
 )
 
 // SecretKeyService defines the interface for secret key business logic
@@ -43,4 +44,13 @@ type SecretKeyService interface {
 
 	// DeleteSecretFile deletes a secret key file
 	DeleteSecretFile(ctx context.Context, filename string) error
+
+	// CreateSecretReference creates a secret reference record
+	CreateSecretReference(ctx context.Context, reference *model.SecretReference) error
+
+	// DeleteSecretReferencesByResourceCode deletes secret references by resource code
+	DeleteSecretReferencesByResourceCode(ctx context.Context, resourceCode string) error
+
+	// GetSecretReferencesByResourceCode retrieves secret references by resource code
+	GetSecretReferencesByResourceCode(ctx context.Context, resourceCode string) ([]*model.SecretReference, error)
 }

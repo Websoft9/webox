@@ -63,6 +63,11 @@ Websoft9 是一个现代化的云应用管理解决方案平台，采用分层�
    ```bash
    # 安装 Go 依赖
    cd api-service
+
+   # 设置网络代理（可选）
+   go env -w GOPROXY=https://goproxy.cn,direct
+
+   # 下载依赖包
    go mod tidy
 
    # 初始化数据库

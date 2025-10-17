@@ -290,7 +290,6 @@ CREATE TABLE IF NOT EXISTS `servers` (
     `internal_ip` VARCHAR(45) NULL COMMENT 'Internal IP address',
     `ipv6_address` VARCHAR(45) NULL COMMENT 'IPv6 address for future expansion',
     `ssh_port` INT NOT NULL DEFAULT 22 COMMENT 'SSH port',
-    `ssh_credential_id` VARCHAR(64) NULL COMMENT 'SSH credential ID from key management',
     `os_distro` VARCHAR(32) NULL COMMENT 'Operating system distribution',
     `os_version` VARCHAR(64) NULL COMMENT 'Operating system version',
     `kernel_version` VARCHAR(64) NULL COMMENT 'Kernel version',
@@ -311,7 +310,6 @@ CREATE TABLE IF NOT EXISTS `servers` (
     KEY `idx_owner_id` (`owner_id`),
     KEY `idx_resource_group_id` (`resource_group_id`),
     KEY `idx_deleted_at` (`deleted_at`),
-    CONSTRAINT `fk_servers_resource_group` FOREIGN KEY (`resource_group_id`) REFERENCES `resource_groups` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_servers_owner` FOREIGN KEY (`owner_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Servers table';
 

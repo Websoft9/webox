@@ -50,4 +50,10 @@ type SecretKeyRepository interface {
 
 	// DeleteSecretReferencesBySecretID deletes all references for a secret key
 	DeleteSecretReferencesBySecretID(ctx context.Context, secretID uint) error
+
+	// DeleteSecretReferencesByResourceCode deletes secret references by resource code
+	DeleteSecretReferencesByResourceCode(ctx context.Context, resourceCode string) error
+
+	// GetSecretReferencesByResourceCode gets secret references by resource code
+	GetSecretReferencesByResourceCode(ctx context.Context, resourceCode string) ([]*model.SecretReference, error)
 }

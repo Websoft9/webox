@@ -100,6 +100,19 @@ func (m *MockSecretKeyRepository) DeleteSecretReferencesBySecretID(ctx context.C
 	return args.Error(0)
 }
 
+func (m *MockSecretKeyRepository) DeleteSecretReferencesByResourceCode(ctx context.Context, resourceCode string) error {
+	args := m.Called(ctx, resourceCode)
+	return args.Error(0)
+}
+
+func (m *MockSecretKeyRepository) GetSecretReferencesByResourceCode(ctx context.Context, resourceCode string) ([]*model.SecretReference, error) {
+	args := m.Called(ctx, resourceCode)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*model.SecretReference), args.Error(1)
+}
+
 // createTestConfig creates a test configuration with RSA keys
 func createTestConfig() *config.Config {
 	// Generate test RSA key pair
