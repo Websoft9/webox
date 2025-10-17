@@ -808,7 +808,6 @@ func (r *userRepository) GetByUsername(ctx context.Context, username string) (*U
 
 - [项目文档](./docs/)
 - [API 文档](./api-service/docs/)
-- [开发规范](./docs/开发规范.md)
 - [架构设计](./docs/designs/)
 
 ## 致谢
