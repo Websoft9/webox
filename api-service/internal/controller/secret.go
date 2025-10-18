@@ -7,6 +7,7 @@ import (
 	"api-service/pkg/errors"
 	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -99,7 +100,7 @@ func (c *SecretKeyController) CreateSecretKeyText(ctx *gin.Context) {
 // @Param name formData string true "Secret key name"
 // @Param description formData string false "Secret key description"
 // @Param file formData file true "Secret key file (.key, .pem, .rsa, .crt, .p12, .pfx)"
-// @Param password formData string false "File password (optional, for encrypted files)"
+// @Param secret_fields formData string false "Secret fields as JSON string, e.g., {\"filename\": \"ssl-certificate.pem\", \"password\": \"***\"}"
 // @Param resource_group_id formData integer false "Resource group ID"
 // @Param expires_at formData string false "Expiration time (RFC3339 format)"
 // @Param authorized_users formData string false "Comma-separated list of authorized user IDs"
@@ -122,22 +123,32 @@ func (c *SecretKeyController) CreateSecretKeyFile(ctx *gin.Context) {
 	// Create request object
 	var req request.SecretKeyCreateFileRequest
 	req.Name = ctx.PostForm("name")
+	req.File = file
+
 	// Handle optional description
 	if description := ctx.PostForm("description"); description != "" {
 		req.Description = &description
 	}
-	req.File = file
 
-	// Parse authorized user IDs if provided
-	if authorizedUserIDs := ctx.PostForm("authorized_user_ids"); authorizedUserIDs != "" {
-		// Convert comma-separated string to []uint
-		// This is a simplified version; you may want to add better error handling
-		c.logger.DebugContext(ctx, "Authorized user IDs provided", logger.String("ids", authorizedUserIDs))
+	// Handle optional secret_fields (e.g., password)
+	if secretFieldsStr := ctx.PostForm("secret_fields"); secretFieldsStr != "" {
+		var secretFields map[string]interface{}
+		err = json.Unmarshal([]byte(secretFieldsStr), &secretFields)
+		if err != nil {
+			c.logger.ErrorContext(ctx, "Failed to parse secret_fields", logger.ErrorField(err))
+			response.WithError(ctx, errors.NewAppError(errors.CodeValidationFailed))
+			return
+		}
+		req.SecretFields = secretFields
+	}
+
+	// Handle optional resource_code
+	if resourceCode := ctx.PostForm("resource_code"); resourceCode != "" {
+		req.ResourceCode = &resourceCode
 	}
 
 	// Validate request
-	err = req.Validate()
-	if err != nil {
+	if err = req.Validate(); err != nil {
 		c.logger.ErrorContext(ctx, "File secret key validation failed", logger.ErrorField(err))
 		response.WithError(ctx, err)
 		return

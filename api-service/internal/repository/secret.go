@@ -98,7 +98,7 @@ func (r *secretKeyRepository) List(ctx context.Context, req *request.SecretKeyQu
 	limit := req.GetPageSize()
 	err := query.
 		Preload("Owner").
-		Order("created_at DESC").
+		Order("secret_keys.created_at DESC").
 		Limit(limit).
 		Offset(offset).
 		Find(&secretKeys).Error

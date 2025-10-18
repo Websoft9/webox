@@ -97,7 +97,6 @@ type SecretKeyCreateFileRequest struct {
 	Description     *string                `form:"description" binding:"omitempty,max=500"`
 	SecretFields    map[string]interface{} `form:"-"` // Will be populated from form data
 	File            *multipart.FileHeader  `form:"file" binding:"required"`
-	Password        *string                `form:"password" binding:"omitempty"`
 	ResourceGroupID *uint                  `form:"resource_group_id" binding:"omitempty"`
 	ExpiresAt       *time.Time             `form:"expires_at" binding:"omitempty"`
 	AuthorizedUsers []uint                 `form:"authorized_users" binding:"omitempty"`
@@ -119,9 +118,8 @@ func (r *SecretKeyCreateFileRequest) GetKeyType() model.SecretKeyType {
 
 // BuildSecretFields builds the secret_fields map from form data
 func (r *SecretKeyCreateFileRequest) BuildSecretFields() {
-	r.SecretFields = make(map[string]interface{})
-	r.SecretFields["filename"] = r.File.Filename
-	if r.Password != nil {
-		r.SecretFields["password"] = *r.Password
+	if r.SecretFields == nil {
+		r.SecretFields = make(map[string]interface{})
 	}
+	r.SecretFields["filename"] = r.File.Filename
 }
