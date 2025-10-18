@@ -114,6 +114,9 @@ func createTestConfig() *config.Config {
 			RSAPrivateKey: privateKeyPEM,
 			RSAPublicKey:  publicKeyPEM,
 		},
+		Upload: config.UploadConfig{
+			SecretStorage: "/tmp/test-secrets",
+		},
 	}
 }
 
@@ -164,15 +167,14 @@ func createTestSecretKey() *model.SecretKey {
 	}
 }
 
-// createTestSecretCreateRequest creates a test request for creating a secret key
-func createTestSecretCreateRequest() *request.SecretKeyCreateRequest {
+// createTestSecretCreateTextRequest creates a test request for creating a text secret key
+func createTestSecretCreateTextRequest() *request.SecretKeyCreateTextRequest {
 	description := "Test description"
 	resourceGroupID := uint(1)
 	expiresAt := time.Now().Add(24 * time.Hour)
 
-	return &request.SecretKeyCreateRequest{
+	return &request.SecretKeyCreateTextRequest{
 		Name:        "Test API Key",
-		KeyType:     model.SecretKeyTypeText,
 		Description: &description,
 		SecretFields: map[string]interface{}{
 			"secret_key": "sk-1234567890abcdef",
@@ -195,10 +197,10 @@ func createTestUpdateRequest() *request.SecretKeyUpdateRequest {
 	}
 }
 
-func TestSecretKeyService_CreateSecretKey_Success(t *testing.T) {
+func TestSecretKeyService_CreateSecretKeyText_Success(t *testing.T) {
 	service, mockRepo, _ := setupSecretKeyService()
 	ctx := context.Background()
-	req := createTestSecretCreateRequest()
+	req := createTestSecretCreateTextRequest()
 	userID := uint(1)
 
 	// Mock ExistsByName call
@@ -215,34 +217,33 @@ func TestSecretKeyService_CreateSecretKey_Success(t *testing.T) {
 		mockRepo.On("CreateUserSecret", ctx, mock.AnythingOfType("*model.UserSecret")).Return(nil)
 	}
 
-	// 新增: Mock CreateSecretReference call if resource_code is provided
+	// Mock CreateSecretReference call if resource_code is provided
 	if req.ResourceCode != nil {
 		mockRepo.On("CreateSecretReference", ctx, mock.AnythingOfType("*model.SecretReference")).Return(nil)
 	}
 
 	// Execute
-	result, err := service.CreateSecretKey(ctx, req, userID)
+	result, err := service.CreateSecretKeyText(ctx, req, userID)
 
 	// Assert
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, req.Name, result.Name)
-	assert.Equal(t, req.KeyType, result.KeyType)
 	assert.Equal(t, uint(1), result.ID)
 	mockRepo.AssertExpectations(t)
 }
 
-func TestSecretKeyService_CreateSecretKey_NameAlreadyExists(t *testing.T) {
+func TestSecretKeyService_CreateSecretKeyText_NameAlreadyExists(t *testing.T) {
 	service, mockRepo, _ := setupSecretKeyService()
 	ctx := context.Background()
-	req := createTestSecretCreateRequest()
+	req := createTestSecretCreateTextRequest()
 	userID := uint(1)
 
 	// Mock ExistsByName call returning already exists
 	mockRepo.On("ExistsByName", ctx, req.Name, userID, []uint(nil)).Return(true, nil)
 
 	// Execute
-	result, err := service.CreateSecretKey(ctx, req, userID)
+	result, err := service.CreateSecretKeyText(ctx, req, userID)
 
 	// Assert
 	assert.Error(t, err)
@@ -250,10 +251,10 @@ func TestSecretKeyService_CreateSecretKey_NameAlreadyExists(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 }
 
-func TestSecretKeyService_CreateSecretKey_RepositoryError(t *testing.T) {
+func TestSecretKeyService_CreateSecretKeyText_RepositoryError(t *testing.T) {
 	service, mockRepo, _ := setupSecretKeyService()
 	ctx := context.Background()
-	req := createTestSecretCreateRequest()
+	req := createTestSecretCreateTextRequest()
 	userID := uint(1)
 
 	// Mock ExistsByName call
@@ -264,7 +265,7 @@ func TestSecretKeyService_CreateSecretKey_RepositoryError(t *testing.T) {
 	mockRepo.On("Create", ctx, mock.AnythingOfType("*model.SecretKey")).Return(expectedError)
 
 	// Execute
-	result, err := service.CreateSecretKey(ctx, req, userID)
+	result, err := service.CreateSecretKeyText(ctx, req, userID)
 
 	// Assert
 	assert.Error(t, err)
@@ -401,7 +402,7 @@ func TestSecretKeyService_DeleteSecretKey_Success(t *testing.T) {
 	// Mock DeleteUserSecretsBySecretKeyID call
 	mockRepo.On("DeleteUserSecretsBySecretKeyID", ctx, keyID).Return(nil)
 
-	// 新增: Mock DeleteSecretReferencesBySecretID call
+	// Mock DeleteSecretReferencesBySecretID call
 	mockRepo.On("DeleteSecretReferencesBySecretID", ctx, keyID).Return(nil)
 
 	// Mock Delete call
@@ -562,7 +563,7 @@ func TestSecretKeyService_FullWorkflow(t *testing.T) {
 	userID := uint(1)
 
 	// Step 1: Create secret key
-	createReq := createTestSecretCreateRequest()
+	createReq := createTestSecretCreateTextRequest()
 	mockRepo.On("ExistsByName", ctx, createReq.Name, userID, []uint(nil)).Return(false, nil)
 	mockRepo.On("Create", ctx, mock.AnythingOfType("*model.SecretKey")).Return(nil).Run(func(args mock.Arguments) {
 		secretKey := args.Get(1).(*model.SecretKey)
@@ -573,7 +574,7 @@ func TestSecretKeyService_FullWorkflow(t *testing.T) {
 		mockRepo.On("CreateUserSecret", ctx, mock.AnythingOfType("*model.UserSecret")).Return(nil)
 	}
 
-	createResult, err := service.CreateSecretKey(ctx, createReq, userID)
+	createResult, err := service.CreateSecretKeyText(ctx, createReq, userID)
 	assert.NoError(t, err)
 	assert.NotNil(t, createResult)
 
@@ -611,7 +612,7 @@ func TestSecretKeyService_FullWorkflow(t *testing.T) {
 
 	// Step 5: Delete secret key
 	mockRepo.On("DeleteUserSecretsBySecretKeyID", ctx, uint(1)).Return(nil)
-	mockRepo.On("DeleteSecretReferencesBySecretID", ctx, uint(1)).Return(nil) // 新增这行
+	mockRepo.On("DeleteSecretReferencesBySecretID", ctx, uint(1)).Return(nil)
 	mockRepo.On("Delete", ctx, uint(1)).Return(nil)
 
 	err = service.DeleteSecretKey(ctx, 1, userID)
@@ -621,10 +622,10 @@ func TestSecretKeyService_FullWorkflow(t *testing.T) {
 }
 
 // Benchmark tests
-func BenchmarkSecretKeyService_CreateSecretKey(b *testing.B) {
+func BenchmarkSecretKeyService_CreateSecretKeyText(b *testing.B) {
 	service, mockRepo, _ := setupSecretKeyService()
 	ctx := context.Background()
-	req := createTestSecretCreateRequest()
+	req := createTestSecretCreateTextRequest()
 	userID := uint(1)
 
 	mockRepo.On("ExistsByName", ctx, req.Name, userID, []uint(nil)).Return(false, nil)
@@ -632,7 +633,7 @@ func BenchmarkSecretKeyService_CreateSecretKey(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, _ = service.CreateSecretKey(ctx, req, userID)
+		_, _ = service.CreateSecretKeyText(ctx, req, userID)
 	}
 }
 
