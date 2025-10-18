@@ -99,7 +99,11 @@ func (c *SecretKeyController) CreateSecretKeyText(ctx *gin.Context) {
 // @Param name formData string true "Secret key name"
 // @Param description formData string false "Secret key description"
 // @Param file formData file true "Secret key file (.key, .pem, .rsa, .crt, .p12, .pfx)"
-// @Param authorized_user_ids formData string false "Comma-separated list of authorized user IDs"
+// @Param password formData string false "File password (optional, for encrypted files)"
+// @Param resource_group_id formData integer false "Resource group ID"
+// @Param expires_at formData string false "Expiration time (RFC3339 format)"
+// @Param authorized_users formData string false "Comma-separated list of authorized user IDs"
+// @Param resource_code formData string false "Resource code for reference"
 // @Success 201 {object} common.APIResponse{data=response.SecretKeyResponse}
 // @Failure 400 {object} common.APIResponse
 // @Failure 401 {object} common.APIResponse
@@ -132,7 +136,8 @@ func (c *SecretKeyController) CreateSecretKeyFile(ctx *gin.Context) {
 	}
 
 	// Validate request
-	if err := req.Validate(); err != nil {
+	err = req.Validate()
+	if err != nil {
 		c.logger.ErrorContext(ctx, "File secret key validation failed", logger.ErrorField(err))
 		response.WithError(ctx, err)
 		return
@@ -200,49 +205,6 @@ func (c *SecretKeyController) GetSecretKey(ctx *gin.Context) {
 
 	c.logger.InfoContext(ctx, "Secret key retrieved successfully", logger.Uint("userID", currentUserID))
 	response.SuccessWithData(ctx, secretKey)
-}
-
-// GetSecretKeyValue retrieves the decrypted value of a secret key
-// @Summary Get secret key value
-// @Description Get the decrypted value of a secret key
-// @Tags Secrets
-// @Security BearerAuth
-// @Accept json
-// @Produce json
-// @Param id path int true "Secret key ID"
-// @Success 200 {object} common.APIResponse{data=response.SecretKeyValueResponse}
-// @Failure 400 {object} common.APIResponse
-// @Failure 401 {object} common.APIResponse
-// @Failure 403 {object} common.APIResponse
-// @Failure 404 {object} common.APIResponse
-// @Failure 422 {object} common.APIResponse
-// @Failure 500 {object} common.APIResponse
-// @Router /api/v1/secrets/{id}/value [get]
-func (c *SecretKeyController) GetSecretKeyValue(ctx *gin.Context) {
-	// Parse path parameter
-	id, Success := ParseIDParam(ctx, "id")
-	if !Success {
-		return
-	}
-
-	// Get current user ID
-	currentUserID, Success := GetUserID(ctx)
-	if !Success {
-		return
-	}
-
-	c.logger.InfoContext(ctx, "Handling get secret key value request", logger.Uint("userID", currentUserID), logger.Uint("secretKeyID", id))
-
-	// Call service layer to get secret key value
-	secretKeyValue, err := c.secretKeyService.GetSecretKeyValue(ctx.Request.Context(), id, currentUserID)
-	if err != nil {
-		c.logger.ErrorContext(ctx, "Failed to get secret key value", logger.ErrorField(err))
-		response.WithError(ctx, err)
-		return
-	}
-
-	c.logger.InfoContext(ctx, "Secret key value retrieved successfully", logger.Uint("userID", currentUserID))
-	response.SuccessWithData(ctx, secretKeyValue)
 }
 
 // UpdateSecretKey updates an existing secret key

@@ -13,9 +13,9 @@ import (
 type SecretKeyType string
 
 const (
-	SecretKeyTypeText SecretKeyType = "TEXT"
-	SecretKeyTypeAccount   SecretKeyType = "ACCOUNT"
-	SecretKeyTypeFile      SecretKeyType = "FILE"
+	SecretKeyTypeText    SecretKeyType = "TEXT"
+	SecretKeyTypeAccount SecretKeyType = "ACCOUNT"
+	SecretKeyTypeFile    SecretKeyType = "FILE"
 )
 
 // ValidSecretKeyTypes returns all valid secret key types

@@ -498,7 +498,7 @@ INSERT INTO `role_permissions` (`role_id`,`permission_code`,`granted_by`,`status
          (1, 'd4e5f6a7-b8c9-4012-d345-6789abcdef01',1,1),
          (1, 'e5f6a7b8-c9d0-4123-e456-789abcdef012',1,1),
          (1, 'f6a7b8c9-d0e1-4234-f567-89abcdef0123',1,1),
-         (1, 'a7b8c9d0-e1f2-4345-a678-9abcdef01234',1,1),
+         (1, 'a7b8c9d0-e1f2-4345-a678-9abcdef01234',1,1);
 
 -- Insert default application categories
 INSERT INTO `app_store_categories` (`name`, `code`, `description`, `sort_order`, `status`) VALUES
