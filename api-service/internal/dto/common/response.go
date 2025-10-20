@@ -43,7 +43,7 @@ func BuildResponseWithI18n(ctx *gin.Context, success bool, httpCode errors.HTTPC
 // BadRequest sends a HTTP 400 Bad Request response with error details.
 // Used when client request contains invalid parameters or malformed data.
 func BadRequest(ctx *gin.Context, err error) {
-	BuildResponseWithI18n(ctx, false, http.StatusBadRequest, errors.CodeValidationFailed, nil, err.Error())
+	BuildResponseWithI18n(ctx, false, http.StatusBadRequest, errors.CodeValidationFailed, nil, utils.FormatErrorWithStack(err))
 }
 
 // SuccessWithData sends a HTTP 200 OK response with the provided data payload.
@@ -79,20 +79,20 @@ func AccessForbidden(ctx *gin.Context) {
 // InternalError sends a HTTP 500 Internal Server Error response.
 // Used when server encounters an unexpected condition that prevents fulfilling the request.
 func InternalError(ctx *gin.Context, err error) {
-	BuildResponseWithI18n(ctx, false, http.StatusInternalServerError, errors.CodeInternalError, nil, err.Error())
+	BuildResponseWithI18n(ctx, false, http.StatusInternalServerError, errors.CodeInternalError, nil, utils.FormatErrorWithStack(err))
 }
 
 // ServiceUnavailable sends a HTTP 503 Service Unavailable response.
 // Used when server is temporarily overloaded or under maintenance.
 func ServiceUnavailable(ctx *gin.Context, err error) {
-	BuildResponseWithI18n(ctx, false, http.StatusServiceUnavailable, errors.CodeInternalError, nil, err.Error())
+	BuildResponseWithI18n(ctx, false, http.StatusServiceUnavailable, errors.CodeInternalError, nil, utils.FormatErrorWithStack(err))
 }
 
 // WithErrorAndCode sends an error response using a specific error code and error message.
 func WithErrorAndCode(ctx *gin.Context, errorCode errors.ErrorCode, err error) {
 	errMsg := ""
 	if err != nil {
-		errMsg = err.Error()
+		errMsg = utils.FormatErrorWithStack(err)
 	}
 	BuildResponseWithI18n(ctx, false, errors.CodeToHTTPStatus[errorCode], errorCode, nil, errMsg)
 }

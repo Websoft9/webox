@@ -548,7 +548,19 @@ INSERT INTO `system_configs` (`config_key`, `config_value`, `config_type`, `cate
 -- Monitoring configuration
 ('monitor.metrics_retention_days', '30', 'INTEGER', 'monitor', 'Monitoring data retention days', 0, 40),
 ('monitor.alert_check_interval', '60', 'INTEGER', 'monitor', 'Alert check interval (seconds)', 0, 41),
-('monitor.default_alert_channels', '["email"]', 'JSON', 'monitor', 'Default alert channels', 0, 42);
+('monitor.default_alert_channels', '["email"]', 'JSON', 'monitor', 'Default alert channels', 0, 42),
+
+-- Server management configuration
+('server.ssh_timeout', '30', 'INTEGER', 'server', 'SSH connection timeout (seconds)', 0, 50),
+('server.ssh_retry_count', '3', 'INTEGER', 'server', 'SSH connection retry count', 0, 51),
+('server.file_upload_max_size', '104857600', 'INTEGER', 'server', 'Maximum file upload size (bytes, 100MB)', 0, 52),
+('server.file_download_max_size', '524288000', 'INTEGER', 'server', 'Maximum file download size (bytes, 500MB)', 0, 53),
+('server.file_path_mode', 'blacklist', 'STRING', 'security', 'File path security mode: blacklist/whitelist', 0, 54),
+('server.file_ext_mode', 'blacklist', 'STRING', 'security', 'File extension security mode: blacklist/whitelist', 0, 55),
+('server.custom_forbidden_paths', '[]', 'JSON', 'security', 'Custom forbidden paths list (blacklist mode)', 0, 56),
+('server.custom_allowed_paths', '[]', 'JSON', 'security', 'Custom allowed paths list (whitelist mode)', 0, 57),
+('server.custom_forbidden_extensions', '[]', 'JSON', 'security', 'Custom forbidden file extensions (blacklist mode)', 0, 58),
+('server.custom_allowed_extensions', '[]', 'JSON', 'security', 'Custom allowed file extensions (whitelist mode)', 0, 59);
 
 -- Insert default notification templates
 INSERT INTO `notification_templates` (`name`, `template_type`, `subject`, `content`, `is_system`, `status`) VALUES

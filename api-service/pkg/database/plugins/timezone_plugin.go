@@ -19,6 +19,7 @@ type TimezonePlugin struct {
 	name              string          // Plugin name identifier
 	db                *gorm.DB        // Database connection for timezone queries
 	convertibleFields map[string]bool // Map of field names that should be converted
+	timezone          *time.Location
 }
 
 // TimezonePluginOption defines configuration options for the timezone plugin
@@ -57,6 +58,22 @@ func WithCustomFields(fields ...string) TimezonePluginOption {
 	}
 }
 
+// WithCustomTimezone sets a custom timezone for timezone conversion
+func WithCustomTimezone(timezone string) TimezonePluginOption {
+	return func(p *TimezonePlugin) {
+		targetTZ, err := time.LoadLocation(timezone)
+		if err != nil {
+			logger.Error("Invalid timezone, using UTC",
+				logger.String("timezone", timezone),
+				logger.ErrorField(err))
+			return
+		}
+		logger.Info("Timezone plugin initialized with custom timezone",
+			logger.String("timezone", timezone))
+		p.timezone = targetTZ
+	}
+}
+
 // Name returns the plugin name identifier
 // This is required by the GORM plugin interface
 func (p *TimezonePlugin) Name() string {
@@ -65,19 +82,49 @@ func (p *TimezonePlugin) Name() string {
 
 // Initialize initializes the timezone plugin with GORM
 // This method is called by GORM when the plugin is registered
-// It sets up callbacks to automatically convert timezones after query operations
+// It sets up callbacks to automatically convert timezones after query, update, create operations
 func (p *TimezonePlugin) Initialize(db *gorm.DB) error {
 	// Register callback for after query operations
 	// This handles SELECT queries and converts time fields in the results
-	err := db.Callback().Query().After("gorm:after_query").Register("timezone:convert_after_query", p.afterQueryCallback)
+	err := db.Callback().Query().After("gorm:after_query").Register("timezone:convert_after_query", p.afterOperationCallback)
 	if err != nil {
 		logger.Error("Failed to register after query callback", logger.ErrorField(err))
 		return err
 	}
+	// Register callback for after update operations
+	// This handles UPDATE and converts time fields in the results
+	err = db.Callback().Update().After("gorm:after_update").Register("timezone:convert_after_update", p.afterOperationCallback)
+	if err != nil {
+		logger.Error("Failed to register after update callback", logger.ErrorField(err))
+		return err
+	}
 
+	// Register callback for after update operations
+	// This handles UPDATE and converts time fields in the results
+	err = db.Callback().Update().Before("gorm:before_update").Register("timezone:convert_before_update", p.beforeOperationCallback)
+	if err != nil {
+		logger.Error("Failed to register before update callback", logger.ErrorField(err))
+		return err
+	}
+
+	// Register callback for after update operations
+	// This handles UPDATE and converts time fields in the results
+	err = db.Callback().Create().Before("gorm:before_create").Register("timezone:convert_before_create", p.beforeOperationCallback)
+	if err != nil {
+		logger.Error("Failed to register before create callback", logger.ErrorField(err))
+		return err
+	}
+
+	// Register callback for after create operations
+	// This handles CREATE and converts time fields in the results
+	err = db.Callback().Create().After("gorm:after_create").Register("timezone:convert_after_create", p.afterOperationCallback)
+	if err != nil {
+		logger.Error("Failed to register after create callback", logger.ErrorField(err))
+		return err
+	}
 	// Register callback for after find operations
 	// This handles Find, First, Take and similar operations
-	err = db.Callback().Query().After("gorm:after_find").Register("timezone:convert_after_find", p.afterQueryCallback)
+	err = db.Callback().Query().After("gorm:after_find").Register("timezone:convert_after_find", p.afterOperationCallback)
 	if err != nil {
 		logger.Error("Failed to register after find callback", logger.ErrorField(err))
 		return err
@@ -87,9 +134,9 @@ func (p *TimezonePlugin) Initialize(db *gorm.DB) error {
 	return nil
 }
 
-// afterQueryCallback is the main callback function executed after query operations
+// afterOperationCallback is the main callback function executed after query, update, create operations
 // It automatically converts time fields from UTC to the user's preferred timezone
-func (p *TimezonePlugin) afterQueryCallback(db *gorm.DB) {
+func (p *TimezonePlugin) afterOperationCallback(db *gorm.DB) {
 	logger.Debug("Timezone plugin callback triggered")
 
 	// Check if timezone conversion should be skipped for this query
@@ -102,7 +149,7 @@ func (p *TimezonePlugin) afterQueryCallback(db *gorm.DB) {
 	// Falls back to system timezone if user timezone is not available
 	timezone := p.getUserTimezone(db.Statement.Context)
 	logger.Debug("Retrieved timezone for conversion",
-		logger.String(constants.UserTimezone, timezone))
+		logger.String("timezone", timezone))
 
 	// Skip conversion if timezone is empty or already UTC
 	if timezone == "" || timezone == constants.DefaultTimeZone {
@@ -116,7 +163,7 @@ func (p *TimezonePlugin) afterQueryCallback(db *gorm.DB) {
 	targetTZ, err := time.LoadLocation(timezone)
 	if err != nil {
 		logger.Warn("Invalid timezone, using UTC",
-			logger.String(constants.UserTimezone, timezone),
+			logger.String("timezone", timezone),
 			logger.ErrorField(err))
 		return
 	}
@@ -125,6 +172,16 @@ func (p *TimezonePlugin) afterQueryCallback(db *gorm.DB) {
 	logger.Debug("Starting timezone conversion",
 		logger.String("targetTimezone", targetTZ.String()))
 	p.convertTimezoneInResult(db, targetTZ)
+}
+
+// beforeOperationCallback is the main callback function executed before query, update, create operations
+func (p *TimezonePlugin) beforeOperationCallback(db *gorm.DB) {
+	logger.Debug("Timezone plugin callback triggered")
+
+	// Convert time fields in the query results to the target timezone
+	logger.Debug("Starting timezone conversion",
+		logger.String("targetTimezone", p.timezone.String()))
+	p.convertTimezoneInResult(db, p.timezone)
 }
 
 // shouldSkipConversion determines whether timezone conversion should be skipped
@@ -157,7 +214,7 @@ func (p *TimezonePlugin) getUserTimezone(ctx context.Context) string {
 	if err == nil && timezone != "" {
 		logger.Debug("Found user timezone in Redis cache",
 			logger.Uint("userID", userID),
-			logger.String(constants.UserTimezone, timezone),
+			logger.String("timezone", timezone),
 			logger.String("redisKey", redisKey))
 		return timezone
 	}
@@ -184,7 +241,7 @@ func (p *TimezonePlugin) getUserTimezone(ctx context.Context) string {
 	if err == nil && userProfile.ConfigValue != "" {
 		logger.Debug("Found user timezone preference in database",
 			logger.Uint("userID", userID),
-			logger.String(constants.UserTimezone, userProfile.ConfigValue))
+			logger.String("timezone", userProfile.ConfigValue))
 		return userProfile.ConfigValue
 	}
 
@@ -218,7 +275,7 @@ func (p *TimezonePlugin) getSystemTimezone(ctx context.Context) string {
 
 	if err == nil && systemConfig.ConfigValue != "" {
 		logger.Debug("Found system timezone setting",
-			logger.String(constants.UserTimezone, systemConfig.ConfigValue))
+			logger.String("timezone", systemConfig.ConfigValue))
 		return systemConfig.ConfigValue
 	}
 

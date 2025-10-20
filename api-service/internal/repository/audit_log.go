@@ -79,7 +79,7 @@ func (r *auditLogRepository) List(ctx context.Context, filter *request.ListAudit
 	if parseErr != nil {
 		return nil, 0, errors.NewAppErrorWrapError(parseErr, errors.CodeRecordQueryFailed)
 	}
-	if !startTime.IsZero() && !endTime.IsZero() {
+	if startTime != "" && endTime != "" {
 		query = query.Where("created_at BETWEEN ? AND ?", startTime, endTime)
 	}
 

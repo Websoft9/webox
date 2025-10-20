@@ -366,6 +366,8 @@ type repositories struct {
 	tagRepo                  repoInterface.TagRepository
 	alertRepo                repoInterface.AlertRepository
 	secretKeyRepo            repoInterface.SecretKeyRepository
+	serverRepo               repoInterface.ServerRepository
+	serverAgentRepo          repoInterface.ServerAgentRepository
 	notificationRepo         repoInterface.NotificationRecordRepository
 	notificationChannelRepo  repoInterface.NotificationChannelRepository
 	notificationTemplateRepo repoInterface.NotificationTemplateRepository
@@ -387,6 +389,8 @@ func initRepositories(db *gorm.DB, zapLogger logger.Logger) *repositories {
 		tagRepo:                  repoImpl.NewTagRepository(db),
 		alertRepo:                repoImpl.NewAlertRepository(db),
 		secretKeyRepo:            repoImpl.NewSecretKeyRepository(db),
+		serverRepo:               repoImpl.NewServerRepository(db),
+		serverAgentRepo:          repoImpl.NewServerAgentRepository(db),
 		notificationRepo:         repoImpl.NewNotificationRecordRepository(db),
 		notificationChannelRepo:  repoImpl.NewNotificationChannelRepository(db, zapLogger),
 		notificationTemplateRepo: repoImpl.NewNotificationTemplateRepository(db),
@@ -410,6 +414,8 @@ type businessServices struct {
 	alertServices               serviceInterface.AlertService
 	secretKeyService            serviceInterface.SecretKeyService
 	i18nService                 serviceInterface.I18nService
+	serverService               serviceInterface.ServerService
+	serverAgentService          serviceInterface.ServerAgentService
 	notificationRecordService   serviceInterface.NotificationRecordService
 	notificationChannelService  serviceInterface.NotificationChannelService
 	notificationTemplateService serviceInterface.NotificationTemplateService
@@ -428,8 +434,9 @@ func initBusinessServices(
 	// Create OAuth2 service for external authentication providers
 	oauth2Service := serviceImpl.NewOAuth2Service(authConfigManager, zapLogger)
 	userService := serviceImpl.NewUserService(repos.userRepo, zapLogger)
+	secretKeyService := serviceImpl.NewSecretKeyService(repos.secretKeyRepo, zapLogger, i18nInstance, cfg)
 
-	// Create email service first
+	// Create email service
 	emailService := email.NewEmailService(cfg, zapLogger)
 
 	services := &businessServices{
@@ -444,18 +451,30 @@ func initBusinessServices(
 			cfg,
 			authConfigManager,
 		),
-		roleService:                serviceImpl.NewRoleService(repos.roleRepo, repos.permissionRepo, db, zapLogger),
-		permissionService:          serviceImpl.NewPermissionService(repos.permissionRepo, db, zapLogger),
-		apiTokenService:            serviceImpl.NewAPITokenService(repos.apiTokenRepo, authConfigManager, db, zapLogger),
-		authConfigService:          serviceImpl.NewAuthConfigService(authConfigManager, zapLogger),
-		twoFactorService:           serviceImpl.NewTwoFactorService(repos.twoFactorRepo, db, zapLogger),
-		auditLogService:            serviceImpl.NewAuditLogService(repos.auditLogRepo, repos.moduleRepo, userService, db, zapLogger, cfg),
-		systemConfigService:        serviceImpl.NewSystemConfigService(repos.systemConfigRepo, cfg, db, zapLogger),
-		userProfileService:         serviceImpl.NewUserProfileService(repos.userProfileRepo, zapLogger, i18nInstance),
-		tagService:                 serviceImpl.NewTagService(repos.tagRepo, db, zapLogger, i18nInstance),
-		alertServices:              serviceImpl.NewAlertService(repos.alertRepo, zapLogger, i18nInstance),
-		secretKeyService:           serviceImpl.NewSecretKeyService(repos.secretKeyRepo, zapLogger, i18nInstance, cfg),
-		i18nService:                serviceImpl.NewI18nService(repos.userProfileRepo, zapLogger),
+		roleService:         serviceImpl.NewRoleService(repos.roleRepo, repos.permissionRepo, db, zapLogger),
+		permissionService:   serviceImpl.NewPermissionService(repos.permissionRepo, db, zapLogger),
+		apiTokenService:     serviceImpl.NewAPITokenService(repos.apiTokenRepo, authConfigManager, db, zapLogger),
+		authConfigService:   serviceImpl.NewAuthConfigService(authConfigManager, zapLogger),
+		twoFactorService:    serviceImpl.NewTwoFactorService(repos.twoFactorRepo, db, zapLogger),
+		auditLogService:     serviceImpl.NewAuditLogService(repos.auditLogRepo, repos.moduleRepo, userService, db, zapLogger, cfg),
+		systemConfigService: serviceImpl.NewSystemConfigService(repos.systemConfigRepo, cfg, db, zapLogger),
+		userProfileService:  serviceImpl.NewUserProfileService(repos.userProfileRepo, zapLogger, i18nInstance),
+		tagService:          serviceImpl.NewTagService(repos.tagRepo, db, zapLogger, i18nInstance),
+		alertServices:       serviceImpl.NewAlertService(repos.alertRepo, zapLogger, i18nInstance),
+		secretKeyService:    secretKeyService,
+		i18nService:         serviceImpl.NewI18nService(repos.userProfileRepo, zapLogger),
+		serverService: serviceImpl.NewServerService(serviceImpl.ServerServiceConfig{
+			Logger:           zapLogger,
+			ServerRepo:       repos.serverRepo,
+			SecretKeyService: secretKeyService,
+			SystemConfigRepo: repos.systemConfigRepo,
+			Config:           cfg,
+		}),
+		serverAgentService: serviceImpl.NewServerAgentService(serviceImpl.ServerAgentServiceConfig{
+			AgentRepo:  repos.serverAgentRepo,
+			ServerRepo: repos.serverRepo,
+			Logger:     zapLogger,
+		}),
 		notificationRecordService:  serviceImpl.NewNotificationRecordService(repos.notificationRepo, zapLogger),
 		notificationChannelService: serviceImpl.NewNotificationChannelService(repos.notificationChannelRepo, zapLogger, emailService),
 	}
@@ -511,7 +530,12 @@ func initControllers(
 			zapLogger,
 			i18nInstance,
 		),
-		SecretKeyController:            controller.NewSecretKeyController(services.secretKeyService, zapLogger, i18nInstance, validatorInstance),
+		SecretKeyController: controller.NewSecretKeyController(services.secretKeyService, zapLogger, i18nInstance, validatorInstance),
+		ServerController: controller.NewServerController(
+			services.serverService,
+			// services.serverAgentService, // Removed: unused until Agent module is implemented
+			zapLogger,
+		),
 		NotificationRecordController:   controller.NewNotificationRecordController(services.notificationRecordService, validatorInstance, zapLogger),
 		NotificationChannelController:  controller.NewNotificationChannelController(services.notificationChannelService, zapLogger, validatorInstance),
 		NotificationTemplateController: controller.NewNotificationTemplateController(services.notificationTemplateService, validatorInstance, zapLogger),

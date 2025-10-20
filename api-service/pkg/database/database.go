@@ -5,6 +5,7 @@ import (
 	"api-service/internal/constants"
 	"api-service/pkg/database/plugins"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -124,6 +125,11 @@ func initSQLite(cfg *DatabaseConnectionConfig) (*gorm.DB, error) {
 
 	// Basic SQLite DSN (optimizations will be handled by SQLiteManager)
 	dsn := cfg.Path + "?_foreign_keys=ON"
+	// Add timezone parameter if configured
+	if cfg.Timezone != "" {
+		// SQLite uses _loc parameter for timezone
+		dsn += fmt.Sprintf("&_loc=%s", url.PathEscape(cfg.Timezone))
+	}
 
 	// Basic GORM configuration
 	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{
@@ -163,6 +169,17 @@ func initMySQL(cfg *DatabaseConnectionConfig) (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to connect to MySQL database: %v", err)
 	}
 
+	// Set session timezone if configured
+	if cfg.Timezone != "" {
+		// Convert timezone format: UTC -> +00:00, or use timezone name directly
+		timezoneValue := cfg.Timezone
+		if cfg.Timezone == "UTC" {
+			timezoneValue = "+00:00"
+		}
+		if err := db.Exec("SET time_zone = ?", timezoneValue).Error; err != nil {
+			return nil, fmt.Errorf("failed to set MySQL timezone: %v", err)
+		}
+	}
 	return db, nil
 }
 
@@ -179,6 +196,12 @@ func initPostgreSQL(cfg *DatabaseConnectionConfig) (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to connect to PostgreSQL database: %v", err)
 	}
 
+	// Set session timezone if configured
+	if cfg.Timezone != "" {
+		if err := db.Exec("SET timezone = ?", cfg.Timezone).Error; err != nil {
+			return nil, fmt.Errorf("failed to set PostgreSQL timezone: %v", err)
+		}
+	}
 	return db, nil
 }
 

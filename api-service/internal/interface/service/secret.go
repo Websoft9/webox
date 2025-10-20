@@ -6,6 +6,7 @@ import (
 	"api-service/internal/dto/common"
 	"api-service/internal/dto/request"
 	"api-service/internal/dto/response"
+	"api-service/internal/model"
 )
 
 // SecretKeyService defines the interface for secret key business logic

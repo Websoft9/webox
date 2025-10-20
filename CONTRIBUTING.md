@@ -795,7 +795,6 @@ We are committed to providing a friendly, safe, and welcoming environment for ev
 
 - [Project Documentation](./docs/)
 - [API Documentation](./api-service/docs/)
-- [Development Standards](./docs/开发规范.md)
 - [Architecture Design](./docs/designs/)
 
 ## Acknowledgments

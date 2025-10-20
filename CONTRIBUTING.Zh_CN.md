@@ -63,6 +63,11 @@ Websoft9 是一个现代化的云应用管理解决方案平台，采用分层�
    ```bash
    # 安装 Go 依赖
    cd api-service
+
+   # 设置网络代理（可选）
+   go env -w GOPROXY=https://goproxy.cn,direct
+
+   # 下载依赖包
    go mod tidy
 
    # 初始化数据库
@@ -803,7 +808,6 @@ func (r *userRepository) GetByUsername(ctx context.Context, username string) (*U
 
 - [项目文档](./docs/)
 - [API 文档](./api-service/docs/)
-- [开发规范](./docs/开发规范.md)
 - [架构设计](./docs/designs/)
 
 ## 致谢

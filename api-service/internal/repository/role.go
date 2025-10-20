@@ -153,7 +153,7 @@ func (r *roleRepository) List(ctx context.Context, req *request.ListRolesRequest
 	if parseErr != nil {
 		return nil, 0, errors.NewAppErrorWrapError(parseErr, errors.CodeRecordQueryFailed)
 	}
-	if !startTime.IsZero() && !endTime.IsZero() {
+	if startTime != "" && endTime != "" {
 		query = query.Where("updated_at BETWEEN ? AND ?", startTime, endTime)
 	}
 
