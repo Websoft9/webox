@@ -83,6 +83,25 @@ const (
 	CodeEncryptFailed                  = 5013 // Data encryption failed
 	CodeDecryptFailed                  = 5014 // Data decryption failed
 
+	// Server management error codes (5020-5099)
+	CodeServerSSHConnectionFailed   = 5020 // SSH connection failed
+	CodeServerAgentNotResponding    = 5021 // Agent not responding
+	CodeServerDockerServiceDown     = 5022 // Docker service down
+	CodeServerCredentialNotFound    = 5023 // SSH credential not found
+	CodeServerBatchOperationPartial = 5024 // Batch operation partial failure
+	CodeServerHasActiveApps         = 5025 // Server has running applications
+	CodeServerHasActiveAgent        = 5026 // Server has running agent
+	CodeServerForceDeleteRequired   = 5027 // Force delete parameter required
+	CodeServerPartialSuccess        = 5028 // Batch operation partial success
+	CodeServerStatusCacheExpired    = 5029 // Server status cache expired
+	CodeServerAgentOffline          = 5030 // Agent offline
+	CodeServerTaskTimeout           = 5031 // Task execution timeout
+	CodeSFTPOperationFailed         = 5032 // SFTP operation failed
+	CodeFileSizeTooLarge            = 5033 // File size exceeds limit
+	CodePathForbidden               = 5034 // Path is forbidden
+	CodeFileExtensionForbidden      = 5035 // File extension is forbidden
+	CodeFileNotFound                = 5036 // File not found on server
+	CodeFilePermissionDenied        = 5037 // File permission denied
 	// Notification channel related error codes (5100-5199)
 	CodeNotificationChannelNotFound          = 5101 // Notification channel not found
 	CodeNotificationChannelAlreadyExists     = 5102 // Notification channel already exists
@@ -179,6 +198,20 @@ var CodeToI18nKey = map[ErrorCode]string{
 	CodeEncryptFailed:                  "business.encrypt_failed",
 	CodeDecryptFailed:                  "business.decrypt_failed",
 
+	// Server management errors (5020-5099)
+	CodeServerSSHConnectionFailed:   "server.ssh_connection_failed",
+	CodeServerAgentNotResponding:    "server.agent_not_responding",
+	CodeServerDockerServiceDown:     "server.docker_service_down",
+	CodeServerCredentialNotFound:    "server.credential_not_found",
+	CodeServerBatchOperationPartial: "server.batch_operation_partial",
+	CodeServerHasActiveApps:         "server.has_active_apps",
+	CodeServerHasActiveAgent:        "server.has_active_agent",
+	CodeServerForceDeleteRequired:   "server.force_delete_required",
+	CodeServerPartialSuccess:        "server.partial_success",
+	CodeServerStatusCacheExpired:    "server.status_cache_expired",
+	CodeServerAgentOffline:          "server.agent_offline",
+	CodeServerTaskTimeout:           "server.task_timeout",
+
 	// System related errors (6000-6999)
 	CodeInternalError:                "system.internal_error",
 	CodeCacheServiceUnavailable:      "system.cache_service_unavailable",
@@ -256,6 +289,20 @@ var CodeToHTTPStatus = map[ErrorCode]HTTPCode{
 	CodeGatewayConfigUpdateFailed:      http.StatusUnprocessableEntity,
 	CodeUserAlreadyExists:              http.StatusConflict,
 	CodePermissionInvalid:              http.StatusUnprocessableEntity,
+
+	// Server management errors (5020-5099)
+	CodeServerSSHConnectionFailed:   http.StatusServiceUnavailable,
+	CodeServerAgentNotResponding:    http.StatusServiceUnavailable,
+	CodeServerDockerServiceDown:     http.StatusServiceUnavailable,
+	CodeServerCredentialNotFound:    http.StatusBadRequest,
+	CodeServerBatchOperationPartial: http.StatusPartialContent,
+	CodeServerHasActiveApps:         http.StatusConflict,
+	CodeServerHasActiveAgent:        http.StatusConflict,
+	CodeServerForceDeleteRequired:   http.StatusPreconditionRequired,
+	CodeServerPartialSuccess:        http.StatusPartialContent,
+	CodeServerStatusCacheExpired:    http.StatusServiceUnavailable,
+	CodeServerAgentOffline:          http.StatusServiceUnavailable,
+	CodeServerTaskTimeout:           http.StatusRequestTimeout,
 
 	// System related errors (6000-6999)
 	CodeInternalError:                http.StatusInternalServerError,

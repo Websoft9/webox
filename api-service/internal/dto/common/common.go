@@ -127,20 +127,20 @@ func (t *TimeRangeRequest) GetEndTime() (time.Time, error) {
 }
 
 // GetUTCTimeRange retrieves the UTC time range
-func (t *TimeRangeRequest) GetTimeRange(useUTC bool) (startTime, endTime time.Time, err error) {
-	startTime, err = t.GetStartTime()
+func (t *TimeRangeRequest) GetTimeRange(useUTC bool) (startTimeStr, endTimeStr string, err error) {
+	startTime, err := t.GetStartTime()
 	if err != nil {
-		return time.Time{}, time.Time{}, err
+		return "", "", err
 	}
 
-	endTime, err = t.GetEndTime()
+	endTime, err := t.GetEndTime()
 	if err != nil {
-		return time.Time{}, time.Time{}, err
+		return "", "", err
 	}
 	if useUTC {
-		return startTime.UTC(), endTime.UTC(), nil
+		return startTime.UTC().Format(time.DateTime), endTime.UTC().Format(time.DateTime), nil
 	}
-	return startTime, endTime, nil
+	return startTime.Format(time.DateTime), endTime.Format(time.DateTime), nil
 }
 
 // BaseListRequest base list request structure (includes pagination, sorting, and search)

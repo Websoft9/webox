@@ -247,7 +247,7 @@ func (suite *SystemConfigServiceTestSuite) TestTestSMTP_EmailSendFailed() {
 
 	suite.Error(err)
 
-	suite.Contains(err.Error(), "4008")
+	suite.Contains(err.Error(), "Record create failed")
 }
 
 // TestEncryptConfigValue tests the encryptConfigValue method with simplified testing

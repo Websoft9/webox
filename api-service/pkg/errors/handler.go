@@ -45,7 +45,7 @@ func processes(c *gin.Context, err error) {
 	if !ok {
 		// Handle standard Go errors as internal server errors
 		message := i18n.T("error.internal_error", lang)
-		sendErrorResponse(c, http.StatusInternalServerError, CodeInternalError, message, err.Error())
+		sendErrorResponse(c, http.StatusInternalServerError, CodeInternalError, message, utils.FormatErrorWithStack(err))
 		return
 	}
 

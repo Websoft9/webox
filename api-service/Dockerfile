@@ -11,7 +11,9 @@ FROM golang:1.24-alpine AS builder
 ARG INFLUXDB_VERSION
 
 # Install necessary tools
-RUN apk add --no-cache git bash gcc musl-dev ca-certificates curl
+#RUN apk add --no-cache git bash gcc musl-dev ca-certificates curl
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories && \
+    apk add --no-cache git bash gcc musl-dev ca-certificates curl
 
 # Create non-privileged user
 RUN adduser -D -s /bin/sh appuser

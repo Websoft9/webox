@@ -3,7 +3,7 @@
 # 构建应用
 build:
 	swag init -g cmd/server/main.go
-	go build -v -o api-service ./cmd/server
+	CGO_ENABLED=1 go build -v -o api-service ./cmd/server
 
 # 构建用户创建工具
 build-create-user:
@@ -25,7 +25,7 @@ deps:
 
 # 运行测试
 test:
-	go test -v ./...
+	CGO_ENABLED=1 go test -v ./...
 
 # 测试覆盖率
 test-coverage:
