@@ -104,7 +104,7 @@ type TimeRangeRequest struct {
 }
 
 // formatDateTime formats a datetime string
-func formatDateTime(datetimeStr string) (time.Time, error) {
+func FormatDateTime(datetimeStr string) (time.Time, error) {
 	if datetimeStr == "" {
 		return time.Time{}, nil
 	}
@@ -118,12 +118,12 @@ func formatDateTime(datetimeStr string) (time.Time, error) {
 
 // GetStartTime retrieves the start time
 func (t *TimeRangeRequest) GetStartTime() (time.Time, error) {
-	return formatDateTime(t.StartTime)
+	return FormatDateTime(t.StartTime)
 }
 
 // GetEndTime retrieves the end time
 func (t *TimeRangeRequest) GetEndTime() (time.Time, error) {
-	return formatDateTime(t.EndTime)
+	return FormatDateTime(t.EndTime)
 }
 
 // GetUTCTimeRange retrieves the UTC time range
