@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"mime/multipart"
 
 	"api-service/internal/dto/common"
 	"api-service/internal/dto/request"
@@ -12,8 +11,11 @@ import (
 
 // SecretKeyService defines the interface for secret key business logic
 type SecretKeyService interface {
-	// CreateSecretKey creates a new secret key with encryption
-	CreateSecretKey(ctx context.Context, req *request.SecretKeyCreateRequest, userID uint) (*response.SecretKeyResponse, error)
+	// CreateSecretKeyText creates a new text-based secret key with encryption
+	CreateSecretKeyText(ctx context.Context, req *request.SecretKeyCreateTextRequest, userID uint) (*response.SecretKeyResponse, error)
+
+	// CreateSecretKeyFile creates a new file-based secret key with encryption
+	CreateSecretKeyFile(ctx context.Context, req *request.SecretKeyCreateFileRequest, userID uint) (*response.SecretKeyResponse, error)
 
 	// GetSecretKey retrieves a secret key by ID (without sensitive data)
 	GetSecretKey(ctx context.Context, id, userID uint) (*response.SecretKeyResponse, error)
@@ -35,15 +37,6 @@ type SecretKeyService interface {
 
 	// ValidateSecretKeyOwnership checks if user owns the secret key
 	ValidateSecretKeyOwnership(ctx context.Context, secretKeyID, userID uint) error
-
-	// UploadSecretFile uploads a secret key file
-	UploadSecretFile(ctx context.Context, file *multipart.FileHeader, fileType string) (*response.SecretFileUploadResponse, error)
-
-	// DownloadSecretFile downloads a secret key file
-	DownloadSecretFile(ctx context.Context, filename string) (filePath string, originalName string, err error)
-
-	// DeleteSecretFile deletes a secret key file
-	DeleteSecretFile(ctx context.Context, filename string) error
 
 	// CreateSecretReference creates a secret reference record
 	CreateSecretReference(ctx context.Context, reference *model.SecretReference) error

@@ -124,7 +124,15 @@ type MockSecretKeyService struct {
 	mock.Mock
 }
 
-func (m *MockSecretKeyService) CreateSecretKey(ctx context.Context, req *request.SecretKeyCreateRequest, userID uint) (*response.SecretKeyResponse, error) {
+func (m *MockSecretKeyService) CreateSecretKeyText(ctx context.Context, req *request.SecretKeyCreateTextRequest, userID uint) (*response.SecretKeyResponse, error) {
+	args := m.Called(ctx, req, userID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*response.SecretKeyResponse), args.Error(1)
+}
+
+func (m *MockSecretKeyService) CreateSecretKeyFile(ctx context.Context, req *request.SecretKeyCreateFileRequest, userID uint) (*response.SecretKeyResponse, error) {
 	args := m.Called(ctx, req, userID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)

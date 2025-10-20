@@ -419,18 +419,13 @@ func setupSecretKeyRoutes(protected *gin.RouterGroup, secretKeyController *contr
 
 	// Secret key routes
 	secretKeys := protected.Group("/secrets")
-	secretKeys.GET("", secretKeyController.ListSecretKeys)              // GET /api/v1/secret-keys
-	secretKeys.POST("", secretKeyController.CreateSecretKey)            // POST /api/v1/secret-keys
-	secretKeys.GET("/export", secretKeyController.ExportSecretKeys)     // GET /api/v1/secret-keys/export
-	secretKeys.GET("/:id", secretKeyController.GetSecretKey)            // GET /api/v1/secret-keys/{id}
-	secretKeys.GET("/:id/value", secretKeyController.GetSecretKeyValue) // GET /api/v1/secret-keys/{id}/value
-	secretKeys.PUT("/:id", secretKeyController.UpdateSecretKey)         // PUT /api/v1/secret-keys/{id}
-	secretKeys.DELETE("/:id", secretKeyController.DeleteSecretKey)      // DELETE /api/v1/secret-keys/{id}
-	// Secret key file management routes
-	secretKeyFileGroup := secretKeys.Group("/files")
-	secretKeyFileGroup.POST("/upload", secretKeyController.UploadSecretFile)
-	secretKeyFileGroup.GET("/download", secretKeyController.DownloadSecretFile)
-	secretKeyFileGroup.DELETE("/delete", secretKeyController.DeleteSecretFile)
+	secretKeys.GET("", secretKeyController.ListSecretKeys)            // GET /api/v1/secrets
+	secretKeys.POST("/text", secretKeyController.CreateSecretKeyText) // POST /api/v1/secrets/text
+	secretKeys.POST("/file", secretKeyController.CreateSecretKeyFile) // POST /api/v1/secrets/file
+	secretKeys.GET("/export", secretKeyController.ExportSecretKeys)   // GET /api/v1/secrets/export
+	secretKeys.GET("/:id", secretKeyController.GetSecretKey)          // GET /api/v1/secrets/{id}
+	secretKeys.PUT("/:id", secretKeyController.UpdateSecretKey)       // PUT /api/v1/secrets/{id}
+	secretKeys.DELETE("/:id", secretKeyController.DeleteSecretKey)    // DELETE /api/v1/secrets/{id}
 }
 
 // setupServerRoutes sets up server management routes

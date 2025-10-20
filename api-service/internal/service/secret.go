@@ -6,7 +6,6 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
-	"mime/multipart"
 	"os"
 	"path/filepath"
 	"strings"
@@ -88,13 +87,13 @@ func initRSACryptoFromConfig(securityConfig *config.SecurityConfig) (*crypto.RSA
 	return crypto.NewRSACryptoFromKeys(privateKeyPEM, publicKeyPEM)
 }
 
-// encryptCustomFields encrypts sensitive fields in custom_fields based on key_type
-func (s *secretKeyService) encryptCustomFields(ctx context.Context, keyType model.SecretKeyType, customFields map[string]interface{}) (model.CustomFields, error) {
+// encryptSecretFields encrypts sensitive fields in secret_fields based on key_type
+func (s *secretKeyService) encryptSecretFields(ctx context.Context, keyType model.SecretKeyType, customFields map[string]interface{}) (model.SecretFields, error) {
 	if customFields == nil {
-		return make(model.CustomFields), nil
+		return make(model.SecretFields), nil
 	}
 
-	encryptedFields := make(model.CustomFields)
+	encryptedFields := make(model.SecretFields)
 
 	// Copy all fields first
 	for k, v := range customFields {
@@ -103,7 +102,7 @@ func (s *secretKeyService) encryptCustomFields(ctx context.Context, keyType mode
 
 	// Encrypt specific fields based on key_type
 	switch keyType {
-	case model.SecretKeyTypeSecretKey:
+	case model.SecretKeyTypeText:
 		return s.encryptSecretKeyFields(ctx, encryptedFields)
 	case model.SecretKeyTypeAccount:
 		return s.encryptAccountFields(ctx, encryptedFields)
@@ -115,7 +114,7 @@ func (s *secretKeyService) encryptCustomFields(ctx context.Context, keyType mode
 }
 
 // encryptSecretKeyFields encrypts secret_key field for SECRET_KEY type
-func (s *secretKeyService) encryptSecretKeyFields(ctx context.Context, fields model.CustomFields) (model.CustomFields, error) {
+func (s *secretKeyService) encryptSecretKeyFields(ctx context.Context, fields model.SecretFields) (model.SecretFields, error) {
 	if secretKey, ok := fields["secret_key"].(string); ok && secretKey != "" {
 		encryptedSecretKey, err := s.rsaCrypto.EncryptString(secretKey)
 		if err != nil {
@@ -128,7 +127,7 @@ func (s *secretKeyService) encryptSecretKeyFields(ctx context.Context, fields mo
 }
 
 // encryptAccountFields encrypts password field for ACCOUNT type
-func (s *secretKeyService) encryptAccountFields(ctx context.Context, fields model.CustomFields) (model.CustomFields, error) {
+func (s *secretKeyService) encryptAccountFields(ctx context.Context, fields model.SecretFields) (model.SecretFields, error) {
 	if password, ok := fields["password"].(string); ok && password != "" {
 		encryptedPassword, err := s.rsaCrypto.EncryptString(password)
 		if err != nil {
@@ -141,7 +140,7 @@ func (s *secretKeyService) encryptAccountFields(ctx context.Context, fields mode
 }
 
 // encryptFileFields encrypts password field for FILE type (if provided)
-func (s *secretKeyService) encryptFileFields(ctx context.Context, fields model.CustomFields) (model.CustomFields, error) {
+func (s *secretKeyService) encryptFileFields(ctx context.Context, fields model.SecretFields) (model.SecretFields, error) {
 	if password, ok := fields["password"].(string); ok && password != "" {
 		encryptedPassword, err := s.rsaCrypto.EncryptString(password)
 		if err != nil {
@@ -186,8 +185,8 @@ func (s *secretKeyService) createUserSecretRelationships(ctx context.Context, se
 		logger.Int("total_users", len(authorizedUsers)))
 }
 
-// decryptCustomFields decrypts sensitive fields in custom_fields based on key_type
-func (s *secretKeyService) decryptCustomFields(ctx context.Context, keyType model.SecretKeyType, customFields model.CustomFields) (map[string]interface{}, error) {
+// decryptSecretFields decrypts sensitive fields in secret_fields based on key_type
+func (s *secretKeyService) decryptSecretFields(ctx context.Context, keyType model.SecretKeyType, customFields model.SecretFields) (map[string]interface{}, error) {
 	decryptedFields := make(map[string]interface{})
 
 	// Copy all fields first
@@ -197,7 +196,7 @@ func (s *secretKeyService) decryptCustomFields(ctx context.Context, keyType mode
 
 	// Decrypt specific fields based on key_type
 	switch keyType {
-	case model.SecretKeyTypeSecretKey:
+	case model.SecretKeyTypeText:
 		return s.decryptSecretKeyFields(ctx, decryptedFields)
 	case model.SecretKeyTypeAccount:
 		return s.decryptAccountFields(ctx, decryptedFields)
@@ -247,8 +246,8 @@ func (s *secretKeyService) decryptFileFields(ctx context.Context, fields map[str
 	return fields, nil
 }
 
-// CreateSecretKey creates a new secret key
-func (s *secretKeyService) CreateSecretKey(ctx context.Context, req *request.SecretKeyCreateRequest, userID uint) (*response.SecretKeyResponse, error) {
+// CreateSecretKeyText creates a new text-based secret key
+func (s *secretKeyService) CreateSecretKeyText(ctx context.Context, req *request.SecretKeyCreateTextRequest, userID uint) (*response.SecretKeyResponse, error) {
 	s.logger.InfoContext(ctx, "Creating secret key",
 		logger.String("name", req.Name),
 		logger.Uint("user_id", userID))
@@ -267,8 +266,11 @@ func (s *secretKeyService) CreateSecretKey(ctx context.Context, req *request.Sec
 		return nil, errors.NewAppError(errors.CodeResourceAlreadyExists)
 	}
 
-	// Encrypt sensitive fields in custom_fields based on key_type
-	encryptedCustomFields, err := s.encryptCustomFields(ctx, req.KeyType, req.CustomFields)
+	// Determine key_type from secret_fields content
+	keyType := req.GetKeyType()
+
+	// Encrypt sensitive fields in secret_fields based on key_type
+	encryptedSecretFields, err := s.encryptSecretFields(ctx, keyType, req.SecretFields)
 	if err != nil {
 		return nil, errors.NewAppError(errors.CodeEncryptFailed)
 	}
@@ -276,9 +278,9 @@ func (s *secretKeyService) CreateSecretKey(ctx context.Context, req *request.Sec
 	// Create the secret key model
 	secretKey := &model.SecretKey{
 		Name:            req.Name,
-		KeyType:         req.KeyType,
+		KeyType:         keyType,
 		Description:     req.Description,
-		CustomFields:    encryptedCustomFields,
+		SecretFields:    encryptedSecretFields,
 		ExpiresAt:       req.ExpiresAt,
 		ResourceGroupID: req.ResourceGroupID,
 		OwnerID:         userID,
@@ -318,6 +320,186 @@ func (s *secretKeyService) CreateSecretKey(ctx context.Context, req *request.Sec
 	s.logger.InfoContext(ctx, "Secret key created successfully",
 		logger.Uint("secret_key_id", secretKey.ID),
 		logger.Uint("user_id", userID))
+
+	return response.ToSecretKeyResponse(secretKey), nil
+}
+
+// validateSecretFileName validates the uploaded file extension
+func (s *secretKeyService) validateSecretFileName(ctx context.Context, filename string) error {
+	ext := strings.ToLower(filepath.Ext(filename))
+	for _, allowedExt := range constants.AllowedSecretFileExtensions {
+		if ext == allowedExt {
+			return nil
+		}
+	}
+
+	s.logger.ErrorContext(ctx, "Invalid file extension",
+		logger.String("filename", filename),
+		logger.String("extension", ext))
+	return errors.NewAppError(errors.CodeInvalidParameterFormat)
+}
+
+// saveSecretFile saves the uploaded file to storage
+func (s *secretKeyService) saveSecretFile(ctx context.Context, req *request.SecretKeyCreateFileRequest) (string, error) {
+	// Open uploaded file
+	src, err := req.File.Open()
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to open uploaded file",
+			logger.String("filename", req.File.Filename),
+			logger.ErrorField(err))
+		return "", errors.NewAppError(errors.CodeResourceNotFound)
+	}
+	defer src.Close()
+
+	// Construct storage path
+	storagePath := filepath.Join(s.appConfig.Upload.SecretStorage, req.File.Filename)
+
+	// Save file using filestorage
+	fs := filestorage.GetInstance()
+	savedFilename, err := fs.SaveFile(src, storagePath, false)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to save file",
+			logger.String("filename", req.File.Filename),
+			logger.ErrorField(err))
+		return "", errors.NewAppError(errors.CodeRecordCreateFailed)
+	}
+
+	s.logger.InfoContext(ctx, "File saved successfully",
+		logger.String("saved_filename", savedFilename),
+		logger.String("storage_path", storagePath))
+
+	return storagePath, nil
+}
+
+// createSecretKeyModel creates and saves the secret key model to database
+func (s *secretKeyService) createSecretKeyModel(
+	ctx context.Context,
+	req *request.SecretKeyCreateFileRequest,
+	userID uint,
+	encryptedFields model.SecretFields,
+	storagePath string,
+) (*model.SecretKey, error) {
+	keyType := req.GetKeyType()
+
+	secretKey := &model.SecretKey{
+		Name:            req.Name,
+		KeyType:         keyType,
+		Description:     req.Description,
+		SecretFields:    encryptedFields,
+		ExpiresAt:       req.ExpiresAt,
+		ResourceGroupID: req.ResourceGroupID,
+		OwnerID:         userID,
+	}
+
+	if err := s.secretKeyRepo.Create(ctx, secretKey); err != nil {
+		s.logger.ErrorContext(ctx, "Failed to create secret key",
+			logger.String("name", req.Name),
+			logger.Uint("user_id", userID),
+			logger.ErrorField(err))
+
+		// Cleanup the uploaded file on database error
+		fs := filestorage.GetInstance()
+		if deleted, _ := fs.DeleteFile(storagePath, false); !deleted {
+			s.logger.WarnContext(ctx, "Failed to cleanup file after database error",
+				logger.String("storage_path", storagePath))
+		}
+		return nil, err
+	}
+
+	return secretKey, nil
+}
+
+// createSecretReference creates a secret reference if resource_code is provided
+func (s *secretKeyService) createSecretReference(ctx context.Context, secretKeyID uint, resourceCode *string) {
+	if resourceCode == nil || *resourceCode == "" {
+		return
+	}
+
+	reference := &model.SecretReference{
+		SecretID:     secretKeyID,
+		ResourceCode: *resourceCode,
+	}
+
+	if err := s.secretKeyRepo.CreateSecretReference(ctx, reference); err != nil {
+		s.logger.ErrorContext(ctx, "Failed to create secret reference",
+			logger.Uint("secret_key_id", secretKeyID),
+			logger.String("resource_code", *resourceCode),
+			logger.ErrorField(err))
+	} else {
+		s.logger.InfoContext(ctx, "Secret reference created successfully",
+			logger.Uint("secret_key_id", secretKeyID),
+			logger.String("resource_code", *resourceCode))
+	}
+}
+
+// CreateSecretKeyFile creates a new file-based secret key with file upload
+func (s *secretKeyService) CreateSecretKeyFile(ctx context.Context, req *request.SecretKeyCreateFileRequest, userID uint) (*response.SecretKeyResponse, error) {
+	s.logger.InfoContext(ctx, "Creating file-based secret key",
+		logger.String("name", req.Name),
+		logger.Uint("user_id", userID),
+		logger.String("filename", req.File.Filename))
+
+	// Check if name already exists for this user
+	exists, err := s.secretKeyRepo.ExistsByName(ctx, req.Name, userID)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to check secret key name existence",
+			logger.String("name", req.Name),
+			logger.Uint("user_id", userID),
+			logger.ErrorField(err))
+		return nil, err
+	}
+
+	if exists {
+		return nil, errors.NewAppError(errors.CodeResourceAlreadyExists)
+	}
+
+	// Validate file extension
+	err = s.validateSecretFileName(ctx, req.File.Filename)
+	if err != nil {
+		return nil, err
+	}
+
+	// Save file to storage
+	var storagePath string
+	storagePath, err = s.saveSecretFile(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	// Build secret_fields from form data
+	req.BuildSecretFields()
+
+	// Get key_type (always FILE for this method)
+	keyType := req.GetKeyType()
+
+	// Encrypt sensitive fields in secret_fields
+	encryptedSecretFields, err := s.encryptSecretFields(ctx, keyType, req.SecretFields)
+	if err != nil {
+		// If encryption fails, cleanup the uploaded file
+		fs := filestorage.GetInstance()
+		if deleted, _ := fs.DeleteFile(storagePath, false); !deleted {
+			s.logger.WarnContext(ctx, "Failed to cleanup file after encryption error",
+				logger.String("storage_path", storagePath))
+		}
+		return nil, errors.NewAppError(errors.CodeEncryptFailed)
+	}
+
+	// Create and save the secret key model
+	secretKey, err := s.createSecretKeyModel(ctx, req, userID, encryptedSecretFields, storagePath)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create user-secret relationships for authorized users
+	s.createUserSecretRelationships(ctx, secretKey.ID, req.AuthorizedUsers, userID, req.ExpiresAt)
+
+	// Create secret reference if resource_code is provided
+	s.createSecretReference(ctx, secretKey.ID, req.ResourceCode)
+
+	s.logger.InfoContext(ctx, "File-based secret key created successfully",
+		logger.Uint("secret_key_id", secretKey.ID),
+		logger.Uint("user_id", userID),
+		logger.String("filename", req.File.Filename))
 
 	return response.ToSecretKeyResponse(secretKey), nil
 }
@@ -391,8 +573,8 @@ func (s *secretKeyService) GetSecretKeyValue(ctx context.Context, id, userID uin
 		return nil, errors.NewAppError(errors.CodeValidationFailed)
 	}
 
-	// Decrypt sensitive fields in custom_fields based on key_type
-	decryptedCustomFields, err := s.decryptCustomFields(ctx, secretKey.KeyType, secretKey.CustomFields)
+	// Decrypt sensitive fields in secret_fields based on key_type
+	decryptedSecretFields, err := s.decryptSecretFields(ctx, secretKey.KeyType, secretKey.SecretFields)
 	if err != nil {
 		return nil, err
 	}
@@ -401,7 +583,7 @@ func (s *secretKeyService) GetSecretKeyValue(ctx context.Context, id, userID uin
 		logger.Uint("secret_key_id", id),
 		logger.Uint("user_id", userID))
 
-	return response.ToSecretKeyValueResponse(secretKey.KeyType, decryptedCustomFields, secretKey.ExpiresAt), nil
+	return response.ToSecretKeyValueResponse(secretKey.KeyType, decryptedSecretFields, secretKey.ExpiresAt), nil
 }
 
 // UpdateSecretKey updates an existing secret key
@@ -423,19 +605,16 @@ func (s *secretKeyService) UpdateSecretKey(ctx context.Context, id, userID uint,
 		return nil, errors.NewAppError(errors.CodeAccessDenied)
 	}
 
-	// Encrypt sensitive fields in custom_fields based on key_type
-	encryptedCustomFields := make(model.CustomFields)
-	if req.CustomFields != nil {
-		var err error
-		encryptedCustomFields, err = s.encryptCustomFields(ctx, req.KeyType, req.CustomFields)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	// Update fields
-	secretKey.KeyType = req.KeyType
-	secretKey.CustomFields = encryptedCustomFields
+	if req.Name != nil {
+		secretKey.Name = *req.Name
+	}
+	if req.Description != nil {
+		secretKey.Description = req.Description
+	}
+	if req.ExpiresAt != nil {
+		secretKey.ExpiresAt = req.ExpiresAt
+	}
 
 	// Save changes
 	if err := s.secretKeyRepo.Update(ctx, secretKey); err != nil {
@@ -755,156 +934,6 @@ func (s *secretKeyService) exportToJSON(secretKeys []*model.SecretKey) (data []b
 
 	filename = fmt.Sprintf("secret-keys-%s.json", time.Now().Format("20060102"))
 	return data, filename, nil
-}
-
-// UploadSecretFile uploads a secret key file
-func (s *secretKeyService) UploadSecretFile(ctx context.Context, file *multipart.FileHeader, fileType string) (*response.SecretFileUploadResponse, error) {
-	s.logger.InfoContext(ctx, "Uploading secret file",
-		logger.String("filename", file.Filename),
-		logger.String("type", fileType))
-
-	// 1. Validate file extension
-	ext := strings.ToLower(filepath.Ext(file.Filename))
-	validExt := false
-	for _, allowedExt := range constants.AllowedSecretFileExtensions {
-		if ext == allowedExt {
-			validExt = true
-			break
-		}
-	}
-	if !validExt {
-		s.logger.ErrorContext(ctx, "Invalid file extension",
-			logger.String("filename", file.Filename),
-			logger.String("extension", ext))
-		return nil, errors.NewAppError(
-			errors.CodeInvalidParameterFormat,
-		)
-	}
-
-	// 3. Open uploaded file
-	src, err := file.Open()
-	if err != nil {
-		s.logger.ErrorContext(ctx, "Failed to open uploaded file",
-			logger.String("filename", file.Filename),
-			logger.ErrorField(err))
-		return nil, errors.NewAppError(
-			errors.CodeResourceNotFound,
-		)
-	}
-	defer src.Close()
-
-	// 4. Construct storage path
-	storagePath := filepath.Join(s.appConfig.Upload.SecretStorage, file.Filename)
-
-	// 5. Save file
-	fs := filestorage.GetInstance()
-	savedFilename, err := fs.SaveFile(src, storagePath, false)
-	if err != nil {
-		s.logger.ErrorContext(ctx, "Failed to save file",
-			logger.String("filename", file.Filename),
-			logger.ErrorField(err))
-		return nil, errors.NewAppError(
-			errors.CodeRecordCreateFailed,
-		)
-	}
-
-	s.logger.InfoContext(ctx, "Secret file uploaded successfully",
-		logger.String("filename", savedFilename))
-
-	return &response.SecretFileUploadResponse{
-		Filename:     savedFilename,
-		OriginalName: file.Filename,
-		FilePath:     storagePath,
-	}, nil
-}
-
-// DownloadSecretFile downloads a secret key file
-func (s *secretKeyService) DownloadSecretFile(ctx context.Context, filename string) (filePath, originalName string, err error) {
-	s.logger.InfoContext(ctx, "Downloading secret file",
-		logger.String("filename", filename))
-
-	// 1. Validate filename
-	if filename == "" {
-		s.logger.ErrorContext(ctx, "Filename cannot be empty")
-		return "", "", errors.NewAppError(errors.CodeValidationFailed)
-	}
-
-	// 2. Construct file storage path
-	storagePath := filepath.Join(s.appConfig.Upload.SecretStorage, filename)
-
-	// 3. Check if file exists
-	fs := filestorage.GetInstance()
-	exists, err := fs.Exists(storagePath)
-	if err != nil {
-		s.logger.ErrorContext(ctx, "Failed to check file existence",
-			logger.String("filename", filename),
-			logger.ErrorField(err))
-		return "", "", errors.NewAppError(errors.CodeResourceNotFound)
-	}
-
-	if !exists {
-		s.logger.WarnContext(ctx, "File not found",
-			logger.String("filename", filename))
-		return "", "", errors.NewAppError(errors.CodeRecordNotFound)
-	}
-
-	s.logger.InfoContext(ctx, "Secret file download prepared",
-		logger.String("filename", filename),
-		logger.String("storage_path", storagePath))
-
-	// 4. Return file path and original name
-	return storagePath, filename, nil
-}
-
-// DeleteSecretFile deletes a secret key file
-func (s *secretKeyService) DeleteSecretFile(ctx context.Context, filename string) error {
-	s.logger.InfoContext(ctx, "Deleting secret file",
-		logger.String("filename", filename))
-
-	// 1. Validate filename
-	if filename == "" {
-		s.logger.ErrorContext(ctx, "Filename cannot be empty")
-		return errors.NewAppError(errors.CodeValidationFailed)
-	}
-
-	// 2. Construct file storage path
-	storagePath := filepath.Join(s.appConfig.Upload.SecretStorage, filename)
-
-	// 3. Check if file exists
-	fs := filestorage.GetInstance()
-	exists, err := fs.Exists(storagePath)
-	if err != nil {
-		s.logger.ErrorContext(ctx, "Failed to check file existence",
-			logger.String("filename", filename),
-			logger.ErrorField(err))
-		return errors.NewAppError(errors.CodeResourceNotFound)
-	}
-
-	if !exists {
-		s.logger.WarnContext(ctx, "File not found",
-			logger.String("filename", filename))
-		return errors.NewAppError(errors.CodeResourceNotFound)
-	}
-
-	// 4. Delete file
-	deleted, err := fs.DeleteFile(storagePath, false)
-	if err != nil {
-		s.logger.ErrorContext(ctx, "Failed to delete file",
-			logger.String("filename", filename),
-			logger.ErrorField(err))
-		return errors.NewAppError(errors.CodeRecordDeleteFailed)
-	}
-
-	if !deleted {
-		s.logger.WarnContext(ctx, "File was not deleted",
-			logger.String("filename", filename))
-		return errors.NewAppError(errors.CodeRecordDeleteFailed)
-	}
-
-	s.logger.InfoContext(ctx, "Secret file deleted successfully",
-		logger.String("filename", filename))
-
-	return nil
 }
 
 // CreateSecretReference creates a secret reference record

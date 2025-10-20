@@ -401,7 +401,7 @@ CREATE TABLE IF NOT EXISTS `secret_keys` (
     `name` VARCHAR(64) NOT NULL COMMENT 'Secret key name',
     `key_type` ENUM('SECRET_KEY', 'ACCOUNT', 'FILE') NOT NULL COMMENT 'Secret key type',
     `description` TEXT NULL COMMENT 'Description',
-    `custom_fields` JSON NULL COMMENT 'Custom fields',
+    `secret_fields` JSON NULL COMMENT 'Secret fields',
     `expires_at` DATETIME NULL COMMENT 'Expiration time',
     `resource_group_id` BIGINT UNSIGNED NULL COMMENT 'Resource group ID',
     `owner_id` BIGINT UNSIGNED NOT NULL COMMENT 'Owner ID',
