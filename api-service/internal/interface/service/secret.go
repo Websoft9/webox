@@ -37,4 +37,13 @@ type SecretKeyService interface {
 
 	// ValidateSecretKeyOwnership checks if user owns the secret key
 	ValidateSecretKeyOwnership(ctx context.Context, secretKeyID, userID uint) error
+
+	// CreateSecretReference creates a secret reference record
+	CreateSecretReference(ctx context.Context, reference *model.SecretReference) error
+
+	// DeleteSecretReferencesByResourceCode deletes secret references by resource code
+	DeleteSecretReferencesByResourceCode(ctx context.Context, resourceCode string) error
+
+	// GetSecretReferencesByResourceCode retrieves secret references by resource code
+	GetSecretReferencesByResourceCode(ctx context.Context, resourceCode string) ([]*model.SecretReference, error)
 }

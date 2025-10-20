@@ -936,4 +936,61 @@ func (s *secretKeyService) exportToJSON(secretKeys []*model.SecretKey) (data []b
 	return data, filename, nil
 }
 
-// UploadSecretFile uploads a secret key file
+// CreateSecretReference creates a secret reference record
+func (s *secretKeyService) CreateSecretReference(ctx context.Context, reference *model.SecretReference) error {
+	s.logger.InfoContext(ctx, "Creating secret reference",
+		logger.Uint("secretId", reference.SecretID),
+		logger.String("resourceCode", reference.ResourceCode))
+
+	if err := s.secretKeyRepo.CreateSecretReference(ctx, reference); err != nil {
+		s.logger.ErrorContext(ctx, "Failed to create secret reference",
+			logger.Uint("secretId", reference.SecretID),
+			logger.String("resourceCode", reference.ResourceCode),
+			logger.ErrorField(err))
+		return err
+	}
+
+	s.logger.InfoContext(ctx, "Secret reference created successfully",
+		logger.Uint("secretId", reference.SecretID),
+		logger.String("resourceCode", reference.ResourceCode))
+
+	return nil
+}
+
+// DeleteSecretReferencesByResourceCode deletes secret references by resource code
+func (s *secretKeyService) DeleteSecretReferencesByResourceCode(ctx context.Context, resourceCode string) error {
+	s.logger.InfoContext(ctx, "Deleting secret references by resource code",
+		logger.String("resourceCode", resourceCode))
+
+	if err := s.secretKeyRepo.DeleteSecretReferencesByResourceCode(ctx, resourceCode); err != nil {
+		s.logger.ErrorContext(ctx, "Failed to delete secret references",
+			logger.String("resourceCode", resourceCode),
+			logger.ErrorField(err))
+		return err
+	}
+
+	s.logger.InfoContext(ctx, "Secret references deleted successfully",
+		logger.String("resourceCode", resourceCode))
+
+	return nil
+}
+
+// GetSecretReferencesByResourceCode retrieves secret references by resource code
+func (s *secretKeyService) GetSecretReferencesByResourceCode(ctx context.Context, resourceCode string) ([]*model.SecretReference, error) {
+	s.logger.InfoContext(ctx, "Getting secret references by resource code",
+		logger.String("resourceCode", resourceCode))
+
+	references, err := s.secretKeyRepo.GetSecretReferencesByResourceCode(ctx, resourceCode)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to get secret references",
+			logger.String("resourceCode", resourceCode),
+			logger.ErrorField(err))
+		return nil, err
+	}
+
+	s.logger.InfoContext(ctx, "Secret references retrieved successfully",
+		logger.String("resourceCode", resourceCode),
+		logger.Int("count", len(references)))
+
+	return references, nil
+}
