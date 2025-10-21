@@ -76,6 +76,18 @@ func (r *secretKeyRepository) List(ctx context.Context, req *request.SecretKeyQu
 		query = query.Where("key_type = ?", *req.KeyType)
 	}
 
+	// Keyword filter: fuzzy search on name and description
+	if req.Keyword != nil && *req.Keyword != "" {
+		keyword := "%" + *req.Keyword + "%"
+		query = query.Where("name LIKE ? OR description LIKE ?", keyword, keyword)
+	}
+
+	// ResourceCode filter: join with secret_references table
+	if req.ResourceCode != nil && *req.ResourceCode != "" {
+		query = query.Joins("INNER JOIN secret_references ON secret_references.secret_id = secret_keys.id").
+			Where("secret_references.resource_code = ?", *req.ResourceCode)
+	}
+
 	// Count total records
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -86,7 +98,7 @@ func (r *secretKeyRepository) List(ctx context.Context, req *request.SecretKeyQu
 	limit := req.GetPageSize()
 	err := query.
 		Preload("Owner").
-		Order("created_at DESC").
+		Order("secret_keys.created_at DESC").
 		Limit(limit).
 		Offset(offset).
 		Find(&secretKeys).Error
