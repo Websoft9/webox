@@ -318,7 +318,7 @@ CREATE TABLE IF NOT EXISTS secret_keys (
     name VARCHAR(64) NOT NULL,
     key_type VARCHAR(20) NOT NULL, -- API_KEY, DATABASE, SSH, CERTIFICATE, CUSTOM
     description TEXT,
-    custom_fields TEXT, -- JSON format
+    secret_fields TEXT, -- JSON format
     expires_at DATETIME,
     resource_group_id INTEGER REFERENCES resource_groups(id) ON DELETE SET NULL,
     owner_id INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT,

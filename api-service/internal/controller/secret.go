@@ -7,6 +7,7 @@ import (
 	"api-service/pkg/errors"
 	"api-service/pkg/i18n"
 	"api-service/pkg/logger"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -38,32 +39,32 @@ func NewSecretKeyController(
 	}
 }
 
-// CreateSecretKey creates a new secret key
-// @Summary Create secret key
-// @Description Create a new secret key with encryption
-// @Tags Secret Keys
+// CreateSecretKeyText creates a new text-based secret key
+// @Summary Create text secret key
+// @Description Create a new text-based secret key (TEXT or ACCOUNT type)
+// @Tags Secrets
 // @Security BearerAuth
 // @Accept json
 // @Produce json
-// @Param request body request.SecretKeyCreateRequest true "Create secret key request"
+// @Param request body request.SecretKeyCreateTextRequest true "Create text secret key request"
 // @Success 201 {object} common.APIResponse{data=response.SecretKeyResponse}
 // @Failure 400 {object} common.APIResponse
 // @Failure 401 {object} common.APIResponse
 // @Failure 422 {object} common.APIResponse
 // @Failure 500 {object} common.APIResponse
-// @Router /api/v1/secrets [post]
-func (c *SecretKeyController) CreateSecretKey(ctx *gin.Context) {
+// @Router /api/v1/secrets/text [post]
+func (c *SecretKeyController) CreateSecretKeyText(ctx *gin.Context) {
 	// Parse request parameters
-	var req request.SecretKeyCreateRequest
+	var req request.SecretKeyCreateTextRequest
 	// Bind and validate request
 	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
 		return
 	}
 
-	// Validate custom_fields based on key_type
+	// Validate secret_fields based on auto-detected key_type
 	if err := req.Validate(); err != nil {
 		c.logger.ErrorContext(ctx, "Custom fields validation failed",
-			logger.String("key_type", string(req.KeyType)),
+			logger.String("key_type", string(req.GetKeyType())),
 			logger.ErrorField(err))
 		response.WithError(ctx, err)
 		return
@@ -75,24 +76,110 @@ func (c *SecretKeyController) CreateSecretKey(ctx *gin.Context) {
 		return
 	}
 
-	c.logger.InfoContext(ctx, "Handling create secret key request", logger.Uint("userID", currentUserID))
+	c.logger.InfoContext(ctx, "Handling create text secret key request", logger.Uint("userID", currentUserID))
 
-	// Call service layer to create secret key
-	secretKey, err := c.secretKeyService.CreateSecretKey(ctx.Request.Context(), &req, currentUserID)
+	// Call service layer to create text secret key
+	secretKey, err := c.secretKeyService.CreateSecretKeyText(ctx.Request.Context(), &req, currentUserID)
 	if err != nil {
-		c.logger.ErrorContext(ctx, "Failed to create secret key", logger.ErrorField(err))
+		c.logger.ErrorContext(ctx, "Failed to create text secret key", logger.ErrorField(err))
 		response.WithError(ctx, err)
 		return
 	}
 
-	c.logger.InfoContext(ctx, "Secret key created successfully", logger.Uint("userID", currentUserID))
+	c.logger.InfoContext(ctx, "Text secret key created successfully", logger.Uint("userID", currentUserID))
+	response.SuccessWithData(ctx, secretKey)
+}
+
+// CreateSecretKeyFile creates a new file-based secret key
+// @Summary Create file secret key
+// @Description Create a new file-based secret key (FILE type)
+// @Tags Secrets
+// @Security BearerAuth
+// @Accept multipart/form-data
+// @Produce json
+// @Param name formData string true "Secret key name"
+// @Param description formData string false "Secret key description"
+// @Param file formData file true "Secret key file (.key, .pem, .rsa, .crt, .p12, .pfx)"
+// @Param secret_fields formData string false "Secret fields as JSON string, e.g., {\"filename\": \"ssl-certificate.pem\", \"password\": \"***\"}"
+// @Param resource_group_id formData integer false "Resource group ID"
+// @Param expires_at formData string false "Expiration time (RFC3339 format)"
+// @Param authorized_users formData string false "Comma-separated list of authorized user IDs"
+// @Param resource_code formData string false "Resource code for reference"
+// @Success 201 {object} common.APIResponse{data=response.SecretKeyResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 422 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
+// @Router /api/v1/secrets/file [post]
+func (c *SecretKeyController) CreateSecretKeyFile(ctx *gin.Context) {
+	// Get file from request
+	file, err := ctx.FormFile("file")
+	if err != nil {
+		c.logger.ErrorContext(ctx, "Failed to get file from request", logger.ErrorField(err))
+		response.BadRequest(ctx, errors.NewAppError(errors.CodeValidationFailed))
+		return
+	}
+
+	// Create request object
+	var req request.SecretKeyCreateFileRequest
+	req.Name = ctx.PostForm("name")
+	req.File = file
+
+	// Handle optional description
+	if description := ctx.PostForm("description"); description != "" {
+		req.Description = &description
+	}
+
+	// Handle optional secret_fields (e.g., password)
+	if secretFieldsStr := ctx.PostForm("secret_fields"); secretFieldsStr != "" {
+		var secretFields map[string]interface{}
+		err = json.Unmarshal([]byte(secretFieldsStr), &secretFields)
+		if err != nil {
+			c.logger.ErrorContext(ctx, "Failed to parse secret_fields", logger.ErrorField(err))
+			response.WithError(ctx, errors.NewAppError(errors.CodeValidationFailed))
+			return
+		}
+		req.SecretFields = secretFields
+	}
+
+	// Handle optional resource_code
+	if resourceCode := ctx.PostForm("resource_code"); resourceCode != "" {
+		req.ResourceCode = &resourceCode
+	}
+
+	// Validate request
+	if err = req.Validate(); err != nil {
+		c.logger.ErrorContext(ctx, "File secret key validation failed", logger.ErrorField(err))
+		response.WithError(ctx, err)
+		return
+	}
+
+	// Get current user ID
+	currentUserID, Success := GetUserID(ctx)
+	if !Success {
+		return
+	}
+
+	c.logger.InfoContext(ctx, "Handling create file secret key request",
+		logger.Uint("userID", currentUserID),
+		logger.String("filename", file.Filename))
+
+	// Call service layer to create file secret key
+	secretKey, err := c.secretKeyService.CreateSecretKeyFile(ctx.Request.Context(), &req, currentUserID)
+	if err != nil {
+		c.logger.ErrorContext(ctx, "Failed to create file secret key", logger.ErrorField(err))
+		response.WithError(ctx, err)
+		return
+	}
+
+	c.logger.InfoContext(ctx, "File secret key created successfully", logger.Uint("userID", currentUserID))
 	response.SuccessWithData(ctx, secretKey)
 }
 
 // GetSecretKey retrieves a secret key by ID
 // @Summary Get secret key
 // @Description Get secret key information by ID
-// @Tags Secret Keys
+// @Tags Secrets
 // @Security BearerAuth
 // @Accept json
 // @Produce json
@@ -131,53 +218,10 @@ func (c *SecretKeyController) GetSecretKey(ctx *gin.Context) {
 	response.SuccessWithData(ctx, secretKey)
 }
 
-// GetSecretKeyValue retrieves the decrypted value of a secret key
-// @Summary Get secret key value
-// @Description Get the decrypted value of a secret key
-// @Tags Secret Keys
-// @Security BearerAuth
-// @Accept json
-// @Produce json
-// @Param id path int true "Secret key ID"
-// @Success 200 {object} common.APIResponse{data=response.SecretKeyValueResponse}
-// @Failure 400 {object} common.APIResponse
-// @Failure 401 {object} common.APIResponse
-// @Failure 403 {object} common.APIResponse
-// @Failure 404 {object} common.APIResponse
-// @Failure 422 {object} common.APIResponse
-// @Failure 500 {object} common.APIResponse
-// @Router /api/v1/secrets/{id}/value [get]
-func (c *SecretKeyController) GetSecretKeyValue(ctx *gin.Context) {
-	// Parse path parameter
-	id, Success := ParseIDParam(ctx, "id")
-	if !Success {
-		return
-	}
-
-	// Get current user ID
-	currentUserID, Success := GetUserID(ctx)
-	if !Success {
-		return
-	}
-
-	c.logger.InfoContext(ctx, "Handling get secret key value request", logger.Uint("userID", currentUserID), logger.Uint("secretKeyID", id))
-
-	// Call service layer to get secret key value
-	secretKeyValue, err := c.secretKeyService.GetSecretKeyValue(ctx.Request.Context(), id, currentUserID)
-	if err != nil {
-		c.logger.ErrorContext(ctx, "Failed to get secret key value", logger.ErrorField(err))
-		response.WithError(ctx, err)
-		return
-	}
-
-	c.logger.InfoContext(ctx, "Secret key value retrieved successfully", logger.Uint("userID", currentUserID))
-	response.SuccessWithData(ctx, secretKeyValue)
-}
-
 // UpdateSecretKey updates an existing secret key
 // @Summary Update secret key
 // @Description Update an existing secret key
-// @Tags Secret Keys
+// @Tags Secrets
 // @Security BearerAuth
 // @Accept json
 // @Produce json
@@ -205,16 +249,6 @@ func (c *SecretKeyController) UpdateSecretKey(ctx *gin.Context) {
 		return
 	}
 
-	// Validate custom_fields based on key_type
-	if err := req.Validate(); err != nil {
-		c.logger.ErrorContext(ctx, "Custom fields validation failed",
-			logger.Uint("secret_key_id", id),
-			logger.String("key_type", string(req.KeyType)),
-			logger.ErrorField(err))
-		response.WithError(ctx, err)
-		return
-	}
-
 	// Get current user ID
 	currentUserID, Success := GetUserID(ctx)
 	if !Success {
@@ -237,7 +271,7 @@ func (c *SecretKeyController) UpdateSecretKey(ctx *gin.Context) {
 // DeleteSecretKey deletes a secret key
 // @Summary Delete secret key
 // @Description Delete a secret key by ID
-// @Tags Secret Keys
+// @Tags Secrets
 // @Security BearerAuth
 // @Accept json
 // @Produce json
@@ -279,13 +313,15 @@ func (c *SecretKeyController) DeleteSecretKey(ctx *gin.Context) {
 // ListSecretKeys retrieves secret keys with pagination and filtering
 // @Summary List secret keys
 // @Description Get secret keys with pagination and filtering
-// @Tags Secret Keys
+// @Tags Secrets
 // @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param page query int false "Page number" default(1)
 // @Param page_size query int false "Page size" default(20)
 // @Param key_type query string false "Key type filter" Enums(SECRET_KEY,ACCOUNT,FILE)
+// @Param keyword query string false "Keyword for fuzzy search on name and description"
+// @Param resource_code query string false "Resource code to filter secrets by reference"
 // @Success 200 {object} common.APIResponse{data=response.SecretKeyListResponse}
 // @Failure 400 {object} common.APIResponse
 // @Failure 401 {object} common.APIResponse
@@ -322,7 +358,7 @@ func (c *SecretKeyController) ListSecretKeys(ctx *gin.Context) {
 // ExportSecretKeys exports secret keys in specified format
 // @Summary Export secret keys
 // @Description Export secret keys in CSV, JSON, or Excel format
-// @Tags Secret Keys
+// @Tags Secrets
 // @Security BearerAuth
 // @Accept json
 // @Produce application/octet-stream
@@ -366,132 +402,145 @@ func (c *SecretKeyController) ExportSecretKeys(ctx *gin.Context) {
 	_, _ = ctx.Writer.Write(data)
 }
 
-// UploadSecretFile uploads a secret key file
-// @Summary Upload secret key file
-// @Description Upload a secret key file (certificate, private key, etc.)
-// @Tags Secret Keys
-// @Security BearerAuth
-// @Accept multipart/form-data
-// @Produce json
-// @Param file formData file true "File to upload"
-// @Param type formData string false "File type" Enums(.key,.pem,.rsa,.crt) default(.key)
-// @Success 200 {object} common.APIResponse{data=response.SecretFileUploadResponse}
-// @Failure 400 {object} common.APIResponse
-// @Failure 401 {object} common.APIResponse
-// @Failure 413 {object} common.APIResponse
-// @Failure 500 {object} common.APIResponse
-// @Router /api/v1/secrets/files/upload [post]
-func (c *SecretKeyController) UploadSecretFile(ctx *gin.Context) {
-	// Get file from request
-	file, err := ctx.FormFile("file")
-	if err != nil {
-		c.logger.ErrorContext(ctx, "Failed to get file from request", logger.ErrorField(err))
-		response.BadRequest(ctx, errors.NewAppError(errors.CodeValidationFailed))
-		return
-	}
-
-	// Get file type parameter (optional)
-	fileType := ctx.DefaultPostForm("type", "certificate")
-
-	// Call service layer to upload file
-	result, err := c.secretKeyService.UploadSecretFile(ctx.Request.Context(), file, fileType)
-	if err != nil {
-		c.logger.ErrorContext(ctx, "Failed to upload secret file",
-			logger.String("filename", file.Filename),
-			logger.ErrorField(err))
-		response.WithError(ctx, err)
-		return
-	}
-
-	c.logger.InfoContext(ctx, "Secret file uploaded successfully")
-	response.SuccessWithData(ctx, result)
-}
-
-// DownloadSecretFile downloads a secret key file
-// @Summary Download secret key file
-// @Description Download a secret key file by filename
-// @Tags Secret Keys
-// @Security BearerAuth
-// @Accept json
-// @Produce application/octet-stream
-// @Param filename query string true "Filename to download"
-// @Success 200 {file} file "File content"
-// @Failure 400 {object} common.APIResponse
-// @Failure 401 {object} common.APIResponse
-// @Failure 404 {object} common.APIResponse
-// @Failure 500 {object} common.APIResponse
-// @Router /api/v1/secrets/files/download [get]
-func (c *SecretKeyController) DownloadSecretFile(ctx *gin.Context) {
-	// Get filename from query parameter
-	filename := ctx.Query("filename")
-	if filename == "" {
-		c.logger.WarnContext(ctx, "Filename parameter is required")
-		response.BadRequest(ctx, errors.NewAppError(errors.CodeValidationFailed))
-		return
-	}
-
-	// Call service layer to download file
-	filePath, originalName, err := c.secretKeyService.DownloadSecretFile(ctx.Request.Context(), filename)
-	if err != nil {
-		c.logger.ErrorContext(ctx, "Failed to download secret file",
-			logger.String("filename", filename),
-			logger.ErrorField(err))
-		response.WithError(ctx, err)
-		return
-	}
-
-	// Set response headers for file download
-	ctx.Header("Content-Type", "application/octet-stream")
-	ctx.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", originalName))
-	ctx.File(filePath)
-
-	c.logger.InfoContext(ctx, "Secret file downloaded successfully")
-}
-
-// DeleteSecretFile deletes a secret key file
-// @Summary Delete secret key file
-// @Description Delete a secret key file by filename
-// @Tags Secret Keys
+// AssignSecretToResource assigns a secret to a resource
+// @Summary Assign secret to resource
+// @Description Assign a secret to a resource, establishing a reference relationship
+// @Tags Secrets
 // @Security BearerAuth
 // @Accept json
 // @Produce json
-// @Param filename query string true "Filename to delete"
+// @Param request body request.SecretAssignRequest true "Assign secret request"
 // @Success 200 {object} common.APIResponse
 // @Failure 400 {object} common.APIResponse
 // @Failure 401 {object} common.APIResponse
 // @Failure 403 {object} common.APIResponse
 // @Failure 404 {object} common.APIResponse
 // @Failure 500 {object} common.APIResponse
-// @Router /api/v1/secrets/files/delete [delete]
-func (c *SecretKeyController) DeleteSecretFile(ctx *gin.Context) {
-	// Get filename from query parameter
-	filename := ctx.Query("filename")
-	if filename == "" {
-		c.logger.WarnContext(ctx, "Filename parameter is required")
+// @Router /api/v1/secrets/assign [post]
+func (c *SecretKeyController) AssignSecretToResource(ctx *gin.Context) {
+	// Parse request parameters
+	var req request.SecretAssignRequest
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
+		return
+	}
+
+	// Get current user ID
+	currentUserID, success := GetUserID(ctx)
+	if !success {
+		return
+	}
+
+	c.logger.InfoContext(ctx, "Handling assign secret to resource request",
+		logger.Uint("userID", currentUserID),
+		logger.Uint("secret_id", req.SecretID),
+		logger.String("resource_code", req.ResourceCode))
+
+	// Call service layer
+	err := c.secretKeyService.AssignSecretToResource(ctx.Request.Context(), &req, currentUserID)
+	if err != nil {
+		c.logger.ErrorContext(ctx, "Failed to assign secret to resource", logger.ErrorField(err))
+		response.WithError(ctx, err)
+		return
+	}
+
+	c.logger.InfoContext(ctx, "Secret assigned to resource successfully", logger.Uint("userID", currentUserID))
+	response.Success(ctx)
+}
+
+// UnassignSecretFromResource unassigns a secret from a resource
+// @Summary Unassign secret from resource
+// @Description Remove the association between a secret and a resource
+// @Tags Secrets
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body request.SecretUnassignRequest true "Unassign secret request"
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 403 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
+// @Router /api/v1/secrets/unassign [delete]
+func (c *SecretKeyController) UnassignSecretFromResource(ctx *gin.Context) {
+	// Parse request parameters
+	var req request.SecretUnassignRequest
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
+		return
+	}
+
+	// Get current user ID
+	currentUserID, success := GetUserID(ctx)
+	if !success {
+		return
+	}
+
+	c.logger.InfoContext(ctx, "Handling unassign secret from resource request",
+		logger.Uint("userID", currentUserID),
+		logger.Uint("secret_id", req.SecretID),
+		logger.String("resource_code", req.ResourceCode))
+
+	// Call service layer
+	err := c.secretKeyService.UnassignSecretFromResource(ctx.Request.Context(), &req, currentUserID)
+	if err != nil {
+		c.logger.ErrorContext(ctx, "Failed to unassign secret from resource", logger.ErrorField(err))
+		response.WithError(ctx, err)
+		return
+	}
+
+	c.logger.InfoContext(ctx, "Secret unassigned from resource successfully", logger.Uint("userID", currentUserID))
+	response.Success(ctx)
+}
+
+// GetSecretResources gets all resources associated with a secret
+// @Summary Get secret resources
+// @Description Get all resources associated with a specified secret
+// @Tags Secrets
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param secret_id query uint true "Secret ID"
+// @Success 200 {object} common.APIResponse{data=response.SecretResourceResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 403 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
+// @Router /api/v1/secrets/resource [get]
+func (c *SecretKeyController) GetSecretResources(ctx *gin.Context) {
+	// Parse query parameters
+	var req request.SecretResourceQueryRequest
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		c.logger.ErrorContext(ctx, "Failed to bind query parameters", logger.ErrorField(err))
+		response.BadRequest(ctx, errors.NewAppError(errors.CodeValidationFailed))
+		return
+	}
+
+	// Validate request
+	if err := c.validator.Struct(&req); err != nil {
+		c.logger.ErrorContext(ctx, "Query parameters validation failed", logger.ErrorField(err))
 		response.BadRequest(ctx, errors.NewAppError(errors.CodeValidationFailed))
 		return
 	}
 
 	// Get current user ID
-	currentUserID, Success := GetUserID(ctx)
-	if !Success {
+	currentUserID, success := GetUserID(ctx)
+	if !success {
 		return
 	}
 
-	c.logger.InfoContext(ctx, "Handling delete secret file request",
+	c.logger.InfoContext(ctx, "Handling get secret resources request",
 		logger.Uint("userID", currentUserID),
-		logger.String("filename", filename))
+		logger.Uint("secret_id", req.SecretID))
 
-	// Call service layer to delete file
-	err := c.secretKeyService.DeleteSecretFile(ctx.Request.Context(), filename)
+	// Call service layer
+	result, err := c.secretKeyService.GetSecretResources(ctx.Request.Context(), &req, currentUserID)
 	if err != nil {
-		c.logger.ErrorContext(ctx, "Failed to delete secret file",
-			logger.String("filename", filename),
-			logger.ErrorField(err))
+		c.logger.ErrorContext(ctx, "Failed to get secret resources", logger.ErrorField(err))
 		response.WithError(ctx, err)
 		return
 	}
 
-	c.logger.InfoContext(ctx, "Secret file deleted successfully")
-	response.Success(ctx)
+	c.logger.InfoContext(ctx, "Secret resources retrieved successfully", logger.Uint("userID", currentUserID))
+	response.SuccessWithData(ctx, result)
 }

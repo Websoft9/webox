@@ -76,6 +76,18 @@ func (r *secretKeyRepository) List(ctx context.Context, req *request.SecretKeyQu
 		query = query.Where("key_type = ?", *req.KeyType)
 	}
 
+	// Keyword filter: fuzzy search on name and description
+	if req.Keyword != nil && *req.Keyword != "" {
+		keyword := "%" + *req.Keyword + "%"
+		query = query.Where("name LIKE ? OR description LIKE ?", keyword, keyword)
+	}
+
+	// ResourceCode filter: join with secret_references table
+	if req.ResourceCode != nil && *req.ResourceCode != "" {
+		query = query.Joins("INNER JOIN secret_references ON secret_references.secret_id = secret_keys.id").
+			Where("secret_references.resource_code = ?", *req.ResourceCode)
+	}
+
 	// Count total records
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -86,7 +98,7 @@ func (r *secretKeyRepository) List(ctx context.Context, req *request.SecretKeyQu
 	limit := req.GetPageSize()
 	err := query.
 		Preload("Owner").
-		Order("created_at DESC").
+		Order("secret_keys.created_at DESC").
 		Limit(limit).
 		Offset(offset).
 		Find(&secretKeys).Error
@@ -217,4 +229,63 @@ func (r *secretKeyRepository) GetSecretReferencesByResourceCode(ctx context.Cont
 	}
 
 	return references, nil
+}
+
+// AssignSecretToResource assigns a secret to a resource
+func (r *secretKeyRepository) AssignSecretToResource(ctx context.Context, secretID uint, resourceCode string) error {
+	// Check if the assignment already exists
+	var existingRef model.SecretReference
+	err := r.db.WithContext(ctx).Where("secret_id = ? AND resource_code = ?", secretID, resourceCode).First(&existingRef).Error
+	if err == nil {
+		// Assignment already exists, return success
+		return nil
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	}
+
+	// Create new assignment
+	reference := &model.SecretReference{
+		SecretID:     secretID,
+		ResourceCode: resourceCode,
+	}
+
+	return r.db.WithContext(ctx).Create(reference).Error
+}
+
+// UnassignSecretFromResource unassigns a secret from a resource
+func (r *secretKeyRepository) UnassignSecretFromResource(ctx context.Context, secretID uint, resourceCode string) error {
+	result := r.db.WithContext(ctx).Where("secret_id = ? AND resource_code = ?", secretID, resourceCode).Delete(&model.SecretReference{})
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+
+	return nil
+}
+
+// GetSecretReferences gets all resource references for a secret
+func (r *secretKeyRepository) GetSecretReferences(ctx context.Context, secretID uint) ([]*model.SecretReference, error) {
+	var references []*model.SecretReference
+	err := r.db.WithContext(ctx).Where("secret_id = ?", secretID).Find(&references).Error
+	if err != nil {
+		return nil, err
+	}
+	return references, nil
+}
+
+// GetSecretReferenceBySecretAndResource gets a specific secret reference
+func (r *secretKeyRepository) GetSecretReferenceBySecretAndResource(ctx context.Context, secretID uint, resourceCode string) (*model.SecretReference, error) {
+	var reference model.SecretReference
+	err := r.db.WithContext(ctx).Where("secret_id = ? AND resource_code = ?", secretID, resourceCode).First(&reference).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, err
+		}
+		return nil, err
+	}
+	return &reference, nil
 }

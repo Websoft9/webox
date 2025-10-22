@@ -4466,7 +4466,7 @@ const docTemplate = `{
                     },
                     {
                         "enum": [
-                            "SECRET_KEY",
+                            "TEXT",
                             "ACCOUNT",
                             "FILE"
                         ],
@@ -8301,7 +8301,7 @@ const docTemplate = `{
                 "AlertRuleTypeEvent"
             ]
         },
-        "model.CustomFields": {
+        "model.SecretFields": {
             "type": "object",
             "additionalProperties": true
         },
@@ -8312,12 +8312,12 @@ const docTemplate = `{
         "model.SecretKeyType": {
             "type": "string",
             "enum": [
-                "SECRET_KEY",
+                "TEXT",
                 "ACCOUNT",
                 "FILE"
             ],
             "x-enum-varnames": [
-                "SecretKeyTypeSecretKey",
+                "SecretKeyTypeText",
                 "SecretKeyTypeAccount",
                 "SecretKeyTypeFile"
             ]
@@ -9177,7 +9177,7 @@ const docTemplate = `{
                 },
                 "key_type": {
                     "enum": [
-                        "SECRET_KEY",
+                        "TEXT",
                         "ACCOUNT",
                         "FILE"
                     ],
@@ -9213,7 +9213,7 @@ const docTemplate = `{
                 },
                 "key_type": {
                     "enum": [
-                        "SECRET_KEY",
+                        "TEXT",
                         "ACCOUNT",
                         "FILE"
                     ],
@@ -11131,7 +11131,7 @@ const docTemplate = `{
                     "description": "@Schema(example=\"{\\\"rotation_interval\\\":90}\")",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/model.CustomFields"
+                            "$ref": "#/definitions/model.SecretFields"
                         }
                     ]
                 },

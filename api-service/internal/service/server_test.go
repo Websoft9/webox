@@ -124,7 +124,15 @@ type MockSecretKeyService struct {
 	mock.Mock
 }
 
-func (m *MockSecretKeyService) CreateSecretKey(ctx context.Context, req *request.SecretKeyCreateRequest, userID uint) (*response.SecretKeyResponse, error) {
+func (m *MockSecretKeyService) CreateSecretKeyText(ctx context.Context, req *request.SecretKeyCreateTextRequest, userID uint) (*response.SecretKeyResponse, error) {
+	args := m.Called(ctx, req, userID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*response.SecretKeyResponse), args.Error(1)
+}
+
+func (m *MockSecretKeyService) CreateSecretKeyFile(ctx context.Context, req *request.SecretKeyCreateFileRequest, userID uint) (*response.SecretKeyResponse, error) {
 	args := m.Called(ctx, req, userID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -216,6 +224,24 @@ func (m *MockSecretKeyService) GetSecretReferencesByResourceCode(ctx context.Con
 		return nil, args.Error(1)
 	}
 	return args.Get(0).([]*model.SecretReference), args.Error(1)
+}
+
+func (m *MockSecretKeyService) AssignSecretToResource(ctx context.Context, req *request.SecretAssignRequest, userID uint) error {
+	args := m.Called(ctx, req, userID)
+	return args.Error(0)
+}
+
+func (m *MockSecretKeyService) UnassignSecretFromResource(ctx context.Context, req *request.SecretUnassignRequest, userID uint) error {
+	args := m.Called(ctx, req, userID)
+	return args.Error(0)
+}
+
+func (m *MockSecretKeyService) GetSecretResources(ctx context.Context, req *request.SecretResourceQueryRequest, userID uint) (*response.SecretResourceResponse, error) {
+	args := m.Called(ctx, req, userID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*response.SecretResourceResponse), args.Error(1)
 }
 
 // setupServerService creates a server service with mock dependencies
