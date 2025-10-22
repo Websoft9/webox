@@ -135,11 +135,13 @@ INSERT INTO `permissions` (`parent_code`,`scope`,`name`,`code`,`module`,`action`
 	 ('9606f68e-7aa7-452e-a3af-2d21e243971b','project','ui.action_create','461d7acc-d38f-4927-a74a-d2232b1cb9d8','secret','create',NULL,NULL,'Secret create permission',1,0,0,1,1,1),
 	 ('9606f68e-7aa7-452e-a3af-2d21e243971b','project','ui.action_update','5efcc84d-1f23-45f6-83ef-6cca8498b456','secret','update',NULL,NULL,'Secret update permission',1,0,0,1,1,1),
 	 ('9606f68e-7aa7-452e-a3af-2d21e243971b','project','ui.action_delete','1cb1d050-9623-498d-abcd-8d9c4b88bc55','secret','delete',NULL,NULL,'Secret delete permission',1,0,0,1,1,1),
-	 ('b8535fc4-8da4-4184-b184-55a3090e45fb','project','ui.database_management','218f52bf-e23b-42ed-9e52-11a4685f7574','database','*',NULL,NULL,'Database management all permissions',1,1,0,1,1,1),
-	 ('218f52bf-e23b-42ed-9e52-11a4685f7574','project','ui.action_query','019ffd00-5a4a-48a0-b939-694ac139e91d','database','query',NULL,NULL,'Database query permission',1,0,0,1,1,1),
-	 ('218f52bf-e23b-42ed-9e52-11a4685f7574','project','ui.action_create','2db086d7-aaea-4eeb-99f6-2753ad69e604','database','create',NULL,NULL,'Database create permission',1,0,0,1,1,1),
-	 ('218f52bf-e23b-42ed-9e52-11a4685f7574','project','ui.action_update','f4704220-3059-4684-a861-8845d5344f01','database','update',NULL,NULL,'Database update permission',1,0,0,1,1,1),
-	 ('218f52bf-e23b-42ed-9e52-11a4685f7574','project','ui.action_delete','f4070c8a-8bcc-49ef-b480-b91424a79aec','database','delete',NULL,NULL,'Database delete permission',1,0,0,1,1,1),
+	 ('b8535fc4-8da4-4184-b184-55a3090e45fb','project','ui.database_management','218f52bf-e23b-42ed-9e52-11a4685f7574','database','*','/databases',NULL,'Database management all permissions',1,1,0,1,1,1),
+	 ('218f52bf-e23b-42ed-9e52-11a4685f7574','project','ui.action_query','019ffd00-5a4a-48a0-b939-694ac139e91d','database','query','/databases',NULL,'Database connection list query permission',1,0,0,1,1,1),
+	 ('218f52bf-e23b-42ed-9e52-11a4685f7574','project','ui.action_query','8f3a2b1c-4d5e-6f7a-8b9c-0d1e2f3a4b5c','database','query','/databases/*',NULL,'Database connection detail query permission',1,0,0,1,1,1),
+	 ('218f52bf-e23b-42ed-9e52-11a4685f7574','project','ui.action_create','2db086d7-aaea-4eeb-99f6-2753ad69e604','database','create','/databases',NULL,'Database connection create permission',1,0,0,1,1,1),
+	 ('218f52bf-e23b-42ed-9e52-11a4685f7574','project','ui.action_update','f4704220-3059-4684-a861-8845d5344f01','database','update','/databases/*',NULL,'Database connection update permission',1,0,0,1,1,1),
+	 ('218f52bf-e23b-42ed-9e52-11a4685f7574','project','ui.action_delete','f4070c8a-8bcc-49ef-b480-b91424a79aec','database','delete','/databases/*',NULL,'Database connection delete permission',1,0,0,1,1,1),
+	 ('218f52bf-e23b-42ed-9e52-11a4685f7574','project','ui.action_create','7c8d9e0f-1a2b-3c4d-5e6f-7a8b9c0d1e2f','database','create','/databases/test',NULL,'Database connection test permission',1,0,0,1,1,1),
 	 ('b8535fc4-8da4-4184-b184-55a3090e45fb','project','ui.gateway_management','cc20089c-8b1a-43c9-8862-9a1ce00ab629','gateway','*',NULL,NULL,'Application gateway management all permissions',1,1,0,1,1,1),
 	 ('cc20089c-8b1a-43c9-8862-9a1ce00ab629','project','ui.action_query','2372a133-912e-4835-ba53-e7cc27912052','gateway','query',NULL,NULL,'Application gateway query permission',1,0,0,1,1,1),
 	 ('cc20089c-8b1a-43c9-8862-9a1ce00ab629','project','ui.action_create','d4c26f66-b9f5-49a7-972e-530bd96a95ba','gateway','create',NULL,NULL,'Application gateway create permission',1,0,0,1,1,1),
@@ -367,9 +369,11 @@ INSERT INTO `role_permissions` (`role_id`,`permission_code`,`granted_by`,`status
          (1, '1cb1d050-9623-498d-abcd-8d9c4b88bc55',1,1),
          (1, '218f52bf-e23b-42ed-9e52-11a4685f7574',1,1),
          (1, '019ffd00-5a4a-48a0-b939-694ac139e91d',1,1),
+         (1, '8f3a2b1c-4d5e-6f7a-8b9c-0d1e2f3a4b5c',1,1),
          (1, '2db086d7-aaea-4eeb-99f6-2753ad69e604',1,1),
          (1, 'f4704220-3059-4684-a861-8845d5344f01',1,1),
          (1, 'f4070c8a-8bcc-49ef-b480-b91424a79aec',1,1),
+         (1, '7c8d9e0f-1a2b-3c4d-5e6f-7a8b9c0d1e2f',1,1),
          (1, 'cc20089c-8b1a-43c9-8862-9a1ce00ab629',1,1),
          (1, '2372a133-912e-4835-ba53-e7cc27912052',1,1),
          (1, 'd4c26f66-b9f5-49a7-972e-530bd96a95ba',1,1),
@@ -575,3 +579,17 @@ INSERT INTO `notification_templates` (`name`, `template_type`, `subject`, `conte
 ('System Alert Notification', 'EMAIL', '{{system_name}} System Alert', 'Alert Title: {{alert_title}}\nAlert Description: {{alert_description}}\nTriggered At: {{fired_at}}\nAlert Level: {{alert_level}}\n\nPlease handle this promptly.', 1, 1),
 ('Application Deployment Success', 'EMAIL', 'Application Deployment Success Notification', 'Dear {{username}},\n\nYour application {{app_name}} has been successfully deployed to server {{server_name}}.\n\nAccess URL: {{app_url}}\nDeployment Time: {{deployed_at}}\n\n{{system_name}} Team', 1, 1),
 ('Application Deployment Failure', 'EMAIL', 'Application Deployment Failure Notification', 'Dear {{username}},\n\nYour application {{app_name}} deployment has failed.\n\nError Message: {{error_message}}\nFailure Time: {{failed_at}}\n\nPlease check the configuration and try again.\n\n{{system_name}} Team', 1, 1);
+
+-- ========================================
+-- Test data for development and testing
+-- ========================================
+
+-- Insert default project (for testing)
+INSERT INTO `projects` (`name`, `identifier`, `description`, `owner_id`, `status`) VALUES
+('Default Project', 'default_project', 'Default project for testing and development', 1, 'NORMAL');
+
+-- Insert default resource groups (for testing)
+INSERT INTO `resource_groups` (`project_id`, `name`, `code`, `description`, `owner_id`, `sort_order`, `status`) VALUES
+(1, 'Default Resource Group', 'default_rg', 'Default resource group for testing', 1, 0, 1),
+(1, 'Development Environment', 'dev_env', 'Development environment resource group', 1, 1, 1),
+(1, 'Production Environment', 'prod_env', 'Production environment resource group', 1, 2, 1);
