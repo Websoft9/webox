@@ -171,7 +171,7 @@ func (p *TimezonePlugin) afterOperationCallback(db *gorm.DB) {
 	// Convert time fields in the query results to the target timezone
 	logger.Debug("Starting timezone conversion",
 		logger.String("targetTimezone", targetTZ.String()))
-	p.convertTimezoneInResult(db, targetTZ)
+	p.convertTimezoneInResult(db, targetTZ, time.RFC3339)
 }
 
 // beforeOperationCallback is the main callback function executed before query, update, create operations
@@ -181,7 +181,7 @@ func (p *TimezonePlugin) beforeOperationCallback(db *gorm.DB) {
 	// Convert time fields in the query results to the target timezone
 	logger.Debug("Starting timezone conversion",
 		logger.String("targetTimezone", p.timezone.String()))
-	p.convertTimezoneInResult(db, p.timezone)
+	p.convertTimezoneInResult(db, p.timezone, time.DateTime)
 }
 
 // shouldSkipConversion determines whether timezone conversion should be skipped
@@ -292,15 +292,15 @@ func (p *TimezonePlugin) getSystemTimezone(ctx context.Context) string {
 
 // convertTimezoneInResult processes the query result and converts time fields
 // It handles both single struct results and slice results (collections)
-func (p *TimezonePlugin) convertTimezoneInResult(db *gorm.DB, targetTZ *time.Location) {
+func (p *TimezonePlugin) convertTimezoneInResult(db *gorm.DB, targetTZ *time.Location, format string) {
 	processQueryResult(db, func(item reflect.Value) {
-		p.convertStructTimezone(item, targetTZ)
+		p.convertStructTimezone(item, targetTZ, format)
 	})
 }
 
 // convertStructTimezone processes a single struct and converts its time fields
 // It handles embedded structs recursively and respects field visibility rules
-func (p *TimezonePlugin) convertStructTimezone(structValue reflect.Value, targetTZ *time.Location) {
+func (p *TimezonePlugin) convertStructTimezone(structValue reflect.Value, targetTZ *time.Location, format string) {
 	logger.Debug("Starting struct timezone conversion",
 		logger.String("structType", structValue.Type().String()),
 		logger.String("structKind", structValue.Kind().String()),
@@ -353,7 +353,7 @@ func (p *TimezonePlugin) convertStructTimezone(structValue reflect.Value, target
 
 		// Handle embedded structs (like BaseModel) recursively
 		if fieldType.Anonymous && field.Kind() == reflect.Struct {
-			p.convertStructTimezone(field, targetTZ)
+			p.convertStructTimezone(field, targetTZ, format)
 			continue
 		}
 
@@ -385,7 +385,7 @@ func (p *TimezonePlugin) convertStructTimezone(structValue reflect.Value, target
 			logger.String("structFieldName", fieldType.Name))
 
 		// Convert the time field to target timezone
-		p.convertTimeField(field, targetTZ)
+		p.convertTimeField(field, targetTZ, format)
 	}
 }
 
@@ -397,7 +397,7 @@ func (p *TimezonePlugin) isConvertibleField(fieldName string) bool {
 
 // convertTimeField converts a time field value to the target timezone
 // It handles both time.Time and *time.Time field types
-func (p *TimezonePlugin) convertTimeField(field reflect.Value, targetTZ *time.Location) {
+func (p *TimezonePlugin) convertTimeField(field reflect.Value, targetTZ *time.Location, format string) {
 	switch field.Kind() {
 	case reflect.Struct:
 		// Handle time.Time type (value type)
@@ -409,7 +409,16 @@ func (p *TimezonePlugin) convertTimeField(field reflect.Value, targetTZ *time.Lo
 					logger.String("original", timeVal.String()),
 					logger.String("converted", convertedTime.String()),
 					logger.String("targetTZ", targetTZ.String()))
-				field.Set(reflect.ValueOf(convertedTime))
+				// Format the datetime value
+				formatDateTime, err := time.Parse(format, convertedTime.Format(format))
+				if err == nil {
+					field.Set(reflect.ValueOf(formatDateTime))
+				} else {
+					logger.Error("Failed to format datetime value",
+						logger.ErrorField(err),
+						logger.String("original", convertedTime.String()),
+						logger.String("format", format))
+				}
 			}
 		}
 	case reflect.Ptr:
@@ -424,7 +433,16 @@ func (p *TimezonePlugin) convertTimeField(field reflect.Value, targetTZ *time.Lo
 						logger.String("original", timePtr.String()),
 						logger.String("converted", convertedTime.String()),
 						logger.String("targetTZ", targetTZ.String()))
-					field.Set(reflect.ValueOf(&convertedTime))
+					// Format the datetime value
+					formatDateTime, err := time.Parse(format, convertedTime.Format(format))
+					if err == nil {
+						field.Set(reflect.ValueOf(&formatDateTime))
+					} else {
+						logger.Error("Failed to format datetime value",
+							logger.ErrorField(err),
+							logger.String("original", convertedTime.String()),
+							logger.String("format", format))
+					}
 				}
 			}
 		}

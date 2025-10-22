@@ -129,12 +129,12 @@ func (t *TimeRangeRequest) GetEndTime() (time.Time, error) {
 // GetUTCTimeRange retrieves the UTC time range
 func (t *TimeRangeRequest) GetTimeRange(useUTC bool) (startTimeStr, endTimeStr string, err error) {
 	startTime, err := t.GetStartTime()
-	if err != nil {
+	if err != nil || startTime.IsZero() {
 		return "", "", err
 	}
 
 	endTime, err := t.GetEndTime()
-	if err != nil {
+	if err != nil || endTime.IsZero() {
 		return "", "", err
 	}
 	if useUTC {
