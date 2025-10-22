@@ -14,7 +14,6 @@ server:
     idle_timeout: 60
     read_header_timeout: 60
     max_header_bytes: 1048576
-    
 
   upload:
     secret_storage: "/home/appuser/data"
@@ -69,8 +68,8 @@ database:
   # MySQL/PostgreSQL configuration
   host: "localhost"
   port: 3306 # 3306 for MySQL, 5432 for PostgreSQL
-  database: "websoft9"
-  username: "websoft9"
+  name: "websoft9" # database name
+  user: "websoft9"
   password: ""
 
   # Connection pool settings

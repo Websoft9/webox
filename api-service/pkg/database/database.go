@@ -49,8 +49,8 @@ type DatabaseConnectionConfig struct {
 	Path            string
 	Host            string
 	Port            int
-	Database        string
-	Username        string
+	Name            string
+	User            string
 	Password        string
 	SSLMode         string
 	MaxIdleConns    int
@@ -73,8 +73,8 @@ func InitDB(cfg *config.Config) (*gorm.DB, error) {
 		Path:            cfg.Database.Path,
 		Host:            cfg.Database.Host,
 		Port:            cfg.Database.Port,
-		Database:        cfg.Database.Database,
-		Username:        cfg.Database.Username,
+		Name:            cfg.Database.Name,
+		User:            cfg.Database.User,
 		Password:        cfg.Database.Password,
 		SSLMode:         cfg.Database.SSLMode,
 		MaxIdleConns:    cfg.Database.MaxIdleConns,
@@ -208,11 +208,11 @@ func initPostgreSQL(cfg *DatabaseConnectionConfig) (*gorm.DB, error) {
 // buildMySQLDSN builds MySQL data source name
 func buildMySQLDSN(cfg *DatabaseConnectionConfig) string {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s",
-		cfg.Username,
+		cfg.User,
 		cfg.Password,
 		cfg.Host,
 		cfg.Port,
-		cfg.Database,
+		cfg.Name,
 	)
 
 	// Add connection parameters
@@ -253,8 +253,8 @@ func buildPostgreSQLDSN(cfg *DatabaseConnectionConfig) string {
 	dsn := fmt.Sprintf("host=%s port=%d user=%s dbname=%s",
 		cfg.Host,
 		cfg.Port,
-		cfg.Username,
-		cfg.Database,
+		cfg.User,
+		cfg.Name,
 	)
 
 	if cfg.Password != "" {
@@ -343,7 +343,7 @@ func GetDatabaseInfo(cfg *config.Config) (map[string]any, error) {
 		"type":           cfg.Database.Type,
 		"host":           cfg.Database.Host,
 		"port":           cfg.Database.Port,
-		"database":       cfg.Database.Database,
+		"name":           cfg.Database.Name,
 		"max_open_conns": stats.MaxOpenConnections,
 		"open_conns":     stats.OpenConnections,
 		"in_use":         stats.InUse,
