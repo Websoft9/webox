@@ -73,8 +73,8 @@ type DatabaseConfig struct {
 	// MySQL/PostgreSQL specific
 	Host     string `mapstructure:"host"`
 	Port     int    `mapstructure:"port"`
-	Database string `mapstructure:"database"`
-	Username string `mapstructure:"username"`
+	Name     string `mapstructure:"name"`
+	User     string `mapstructure:"user"`
 	Password string `mapstructure:"password"`
 
 	// Connection pool settings
@@ -176,8 +176,8 @@ func Load() (*Config, error) {
 	_ = viper.BindEnv("database.type", "WEBSOFT9_DB_TYPE")
 	_ = viper.BindEnv("database.host", "WEBSOFT9_DB_HOST")
 	_ = viper.BindEnv("database.port", "WEBSOFT9_DB_PORT")
-	_ = viper.BindEnv("database.database", "WEBSOFT9_DB_NAME")
-	_ = viper.BindEnv("database.username", "WEBSOFT9_DB_USER")
+	_ = viper.BindEnv("database.name", "WEBSOFT9_DB_NAME")
+	_ = viper.BindEnv("database.user", "WEBSOFT9_DB_USER")
 	_ = viper.BindEnv("database.password", "WEBSOFT9_DB_PASSWORD")
 	_ = viper.BindEnv("database.path", "WEBSOFT9_DB_PATH")
 	_ = viper.BindEnv("database.ssl_mode", "WEBSOFT9_DB_SSL_MODE")
@@ -252,8 +252,8 @@ func setDatabaseDefaults() {
 	viper.SetDefault("database.path", "./data/websoft9.db")
 	viper.SetDefault("database.host", "localhost")
 	viper.SetDefault("database.port", constants.DefaultMySQLPort)
-	viper.SetDefault("database.database", "websoft9")
-	viper.SetDefault("database.username", "websoft9")
+	viper.SetDefault("database.name", "websoft9")
+	viper.SetDefault("database.user", "websoft9")
 	viper.SetDefault("database.password", "")
 	viper.SetDefault("database.max_idle_conns", constants.DefaultMaxIdleConns)
 	viper.SetDefault("database.max_open_conns", constants.DefaultMaxOpenConns)

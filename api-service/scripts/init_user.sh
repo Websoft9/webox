@@ -200,6 +200,14 @@ main() {
     local password="$2"
     local role_code="$3"
 
+    # Check if user initialization has already been completed
+    local flag_file="/home/appuser/data/.websoft9_user_initialized"
+    if [[ -f "$flag_file" ]]; then
+        print_info "User initialization already completed. Skipping..."
+        print_success "User '$username' already exists"
+        exit 0
+    fi
+
     # Validate parameters
     if ! validate_parameters "$username" "$password" "$role_code"; then
         echo
@@ -214,6 +222,8 @@ main() {
 
     # Create user
     if create_user "$username" "$password" "$role_code"; then
+        # Create flag file to indicate initialization is complete
+        touch "$flag_file"
         echo
         print_success "User initialization completed successfully!"
         print_info "User '$username' has been created with role code '$role_code'"

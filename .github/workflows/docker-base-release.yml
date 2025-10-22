@@ -1,13 +1,12 @@
-# This action is used for building webox docker images to DockerHub at one time
-
-name: Build and Push webox server image to docker-hub
+# This action is used for building webox docker base images to DockerHub at one time
+name: 🐬 Docker Base Image Release
 
 on:
   push:
     branches:
       - develop
     paths:
-      - "api-service/Dockerfile"
+      - "api-service/Dockerfile.base"
 
 jobs:
   build-and-push:
@@ -20,7 +19,7 @@ jobs:
       - name: Extract version from Dockerfile
         id: extract_version
         run: |
-          VERSION=$(grep 'LABEL version=' ./api-service/Dockerfile | cut -d'"' -f2 | tr -d '\n' | tr -d '\r' | xargs)
+          VERSION=$(grep 'LABEL version=' ./api-service/Dockerfile.base | cut -d'"' -f2 | tr -d '\n' | tr -d '\r' | xargs)
           echo "VERSION=$VERSION"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
@@ -33,7 +32,7 @@ jobs:
           tags: ${{ env.VERSION }},latest
           registry: docker.io
           directory: ./api-service
-          dockerfile: ./api-service/Dockerfile
+          dockerfile: ./api-service/Dockerfile.base
           multiPlatform: true
           platform: linux/amd64
           username: ${{ secrets.DOCKER_USERNAME }}
