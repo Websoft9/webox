@@ -207,26 +207,23 @@ CREATE TABLE IF NOT EXISTS resource_groups (
 CREATE TABLE IF NOT EXISTS database_connections (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name VARCHAR(64) NOT NULL,
-    code VARCHAR(64) NOT NULL,
-    db_type VARCHAR(20) NOT NULL, -- mysql, postgresql, redis
+    code VARCHAR(64) NOT NULL UNIQUE, -- Connection code (format: db_conn_{id}, auto-generated)
+    db_type VARCHAR(32) NOT NULL, -- mysql, postgresql, mariadb, sqlserver, oracle, sqlite
     host VARCHAR(255) NOT NULL,
     port INTEGER NOT NULL,
-    database VARCHAR(64),
-    username VARCHAR(64),
-    password VARCHAR(255),
-    ssl_enabled INTEGER DEFAULT 0,
-    connection_timeout INTEGER DEFAULT 30,
-    max_connections INTEGER DEFAULT 10,
-    status VARCHAR(20) DEFAULT 'CONNECTED',
-    version VARCHAR(32),
-    charset VARCHAR(32),
-    description TEXT,
-    last_connected_at DATETIME,
-    resource_group_id INTEGER REFERENCES resource_groups(id) ON DELETE SET NULL,
+    database VARCHAR(64), -- Optional for some scenarios
+    description VARCHAR(255), -- Connection description
+    config TEXT, -- Extra configuration (JSON format for database-specific parameters)
     owner_id INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    resource_group_id INTEGER REFERENCES resource_groups(id) ON DELETE SET NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(name)
 );
+
+CREATE INDEX IF NOT EXISTS idx_db_connections_code ON database_connections(code);
+CREATE INDEX IF NOT EXISTS idx_db_connections_owner ON database_connections(owner_id);
+CREATE INDEX IF NOT EXISTS idx_db_connections_type ON database_connections(db_type);
 
 -- Servers table
 CREATE TABLE IF NOT EXISTS servers (
@@ -1198,6 +1195,12 @@ CREATE TRIGGER IF NOT EXISTS update_resource_groups_updated_at
     AFTER UPDATE ON resource_groups
     BEGIN
         UPDATE resource_groups SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+    END;
+
+CREATE TRIGGER IF NOT EXISTS update_database_connections_updated_at
+    AFTER UPDATE ON database_connections
+    BEGIN
+        UPDATE database_connections SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
     END;
 
 CREATE TRIGGER IF NOT EXISTS update_system_configs_updated_at

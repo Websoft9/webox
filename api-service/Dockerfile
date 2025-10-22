@@ -13,7 +13,7 @@ ARG INFLUXDB_VERSION
 # Install necessary tools
 #RUN apk add --no-cache git bash gcc musl-dev ca-certificates curl
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories && \
-    apk add --no-cache git bash gcc musl-dev ca-certificates curl
+  apk add --no-cache git bash gcc musl-dev ca-certificates curl
 
 # Create non-privileged user
 RUN adduser -D -s /bin/sh appuser
@@ -50,15 +50,13 @@ ARG VERSION=dev
 ARG COMMIT=1.0.0
 ARG BUILD_TIME=2025-08-01T00:00:00Z
 
+# Build both binaries in a single RUN command to leverage build cache
 RUN CGO_ENABLED=1 GOOS=linux go build \
   -ldflags "-X main.Version=${VERSION} -X main.Commit=${COMMIT} -X main.BuildTime=${BUILD_TIME} -w -s" \
-  -a -installsuffix cgo \
   -o api-service \
-  ./cmd/server
-
-RUN CGO_ENABLED=1 GOOS=linux go build \
+  ./cmd/server && \
+  CGO_ENABLED=1 GOOS=linux go build \
   -ldflags "-X main.Version=${VERSION} -X main.Commit=${COMMIT} -X main.BuildTime=${BUILD_TIME} -w -s" \
-  -a -installsuffix cgo \
   -o create-user \
   ./tools/create-user
 
