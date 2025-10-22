@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"gorm.io/gorm"
 
 	"api-service/internal/config"
 	"api-service/internal/dto/common"
@@ -111,6 +112,33 @@ func (m *MockSecretKeyRepository) GetSecretReferencesByResourceCode(ctx context.
 		return nil, args.Error(1)
 	}
 	return args.Get(0).([]*model.SecretReference), args.Error(1)
+}
+
+// 在 MockSecretKeyRepository 中添加新的方法
+func (m *MockSecretKeyRepository) AssignSecretToResource(ctx context.Context, secretID uint, resourceCode string) error {
+	args := m.Called(ctx, secretID, resourceCode)
+	return args.Error(0)
+}
+
+func (m *MockSecretKeyRepository) UnassignSecretFromResource(ctx context.Context, secretID uint, resourceCode string) error {
+	args := m.Called(ctx, secretID, resourceCode)
+	return args.Error(0)
+}
+
+func (m *MockSecretKeyRepository) GetSecretReferences(ctx context.Context, secretID uint) ([]*model.SecretReference, error) {
+	args := m.Called(ctx, secretID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*model.SecretReference), args.Error(1)
+}
+
+func (m *MockSecretKeyRepository) GetSecretReferenceBySecretAndResource(ctx context.Context, secretID uint, resourceCode string) (*model.SecretReference, error) {
+	args := m.Called(ctx, secretID, resourceCode)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*model.SecretReference), args.Error(1)
 }
 
 // createTestConfig creates a test configuration with RSA keys
@@ -662,4 +690,218 @@ func BenchmarkSecretKeyService_GetSecretKey(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_, _ = service.GetSecretKey(ctx, 1, userID)
 	}
+}
+
+// Tests for AssignSecretToResource
+func TestSecretKeyService_AssignSecretToResource_Success(t *testing.T) {
+	service, mockRepo, _ := setupSecretKeyService()
+	ctx := context.Background()
+	req := &request.SecretAssignRequest{
+		SecretID:     1,
+		ResourceCode: "mysql-prod-001",
+	}
+	userID := uint(1)
+	testSecret := createTestSecretKey()
+	testSecret.OwnerID = userID
+
+	// Mock GetByID call
+	mockRepo.On("GetByID", ctx, req.SecretID).Return(testSecret, nil)
+
+	// Mock AssignSecretToResource call
+	mockRepo.On("AssignSecretToResource", ctx, req.SecretID, req.ResourceCode).Return(nil)
+
+	// Execute
+	err := service.AssignSecretToResource(ctx, req, userID)
+
+	// Assert
+	assert.NoError(t, err)
+	mockRepo.AssertExpectations(t)
+}
+
+func TestSecretKeyService_AssignSecretToResource_SecretNotFound(t *testing.T) {
+	service, mockRepo, _ := setupSecretKeyService()
+	ctx := context.Background()
+	req := &request.SecretAssignRequest{
+		SecretID:     999,
+		ResourceCode: "mysql-prod-001",
+	}
+	userID := uint(1)
+
+	// Mock GetByID call returning not found
+	mockRepo.On("GetByID", ctx, req.SecretID).Return((*model.SecretKey)(nil), gorm.ErrRecordNotFound)
+
+	// Execute
+	err := service.AssignSecretToResource(ctx, req, userID)
+
+	// Assert
+	assert.Error(t, err)
+	mockRepo.AssertExpectations(t)
+}
+
+func TestSecretKeyService_AssignSecretToResource_AccessDenied(t *testing.T) {
+	service, mockRepo, _ := setupSecretKeyService()
+	ctx := context.Background()
+	req := &request.SecretAssignRequest{
+		SecretID:     1,
+		ResourceCode: "mysql-prod-001",
+	}
+	userID := uint(2)
+	testSecret := createTestSecretKey()
+	testSecret.OwnerID = uint(1) // Different owner
+
+	// Mock GetByID call
+	mockRepo.On("GetByID", ctx, req.SecretID).Return(testSecret, nil)
+
+	// Execute
+	err := service.AssignSecretToResource(ctx, req, userID)
+
+	// Assert
+	assert.Error(t, err)
+	mockRepo.AssertExpectations(t)
+}
+
+// Tests for UnassignSecretFromResource
+func TestSecretKeyService_UnassignSecretFromResource_Success(t *testing.T) {
+	service, mockRepo, _ := setupSecretKeyService()
+	ctx := context.Background()
+	req := &request.SecretUnassignRequest{
+		SecretID:     1,
+		ResourceCode: "mysql-prod-001",
+	}
+	userID := uint(1)
+	testSecret := createTestSecretKey()
+	testSecret.OwnerID = userID
+	testReference := &model.SecretReference{
+		ID:           1,
+		SecretID:     req.SecretID,
+		ResourceCode: req.ResourceCode,
+	}
+
+	// Mock GetByID call
+	mockRepo.On("GetByID", ctx, req.SecretID).Return(testSecret, nil)
+
+	// Mock GetSecretReferenceBySecretAndResource call
+	mockRepo.On("GetSecretReferenceBySecretAndResource", ctx, req.SecretID, req.ResourceCode).Return(testReference, nil)
+
+	// Mock UnassignSecretFromResource call
+	mockRepo.On("UnassignSecretFromResource", ctx, req.SecretID, req.ResourceCode).Return(nil)
+
+	// Execute
+	err := service.UnassignSecretFromResource(ctx, req, userID)
+
+	// Assert
+	assert.NoError(t, err)
+	mockRepo.AssertExpectations(t)
+}
+
+func TestSecretKeyService_UnassignSecretFromResource_ReferenceNotFound(t *testing.T) {
+	service, mockRepo, _ := setupSecretKeyService()
+	ctx := context.Background()
+	req := &request.SecretUnassignRequest{
+		SecretID:     1,
+		ResourceCode: "mysql-prod-001",
+	}
+	userID := uint(1)
+	testSecret := createTestSecretKey()
+	testSecret.OwnerID = userID
+
+	// Mock GetByID call
+	mockRepo.On("GetByID", ctx, req.SecretID).Return(testSecret, nil)
+
+	// Mock GetSecretReferenceBySecretAndResource call returning not found
+	mockRepo.On("GetSecretReferenceBySecretAndResource", ctx, req.SecretID, req.ResourceCode).Return((*model.SecretReference)(nil), gorm.ErrRecordNotFound)
+
+	// Execute
+	err := service.UnassignSecretFromResource(ctx, req, userID)
+
+	// Assert
+	assert.Error(t, err)
+	mockRepo.AssertExpectations(t)
+}
+
+// Tests for GetSecretResources
+func TestSecretKeyService_GetSecretResources_Success(t *testing.T) {
+	service, mockRepo, _ := setupSecretKeyService()
+	ctx := context.Background()
+	req := &request.SecretResourceQueryRequest{
+		SecretID: 1,
+	}
+	userID := uint(1)
+	testSecret := createTestSecretKey()
+	testSecret.OwnerID = userID
+	testReferences := []*model.SecretReference{
+		{
+			ID:           1,
+			SecretID:     1,
+			ResourceCode: "mysql-prod-001",
+			CreatedAt:    time.Now(),
+		},
+		{
+			ID:           2,
+			SecretID:     1,
+			ResourceCode: "mysql-dev-001",
+			CreatedAt:    time.Now(),
+		},
+	}
+
+	// Mock GetByID call
+	mockRepo.On("GetByID", ctx, req.SecretID).Return(testSecret, nil)
+
+	// Mock GetSecretReferences call
+	mockRepo.On("GetSecretReferences", ctx, req.SecretID).Return(testReferences, nil)
+
+	// Execute
+	result, err := service.GetSecretResources(ctx, req, userID)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, testSecret.ID, result.SecretInfo.ID)
+	assert.Equal(t, testSecret.Name, result.SecretInfo.Name)
+	assert.Equal(t, 2, len(result.AssociatedResources))
+	assert.Equal(t, "mysql-prod-001", result.AssociatedResources[0].ResourceCode)
+	assert.Equal(t, "mysql-dev-001", result.AssociatedResources[1].ResourceCode)
+	mockRepo.AssertExpectations(t)
+}
+
+func TestSecretKeyService_GetSecretResources_SecretNotFound(t *testing.T) {
+	service, mockRepo, _ := setupSecretKeyService()
+	ctx := context.Background()
+	req := &request.SecretResourceQueryRequest{
+		SecretID: 999,
+	}
+	userID := uint(1)
+
+	// Mock GetByID call returning not found
+	mockRepo.On("GetByID", ctx, req.SecretID).Return((*model.SecretKey)(nil), gorm.ErrRecordNotFound)
+
+	// Execute
+	result, err := service.GetSecretResources(ctx, req, userID)
+
+	// Assert
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	mockRepo.AssertExpectations(t)
+}
+
+func TestSecretKeyService_GetSecretResources_AccessDenied(t *testing.T) {
+	service, mockRepo, _ := setupSecretKeyService()
+	ctx := context.Background()
+	req := &request.SecretResourceQueryRequest{
+		SecretID: 1,
+	}
+	userID := uint(2)
+	testSecret := createTestSecretKey()
+	testSecret.OwnerID = uint(1) // Different owner
+
+	// Mock GetByID call
+	mockRepo.On("GetByID", ctx, req.SecretID).Return(testSecret, nil)
+
+	// Execute
+	result, err := service.GetSecretResources(ctx, req, userID)
+
+	// Assert
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	mockRepo.AssertExpectations(t)
 }

@@ -994,3 +994,140 @@ func (s *secretKeyService) GetSecretReferencesByResourceCode(ctx context.Context
 
 	return references, nil
 }
+
+// AssignSecretToResource assigns a secret to a resource
+func (s *secretKeyService) AssignSecretToResource(ctx context.Context, req *request.SecretAssignRequest, userID uint) error {
+	s.logger.InfoContext(ctx, "Assigning secret to resource",
+		logger.Uint("secret_id", req.SecretID),
+		logger.String("resource_code", req.ResourceCode),
+		logger.Uint("user_id", userID))
+
+	// Check if secret exists and user has permission
+	secret, err := s.secretKeyRepo.GetByID(ctx, req.SecretID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.NewAppError(errors.CodeResourceNotFound)
+		}
+		s.logger.ErrorContext(ctx, "Failed to get secret",
+			logger.Uint("secret_id", req.SecretID),
+			logger.ErrorField(err))
+		return err
+	}
+
+	// Check if user has permission to access this secret
+	if secret.OwnerID != userID {
+		return errors.NewAppError(errors.CodeAccessDenied)
+	}
+
+	// Assign secret to resource
+	err = s.secretKeyRepo.AssignSecretToResource(ctx, req.SecretID, req.ResourceCode)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to assign secret to resource",
+			logger.Uint("secret_id", req.SecretID),
+			logger.String("resource_code", req.ResourceCode),
+			logger.ErrorField(err))
+		return err
+	}
+
+	s.logger.InfoContext(ctx, "Secret assigned to resource successfully",
+		logger.Uint("secret_id", req.SecretID),
+		logger.String("resource_code", req.ResourceCode))
+
+	return nil
+}
+
+// UnassignSecretFromResource unassigns a secret from a resource
+func (s *secretKeyService) UnassignSecretFromResource(ctx context.Context, req *request.SecretUnassignRequest, userID uint) error {
+	s.logger.InfoContext(ctx, "Unassigning secret from resource",
+		logger.Uint("secret_id", req.SecretID),
+		logger.String("resource_code", req.ResourceCode),
+		logger.Uint("user_id", userID))
+
+	// Check if secret exists and user has permission
+	secret, err := s.secretKeyRepo.GetByID(ctx, req.SecretID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.NewAppError(errors.CodeResourceNotFound)
+		}
+		s.logger.ErrorContext(ctx, "Failed to get secret",
+			logger.Uint("secret_id", req.SecretID),
+			logger.ErrorField(err))
+		return err
+	}
+
+	// Check if user has permission to access this secret
+	if secret.OwnerID != userID {
+		return errors.NewAppError(errors.CodeAccessDenied)
+	}
+
+	// Check if assignment exists
+	_, err = s.secretKeyRepo.GetSecretReferenceBySecretAndResource(ctx, req.SecretID, req.ResourceCode)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.NewAppError(errors.CodeResourceNotFound)
+		}
+		s.logger.ErrorContext(ctx, "Failed to get secret reference",
+			logger.Uint("secret_id", req.SecretID),
+			logger.String("resource_code", req.ResourceCode),
+			logger.ErrorField(err))
+		return err
+	}
+
+	// Unassign secret from resource
+	err = s.secretKeyRepo.UnassignSecretFromResource(ctx, req.SecretID, req.ResourceCode)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.NewAppError(errors.CodeResourceNotFound)
+		}
+		s.logger.ErrorContext(ctx, "Failed to unassign secret from resource",
+			logger.Uint("secret_id", req.SecretID),
+			logger.String("resource_code", req.ResourceCode),
+			logger.ErrorField(err))
+		return err
+	}
+
+	s.logger.InfoContext(ctx, "Secret unassigned from resource successfully",
+		logger.Uint("secret_id", req.SecretID),
+		logger.String("resource_code", req.ResourceCode))
+
+	return nil
+}
+
+// GetSecretResources gets all resources associated with a secret
+func (s *secretKeyService) GetSecretResources(ctx context.Context, req *request.SecretResourceQueryRequest, userID uint) (*response.SecretResourceResponse, error) {
+	s.logger.InfoContext(ctx, "Getting secret resources",
+		logger.Uint("secret_id", req.SecretID),
+		logger.Uint("user_id", userID))
+
+	// Check if secret exists and user has permission
+	secret, err := s.secretKeyRepo.GetByID(ctx, req.SecretID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.NewAppError(errors.CodeResourceNotFound)
+		}
+		s.logger.ErrorContext(ctx, "Failed to get secret",
+			logger.Uint("secret_id", req.SecretID),
+			logger.ErrorField(err))
+		return nil, err
+	}
+
+	// Check if user has permission to access this secret
+	if secret.OwnerID != userID {
+		return nil, errors.NewAppError(errors.CodeAccessDenied)
+	}
+
+	// Get all references for this secret
+	references, err := s.secretKeyRepo.GetSecretReferences(ctx, req.SecretID)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to get secret references",
+			logger.Uint("secret_id", req.SecretID),
+			logger.ErrorField(err))
+		return nil, err
+	}
+
+	s.logger.InfoContext(ctx, "Secret resources retrieved successfully",
+		logger.Uint("secret_id", req.SecretID),
+		logger.Int("reference_count", len(references)))
+
+	return response.ToSecretResourceResponse(secret, references), nil
+}

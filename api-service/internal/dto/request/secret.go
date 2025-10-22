@@ -123,3 +123,20 @@ func (r *SecretKeyCreateFileRequest) BuildSecretFields() {
 	}
 	r.SecretFields["filename"] = r.File.Filename
 }
+
+// SecretAssignRequest represents the request to assign a secret to a resource
+type SecretAssignRequest struct {
+	SecretID     uint   `json:"secret_id" binding:"required,gt=0"`
+	ResourceCode string `json:"resource_code" binding:"required,min=1,max=64"`
+}
+
+// SecretUnassignRequest represents the request to unassign a secret from a resource
+type SecretUnassignRequest struct {
+	SecretID     uint   `json:"secret_id" binding:"required,gt=0"`
+	ResourceCode string `json:"resource_code" binding:"required,min=1,max=64"`
+}
+
+// SecretResourceQueryRequest represents the request to query resources associated with a secret
+type SecretResourceQueryRequest struct {
+	SecretID uint `form:"secret_id" binding:"required,gt=0"`
+}

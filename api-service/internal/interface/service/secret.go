@@ -46,4 +46,13 @@ type SecretKeyService interface {
 
 	// GetSecretReferencesByResourceCode retrieves secret references by resource code
 	GetSecretReferencesByResourceCode(ctx context.Context, resourceCode string) ([]*model.SecretReference, error)
+
+	// AssignSecretToResource assigns a secret to a resource
+	AssignSecretToResource(ctx context.Context, req *request.SecretAssignRequest, userID uint) error
+
+	// UnassignSecretFromResource unassigns a secret from a resource
+	UnassignSecretFromResource(ctx context.Context, req *request.SecretUnassignRequest, userID uint) error
+
+	// GetSecretResources gets all resources associated with a secret
+	GetSecretResources(ctx context.Context, req *request.SecretResourceQueryRequest, userID uint) (*response.SecretResourceResponse, error)
 }
