@@ -103,3 +103,58 @@ type SecretFileUploadResponse struct {
 	OriginalName string `json:"original_name" example:"my-certificate.key"`
 	FilePath     string `json:"file_path" example:"/home/appuser/data/2345678ioasjhhdvgajdjknasd.key"`
 }
+
+// SecretResourceInfo represents basic secret information in resource query response
+type SecretResourceInfo struct {
+	ID          uint                `json:"id" example:"1"`
+	Name        string              `json:"name" example:"数据库连接密钥"`
+	KeyType     model.SecretKeyType `json:"key_type" example:"ACCOUNT"`
+	Description *string             `json:"description" example:"MySQL数据库连接密钥"`
+	IsEncrypted bool                `json:"is_encrypted" example:"true"`
+	CreatedAt   time.Time           `json:"created_at" example:"2024-10-01T00:00:00Z"`
+}
+
+// AssociatedResource represents a resource associated with a secret
+type AssociatedResource struct {
+	ID           uint      `json:"id" example:"1"`
+	ResourceCode string    `json:"resource_code" example:"mysql-prod-001"`
+	CreatedAt    time.Time `json:"created_at" example:"2025-01-22T10:30:00Z"`
+}
+
+// SecretResourceResponse represents the response for querying secret's associated resources
+type SecretResourceResponse struct {
+	SecretInfo          SecretResourceInfo   `json:"secret_info"`
+	AssociatedResources []AssociatedResource `json:"associated_resources"`
+}
+
+// ToSecretResourceResponse converts secret and references to SecretResourceResponse
+func ToSecretResourceResponse(secret *model.SecretKey, references []*model.SecretReference) *SecretResourceResponse {
+	if secret == nil {
+		return nil
+	}
+
+	secretInfo := SecretResourceInfo{
+		ID:          secret.ID,
+		Name:        secret.Name,
+		KeyType:     secret.KeyType,
+		Description: secret.Description,
+		IsEncrypted: true, // Always true since we encrypt all values
+		CreatedAt:   secret.CreatedAt,
+	}
+
+	associatedResources := make([]AssociatedResource, 0, len(references))
+	for _, ref := range references {
+		if ref != nil {
+			associatedResources = append(associatedResources, AssociatedResource{
+				ID:           ref.ID,
+				ResourceCode: ref.ResourceCode,
+				CreatedAt:    ref.CreatedAt,
+			})
+		}
+	}
+
+	return &SecretResourceResponse{
+		SecretInfo:          secretInfo,
+		AssociatedResources: associatedResources,
+	}
+}

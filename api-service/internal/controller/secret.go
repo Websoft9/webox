@@ -401,3 +401,146 @@ func (c *SecretKeyController) ExportSecretKeys(ctx *gin.Context) {
 	ctx.Writer.WriteHeader(http.StatusOK)
 	_, _ = ctx.Writer.Write(data)
 }
+
+// AssignSecretToResource assigns a secret to a resource
+// @Summary Assign secret to resource
+// @Description Assign a secret to a resource, establishing a reference relationship
+// @Tags Secrets
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body request.SecretAssignRequest true "Assign secret request"
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 403 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
+// @Router /api/v1/secrets/assign [post]
+func (c *SecretKeyController) AssignSecretToResource(ctx *gin.Context) {
+	// Parse request parameters
+	var req request.SecretAssignRequest
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
+		return
+	}
+
+	// Get current user ID
+	currentUserID, success := GetUserID(ctx)
+	if !success {
+		return
+	}
+
+	c.logger.InfoContext(ctx, "Handling assign secret to resource request",
+		logger.Uint("userID", currentUserID),
+		logger.Uint("secret_id", req.SecretID),
+		logger.String("resource_code", req.ResourceCode))
+
+	// Call service layer
+	err := c.secretKeyService.AssignSecretToResource(ctx.Request.Context(), &req, currentUserID)
+	if err != nil {
+		c.logger.ErrorContext(ctx, "Failed to assign secret to resource", logger.ErrorField(err))
+		response.WithError(ctx, err)
+		return
+	}
+
+	c.logger.InfoContext(ctx, "Secret assigned to resource successfully", logger.Uint("userID", currentUserID))
+	response.Success(ctx)
+}
+
+// UnassignSecretFromResource unassigns a secret from a resource
+// @Summary Unassign secret from resource
+// @Description Remove the association between a secret and a resource
+// @Tags Secrets
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body request.SecretUnassignRequest true "Unassign secret request"
+// @Success 200 {object} common.APIResponse
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 403 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
+// @Router /api/v1/secrets/unassign [delete]
+func (c *SecretKeyController) UnassignSecretFromResource(ctx *gin.Context) {
+	// Parse request parameters
+	var req request.SecretUnassignRequest
+	if !BindAndValidateRequest(ctx, &req, c.validator, c.logger) {
+		return
+	}
+
+	// Get current user ID
+	currentUserID, success := GetUserID(ctx)
+	if !success {
+		return
+	}
+
+	c.logger.InfoContext(ctx, "Handling unassign secret from resource request",
+		logger.Uint("userID", currentUserID),
+		logger.Uint("secret_id", req.SecretID),
+		logger.String("resource_code", req.ResourceCode))
+
+	// Call service layer
+	err := c.secretKeyService.UnassignSecretFromResource(ctx.Request.Context(), &req, currentUserID)
+	if err != nil {
+		c.logger.ErrorContext(ctx, "Failed to unassign secret from resource", logger.ErrorField(err))
+		response.WithError(ctx, err)
+		return
+	}
+
+	c.logger.InfoContext(ctx, "Secret unassigned from resource successfully", logger.Uint("userID", currentUserID))
+	response.Success(ctx)
+}
+
+// GetSecretResources gets all resources associated with a secret
+// @Summary Get secret resources
+// @Description Get all resources associated with a specified secret
+// @Tags Secrets
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param secret_id query uint true "Secret ID"
+// @Success 200 {object} common.APIResponse{data=response.SecretResourceResponse}
+// @Failure 400 {object} common.APIResponse
+// @Failure 401 {object} common.APIResponse
+// @Failure 403 {object} common.APIResponse
+// @Failure 404 {object} common.APIResponse
+// @Failure 500 {object} common.APIResponse
+// @Router /api/v1/secrets/resource [get]
+func (c *SecretKeyController) GetSecretResources(ctx *gin.Context) {
+	// Parse query parameters
+	var req request.SecretResourceQueryRequest
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		c.logger.ErrorContext(ctx, "Failed to bind query parameters", logger.ErrorField(err))
+		response.BadRequest(ctx, errors.NewAppError(errors.CodeValidationFailed))
+		return
+	}
+
+	// Validate request
+	if err := c.validator.Struct(&req); err != nil {
+		c.logger.ErrorContext(ctx, "Query parameters validation failed", logger.ErrorField(err))
+		response.BadRequest(ctx, errors.NewAppError(errors.CodeValidationFailed))
+		return
+	}
+
+	// Get current user ID
+	currentUserID, success := GetUserID(ctx)
+	if !success {
+		return
+	}
+
+	c.logger.InfoContext(ctx, "Handling get secret resources request",
+		logger.Uint("userID", currentUserID),
+		logger.Uint("secret_id", req.SecretID))
+
+	// Call service layer
+	result, err := c.secretKeyService.GetSecretResources(ctx.Request.Context(), &req, currentUserID)
+	if err != nil {
+		c.logger.ErrorContext(ctx, "Failed to get secret resources", logger.ErrorField(err))
+		response.WithError(ctx, err)
+		return
+	}
+
+	c.logger.InfoContext(ctx, "Secret resources retrieved successfully", logger.Uint("userID", currentUserID))
+	response.SuccessWithData(ctx, result)
+}

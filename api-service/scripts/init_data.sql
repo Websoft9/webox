@@ -270,7 +270,10 @@ INSERT INTO `permissions` (`parent_code`,`scope`,`name`,`code`,`module`,`action`
    ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_update','d4e5f6a7-b8c9-4012-d345-6789abcdef01','secret_key','update','/secrets/*',NULL,'Secret key update permission',1,0,0,1,1,1),
    ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_delete','e5f6a7b8-c9d0-4123-e456-789abcdef012','secret_key','delete','/secrets/*',NULL,'Secret key delete permission',1,0,0,1,1,1),
    ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_query','f6a7b8c9-d0e1-4234-f567-89abcdef0123','secret_key','query','/secrets/export',NULL,'Secret key export permission',1,0,0,1,1,1),
-   ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_query','a7b8c9d0-e1f2-4345-a678-9abcdef01234','secret_key','query','/secrets/*/value',NULL,'Secret key value decrypt permission',1,0,0,1,1,1);
+   ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_query','a7b8c9d0-e1f2-4345-a678-9abcdef01234','secret_key','query','/secrets/*/value',NULL,'Secret key value decrypt permission',1,0,0,1,1,1),
+   ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_create','b8c9d0e1-f2a3-4456-b789-cdef01234567','secret_key','create','/secrets/assign',NULL,'Secret key assign to resource permission',1,0,0,1,1,1),
+   ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_delete','c9d0e1f2-a3b4-4567-c890-def012345678','secret_key','delete','/secrets/unassign',NULL,'Secret key unassign from resource permission',1,0,0,1,1,1),
+   ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_query','d0e1f2a3-b4c5-4678-d901-ef0123456789','secret_key','query','/secrets/resource',NULL,'Secret key resource query permission',1,0,0,1,1,1);
 
 -- Insert default users and role permissions
 INSERT INTO `users` (`id`,`username`,`email`,`password_hash`,`nickname`,`avatar`,`phone`,`gender`,`signature`,`status`,`last_login_at`,`last_login_ip`,`timezone`,`language`) VALUES
@@ -498,7 +501,10 @@ INSERT INTO `role_permissions` (`role_id`,`permission_code`,`granted_by`,`status
          (1, 'd4e5f6a7-b8c9-4012-d345-6789abcdef01',1,1),
          (1, 'e5f6a7b8-c9d0-4123-e456-789abcdef012',1,1),
          (1, 'f6a7b8c9-d0e1-4234-f567-89abcdef0123',1,1),
-         (1, 'a7b8c9d0-e1f2-4345-a678-9abcdef01234',1,1);
+         (1, 'a7b8c9d0-e1f2-4345-a678-9abcdef01234',1,1),
+         (1,'b8c9d0e1-f2a3-4456-b789-cdef01234567',1,1),
+         (1,'c9d0e1f2-a3b4-4567-c890-def012345678',1,1),
+         (1,'d0e1f2a3-b4c5-4678-d901-ef0123456789',1,1);
 
 -- Insert default application categories
 INSERT INTO `app_store_categories` (`name`, `code`, `description`, `sort_order`, `status`) VALUES
