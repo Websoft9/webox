@@ -3,7 +3,7 @@
 
 FROM alpine:3.22 AS builder
 
-LABEL version="0.1.0"
+LABEL version="0.1.1"
 LABEL maintainer="Websoft9"
 LABEL description="Build-only base image with Go 1.24.5, Redis 8.2.1, and InfluxDB 2.7"
 
