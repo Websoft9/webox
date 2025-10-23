@@ -2,7 +2,7 @@
 # Multi-stage build for optimized image size and security
 
 # Build stage - using base image with Go, Redis, and InfluxDB
-FROM websoft9-base:latest AS builder
+FROM  websoft9dev/webox-base:latest AS builder
 
 # Set working directory
 WORKDIR /app
