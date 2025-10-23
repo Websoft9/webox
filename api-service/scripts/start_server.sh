@@ -87,7 +87,7 @@ wait_for_database() {
             print_info "Waiting for MySQL to be ready at ${db_host}:${db_port}..."
             local retries=0
             while [[ $retries -lt $MAX_RETRIES ]]; do
-                if mysql -h "$db_host" -P "${db_port:-3306}" -u "${WEBSOFT9_DB_USER}" -p"${WEBSOFT9_DB_PASSWORD}" -e "SELECT 1;" &>/dev/null; then
+                if mysql -h "$db_host" -P "${db_port:-3306}" -u "${WEBSOFT9_DB_USER}" -p"${WEBSOFT9_DB_PASSWORD}" --skip-ssl -e "SELECT 1;" &>/dev/null; then
                     print_info "MySQL is ready"
                     return 0
                 fi

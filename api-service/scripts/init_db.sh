@@ -343,7 +343,7 @@ case $DB_TYPE in
         fi
 
         # Prepare MySQL connection parameters
-        MYSQL_CMD="mysql -h $DB_HOST -P $DB_PORT -u $DB_USER"
+        MYSQL_CMD="mysql -h $DB_HOST -P $DB_PORT -u $DB_USER --skip-ssl"
         if [[ -n "$DB_PASS" ]]; then
             MYSQL_CMD="$MYSQL_CMD -p$DB_PASS"
         fi
