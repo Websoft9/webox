@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 
+	"api-service/internal/dto/common"
 	"api-service/internal/dto/request"
 	"api-service/internal/interface/repository"
 	"api-service/internal/model"
@@ -50,11 +51,19 @@ func (r *notificationRecordRepository) GetList(ctx context.Context, req *request
 	if req.Recipient != "" {
 		query = query.Where("recipient LIKE ?", "%"+req.Recipient+"%")
 	}
-	if req.SentStart != "" {
-		query = query.Where("sent_at >= ?", req.SentStart)
+
+	startTime, parseErr := common.FormatDateTime(req.SentStart)
+	if parseErr != nil {
+		return nil, 0, errors.NewAppErrorWrapError(parseErr, errors.CodeRecordQueryFailed)
 	}
-	if req.SentEnd != "" {
-		query = query.Where("sent_at <= ?", req.SentEnd)
+
+	endTime, parseErr := common.FormatDateTime(req.SentEnd)
+	if parseErr != nil {
+		return nil, 0, errors.NewAppErrorWrapError(parseErr, errors.CodeRecordQueryFailed)
+	}
+
+	if !startTime.IsZero() && !endTime.IsZero() {
+		query = query.Where("created_at BETWEEN ? AND ?", startTime, endTime)
 	}
 
 	// Count total records

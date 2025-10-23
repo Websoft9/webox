@@ -79,7 +79,8 @@ func (factory *DatabaseManagerFactory) initTimezonePlugin(db *gorm.DB) error {
 	}
 
 	// Create timezone conversion plugin with Redis client
-	timezonePlugin := plugins.NewTimezonePlugin(db)
+	opts := plugins.WithCustomTimezone(factory.config.Database.Timezone)
+	timezonePlugin := plugins.NewTimezonePlugin(db, opts)
 
 	// Register plugin to database
 	if err := db.Use(timezonePlugin); err != nil {

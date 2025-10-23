@@ -56,4 +56,16 @@ type SecretKeyRepository interface {
 
 	// GetSecretReferencesByResourceCode gets secret references by resource code
 	GetSecretReferencesByResourceCode(ctx context.Context, resourceCode string) ([]*model.SecretReference, error)
+
+	// AssignSecretToResource assigns a secret to a resource
+	AssignSecretToResource(ctx context.Context, secretID uint, resourceCode string) error
+
+	// UnassignSecretFromResource unassigns a secret from a resource
+	UnassignSecretFromResource(ctx context.Context, secretID uint, resourceCode string) error
+
+	// GetSecretReferences gets all resource references for a secret
+	GetSecretReferences(ctx context.Context, secretID uint) ([]*model.SecretReference, error)
+
+	// GetSecretReferenceBySecretAndResource gets a specific secret reference
+	GetSecretReferenceBySecretAndResource(ctx context.Context, secretID uint, resourceCode string) (*model.SecretReference, error)
 }

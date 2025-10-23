@@ -506,6 +506,16 @@ const (
 	NotificationChannelInternal = "INTERNAL"
 )
 
+// DatabaseType enum values
+const (
+	DBTypeMySQL      = "mysql"
+	DBTypePostgreSQL = "postgresql"
+	DBTypeMariaDB    = "mariadb"
+	DBTypeSQLServer  = "sqlserver"
+	DBTypeOracle     = "oracle"
+	DBTypeSQLite     = "sqlite"
+)
+
 // ==========================================
 // File Management Security Constants
 // ==========================================

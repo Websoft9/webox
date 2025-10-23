@@ -1,4 +1,4 @@
-.PHONY: build run clean test deps docker-build docker-run init-postgres test-db health-check lint security-scan init-swag
+.PHONY: build run clean test deps docker-build docker-run docker-baseimg init-postgres test-db health-check lint security-scan init-swag
 
 # 构建应用
 build:
@@ -55,11 +55,15 @@ init-swag:
 
 # 构建Docker镜像
 docker-build:
-	docker build -t api-service:latest .
+	docker build -f Dockerfile -t api-service:latest .
 
 # 运行Docker容器
 docker-run:
 	docker run -p 8080:8080 -p 9090:9090 api-service:latest
+
+# 构建Docker基础镜像镜像
+docker-baseimg:
+	docker build -f Dockerfile.base -t websoft9-base:latest .
 
 # 开发模式（热重载需要安装air: go install github.com/air-verse/air@latest）
 dev:
@@ -147,4 +151,5 @@ help:
 	@echo "  setup-dev     - Setup development environment"
 	@echo "  setup-prod    - Setup production environment"
 	@echo "  docker-build  - Build Docker image"
-	@echo "  docker-run    - Run Docker container"
+	@echo "  docker-run   	- Run Docker container"
+	@echo "  docker-baseimg - Build Docker base image"

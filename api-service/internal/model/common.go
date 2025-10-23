@@ -1,9 +1,11 @@
 package model
 
 import (
+	"crypto/rand"
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"math/big"
 )
 
 // JSON custom JSON type
@@ -40,4 +42,20 @@ func (j JSON) Value() (driver.Value, error) {
 		return "{}", nil
 	}
 	return json.Marshal(j)
+}
+
+// GenerateCode generates a random code with prefix and specified length
+// The code format is: {prefix}_{random_string}
+// The random string consists of lowercase letters and digits
+func GenerateCode(prefix string, length int) string {
+	const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
+	result := make([]byte, length)
+	charsetLen := big.NewInt(int64(len(charset)))
+
+	for i := 0; i < length; i++ {
+		num, _ := rand.Int(rand.Reader, charsetLen)
+		result[i] = charset[num.Int64()]
+	}
+
+	return fmt.Sprintf("%s_%s", prefix, string(result))
 }

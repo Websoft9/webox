@@ -33,6 +33,7 @@ type Controllers struct {
 	NotificationRecordController   *controller.NotificationRecordController
 	NotificationChannelController  *controller.NotificationChannelController
 	NotificationTemplateController *controller.NotificationTemplateController
+	DatabaseConnectionController   *controller.DatabaseConnectionController
 	// More controllers can be added
 	// AppController  *controller.ApplicationController
 }
@@ -155,6 +156,7 @@ func setupAPIRoutes(v1 *gin.RouterGroup, controllers *Controllers) {
 	setupAlertRoutes(protected, controllers.AlertController)
 	setupSecretKeyRoutes(protected, controllers.SecretKeyController)
 	setupServerRoutes(protected, controllers.ServerController)
+	setupDatabaseConnectionRoutes(protected, controllers.DatabaseConnectionController)
 }
 
 // setupUserRoutes sets up user related routes
@@ -419,18 +421,16 @@ func setupSecretKeyRoutes(protected *gin.RouterGroup, secretKeyController *contr
 
 	// Secret key routes
 	secretKeys := protected.Group("/secrets")
-	secretKeys.GET("", secretKeyController.ListSecretKeys)              // GET /api/v1/secret-keys
-	secretKeys.POST("", secretKeyController.CreateSecretKey)            // POST /api/v1/secret-keys
-	secretKeys.GET("/export", secretKeyController.ExportSecretKeys)     // GET /api/v1/secret-keys/export
-	secretKeys.GET("/:id", secretKeyController.GetSecretKey)            // GET /api/v1/secret-keys/{id}
-	secretKeys.GET("/:id/value", secretKeyController.GetSecretKeyValue) // GET /api/v1/secret-keys/{id}/value
-	secretKeys.PUT("/:id", secretKeyController.UpdateSecretKey)         // PUT /api/v1/secret-keys/{id}
-	secretKeys.DELETE("/:id", secretKeyController.DeleteSecretKey)      // DELETE /api/v1/secret-keys/{id}
-	// Secret key file management routes
-	secretKeyFileGroup := secretKeys.Group("/files")
-	secretKeyFileGroup.POST("/upload", secretKeyController.UploadSecretFile)
-	secretKeyFileGroup.GET("/download", secretKeyController.DownloadSecretFile)
-	secretKeyFileGroup.DELETE("/delete", secretKeyController.DeleteSecretFile)
+	secretKeys.GET("", secretKeyController.ListSecretKeys)                         // GET /api/v1/secrets
+	secretKeys.POST("/text", secretKeyController.CreateSecretKeyText)              // POST /api/v1/secrets/text
+	secretKeys.POST("/file", secretKeyController.CreateSecretKeyFile)              // POST /api/v1/secrets/file
+	secretKeys.GET("/export", secretKeyController.ExportSecretKeys)                // GET /api/v1/secrets/export
+	secretKeys.POST("/assign", secretKeyController.AssignSecretToResource)         // POST /api/v1/secrets/assign
+	secretKeys.DELETE("/unassign", secretKeyController.UnassignSecretFromResource) // DELETE /api/v1/secrets/unassign
+	secretKeys.GET("/resource", secretKeyController.GetSecretResources)            // GET /api/v1/secrets/resource
+	secretKeys.GET("/:id", secretKeyController.GetSecretKey)                       // GET /api/v1/secrets/{id}
+	secretKeys.PUT("/:id", secretKeyController.UpdateSecretKey)                    // PUT /api/v1/secrets/{id}
+	secretKeys.DELETE("/:id", secretKeyController.DeleteSecretKey)                 // DELETE /api/v1/secrets/{id}
 }
 
 // setupServerRoutes sets up server management routes
@@ -456,4 +456,18 @@ func setupServerRoutes(protected *gin.RouterGroup, serverController *controller.
 	servers.POST("/:id/files", serverController.UploadFile)           // POST /api/v1/servers/{id}/files (8)
 	servers.GET("/:id/files/download", serverController.DownloadFile) // GET /api/v1/servers/{id}/files/download (9)
 	servers.DELETE("/:id/files", serverController.DeleteFile)         // DELETE /api/v1/servers/{id}/files (10)
+}
+
+// setupDatabaseConnectionRoutes sets up database connection management routes
+func setupDatabaseConnectionRoutes(protected *gin.RouterGroup, dbController *controller.DatabaseConnectionController) {
+	if dbController == nil {
+		return
+	}
+
+	databases := protected.Group("/databases")
+	databases.GET("", dbController.GetConnectionList)       // GET /api/v1/databases
+	databases.POST("", dbController.CreateConnection)       // POST /api/v1/databases
+	databases.GET("/:id", dbController.GetConnection)       // GET /api/v1/databases/{id}
+	databases.PUT("/:id", dbController.UpdateConnection)    // PUT /api/v1/databases/{id}
+	databases.DELETE("/:id", dbController.DeleteConnection) // DELETE /api/v1/databases/{id}
 }

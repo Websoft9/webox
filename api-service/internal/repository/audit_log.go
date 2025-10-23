@@ -5,7 +5,6 @@ import (
 	"context"
 	"time"
 
-	"api-service/internal/constants"
 	"api-service/internal/dto/request"
 	"api-service/internal/interface/repository"
 	"api-service/internal/model"
@@ -79,7 +78,7 @@ func (r *auditLogRepository) List(ctx context.Context, filter *request.ListAudit
 	if parseErr != nil {
 		return nil, 0, errors.NewAppErrorWrapError(parseErr, errors.CodeRecordQueryFailed)
 	}
-	if !startTime.IsZero() && !endTime.IsZero() {
+	if startTime != "" && endTime != "" {
 		query = query.Where("created_at BETWEEN ? AND ?", startTime, endTime)
 	}
 
@@ -121,9 +120,12 @@ func (r *auditLogRepository) Export(ctx context.Context, filter *request.ExportA
 		query = query.Where("user_id = ?", *filter.UserID)
 	}
 
-	if filter.StartTime != "" && filter.EndTime != "" {
-		startTime, _ := time.Parse(constants.DefaultTimeFormat, filter.StartTime)
-		endTime, _ := time.Parse(constants.DefaultTimeFormat, filter.EndTime)
+	startTime, endTime, parseErr := filter.GetTimeRange(true)
+	if parseErr != nil {
+		return nil, errors.NewAppErrorWrapError(parseErr, errors.CodeRecordQueryFailed)
+	}
+
+	if startTime != "" && endTime != "" {
 		query = query.Where("created_at BETWEEN ? AND ?", startTime, endTime)
 	}
 

@@ -104,7 +104,7 @@ type TimeRangeRequest struct {
 }
 
 // formatDateTime formats a datetime string
-func formatDateTime(datetimeStr string) (time.Time, error) {
+func FormatDateTime(datetimeStr string) (time.Time, error) {
 	if datetimeStr == "" {
 		return time.Time{}, nil
 	}
@@ -118,29 +118,29 @@ func formatDateTime(datetimeStr string) (time.Time, error) {
 
 // GetStartTime retrieves the start time
 func (t *TimeRangeRequest) GetStartTime() (time.Time, error) {
-	return formatDateTime(t.StartTime)
+	return FormatDateTime(t.StartTime)
 }
 
 // GetEndTime retrieves the end time
 func (t *TimeRangeRequest) GetEndTime() (time.Time, error) {
-	return formatDateTime(t.EndTime)
+	return FormatDateTime(t.EndTime)
 }
 
 // GetUTCTimeRange retrieves the UTC time range
-func (t *TimeRangeRequest) GetTimeRange(useUTC bool) (startTime, endTime time.Time, err error) {
-	startTime, err = t.GetStartTime()
-	if err != nil {
-		return time.Time{}, time.Time{}, err
+func (t *TimeRangeRequest) GetTimeRange(useUTC bool) (startTimeStr, endTimeStr string, err error) {
+	startTime, err := t.GetStartTime()
+	if err != nil || startTime.IsZero() {
+		return "", "", err
 	}
 
-	endTime, err = t.GetEndTime()
-	if err != nil {
-		return time.Time{}, time.Time{}, err
+	endTime, err := t.GetEndTime()
+	if err != nil || endTime.IsZero() {
+		return "", "", err
 	}
 	if useUTC {
-		return startTime.UTC(), endTime.UTC(), nil
+		return startTime.UTC().Format(time.DateTime), endTime.UTC().Format(time.DateTime), nil
 	}
-	return startTime, endTime, nil
+	return startTime.Format(time.DateTime), endTime.Format(time.DateTime), nil
 }
 
 // BaseListRequest base list request structure (includes pagination, sorting, and search)

@@ -253,30 +253,23 @@ CREATE TABLE IF NOT EXISTS `resource_groups` (
 CREATE TABLE IF NOT EXISTS `database_connections` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(64) NOT NULL COMMENT 'Connection name',
-    `code` VARCHAR(64) NOT NULL COMMENT 'Connection code',
-    `db_type` ENUM('mysql', 'postgresql', 'redis', 'mongodb') NOT NULL COMMENT 'Database type',
+    `code` VARCHAR(64) NOT NULL COMMENT 'Connection code (format: db_conn_{id}, auto-generated)',
+    `db_type` VARCHAR(32) NOT NULL COMMENT 'Database type (mysql, postgresql, mariadb, sqlserver, oracle, sqlite)',
     `host` VARCHAR(255) NOT NULL COMMENT 'Host address',
     `port` INT NOT NULL COMMENT 'Port number',
-    `database` VARCHAR(64) NULL COMMENT 'Database name',
-    `username` VARCHAR(64) NULL COMMENT 'Username',
-    `password` VARCHAR(255) NULL COMMENT 'Encrypted password',
-    `ssl_enabled` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Whether SSL enabled',
-    `connection_timeout` INT NOT NULL DEFAULT 30 COMMENT 'Connection timeout (seconds)',
-    `max_connections` INT NOT NULL DEFAULT 10 COMMENT 'Max connections',
-    `status` ENUM('CONNECTED', 'DISCONNECTED', 'ERROR') NOT NULL DEFAULT 'CONNECTED' COMMENT 'Connection status',
-    `version` VARCHAR(32) NULL COMMENT 'Database version',
-    `charset` VARCHAR(32) NULL COMMENT 'Character set',
-    `description` TEXT NULL COMMENT 'Description info',
-    `last_connected_at` DATETIME NULL COMMENT 'Last connected time',
+    `database` VARCHAR(64) NULL COMMENT 'Database name (optional for some scenarios)',
+    `description` VARCHAR(255) NULL COMMENT 'Connection description',
+    `config` TEXT NULL COMMENT 'Extra configuration (JSON format for database-specific parameters)',
     `owner_id` BIGINT UNSIGNED NOT NULL COMMENT 'Owner ID',
     `resource_group_id` BIGINT UNSIGNED NULL COMMENT 'Resource group ID',
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation time',
     `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update time',
     PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_code` (`code`),
+    UNIQUE KEY `uk_owner_name` (`name`),
     KEY `idx_owner_id` (`owner_id`),
-    KEY `idx_database_code` (`code`),
+    KEY `idx_db_type` (`db_type`),
     KEY `idx_resource_group_id` (`resource_group_id`),
-    KEY `idx_status` (`status`),
     CONSTRAINT `fk_db_connections_resource_group` FOREIGN KEY (`resource_group_id`) REFERENCES `resource_groups` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Database connections table';
 
@@ -401,7 +394,7 @@ CREATE TABLE IF NOT EXISTS `secret_keys` (
     `name` VARCHAR(64) NOT NULL COMMENT 'Secret key name',
     `key_type` ENUM('SECRET_KEY', 'ACCOUNT', 'FILE') NOT NULL COMMENT 'Secret key type',
     `description` TEXT NULL COMMENT 'Description',
-    `custom_fields` JSON NULL COMMENT 'Custom fields',
+    `secret_fields` JSON NULL COMMENT 'Secret fields',
     `expires_at` DATETIME NULL COMMENT 'Expiration time',
     `resource_group_id` BIGINT UNSIGNED NULL COMMENT 'Resource group ID',
     `owner_id` BIGINT UNSIGNED NOT NULL COMMENT 'Owner ID',
@@ -1358,7 +1351,7 @@ CREATE TABLE IF NOT EXISTS `secret_references` (
 CREATE INDEX `idx_projects_owner_status` ON `projects` (`owner_id`, `status`);
 CREATE INDEX `idx_app_instances_project_status` ON `app_instances` (`project_id`, `status`);
 CREATE INDEX `idx_app_instances_server_status` ON `app_instances` (`server_id`, `status`);
-CREATE INDEX `idx_servers_owner_status` ON `servers` (`owner_id`, `status`);
+CREATE INDEX `idx_servers_owner_status` ON `servers` (`owner_id`);
 CREATE INDEX `idx_workflows_project_status` ON `workflows` (`project_id`, `status`);
 CREATE INDEX `idx_workflows_owner_status` ON `workflows` (`owner_id`, `status`);
 CREATE INDEX `idx_alert_records_rule_status` ON `alert_records` (`alert_rule_id`, `status`);

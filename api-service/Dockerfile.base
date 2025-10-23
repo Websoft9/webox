@@ -1,0 +1,67 @@
+# Optimized Base Image - Build Stage Only
+# This image is only used for building, not for runtime
+
+FROM alpine:3.22 AS builder
+
+LABEL version="0.1.1"
+LABEL maintainer="Websoft9"
+LABEL description="Build-only base image with Go 1.24.5, Redis 8.2.1, and InfluxDB 2.7"
+
+# Define versions
+ARG GO_VERSION=1.24.5
+ARG REDIS_VERSION=8.2.1
+ARG INFLUXDB_VERSION=2.7.12
+
+# Configure go environment variables
+ENV GOROOT=/usr/local/go
+ENV GOPATH=$GOROOT
+ENV GOPROXY=https://goproxy.cn,direct
+ENV GOCACHE=/root/.cache/go-build
+ENV REDIS_HOME=/usr/local/redis
+ENV INFLUXDB_HOME=/usr/local/influxdb
+ENV PATH=$GOPATH/bin:$REDIS_HOME/bin:$INFLUXDB_HOME/bin:$PATH
+
+# Install build dependencies (only needed for compilation)
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories && \
+  apk add --no-cache \
+  gcc \
+  g++ \
+  musl-dev \
+  make \
+  linux-headers \
+  curl \
+  bash
+
+# Install Go
+RUN curl -fsSL --retry 5 --retry-delay 3 https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz -o go.tar.gz && \
+  tar -C /usr/local -xzf go.tar.gz && \
+  rm go.tar.gz && \
+  go version && \
+  go install github.com/swaggo/swag/cmd/swag@latest && \
+  go clean -modcache 2>/dev/null || true
+
+# Install Redis (compile from source)
+RUN curl -L https://download.redis.io/releases/redis-${REDIS_VERSION}.tar.gz | tar -xz && \
+  cd redis-${REDIS_VERSION} && \
+  make && \
+  make PREFIX=${REDIS_HOME} install && \
+  cp redis.conf /etc/ && \
+  cd .. && \
+  rm -rf redis-${REDIS_VERSION} && \
+  strip ${REDIS_HOME}/bin/redis-server ${REDIS_HOME}/bin/redis-cli 2>/dev/null || true
+
+# Install InfluxDB (download pre-built binary)
+RUN curl -L https://dl.influxdata.com/influxdb/releases/v${INFLUXDB_VERSION}/influxdb${INFLUXDB_VERSION%%.*}-${INFLUXDB_VERSION}_linux_amd64.tar.gz | tar -xz && \
+  mkdir -p ${INFLUXDB_HOME}/bin && \
+  cp influxdb${INFLUXDB_VERSION%%.*}-${INFLUXDB_VERSION}/usr/bin/influxd ${INFLUXDB_HOME}/bin/ && \
+  rm -rf influxdb${INFLUXDB_VERSION%%.*}-${INFLUXDB_VERSION} && \
+  strip ${INFLUXDB_HOME}/bin/influxd 2>/dev/null || true
+
+# Clean up
+RUN rm -rf /var/cache/apk/* /tmp/* /var/tmp/*
+
+# Set working directory
+WORKDIR /app
+
+# Default command
+CMD ["/bin/bash"]

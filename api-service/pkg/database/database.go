@@ -5,6 +5,7 @@ import (
 	"api-service/internal/constants"
 	"api-service/pkg/database/plugins"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -48,8 +49,8 @@ type DatabaseConnectionConfig struct {
 	Path            string
 	Host            string
 	Port            int
-	Database        string
-	Username        string
+	Name            string
+	User            string
 	Password        string
 	SSLMode         string
 	MaxIdleConns    int
@@ -72,8 +73,8 @@ func InitDB(cfg *config.Config) (*gorm.DB, error) {
 		Path:            cfg.Database.Path,
 		Host:            cfg.Database.Host,
 		Port:            cfg.Database.Port,
-		Database:        cfg.Database.Database,
-		Username:        cfg.Database.Username,
+		Name:            cfg.Database.Name,
+		User:            cfg.Database.User,
 		Password:        cfg.Database.Password,
 		SSLMode:         cfg.Database.SSLMode,
 		MaxIdleConns:    cfg.Database.MaxIdleConns,
@@ -124,6 +125,11 @@ func initSQLite(cfg *DatabaseConnectionConfig) (*gorm.DB, error) {
 
 	// Basic SQLite DSN (optimizations will be handled by SQLiteManager)
 	dsn := cfg.Path + "?_foreign_keys=ON"
+	// Add timezone parameter if configured
+	if cfg.Timezone != "" {
+		// SQLite uses _loc parameter for timezone
+		dsn += fmt.Sprintf("&_loc=%s", url.PathEscape(cfg.Timezone))
+	}
 
 	// Basic GORM configuration
 	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{
@@ -163,6 +169,17 @@ func initMySQL(cfg *DatabaseConnectionConfig) (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to connect to MySQL database: %v", err)
 	}
 
+	// Set session timezone if configured
+	if cfg.Timezone != "" {
+		// Convert timezone format: UTC -> +00:00, or use timezone name directly
+		timezoneValue := cfg.Timezone
+		if cfg.Timezone == "UTC" {
+			timezoneValue = "+00:00"
+		}
+		if err := db.Exec("SET time_zone = ?", timezoneValue).Error; err != nil {
+			return nil, fmt.Errorf("failed to set MySQL timezone: %v", err)
+		}
+	}
 	return db, nil
 }
 
@@ -179,17 +196,23 @@ func initPostgreSQL(cfg *DatabaseConnectionConfig) (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to connect to PostgreSQL database: %v", err)
 	}
 
+	// Set session timezone if configured
+	if cfg.Timezone != "" {
+		if err := db.Exec("SET timezone = ?", cfg.Timezone).Error; err != nil {
+			return nil, fmt.Errorf("failed to set PostgreSQL timezone: %v", err)
+		}
+	}
 	return db, nil
 }
 
 // buildMySQLDSN builds MySQL data source name
 func buildMySQLDSN(cfg *DatabaseConnectionConfig) string {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s",
-		cfg.Username,
+		cfg.User,
 		cfg.Password,
 		cfg.Host,
 		cfg.Port,
-		cfg.Database,
+		cfg.Name,
 	)
 
 	// Add connection parameters
@@ -230,8 +253,8 @@ func buildPostgreSQLDSN(cfg *DatabaseConnectionConfig) string {
 	dsn := fmt.Sprintf("host=%s port=%d user=%s dbname=%s",
 		cfg.Host,
 		cfg.Port,
-		cfg.Username,
-		cfg.Database,
+		cfg.User,
+		cfg.Name,
 	)
 
 	if cfg.Password != "" {
@@ -320,7 +343,7 @@ func GetDatabaseInfo(cfg *config.Config) (map[string]any, error) {
 		"type":           cfg.Database.Type,
 		"host":           cfg.Database.Host,
 		"port":           cfg.Database.Port,
-		"database":       cfg.Database.Database,
+		"name":           cfg.Database.Name,
 		"max_open_conns": stats.MaxOpenConnections,
 		"open_conns":     stats.OpenConnections,
 		"in_use":         stats.InUse,

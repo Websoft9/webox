@@ -190,6 +190,7 @@ func initDatabaseWrapper(cfg *config.Config, zapLogger logger.Logger) (*database
 		&model.NotificationRecord{},
 		&model.NotificationChannelConfig{},
 		&model.NotificationTemplate{},
+		&model.DatabaseConnection{},
 	); migrateErr != nil {
 		return nil, fmt.Errorf("failed to migrate database models: %v", migrateErr)
 	}
@@ -371,6 +372,7 @@ type repositories struct {
 	notificationRepo         repoInterface.NotificationRecordRepository
 	notificationChannelRepo  repoInterface.NotificationChannelRepository
 	notificationTemplateRepo repoInterface.NotificationTemplateRepository
+	databaseConnectionRepo   repoInterface.DatabaseConnectionRepository
 }
 
 // initRepositories creates and initializes all repository instances
@@ -394,6 +396,7 @@ func initRepositories(db *gorm.DB, zapLogger logger.Logger) *repositories {
 		notificationRepo:         repoImpl.NewNotificationRecordRepository(db),
 		notificationChannelRepo:  repoImpl.NewNotificationChannelRepository(db, zapLogger),
 		notificationTemplateRepo: repoImpl.NewNotificationTemplateRepository(db),
+		databaseConnectionRepo:   repoImpl.NewDatabaseConnectionRepository(db),
 	}
 }
 
@@ -419,6 +422,7 @@ type businessServices struct {
 	notificationRecordService   serviceInterface.NotificationRecordService
 	notificationChannelService  serviceInterface.NotificationChannelService
 	notificationTemplateService serviceInterface.NotificationTemplateService
+	databaseConnectionService   serviceInterface.DatabaseConnectionService
 }
 
 // initBusinessServices creates and initializes all service instances with their dependencies
@@ -482,6 +486,13 @@ func initBusinessServices(
 	// Create notification template service after channel service is created
 	services.notificationTemplateService = serviceImpl.NewNotificationTemplateService(repos.notificationTemplateRepo, services.notificationChannelService, zapLogger)
 
+	// Create database connection service
+	dbConnService, err := serviceImpl.NewDatabaseConnectionService(repos.databaseConnectionRepo, zapLogger)
+	if err != nil {
+		zapLogger.Fatal("Failed to initialize database connection service", logger.ErrorField(err))
+	}
+	services.databaseConnectionService = dbConnService
+
 	return services
 }
 
@@ -539,6 +550,7 @@ func initControllers(
 		NotificationRecordController:   controller.NewNotificationRecordController(services.notificationRecordService, validatorInstance, zapLogger),
 		NotificationChannelController:  controller.NewNotificationChannelController(services.notificationChannelService, zapLogger, validatorInstance),
 		NotificationTemplateController: controller.NewNotificationTemplateController(services.notificationTemplateService, validatorInstance, zapLogger),
+		DatabaseConnectionController:   controller.NewDatabaseConnectionController(services.databaseConnectionService, validatorInstance, zapLogger),
 	}
 }
 

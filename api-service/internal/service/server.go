@@ -894,7 +894,7 @@ func (s *serverService) getSSHCredentials(ctx context.Context, server *model.Ser
 	var creds sshCredentials
 
 	// Get username
-	if username, ok := secretValue.CustomFields["username"].(string); ok {
+	if username, ok := secretValue.SecretFields["username"].(string); ok {
 		creds.Username = username
 	} else {
 		s.logger.ErrorContext(ctx, "SSH credentials missing username field",
@@ -903,12 +903,12 @@ func (s *serverService) getSSHCredentials(ctx context.Context, server *model.Ser
 	}
 
 	// Get password (optional)
-	if password, ok := secretValue.CustomFields["password"].(string); ok {
+	if password, ok := secretValue.SecretFields["password"].(string); ok {
 		creds.Password = password
 	}
 
 	// Get private_key (optional)
-	if privateKey, ok := secretValue.CustomFields["private_key"].(string); ok {
+	if privateKey, ok := secretValue.SecretFields["private_key"].(string); ok {
 		creds.PrivateKey = privateKey
 	}
 
@@ -1743,26 +1743,27 @@ func (s *serverService) createSSHCredentialSecret(ctx context.Context, server *m
 	secretName := fmt.Sprintf("SSH-%s-%s", server.Name, server.Code)
 
 	// Build custom fields for ACCOUNT type
-	customFields := map[string]interface{}{
+	secretFields := map[string]interface{}{
 		"username": req.SSHUsername,
 	}
 
 	if req.SSHPassword != "" {
-		customFields["password"] = req.SSHPassword
+		secretFields["password"] = req.SSHPassword
 	}
 	if req.SSHKey != "" {
-		customFields["private_key"] = req.SSHKey
+		secretFields["private_key"] = req.SSHKey
 	}
 
 	// Create secret key request
-	secretReq := &request.SecretKeyCreateRequest{
-		Name:         secretName,
-		KeyType:      model.SecretKeyTypeAccount,
-		CustomFields: customFields,
+	secretReq := &request.SecretKeyCreateTextRequest{
+		Name:            secretName,
+		SecretFields:    secretFields,
+		ResourceGroupID: req.ResourceGroupID,
+		Description:     &req.Description,
 	}
 
 	// Create secret via secret key service
-	secretResp, err := s.secretKeyService.CreateSecretKey(ctx, secretReq, userID)
+	secretResp, err := s.secretKeyService.CreateSecretKeyText(ctx, secretReq, userID)
 	if err != nil {
 		return "", err
 	}
