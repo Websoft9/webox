@@ -55,7 +55,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 # ============================================
 # Runtime stage
 # ============================================
-FROM websoft9-base:latest
+FROM websoft9dev/webox-base:latest
 
 LABEL version="0.1.8" \
   maintainer="Websoft9" \
