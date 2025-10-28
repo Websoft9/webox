@@ -236,15 +236,15 @@ CREATE TABLE IF NOT EXISTS `resource_groups` (
     `code` VARCHAR(32) NOT NULL COMMENT 'Resource group code',
     `description` TEXT NULL COMMENT 'Resource group description',
     `owner_id` BIGINT UNSIGNED NOT NULL COMMENT 'Owner ID',
+    `is_default` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Is default resource group: 0-no, 1-yes',
     `sort_order` INT NOT NULL DEFAULT 0 COMMENT 'Sort order',
-    `status` TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Status: 0-disabled, 1-enabled',
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation time',
     `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update time',
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_code` (`code`),
     KEY `idx_project_id` (`project_id`),
     KEY `idx_owner_id` (`owner_id`),
-    KEY `idx_status` (`status`),
+    KEY `idx_is_default` (`is_default`),
     CONSTRAINT `fk_resource_groups_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_resource_groups_owner` FOREIGN KEY (`owner_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Resource groups table';

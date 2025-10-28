@@ -197,8 +197,19 @@ CREATE TABLE IF NOT EXISTS resource_groups (
     code VARCHAR(32) NOT NULL UNIQUE,
     description TEXT,
     owner_id INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    is_default INTEGER DEFAULT 0, -- 0: not default, 1: default
     sort_order INTEGER DEFAULT 0,
-    status INTEGER DEFAULT 1, -- 0-disabled, 1-enabled
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Resource types table (similar to modules table)
+CREATE TABLE IF NOT EXISTS resource_types (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name VARCHAR(64) NOT NULL,
+    code VARCHAR(64) NOT NULL UNIQUE,
+    table_name VARCHAR(64) NOT NULL,
+    description TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -997,6 +1008,15 @@ CREATE TABLE IF NOT EXISTS secret_references (
 -- Index creation
 -- ========================================
 
+-- Resource types related indexes
+CREATE INDEX IF NOT EXISTS idx_resource_types_code ON resource_types(code);
+CREATE INDEX IF NOT EXISTS idx_resource_types_table ON resource_types(table_name);
+
+-- Resource groups related indexes
+CREATE INDEX IF NOT EXISTS idx_resource_groups_project ON resource_groups(project_id);
+CREATE INDEX IF NOT EXISTS idx_resource_groups_code ON resource_groups(code);
+CREATE INDEX IF NOT EXISTS idx_resource_groups_owner ON resource_groups(owner_id);
+
 -- Project related indexes
 CREATE INDEX IF NOT EXISTS idx_projects_owner_status ON projects(owner_id, status);
 CREATE INDEX IF NOT EXISTS idx_project_members_project ON project_members(project_id);
@@ -1191,6 +1211,12 @@ CREATE TRIGGER IF NOT EXISTS update_workflow_executions_updated_at
     END;
 
 -- Other triggers
+CREATE TRIGGER IF NOT EXISTS update_resource_types_updated_at
+    AFTER UPDATE ON resource_types
+    BEGIN
+        UPDATE resource_types SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+    END;
+
 CREATE TRIGGER IF NOT EXISTS update_resource_groups_updated_at
     AFTER UPDATE ON resource_groups
     BEGIN
