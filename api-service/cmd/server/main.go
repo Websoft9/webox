@@ -374,6 +374,7 @@ type repositories struct {
 	notificationTemplateRepo repoInterface.NotificationTemplateRepository
 	databaseConnectionRepo   repoInterface.DatabaseConnectionRepository
 	resourceGroupRepo        repoInterface.ResourceGroupRepository
+	environmentVariableRepo  repoInterface.EnvironmentVariableRepository
 }
 
 // initRepositories creates and initializes all repository instances
@@ -399,6 +400,7 @@ func initRepositories(db *gorm.DB, zapLogger logger.Logger) *repositories {
 		notificationTemplateRepo: repoImpl.NewNotificationTemplateRepository(db),
 		databaseConnectionRepo:   repoImpl.NewDatabaseConnectionRepository(db),
 		resourceGroupRepo:        repoImpl.NewResourceGroupRepository(db),
+		environmentVariableRepo:  repoImpl.NewEnvironmentVariableRepository(db),
 	}
 }
 
@@ -426,6 +428,7 @@ type businessServices struct {
 	notificationTemplateService serviceInterface.NotificationTemplateService
 	databaseConnectionService   serviceInterface.DatabaseConnectionService
 	resourceGroupService        serviceInterface.ResourceGroupService
+	environmentVariableService  serviceInterface.EnvironmentVariableService
 }
 
 // initBusinessServices creates and initializes all service instances with their dependencies
@@ -503,6 +506,10 @@ func initBusinessServices(
 	}
 	services.resourceGroupService = resourceGroupService
 
+	// Create environment variable service
+	environmentVariableService := serviceImpl.NewEnvironmentVariableService(repos.environmentVariableRepo, zapLogger)
+	services.environmentVariableService = environmentVariableService
+
 	return services
 }
 
@@ -562,6 +569,7 @@ func initControllers(
 		NotificationTemplateController: controller.NewNotificationTemplateController(services.notificationTemplateService, validatorInstance, zapLogger),
 		DatabaseConnectionController:   controller.NewDatabaseConnectionController(services.databaseConnectionService, validatorInstance, zapLogger),
 		ResourceGroupController:        controller.NewResourceGroupController(services.resourceGroupService, validatorInstance, zapLogger),
+		EnvironmentVariableController:  controller.NewEnvironmentVariableController(services.environmentVariableService, validatorInstance, zapLogger),
 	}
 }
 

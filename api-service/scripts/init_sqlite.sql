@@ -82,22 +82,21 @@ CREATE TABLE IF NOT EXISTS project_members (
     UNIQUE(project_id, user_id)
 );
 
--- Project environment variables table
-CREATE TABLE IF NOT EXISTS project_environments (
+-- Environment variables table (Platform and Project level)
+CREATE TABLE IF NOT EXISTS environment_variables (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    project_id INTEGER NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    value TEXT,
-    type VARCHAR(20) DEFAULT 'normal',
-    description VARCHAR(500),
-    scope VARCHAR(20) DEFAULT 'global',
-    scope_target VARCHAR(100),
-    is_encrypted INTEGER DEFAULT 0,
-    created_by INTEGER NOT NULL,
+    name VARCHAR(64) NOT NULL,
+    value TEXT NOT NULL,
+    scope VARCHAR(20) NOT NULL CHECK (scope IN ('PLATFORM', 'PROJECT')),
+    project_id INTEGER,
+    description TEXT,
+    is_sensitive INTEGER NOT NULL DEFAULT 0,
+    owner_id INTEGER NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
-    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE RESTRICT
+    FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE RESTRICT,
+    CHECK ((scope = 'PROJECT' AND project_id IS NOT NULL) OR (scope = 'PLATFORM' AND project_id IS NULL))
 );
 
 -- Project files table
@@ -1021,10 +1020,15 @@ CREATE INDEX IF NOT EXISTS idx_resource_groups_owner ON resource_groups(owner_id
 CREATE INDEX IF NOT EXISTS idx_projects_owner_status ON projects(owner_id, status);
 CREATE INDEX IF NOT EXISTS idx_project_members_project ON project_members(project_id);
 CREATE INDEX IF NOT EXISTS idx_project_members_user ON project_members(user_id);
-CREATE INDEX IF NOT EXISTS idx_project_environments_project ON project_environments(project_id);
 CREATE INDEX IF NOT EXISTS idx_project_files_project ON project_files(project_id);
 CREATE INDEX IF NOT EXISTS idx_project_files_parent ON project_files(parent_id);
 CREATE INDEX IF NOT EXISTS idx_project_activities_project ON project_activities(project_id);
+
+-- Environment variables related indexes
+CREATE UNIQUE INDEX IF NOT EXISTS idx_env_vars_name_scope_project ON environment_variables(name, scope, project_id);
+CREATE INDEX IF NOT EXISTS idx_env_vars_project_id ON environment_variables(project_id);
+CREATE INDEX IF NOT EXISTS idx_env_vars_scope ON environment_variables(scope);
+CREATE INDEX IF NOT EXISTS idx_env_vars_owner_id ON environment_variables(owner_id);
 
 -- Notification channels related indexes
 CREATE INDEX IF NOT EXISTS idx_notification_channels_type ON notification_channels(channel_type);
@@ -1107,16 +1111,17 @@ CREATE TRIGGER IF NOT EXISTS update_project_members_updated_at
         UPDATE project_members SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
     END;
 
-CREATE TRIGGER IF NOT EXISTS update_project_environments_updated_at
-    AFTER UPDATE ON project_environments
-    BEGIN
-        UPDATE project_environments SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
-    END;
-
 CREATE TRIGGER IF NOT EXISTS update_project_files_updated_at
     AFTER UPDATE ON project_files
     BEGIN
         UPDATE project_files SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+    END;
+
+-- Environment variables trigger
+CREATE TRIGGER IF NOT EXISTS update_environment_variables_updated_at
+    AFTER UPDATE ON environment_variables
+    BEGIN
+        UPDATE environment_variables SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
     END;
 
 -- Create trigger for notification_channels updated_at
