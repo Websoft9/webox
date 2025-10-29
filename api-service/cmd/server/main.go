@@ -186,7 +186,9 @@ func initDatabaseWrapper(cfg *config.Config, zapLogger logger.Logger) (*database
 		&model.Tagging{},
 		&model.AlertRecord{},
 		&model.AlertRule{},
-		&model.SecretKey{},
+		&model.Secret{},
+		&model.SecretReference{},
+		&model.SecretAuthorize{},
 		&model.NotificationRecord{},
 		&model.NotificationChannelConfig{},
 		&model.NotificationTemplate{},
@@ -366,7 +368,6 @@ type repositories struct {
 	systemConfigRepo         repoInterface.SystemConfigRepository
 	tagRepo                  repoInterface.TagRepository
 	alertRepo                repoInterface.AlertRepository
-	secretKeyRepo            repoInterface.SecretKeyRepository
 	serverRepo               repoInterface.ServerRepository
 	serverAgentRepo          repoInterface.ServerAgentRepository
 	notificationRepo         repoInterface.NotificationRecordRepository
@@ -375,6 +376,10 @@ type repositories struct {
 	databaseConnectionRepo   repoInterface.DatabaseConnectionRepository
 	resourceGroupRepo        repoInterface.ResourceGroupRepository
 	environmentVariableRepo  repoInterface.EnvironmentVariableRepository
+	resourceTypeRepo         repoInterface.ResourceTypeRepository
+	secretRepo               repoInterface.SecretRepository
+	secretReferenceRepo      repoInterface.SecretReferenceRepository
+	secretAuthorizeRepo      repoInterface.SecretAuthorizeRepository
 }
 
 // initRepositories creates and initializes all repository instances
@@ -392,7 +397,6 @@ func initRepositories(db *gorm.DB, zapLogger logger.Logger) *repositories {
 		systemConfigRepo:         repoImpl.NewSystemConfigRepository(db),
 		tagRepo:                  repoImpl.NewTagRepository(db),
 		alertRepo:                repoImpl.NewAlertRepository(db),
-		secretKeyRepo:            repoImpl.NewSecretKeyRepository(db),
 		serverRepo:               repoImpl.NewServerRepository(db),
 		serverAgentRepo:          repoImpl.NewServerAgentRepository(db),
 		notificationRepo:         repoImpl.NewNotificationRecordRepository(db),
@@ -401,6 +405,10 @@ func initRepositories(db *gorm.DB, zapLogger logger.Logger) *repositories {
 		databaseConnectionRepo:   repoImpl.NewDatabaseConnectionRepository(db),
 		resourceGroupRepo:        repoImpl.NewResourceGroupRepository(db),
 		environmentVariableRepo:  repoImpl.NewEnvironmentVariableRepository(db),
+		resourceTypeRepo:         repoImpl.NewResourceTypeRepository(db),
+		secretRepo:               repoImpl.NewSecretRepository(db),
+		secretReferenceRepo:      repoImpl.NewSecretReferenceRepository(db),
+		secretAuthorizeRepo:      repoImpl.NewSecretAuthorizeRepository(db),
 	}
 }
 
@@ -419,7 +427,6 @@ type businessServices struct {
 	systemConfigService         serviceInterface.SystemConfigService
 	tagService                  serviceInterface.TagService
 	alertServices               serviceInterface.AlertService
-	secretKeyService            serviceInterface.SecretKeyService
 	i18nService                 serviceInterface.I18nService
 	serverService               serviceInterface.ServerService
 	serverAgentService          serviceInterface.ServerAgentService
@@ -429,6 +436,7 @@ type businessServices struct {
 	databaseConnectionService   serviceInterface.DatabaseConnectionService
 	resourceGroupService        serviceInterface.ResourceGroupService
 	environmentVariableService  serviceInterface.EnvironmentVariableService
+	secretService               serviceInterface.SecretService
 }
 
 // initBusinessServices creates and initializes all service instances with their dependencies
@@ -444,10 +452,26 @@ func initBusinessServices(
 	// Create OAuth2 service for external authentication providers
 	oauth2Service := serviceImpl.NewOAuth2Service(authConfigManager, zapLogger)
 	userService := serviceImpl.NewUserService(repos.userRepo, zapLogger)
-	secretKeyService := serviceImpl.NewSecretKeyService(repos.secretKeyRepo, zapLogger, i18nInstance, cfg)
 
 	// Create email service
 	emailService := email.NewEmailService(cfg, zapLogger)
+
+	// Create secret service (needed by serverService)
+	secretService, err := serviceImpl.NewSecretService(
+		db,
+		repos.secretRepo,
+		repos.secretReferenceRepo,
+		repos.secretAuthorizeRepo,
+		repos.resourceGroupRepo,
+		repos.resourceTypeRepo,
+		repos.userRepo,
+		crypto.GetDefaultCrypto(),
+		cfg.Secrets.FileStorage,
+		zapLogger,
+	)
+	if err != nil {
+		zapLogger.Fatal("Failed to initialize secret service", logger.ErrorField(err))
+	}
 
 	services := &businessServices{
 		userService: userService,
@@ -471,12 +495,13 @@ func initBusinessServices(
 		userProfileService:  serviceImpl.NewUserProfileService(repos.userProfileRepo, zapLogger, i18nInstance),
 		tagService:          serviceImpl.NewTagService(repos.tagRepo, db, zapLogger, i18nInstance),
 		alertServices:       serviceImpl.NewAlertService(repos.alertRepo, zapLogger, i18nInstance),
-		secretKeyService:    secretKeyService,
 		i18nService:         serviceImpl.NewI18nService(repos.userProfileRepo, zapLogger),
-		serverService: serviceImpl.NewServerService(serviceImpl.ServerServiceConfig{
+		serverService: serviceImpl.NewServerService(&serviceImpl.ServerServiceConfig{
 			Logger:           zapLogger,
 			ServerRepo:       repos.serverRepo,
-			SecretKeyService: secretKeyService,
+			SecretService:    secretService,
+			SecretRefRepo:    repos.secretReferenceRepo,
+			SecretRepo:       repos.secretRepo,
 			SystemConfigRepo: repos.systemConfigRepo,
 			Config:           cfg,
 		}),
@@ -509,6 +534,9 @@ func initBusinessServices(
 	// Create environment variable service
 	environmentVariableService := serviceImpl.NewEnvironmentVariableService(repos.environmentVariableRepo, zapLogger)
 	services.environmentVariableService = environmentVariableService
+
+	// Secret service already created above (before services struct initialization)
+	services.secretService = secretService
 
 	return services
 }
@@ -558,7 +586,6 @@ func initControllers(
 			zapLogger,
 			i18nInstance,
 		),
-		SecretKeyController: controller.NewSecretKeyController(services.secretKeyService, zapLogger, i18nInstance, validatorInstance),
 		ServerController: controller.NewServerController(
 			services.serverService,
 			// services.serverAgentService, // Removed: unused until Agent module is implemented
@@ -570,6 +597,7 @@ func initControllers(
 		DatabaseConnectionController:   controller.NewDatabaseConnectionController(services.databaseConnectionService, validatorInstance, zapLogger),
 		ResourceGroupController:        controller.NewResourceGroupController(services.resourceGroupService, validatorInstance, zapLogger),
 		EnvironmentVariableController:  controller.NewEnvironmentVariableController(services.environmentVariableService, validatorInstance, zapLogger),
+		SecretController:               controller.NewSecretController(services.secretService, validatorInstance, zapLogger),
 	}
 }
 

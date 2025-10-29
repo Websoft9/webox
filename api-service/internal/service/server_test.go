@@ -10,13 +10,99 @@ import (
 	"api-service/pkg/logger"
 	"context"
 	"io"
-	"mime/multipart"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
+
+// MockSecretService implements service.SecretService for testing
+type MockSecretService struct {
+	mock.Mock
+}
+
+func (m *MockSecretService) CreateTextSecret(ctx context.Context, req *request.CreateTextSecretRequest, ownerID uint) (*response.SecretResponse, error) {
+	args := m.Called(ctx, req, ownerID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*response.SecretResponse), args.Error(1)
+}
+
+func (m *MockSecretService) CreateAccountSecret(ctx context.Context, req *request.CreateAccountSecretRequest, ownerID uint) (*response.SecretResponse, error) {
+	args := m.Called(ctx, req, ownerID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*response.SecretResponse), args.Error(1)
+}
+
+func (m *MockSecretService) CreateFileSecret(ctx context.Context, req *request.CreateFileSecretRequest, ownerID uint) (*response.SecretResponse, error) {
+	args := m.Called(ctx, req, ownerID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*response.SecretResponse), args.Error(1)
+}
+
+func (m *MockSecretService) GetSecret(ctx context.Context, id uint, userID uint) (*response.SecretDetailResponse, error) {
+	args := m.Called(ctx, id, userID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*response.SecretDetailResponse), args.Error(1)
+}
+
+func (m *MockSecretService) ListSecrets(ctx context.Context, req *request.ListSecretsRequest, userID uint) (*common.PaginationResponse, error) {
+	args := m.Called(ctx, req, userID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*common.PaginationResponse), args.Error(1)
+}
+
+func (m *MockSecretService) UpdateSecret(ctx context.Context, id uint, req *request.UpdateSecretRequest, userID uint) (*response.SecretResponse, error) {
+	args := m.Called(ctx, id, req, userID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*response.SecretResponse), args.Error(1)
+}
+
+func (m *MockSecretService) DeleteSecret(ctx context.Context, id uint, userID uint) error {
+	args := m.Called(ctx, id, userID)
+	return args.Error(0)
+}
+
+func (m *MockSecretService) GetSecretReferencesByResourceCode(ctx context.Context, resourceCode string) ([]*response.SecretReferenceResponse, error) {
+	args := m.Called(ctx, resourceCode)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*response.SecretReferenceResponse), args.Error(1)
+}
+
+func (m *MockSecretService) DeleteSecretReferencesByResourceCode(ctx context.Context, resourceCode string) error {
+	args := m.Called(ctx, resourceCode)
+	return args.Error(0)
+}
+
+func (m *MockSecretService) DownloadSecretFile(ctx context.Context, id uint, userID uint) ([]byte, string, error) {
+	args := m.Called(ctx, id, userID)
+	if args.Get(0) == nil {
+		return nil, "", args.Error(2)
+	}
+	return args.Get(0).([]byte), args.Get(1).(string), args.Error(2)
+}
+
+func (m *MockSecretService) CreateReference(ctx context.Context, req *request.CreateReferenceRequest) (*response.ReferenceResponse, error) {
+	args := m.Called(ctx, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*response.ReferenceResponse), args.Error(1)
+}
 
 // MockServerRepository implements repository.ServerRepository for testing
 type MockServerRepository struct {
@@ -119,146 +205,29 @@ func (m *MockServerRepository) UpdateServerLastSeen(ctx context.Context, id uint
 	return args.Error(0)
 }
 
-// MockSecretKeyService implements service.SecretKeyService for testing
-type MockSecretKeyService struct {
-	mock.Mock
-}
-
-func (m *MockSecretKeyService) CreateSecretKeyText(ctx context.Context, req *request.SecretKeyCreateTextRequest, userID uint) (*response.SecretKeyResponse, error) {
-	args := m.Called(ctx, req, userID)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*response.SecretKeyResponse), args.Error(1)
-}
-
-func (m *MockSecretKeyService) CreateSecretKeyFile(ctx context.Context, req *request.SecretKeyCreateFileRequest, userID uint) (*response.SecretKeyResponse, error) {
-	args := m.Called(ctx, req, userID)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*response.SecretKeyResponse), args.Error(1)
-}
-
-func (m *MockSecretKeyService) GetSecretKey(ctx context.Context, id, userID uint) (*response.SecretKeyResponse, error) {
-	args := m.Called(ctx, id, userID)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*response.SecretKeyResponse), args.Error(1)
-}
-
-func (m *MockSecretKeyService) GetSecretKeyValue(ctx context.Context, id, userID uint) (*response.SecretKeyValueResponse, error) {
-	args := m.Called(ctx, id, userID)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*response.SecretKeyValueResponse), args.Error(1)
-}
-
-func (m *MockSecretKeyService) UpdateSecretKey(ctx context.Context, id, userID uint, req *request.SecretKeyUpdateRequest) (*response.SecretKeyResponse, error) {
-	args := m.Called(ctx, id, userID, req)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*response.SecretKeyResponse), args.Error(1)
-}
-
-func (m *MockSecretKeyService) DeleteSecretKey(ctx context.Context, id, userID uint) error {
-	args := m.Called(ctx, id, userID)
-	return args.Error(0)
-}
-
-func (m *MockSecretKeyService) ListSecretKeys(ctx context.Context, req *request.SecretKeyQueryRequest, userID uint) (*common.PaginationResponse, error) {
-	args := m.Called(ctx, req, userID)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*common.PaginationResponse), args.Error(1)
-}
-
-func (m *MockSecretKeyService) ExportSecretKeys(ctx context.Context, req *request.SecretKeyExportRequest, userID uint) ([]byte, string, error) {
-	args := m.Called(ctx, req, userID)
-	if args.Get(0) == nil {
-		return nil, "", args.Error(2)
-	}
-	return args.Get(0).([]byte), args.String(1), args.Error(2)
-}
-
-func (m *MockSecretKeyService) ValidateSecretKeyOwnership(ctx context.Context, secretKeyID, userID uint) error {
-	args := m.Called(ctx, secretKeyID, userID)
-	return args.Error(0)
-}
-
-func (m *MockSecretKeyService) UploadSecretFile(ctx context.Context, file *multipart.FileHeader, fileType string) (*response.SecretFileUploadResponse, error) {
-	args := m.Called(ctx, file, fileType)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*response.SecretFileUploadResponse), args.Error(1)
-}
-
-func (m *MockSecretKeyService) DownloadSecretFile(ctx context.Context, filename string) (string, string, error) {
-	args := m.Called(ctx, filename)
-	return args.String(0), args.String(1), args.Error(2)
-}
-
-func (m *MockSecretKeyService) DeleteSecretFile(ctx context.Context, filename string) error {
-	args := m.Called(ctx, filename)
-	return args.Error(0)
-}
-
-func (m *MockSecretKeyService) CreateSecretReference(ctx context.Context, reference *model.SecretReference) error {
-	args := m.Called(ctx, reference)
-	return args.Error(0)
-}
-
-func (m *MockSecretKeyService) DeleteSecretReferencesByResourceCode(ctx context.Context, resourceCode string) error {
-	args := m.Called(ctx, resourceCode)
-	return args.Error(0)
-}
-
-func (m *MockSecretKeyService) GetSecretReferencesByResourceCode(ctx context.Context, resourceCode string) ([]*model.SecretReference, error) {
-	args := m.Called(ctx, resourceCode)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]*model.SecretReference), args.Error(1)
-}
-
-func (m *MockSecretKeyService) AssignSecretToResource(ctx context.Context, req *request.SecretAssignRequest, userID uint) error {
-	args := m.Called(ctx, req, userID)
-	return args.Error(0)
-}
-
-func (m *MockSecretKeyService) UnassignSecretFromResource(ctx context.Context, req *request.SecretUnassignRequest, userID uint) error {
-	args := m.Called(ctx, req, userID)
-	return args.Error(0)
-}
-
-func (m *MockSecretKeyService) GetSecretResources(ctx context.Context, req *request.SecretResourceQueryRequest, userID uint) (*response.SecretResourceResponse, error) {
-	args := m.Called(ctx, req, userID)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*response.SecretResourceResponse), args.Error(1)
-}
-
 // setupServerService creates a server service with mock dependencies
 func setupTestServerService() (*serverService, *MockServerRepository, *MockSystemConfigRepository) {
 	mockRepo := new(MockServerRepository)
 	mockSystemConfigRepo := new(MockSystemConfigRepository)
-	mockSecretKeyService := new(MockSecretKeyService)
+	mockSecretService := new(MockSecretService)
+	mockSecretRefRepo := new(MockSecretReferenceRepository)
+	mockSecretRepo := new(MockSecretRepository)
 	mockLogger := logger.NewZapLogger(logger.InfoLevel, io.Discard)
 
 	// Setup default mock for GetSecretReferencesByResourceCode to avoid unexpected call errors
-	mockSecretKeyService.On("GetSecretReferencesByResourceCode", mock.Anything, mock.Anything).
+	mockSecretService.On("GetSecretReferencesByResourceCode", mock.Anything, mock.Anything).
 		Return(nil, errors.NewAppError(errors.CodeRecordNotFound)).Maybe()
 
-	service := NewServerService(ServerServiceConfig{
+	// Setup default mock for ListByResourceCode to avoid unexpected call errors
+	mockSecretRefRepo.On("ListByResourceCode", mock.Anything, mock.Anything).
+		Return([]*model.SecretReference{}, nil).Maybe()
+
+	service := NewServerService(&ServerServiceConfig{
 		Logger:           mockLogger,
 		ServerRepo:       mockRepo,
-		SecretKeyService: mockSecretKeyService,
+		SecretService:    mockSecretService,
+		SecretRefRepo:    mockSecretRefRepo,
+		SecretRepo:       mockSecretRepo,
 		SystemConfigRepo: mockSystemConfigRepo,
 		Config:           &config.Config{},
 	}).(*serverService)
@@ -491,8 +460,10 @@ func TestUpdateServer(t *testing.T) {
 // TestDeleteServer tests server deletion
 func TestDeleteServer(t *testing.T) {
 	service, mockRepo, _ := setupTestServerService()
-	mockSecretKeyService := new(MockSecretKeyService)
-	service.secretKeyService = mockSecretKeyService
+	mockSecretService := new(MockSecretService)
+	mockSecretRefRepo := new(MockSecretReferenceRepository)
+	service.secretService = mockSecretService
+	service.secretRefRepo = mockSecretRefRepo
 
 	existingServer := &model.Server{
 		ID:   1,
@@ -501,14 +472,13 @@ func TestDeleteServer(t *testing.T) {
 	}
 
 	mockRepo.On("GetServerByID", mock.Anything, uint(1)).Return(existingServer, nil)
-	mockSecretKeyService.On("DeleteSecretReferencesByResourceCode", mock.Anything, "srv123").Return(nil)
+	mockSecretRefRepo.On("ListByResourceCode", mock.Anything, "srv123").Return([]*model.SecretReference{}, nil)
 	mockRepo.On("DeleteServer", mock.Anything, uint(1)).Return(nil)
 
 	err := service.DeleteServer(context.Background(), 1)
 
 	assert.NoError(t, err)
 	mockRepo.AssertExpectations(t)
-	mockSecretKeyService.AssertExpectations(t)
 }
 
 // TestListServers tests server listing functionality
