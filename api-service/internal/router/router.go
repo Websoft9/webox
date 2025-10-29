@@ -35,6 +35,7 @@ type Controllers struct {
 	NotificationTemplateController *controller.NotificationTemplateController
 	DatabaseConnectionController   *controller.DatabaseConnectionController
 	ResourceGroupController        *controller.ResourceGroupController
+	EnvironmentVariableController  *controller.EnvironmentVariableController
 	// More controllers can be added
 	// AppController  *controller.ApplicationController
 }
@@ -159,6 +160,7 @@ func setupAPIRoutes(v1 *gin.RouterGroup, controllers *Controllers) {
 	setupServerRoutes(protected, controllers.ServerController)
 	setupDatabaseConnectionRoutes(protected, controllers.DatabaseConnectionController)
 	setupResourceGroupRoutes(protected, controllers.ResourceGroupController)
+	setupEnvironmentVariableRoutes(protected, controllers.EnvironmentVariableController)
 }
 
 // setupUserRoutes sets up user related routes
@@ -495,4 +497,30 @@ func setupResourceGroupRoutes(protected *gin.RouterGroup, rgController *controll
 	resources := protected.Group("/resources")
 	resources.PUT("/resource-group", rgController.MoveResourcesToGroup) // PUT /api/v1/resources/resource-group
 	resources.GET("/statistics", rgController.GetResourceStatistics)    // GET /api/v1/resources/statistics
+}
+
+// setupEnvironmentVariableRoutes sets up environment variable management routes
+func setupEnvironmentVariableRoutes(protected *gin.RouterGroup, envVarController *controller.EnvironmentVariableController) {
+	if envVarController == nil {
+		return
+	}
+
+	// Environment variable routes
+	envVars := protected.Group("/environment-variables")
+
+	// Platform-level environment variables
+	envVars.POST("/platform", envVarController.CreatePlatformEnvVar) // POST /api/v1/environment-variables/platform
+	envVars.GET("/platform", envVarController.GetPlatformEnvVarList) // GET /api/v1/environment-variables/platform
+
+	// Project-level environment variables
+	envVars.POST("/project", envVarController.CreateProjectEnvVar) // POST /api/v1/environment-variables/project
+	envVars.GET("/project", envVarController.GetProjectEnvVarList) // GET /api/v1/environment-variables/project
+
+	// Variable interpolation resolution
+	envVars.POST("/resolve", envVarController.ResolveEnvVar) // POST /api/v1/environment-variables/resolve
+
+	// CRUD operations by ID
+	envVars.GET("/:id", envVarController.GetEnvVar)       // GET /api/v1/environment-variables/{id}
+	envVars.PUT("/:id", envVarController.UpdateEnvVar)    // PUT /api/v1/environment-variables/{id}
+	envVars.DELETE("/:id", envVarController.DeleteEnvVar) // DELETE /api/v1/environment-variables/{id}
 }

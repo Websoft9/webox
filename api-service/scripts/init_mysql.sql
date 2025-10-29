@@ -88,28 +88,30 @@ CREATE TABLE IF NOT EXISTS `project_members` (
     CONSTRAINT `fk_project_members_invited_by` FOREIGN KEY (`invited_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Project members table';
 
--- Project environment variables table
-CREATE TABLE IF NOT EXISTS `project_environments` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `project_id` BIGINT UNSIGNED NOT NULL COMMENT 'Project ID',
-    `name` VARCHAR(100) NOT NULL COMMENT 'Variable name',
-    `value` TEXT NULL COMMENT 'Variable value',
-    `type` ENUM('normal', 'sensitive') NOT NULL DEFAULT 'normal' COMMENT 'Variable type',
-    `description` VARCHAR(500) NULL COMMENT 'Variable description',
-    `scope` ENUM('global', 'app', 'workflow') NOT NULL DEFAULT 'global' COMMENT 'Scope',
-    `scope_target` VARCHAR(100) NULL COMMENT 'Scope target',
-    `is_encrypted` BOOLEAN NOT NULL DEFAULT FALSE COMMENT 'Whether encrypted storage',
-    `created_by` BIGINT UNSIGNED NOT NULL COMMENT 'Creator ID',
+-- Environment variables table (Platform and Project level)
+CREATE TABLE IF NOT EXISTS `environment_variables` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'Primary key ID',
+    `name` VARCHAR(64) NOT NULL COMMENT 'Variable name',
+    `value` TEXT NOT NULL COMMENT 'Variable value (encrypted if sensitive)',
+    `scope` VARCHAR(20) NOT NULL COMMENT 'Scope: PLATFORM/PROJECT',
+    `project_id` INT UNSIGNED NULL DEFAULT NULL COMMENT 'Project ID',
+    `description` TEXT NULL COMMENT 'Variable description',
+    `is_sensitive` BOOLEAN NOT NULL DEFAULT FALSE COMMENT 'Whether sensitive variable',
+    `owner_id` INT UNSIGNED NOT NULL COMMENT 'Owner user ID',
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation time',
     `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update time',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_project_name_scope` (`project_id`, `name`, `scope`, `scope_target`),
-    KEY `idx_created_by` (`created_by`),
-    KEY `idx_type` (`type`),
+    UNIQUE KEY `idx_name_scope_project` (`name`, `scope`, `project_id`),
+    KEY `idx_project_id` (`project_id`),
     KEY `idx_scope` (`scope`),
-    CONSTRAINT `fk_project_environments_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_project_environments_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Project environment variables table';
+    KEY `idx_owner_id` (`owner_id`),
+    CONSTRAINT `fk_env_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_env_owner` FOREIGN KEY (`owner_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT,
+    CONSTRAINT `chk_project_scope` CHECK (
+        (scope = 'PROJECT' AND project_id IS NOT NULL) OR 
+        (scope = 'PLATFORM' AND project_id IS NULL)
+    )
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Environment variables table';
 
 -- Project files table
 CREATE TABLE IF NOT EXISTS `project_files` (
