@@ -215,7 +215,7 @@ const (
 	MaxSecretFileSize = 5 * 1024 * 1024
 
 	// Allowed secret file extensions
-	// nolint:gosec // This is not a hardcoded credential, just file extensions
+	// #nosec G101 -- This is not a hardcoded credential, just file extensions
 	AllowedSecretFileExtensions = ".pem,.key,.crt,.cer,.p12,.pfx,.jks,.txt"
 )
 

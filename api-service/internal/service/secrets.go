@@ -299,6 +299,7 @@ func (s *secretService) saveSecretFile(ctx context.Context, req *request.CreateF
 	}
 	defer src.Close()
 
+	// #nosec G304 -- filePath is constructed from validated inputs (fileStoragePath + UUID + validated extension)
 	dst, err := os.Create(filePath)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to create file",
@@ -310,7 +311,8 @@ func (s *secretService) saveSecretFile(ctx context.Context, req *request.CreateF
 
 	if _, err := io.Copy(dst, src); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to save file", logger.ErrorField(err))
-		os.Remove(filePath)
+		// #nosec G104 -- Error is logged, cleanup failure is not critical
+		_ = os.Remove(filePath)
 		return "", errors.NewAppErrorWrapError(err, errors.CodeInternalError)
 	}
 
@@ -327,7 +329,8 @@ func (s *secretService) buildFileSecretFields(ctx context.Context, filename stri
 		encryptedPassword, err := s.encryptSecretField(*password)
 		if err != nil {
 			s.logger.ErrorContext(ctx, "Failed to encrypt password", logger.ErrorField(err))
-			os.Remove(filePath)
+			// #nosec G104 -- Error is logged, cleanup failure is not critical
+			_ = os.Remove(filePath)
 			return nil, errors.NewAppErrorWrapError(err, errors.CodeInternalError)
 		}
 		secretFields["secret_password"] = encryptedPassword
@@ -398,7 +401,8 @@ func (s *secretService) CreateFileSecret(ctx context.Context, req *request.Creat
 		s.logger.ErrorContext(ctx, "Failed to create secret",
 			logger.String("name", req.Name),
 			logger.ErrorField(err))
-		os.Remove(filePath)
+		// #nosec G104 -- Error is logged, cleanup failure is not critical
+		_ = os.Remove(filePath)
 		return nil, err
 	}
 
@@ -919,16 +923,16 @@ func (s *secretService) DeleteSecret(ctx context.Context, id, userID uint) error
 
 	// Execute deletion in transaction
 	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		// Step 1: Delete authorizations using transaction
-		if deleteErr := tx.Where("secret_id = ?", secret.ID).Delete(&model.SecretAuthorize{}).Error; deleteErr != nil {
+		// Step 1: Delete authorizations using repository
+		if deleteErr := s.authorizeRepo.DeleteBySecretID(ctx, secret.ID); deleteErr != nil {
 			s.logger.ErrorContext(ctx, "Failed to delete authorizations",
 				logger.Uint("secret_id", secret.ID),
 				logger.ErrorField(deleteErr))
 			return errors.NewAppErrorWrapError(deleteErr, errors.CodeRecordDeleteFailed)
 		}
 
-		// Step 2: Delete secret record using transaction
-		if deleteErr := tx.Delete(&model.Secret{}, secret.ID).Error; deleteErr != nil {
+		// Step 2: Delete secret record using repository
+		if deleteErr := s.secretRepo.Delete(ctx, secret.ID); deleteErr != nil {
 			s.logger.ErrorContext(ctx, "Failed to delete secret",
 				logger.Uint("secret_id", secret.ID),
 				logger.ErrorField(deleteErr))
