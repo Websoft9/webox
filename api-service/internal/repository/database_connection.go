@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	dbConnectionCodePrefix = "db_conn" // Prefix for database connection code
-	dbConnectionCodeLength = 10        // Length of random string in connection code
+	dbConnectionCodePrefix = "database" // Prefix for database connection code
+	dbConnectionCodeLength = 10         // Length of random string in connection code
 )
 
 // databaseConnectionRepository implements DatabaseConnectionRepository

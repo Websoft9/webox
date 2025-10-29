@@ -373,6 +373,7 @@ type repositories struct {
 	notificationChannelRepo  repoInterface.NotificationChannelRepository
 	notificationTemplateRepo repoInterface.NotificationTemplateRepository
 	databaseConnectionRepo   repoInterface.DatabaseConnectionRepository
+	resourceGroupRepo        repoInterface.ResourceGroupRepository
 }
 
 // initRepositories creates and initializes all repository instances
@@ -397,6 +398,7 @@ func initRepositories(db *gorm.DB, zapLogger logger.Logger) *repositories {
 		notificationChannelRepo:  repoImpl.NewNotificationChannelRepository(db, zapLogger),
 		notificationTemplateRepo: repoImpl.NewNotificationTemplateRepository(db),
 		databaseConnectionRepo:   repoImpl.NewDatabaseConnectionRepository(db),
+		resourceGroupRepo:        repoImpl.NewResourceGroupRepository(db),
 	}
 }
 
@@ -423,6 +425,7 @@ type businessServices struct {
 	notificationChannelService  serviceInterface.NotificationChannelService
 	notificationTemplateService serviceInterface.NotificationTemplateService
 	databaseConnectionService   serviceInterface.DatabaseConnectionService
+	resourceGroupService        serviceInterface.ResourceGroupService
 }
 
 // initBusinessServices creates and initializes all service instances with their dependencies
@@ -493,6 +496,13 @@ func initBusinessServices(
 	}
 	services.databaseConnectionService = dbConnService
 
+	// Create resource group service
+	resourceGroupService, err := serviceImpl.NewResourceGroupService(repos.resourceGroupRepo, zapLogger)
+	if err != nil {
+		zapLogger.Fatal("Failed to initialize resource group service", logger.ErrorField(err))
+	}
+	services.resourceGroupService = resourceGroupService
+
 	return services
 }
 
@@ -551,6 +561,7 @@ func initControllers(
 		NotificationChannelController:  controller.NewNotificationChannelController(services.notificationChannelService, zapLogger, validatorInstance),
 		NotificationTemplateController: controller.NewNotificationTemplateController(services.notificationTemplateService, validatorInstance, zapLogger),
 		DatabaseConnectionController:   controller.NewDatabaseConnectionController(services.databaseConnectionService, validatorInstance, zapLogger),
+		ResourceGroupController:        controller.NewResourceGroupController(services.resourceGroupService, validatorInstance, zapLogger),
 	}
 }
 

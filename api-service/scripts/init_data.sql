@@ -114,11 +114,15 @@ INSERT INTO `permissions` (`parent_code`,`scope`,`name`,`code`,`module`,`action`
 	 ('cfda7904-5e54-4049-8bcf-261327b95194','project','ui.action_update','d43b3275-84e1-45a1-966b-216d423a5022','job','update',NULL,NULL,'Task enable permission',1,0,0,1,1,1),
 	 ('cfda7904-5e54-4049-8bcf-261327b95194','project','ui.action_update','8ea00e66-107b-4781-ad97-5161d47595dc','job','update',NULL,NULL,'Task disable permission',1,0,0,1,1,1),
 	 ('e1dbef1f-22e8-4b53-9e20-80a83c6b697b','project','ui.resource','b8535fc4-8da4-4184-b184-55a3090e45fb','project_resource','*',NULL,NULL,'Project resource management all permissions',1,1,0,1,1,1),
-	 ('b8535fc4-8da4-4184-b184-55a3090e45fb','project','ui.resource_group_management','c1bae555-b464-444a-8f9c-5fc7a133b674','resource_group','*',NULL,NULL,'Resource group management all permissions',1,1,0,1,1,1),
-	 ('c1bae555-b464-444a-8f9c-5fc7a133b674','project','ui.action_query','6d9e764a-49e0-42f5-9fb8-3efc2cd40e70','resource_group','query',NULL,NULL,'Resource group query permission',1,0,0,1,1,1),
-	 ('c1bae555-b464-444a-8f9c-5fc7a133b674','project','ui.action_create','2c844549-d528-4e05-9e22-39f920bb5bca','resource_group','create',NULL,NULL,'Resource group create permission',1,0,0,1,1,1),
-	 ('c1bae555-b464-444a-8f9c-5fc7a133b674','project','ui.action_update','3415c393-d433-4fed-b958-fa3581114669','resource_group','update',NULL,NULL,'Resource group update permission',1,0,0,1,1,1),
-	 ('c1bae555-b464-444a-8f9c-5fc7a133b674','project','ui.action_delete','7beabed6-c57d-4185-8edf-ea64c098d53f','resource_group','delete',NULL,NULL,'Resource group delete permission',1,0,0,1,1,1),
+	 ('b8535fc4-8da4-4184-b184-55a3090e45fb','project','ui.resource_group_management','c1bae555-b464-444a-8f9c-5fc7a133b674','resource_group','*','/resource-groups',NULL,'Resource group management all permissions',1,1,0,1,1,1),
+	 ('c1bae555-b464-444a-8f9c-5fc7a133b674','project','ui.action_query','6d9e764a-49e0-42f5-9fb8-3efc2cd40e70','resource_group','query','/resource-groups',NULL,'Resource group list query permission',1,0,0,1,1,1),
+	 ('c1bae555-b464-444a-8f9c-5fc7a133b674','project','ui.action_query','f8a7c1e2-5d6b-4a9c-8e3f-2b1d4c7a9e5f','resource_group','query','/resource-groups/*',NULL,'Resource group detail query permission',1,0,0,1,1,1),
+	 ('c1bae555-b464-444a-8f9c-5fc7a133b674','project','ui.action_create','2c844549-d528-4e05-9e22-39f920bb5bca','resource_group','create','/resource-groups',NULL,'Resource group create permission',1,0,0,1,1,1),
+	 ('c1bae555-b464-444a-8f9c-5fc7a133b674','project','ui.action_update','3415c393-d433-4fed-b958-fa3581114669','resource_group','update','/resource-groups/*',NULL,'Resource group update permission',1,0,0,1,1,1),
+	 ('c1bae555-b464-444a-8f9c-5fc7a133b674','project','ui.action_delete','7beabed6-c57d-4185-8edf-ea64c098d53f','resource_group','delete','/resource-groups/*',NULL,'Resource group delete permission',1,0,0,1,1,1),
+	 ('c1bae555-b464-444a-8f9c-5fc7a133b674','project','ui.action_query','a1b2c3d4-5e6f-7g8h-9i0j-1k2l3m4n5o6p','resource_group','query','/resource-groups/*/resources',NULL,'Resource group resources query permission',1,0,0,1,1,1),
+	 ('c1bae555-b464-444a-8f9c-5fc7a133b674','project','ui.action_update','e5f6g7h8-9i0j-1k2l-3m4n-5o6p7q8r9s0t','resource_group','update','/resources/resource-group',NULL,'Move resources to group permission',1,0,0,1,1,1),
+	 ('c1bae555-b464-444a-8f9c-5fc7a133b674','project','ui.action_query','d4e5f6g7-8h9i-0j1k-2l3m-4n5o6p7q8r9s','resource_group','query','/resources/statistics',NULL,'Resource statistics query permission',1,0,0,1,1,1),
     ('b8535fc4-8da4-4184-b184-55a3090e45fb','project','ui.server_management','b943ea96-4d7d-4a68-bf15-02a1ddded533','server','*','/servers',NULL,'Server management all permissions',1,1,0,1,1,1),
 	 ('b943ea96-4d7d-4a68-bf15-02a1ddded533','project','ui.action_query','bbc990d0-b47e-4ddd-9d60-6941e6498386','server','query','/servers',NULL,'Server query permission',1,0,0,1,1,1),
     ('b943ea96-4d7d-4a68-bf15-02a1ddded533','project','ui.action_query','64618046-70f3-4971-aeef-bff6313669c8','server','query','/servers/*',NULL,'Server query permission',1,0,0,1,1,1),
@@ -348,9 +352,13 @@ INSERT INTO `role_permissions` (`role_id`,`permission_code`,`granted_by`,`status
          (1, 'b8535fc4-8da4-4184-b184-55a3090e45fb',1,1),
          (1, 'c1bae555-b464-444a-8f9c-5fc7a133b674',1,1),
          (1, '6d9e764a-49e0-42f5-9fb8-3efc2cd40e70',1,1),
+         (1, 'f8a7c1e2-5d6b-4a9c-8e3f-2b1d4c7a9e5f',1,1),
          (1, '2c844549-d528-4e05-9e22-39f920bb5bca',1,1),
          (1, '3415c393-d433-4fed-b958-fa3581114669',1,1),
          (1, '7beabed6-c57d-4185-8edf-ea64c098d53f',1,1),
+         (1, 'a1b2c3d4-5e6f-7g8h-9i0j-1k2l3m4n5o6p',1,1),
+         (1, 'e5f6g7h8-9i0j-1k2l-3m4n-5o6p7q8r9s0t',1,1),
+         (1, 'd4e5f6g7-8h9i-0j1k-2l3m-4n5o6p7q8r9s',1,1),
          (1, 'b943ea96-4d7d-4a68-bf15-02a1ddded533',1,1),
          (1, 'bbc990d0-b47e-4ddd-9d60-6941e6498386',1,1),
          (1, '64618046-70f3-4971-aeef-bff6313669c8',1,1),
@@ -580,16 +588,35 @@ INSERT INTO `notification_templates` (`name`, `template_type`, `subject`, `conte
 ('Application Deployment Success', 'EMAIL', 'Application Deployment Success Notification', 'Dear {{username}},\n\nYour application {{app_name}} has been successfully deployed to server {{server_name}}.\n\nAccess URL: {{app_url}}\nDeployment Time: {{deployed_at}}\n\n{{system_name}} Team', 1, 1),
 ('Application Deployment Failure', 'EMAIL', 'Application Deployment Failure Notification', 'Dear {{username}},\n\nYour application {{app_name}} deployment has failed.\n\nError Message: {{error_message}}\nFailure Time: {{failed_at}}\n\nPlease check the configuration and try again.\n\n{{system_name}} Team', 1, 1);
 
+-- Insert default resource types
+INSERT OR IGNORE INTO resource_types (name, code, table_name, description) VALUES
+('resource_type.server', 'server', 'servers', 'resource_type.server_desc'),
+('resource_type.database', 'database', 'database_connections', 'resource_type.database_desc');
+-- ('resource_type.secret', 'secret', 'secret_keys', 'resource_type.secret_desc'),
+-- ('resource_type.application', 'application', 'app_instances', 'resource_type.application_desc'),
+-- ('resource_type.gateway', 'gateway', 'app_gateways', 'resource_type.gateway_desc'),
+-- ('resource_type.certificate', 'certificate', 'ssl_certificates', 'resource_type.certificate_desc'),
+-- ('resource_type.workflow', 'workflow', 'workflows', 'resource_type.workflow_desc');
+
 -- ========================================
 -- Test data for development and testing
 -- ========================================
 
 -- Insert default project (for testing)
 INSERT INTO `projects` (`name`, `identifier`, `description`, `owner_id`, `status`) VALUES
-('Default Project', 'default_project', 'Default project for testing and development', 1, 'NORMAL');
+('Default Project', 'default_project', 'Default project for testing and development', 1, 'NORMAL'),
+('E-commerce Platform', 'ecommerce_platform', 'E-commerce application project for online retail', 1, 'NORMAL');
 
 -- Insert default resource groups (for testing)
-INSERT INTO `resource_groups` (`project_id`, `name`, `code`, `description`, `owner_id`, `sort_order`, `status`) VALUES
-(1, 'Default Resource Group', 'default_rg', 'Default resource group for testing', 1, 0, 1),
-(1, 'Development Environment', 'dev_env', 'Development environment resource group', 1, 1, 1),
-(1, 'Production Environment', 'prod_env', 'Production environment resource group', 1, 2, 1);
+INSERT INTO `resource_groups` (`project_id`, `name`, `code`, `description`, `owner_id`, `is_default`, `sort_order`) VALUES
+-- Default Project 资源组
+(1, 'Default Resource Group', 'default_rg', 'Default resource group for testing', 1, 1, 0),
+(1, 'Development Environment', 'dev_env', 'Development environment resource group', 1, 0, 1),
+(1, 'Production Environment', 'prod_env', 'Production environment resource group', 1, 0, 2),
+-- E-commerce Platform 资源组
+(2, 'Default Resource Group', 'ecommerce_default_rg', 'Default resource group for e-commerce project', 1, 1, 0),
+(2, 'Frontend Services', 'frontend_services', 'Frontend application and static resources', 1, 0, 1),
+(2, 'Backend Services', 'backend_services', 'Backend API and microservices', 1, 0, 2),
+(2, 'Database Cluster', 'database_cluster', 'Database and cache services', 1, 0, 3),
+(2, 'Message Queue', 'message_queue', 'Message queue and event streaming', 1, 0, 4),
+(2, 'Monitoring & Logging', 'monitoring_logging', 'Monitoring, logging and tracing services', 1, 0, 5);

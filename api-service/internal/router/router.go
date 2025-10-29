@@ -34,6 +34,7 @@ type Controllers struct {
 	NotificationChannelController  *controller.NotificationChannelController
 	NotificationTemplateController *controller.NotificationTemplateController
 	DatabaseConnectionController   *controller.DatabaseConnectionController
+	ResourceGroupController        *controller.ResourceGroupController
 	// More controllers can be added
 	// AppController  *controller.ApplicationController
 }
@@ -157,6 +158,7 @@ func setupAPIRoutes(v1 *gin.RouterGroup, controllers *Controllers) {
 	setupSecretKeyRoutes(protected, controllers.SecretKeyController)
 	setupServerRoutes(protected, controllers.ServerController)
 	setupDatabaseConnectionRoutes(protected, controllers.DatabaseConnectionController)
+	setupResourceGroupRoutes(protected, controllers.ResourceGroupController)
 }
 
 // setupUserRoutes sets up user related routes
@@ -470,4 +472,27 @@ func setupDatabaseConnectionRoutes(protected *gin.RouterGroup, dbController *con
 	databases.GET("/:id", dbController.GetConnection)       // GET /api/v1/databases/{id}
 	databases.PUT("/:id", dbController.UpdateConnection)    // PUT /api/v1/databases/{id}
 	databases.DELETE("/:id", dbController.DeleteConnection) // DELETE /api/v1/databases/{id}
+}
+
+// setupResourceGroupRoutes sets up resource group management routes
+func setupResourceGroupRoutes(protected *gin.RouterGroup, rgController *controller.ResourceGroupController) {
+	if rgController == nil {
+		return
+	}
+
+	// Resource group CRUD routes
+	resourceGroups := protected.Group("/resource-groups")
+	resourceGroups.GET("", rgController.GetResourceGroupList)       // GET /api/v1/resource-groups
+	resourceGroups.POST("", rgController.CreateResourceGroup)       // POST /api/v1/resource-groups
+	resourceGroups.GET("/:id", rgController.GetResourceGroup)       // GET /api/v1/resource-groups/{id}
+	resourceGroups.PUT("/:id", rgController.UpdateResourceGroup)    // PUT /api/v1/resource-groups/{id}
+	resourceGroups.DELETE("/:id", rgController.DeleteResourceGroup) // DELETE /api/v1/resource-groups/{id}
+
+	// Resource association management routes (under resource group)
+	resourceGroups.GET("/:id/resources", rgController.GetResourcesByGroupID) // GET /api/v1/resource-groups/{id}/resources
+
+	// Resource management routes (global)
+	resources := protected.Group("/resources")
+	resources.PUT("/resource-group", rgController.MoveResourcesToGroup) // PUT /api/v1/resources/resource-group
+	resources.GET("/statistics", rgController.GetResourceStatistics)    // GET /api/v1/resources/statistics
 }
