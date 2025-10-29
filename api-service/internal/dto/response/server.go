@@ -194,16 +194,6 @@ type TaskListResponse struct {
 	Size  int             `json:"size"`
 }
 
-// SecretResponse represents a secret in responses (without value)
-type SecretResponse struct {
-	ID          uint      `json:"id"`
-	Name        string    `json:"name"`
-	Type        string    `json:"type"`
-	Description string    `json:"description,omitempty"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
-}
-
 // SecretValueResponse represents a secret with its value
 type SecretValueResponse struct {
 	ID    uint   `json:"id"`

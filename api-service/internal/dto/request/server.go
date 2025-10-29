@@ -130,10 +130,3 @@ type CreateSecretRequest struct {
 	Type        string `json:"type" validate:"required,max=50" example:"password"`                             // Secret type
 	Description string `json:"description,omitempty" validate:"omitempty,max=500" example:"Database password"` // Secret description
 }
-
-// UpdateSecretRequest represents a request to update a secret
-type UpdateSecretRequest struct {
-	Name        *string `json:"name,omitempty" validate:"omitempty,max=100"`        // Secret name
-	Value       *string `json:"value,omitempty"`                                    // Secret value
-	Description *string `json:"description,omitempty" validate:"omitempty,max=500"` // Secret description
-}

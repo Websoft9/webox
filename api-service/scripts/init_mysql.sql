@@ -108,7 +108,7 @@ CREATE TABLE IF NOT EXISTS `environment_variables` (
     CONSTRAINT `fk_env_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_env_owner` FOREIGN KEY (`owner_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT,
     CONSTRAINT `chk_project_scope` CHECK (
-        (scope = 'PROJECT' AND project_id IS NOT NULL) OR 
+        (scope = 'PROJECT' AND project_id IS NOT NULL) OR
         (scope = 'PLATFORM' AND project_id IS NULL)
     )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Environment variables table';
@@ -389,27 +389,6 @@ CREATE TABLE IF NOT EXISTS `ssl_certificates` (
     KEY `idx_status` (`status`),
     KEY `idx_not_after` (`not_after`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='SSL certificates table';
-
--- Secret key management table
-CREATE TABLE IF NOT EXISTS `secret_keys` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `name` VARCHAR(64) NOT NULL COMMENT 'Secret key name',
-    `key_type` ENUM('SECRET_KEY', 'ACCOUNT', 'FILE') NOT NULL COMMENT 'Secret key type',
-    `description` TEXT NULL COMMENT 'Description',
-    `secret_fields` JSON NULL COMMENT 'Secret fields',
-    `expires_at` DATETIME NULL COMMENT 'Expiration time',
-    `resource_group_id` BIGINT UNSIGNED NULL COMMENT 'Resource group ID',
-    `owner_id` BIGINT UNSIGNED NOT NULL COMMENT 'Owner ID',
-    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation time',
-    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update time',
-    PRIMARY KEY (`id`),
-    KEY `idx_owner_id` (`owner_id`),
-    KEY `idx_resource_group_id` (`resource_group_id`),
-    KEY `idx_key_type` (`key_type`),
-    KEY `idx_expires_at` (`expires_at`),
-    CONSTRAINT `fk_secret_keys_resource_group` FOREIGN KEY (`resource_group_id`) REFERENCES `resource_groups` (`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_secret_keys_owner` FOREIGN KEY (`owner_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Secret key management table';
 
 -- Application gateways table
 CREATE TABLE IF NOT EXISTS `app_gateways` (
@@ -1332,19 +1311,56 @@ CREATE TABLE taggings (
     FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Tag-Resource association table';
 
--- Secret references table
-CREATE TABLE IF NOT EXISTS `secret_references` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `secret_id` BIGINT UNSIGNED NOT NULL,
-    `resource_code` VARCHAR(64) NOT NULL,
-    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+-- Secrets Table
+CREATE TABLE IF NOT EXISTS `secrets` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'Secret ID',
+    `code` VARCHAR(128) NOT NULL COMMENT 'Secret code, globally unique, format: secrets_{random_string}',
+    `name` VARCHAR(64) NOT NULL COMMENT 'Secret name',
+    `type` ENUM('text', 'account', 'file') NOT NULL COMMENT 'Secret type',
+    `description` TEXT NULL COMMENT 'Secret description',
+    `secret_fields` JSON NOT NULL COMMENT 'Encrypted secret data (JSON format)',
+    `expires_at` DATETIME NULL COMMENT 'Expiration time',
+    `resource_group_id` BIGINT UNSIGNED NOT NULL COMMENT 'Resource group ID',
+    `owner_id` BIGINT UNSIGNED NOT NULL COMMENT 'Owner ID',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation time',
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update time',
     PRIMARY KEY (`id`),
-    KEY `idx_secret_references_secret_id` (`secret_id`),
-    KEY `idx_secret_references_resource_code` (`resource_code`),
-    UNIQUE KEY `idx_secret_references_secret_resource` (`secret_id`, `resource_code`),
-    CONSTRAINT `fk_secret_references_secret` FOREIGN KEY (`secret_id`) REFERENCES `secret_keys` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Secret references table';
+    UNIQUE KEY `uk_code` (`code`),
+    UNIQUE KEY `uk_resource_group_name` (`resource_group_id`, `name`),
+    KEY `idx_resource_group_id` (`resource_group_id`),
+    KEY `idx_owner_id` (`owner_id`),
+    KEY `idx_type` (`type`),
+    KEY `idx_created_at` (`created_at`),
+    CONSTRAINT `fk_secrets_resource_group` FOREIGN KEY (`resource_group_id`) REFERENCES `resource_groups` (`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_secrets_owner` FOREIGN KEY (`owner_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Secrets table for storing sensitive credentials';
+
+-- Secret References Table
+CREATE TABLE IF NOT EXISTS `secret_references` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'Reference ID',
+    `secret_id` BIGINT UNSIGNED NOT NULL COMMENT 'Secret ID',
+    `resource_code` VARCHAR(128) NOT NULL COMMENT 'Resource code',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation time',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_secret_resource` (`secret_id`, `resource_code`),
+    KEY `idx_resource_code` (`resource_code`),
+    CONSTRAINT `fk_secret_references_secret` FOREIGN KEY (`secret_id`) REFERENCES `secrets` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Secret reference records table';
+
+-- Secret Authorizes Table
+CREATE TABLE IF NOT EXISTS `secret_authorizes` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'Authorization ID',
+    `secret_id` BIGINT UNSIGNED NOT NULL COMMENT 'Secret ID',
+    `authorized_user_id` BIGINT UNSIGNED NOT NULL COMMENT 'Authorized user ID',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation time',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_secret_user` (`secret_id`, `authorized_user_id`),
+    KEY `idx_authorized_user_id` (`authorized_user_id`),
+    CONSTRAINT `fk_secret_authorizes_secret` FOREIGN KEY (`secret_id`) REFERENCES `secrets` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_secret_authorizes_user` FOREIGN KEY (`authorized_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Secret authorization records table';
+
+
 -- ========================================
 -- Index optimization
 -- ========================================

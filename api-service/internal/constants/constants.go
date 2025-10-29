@@ -203,13 +203,20 @@ const (
 	FormatCSV   = "csv"
 )
 
-// Secret key type constants
+// Secret management constants
 const (
-	SecretTypeSSHKey      = "ssh_key"     // SSH密钥类型
-	SecretTypePassword    = "password"    // 密码类型
-	SecretTypeAPIKey      = "api_key"     // API密钥类型
-	SecretTypeDatabase    = "database"    // 数据库凭据类型
-	SecretTypeCertificate = "certificate" // 证书类型
+	// Secret file storage path (default)
+	DefaultSecretFileStorage = "./data/secrets"
+
+	// Secret encryption key (default)
+	DefaultSecretEncryptionKey = "Websoft9 Secrets"
+
+	// Secret file size limit (5MB)
+	MaxSecretFileSize = 5 * 1024 * 1024
+
+	// Allowed secret file extensions
+	// nolint:gosec // This is not a hardcoded credential, just file extensions
+	AllowedSecretFileExtensions = ".pem,.key,.crt,.cer,.p12,.pfx,.jks,.txt"
 )
 
 // audit-logs constants
@@ -474,22 +481,6 @@ const (
 	// Maximum length of SQL log
 	MaxSQLLogLength = 100
 )
-
-// Secret key file types
-const (
-	FileTypeKey = ".key" // Private key file
-	FileTypePem = ".pem" // PEM encoded certificate or key
-	FileTypeRsa = ".rsa" // RSA key file
-	FileTypeCrt = ".crt" // Certificate file
-)
-
-// Allowed secret file extensions
-var AllowedSecretFileExtensions = []string{
-	FileTypeKey,
-	FileTypePem,
-	FileTypeRsa,
-	FileTypeCrt,
-}
 
 // NotificationRecordStatus enum values
 const (

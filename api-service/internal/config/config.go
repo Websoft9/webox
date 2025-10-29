@@ -19,6 +19,7 @@ type Config struct {
 	AuditLog AuditLogConfig  `mapstructure:"audit_log"`
 	Security SecurityConfig  `mapstructure:"security"`
 	Upload   UploadConfig    `mapstructure:"upload"`
+	Secrets  SecretsConfig   `mapstructure:"secrets"`
 }
 
 type ServerConfig struct {
@@ -149,16 +150,18 @@ type AuditLogConfig struct {
 
 // CryptoConfig encryption configuration
 type SecurityConfig struct {
-	AesKey            string `mapstructure:"aes_key"`
-	RSAPrivateKey     string `mapstructure:"rsa_private_key"`
-	RSAPublicKey      string `mapstructure:"rsa_public_key"`
-	RSAPrivateKeyFile string `mapstructure:"rsa_private_key_file"`
-	RSAPublicKeyFile  string `mapstructure:"rsa_public_key_file"`
+	AesKey string `mapstructure:"aes_key"`
 }
 
 // UploadConfig upload configuration
 type UploadConfig struct {
 	SecretStorage string `mapstructure:"secret_storage"`
+}
+
+// SecretsConfig secret management configuration
+type SecretsConfig struct {
+	FileStorage   string `mapstructure:"file_storage"`   // Directory for storing secret files
+	EncryptionKey string `mapstructure:"encryption_key"` // AES-256 encryption key
 }
 
 func Load() (*Config, error) {
@@ -216,6 +219,7 @@ func setDefaults() {
 	setAppDefaults()
 	setAuditLogDefaults()
 	setSecurityDefaults()
+	setSecretsDefaults()
 }
 
 func setServerDefaults() {
@@ -307,4 +311,9 @@ func setSecurityDefaults() {
 
 	// Upload defaults
 	viper.SetDefault("upload.secret_storage", "/home/appuser/data")
+}
+
+func setSecretsDefaults() {
+	viper.SetDefault("secrets.file_storage", constants.DefaultSecretFileStorage)
+	viper.SetDefault("secrets.encryption_key", constants.DefaultSecretEncryptionKey)
 }
