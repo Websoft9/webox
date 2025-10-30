@@ -1,67 +1,81 @@
-# Optimized Base Image - Build Stage Only
-# This image is only used for building, not for runtime
+# ==============================================================================
+# Websoft9 Base Image - Runtime Environment
+# ==============================================================================
+# Description: Lightweight runtime environment for Websoft9 applications
+# Contains: Redis 7.x + InfluxDB 2.x + Supervisor
+# Size: ~180 MB
+# ==============================================================================
 
-FROM alpine:3.22 AS builder
+FROM alpine:3.22
 
-LABEL version="0.1.1"
-LABEL maintainer="Websoft9"
-LABEL description="Build-only base image with Go 1.24.5, Redis 8.2.1, and InfluxDB 2.7"
+LABEL version="1.6.0" \
+  maintainer="Websoft9" \
+  description="Websoft9 runtime base: Redis + InfluxDB 2.x + Supervisor"
 
-# Define versions
-ARG GO_VERSION=1.24.5
-ARG REDIS_VERSION=8.2.1
+# Build arguments
 ARG INFLUXDB_VERSION=2.7.12
 
-# Configure go environment variables
-ENV GOROOT=/usr/local/go
-ENV GOPATH=$GOROOT
-ENV GOPROXY=https://goproxy.cn,direct
-ENV GOCACHE=/root/.cache/go-build
-ENV REDIS_HOME=/usr/local/redis
-ENV INFLUXDB_HOME=/usr/local/influxdb
-ENV PATH=$GOPATH/bin:$REDIS_HOME/bin:$INFLUXDB_HOME/bin:$PATH
+# Runtime environment
+ENV REDIS_HOME=/usr/local/redis \
+  INFLUXDB_HOME=/usr/local/influxdb \
+  PATH=/usr/local/influxdb/bin:/usr/local/redis/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+  TZ=UTC
 
-# Install build dependencies (only needed for compilation)
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories && \
+# Install runtime dependencies
+RUN set -eux; \
   apk add --no-cache \
-  gcc \
-  g++ \
-  musl-dev \
-  make \
-  linux-headers \
+  bash \
+  ca-certificates \
   curl \
-  bash
+  python3 \
+  redis \
+  sqlite \
+  supervisor \
+  tzdata; \
+  ln -snf /usr/share/zoneinfo/$TZ /etc/localtime; \
+  echo $TZ > /etc/timezone; \
+  rm -rf /var/cache/apk/* /tmp/*
 
-# Install Go
-RUN curl -fsSL --retry 5 --retry-delay 3 https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz -o go.tar.gz && \
-  tar -C /usr/local -xzf go.tar.gz && \
-  rm go.tar.gz && \
-  go version && \
-  go install github.com/swaggo/swag/cmd/swag@latest && \
-  go clean -modcache 2>/dev/null || true
+# Install InfluxDB 2.x
+RUN set -eux; \
+  ARCH=$(uname -m); \
+  case $ARCH in \
+  x86_64)  INFLUX_ARCH="amd64" ;; \
+  aarch64) INFLUX_ARCH="arm64" ;; \
+  *) echo "Unsupported architecture: $ARCH" >&2; exit 1 ;; \
+  esac; \
+  curl -fsSL "https://dl.influxdata.com/influxdb/releases/v${INFLUXDB_VERSION}/influxdb${INFLUXDB_VERSION%%.*}-${INFLUXDB_VERSION}_linux_${INFLUX_ARCH}.tar.gz" \
+  | tar -xz -C /tmp; \
+  mkdir -p ${INFLUXDB_HOME}/bin; \
+  cp /tmp/influxdb${INFLUXDB_VERSION%%.*}-${INFLUXDB_VERSION}/usr/bin/* ${INFLUXDB_HOME}/bin/; \
+  chmod +x ${INFLUXDB_HOME}/bin/*; \
+  strip ${INFLUXDB_HOME}/bin/* 2>/dev/null || true; \
+  ${INFLUXDB_HOME}/bin/influxd version; \
+  rm -rf /tmp/*
 
-# Install Redis (compile from source)
-RUN curl -L https://download.redis.io/releases/redis-${REDIS_VERSION}.tar.gz | tar -xz && \
-  cd redis-${REDIS_VERSION} && \
-  make && \
-  make PREFIX=${REDIS_HOME} install && \
-  cp redis.conf /etc/ && \
-  cd .. && \
-  rm -rf redis-${REDIS_VERSION} && \
-  strip ${REDIS_HOME}/bin/redis-server ${REDIS_HOME}/bin/redis-cli 2>/dev/null || true
+# Setup application user and directory structure
+RUN set -eux; \
+  mkdir -p ${REDIS_HOME}/bin; \
+  ln -sf /usr/bin/redis-server ${REDIS_HOME}/bin/redis-server; \
+  ln -sf /usr/bin/redis-cli ${REDIS_HOME}/bin/redis-cli; \
+  adduser -D -s /bin/bash appuser; \
+  mkdir -p \
+  /var/lib/redis \
+  /var/log/redis \
+  /var/lib/influxdb \
+  /var/log/influxdb \
+  /run/redis \
+  /home/appuser/data \
+  /home/appuser/logs \
+  /home/appuser/data/influxdb; \
+  chown -R appuser:appuser \
+  /var/lib/redis \
+  /var/log/redis \
+  /var/lib/influxdb \
+  /var/log/influxdb \
+  /run/redis \
+  /home/appuser
 
-# Install InfluxDB (download pre-built binary)
-RUN curl -L https://dl.influxdata.com/influxdb/releases/v${INFLUXDB_VERSION}/influxdb${INFLUXDB_VERSION%%.*}-${INFLUXDB_VERSION}_linux_amd64.tar.gz | tar -xz && \
-  mkdir -p ${INFLUXDB_HOME}/bin && \
-  cp influxdb${INFLUXDB_VERSION%%.*}-${INFLUXDB_VERSION}/usr/bin/influxd ${INFLUXDB_HOME}/bin/ && \
-  rm -rf influxdb${INFLUXDB_VERSION%%.*}-${INFLUXDB_VERSION} && \
-  strip ${INFLUXDB_HOME}/bin/influxd 2>/dev/null || true
+WORKDIR /home/appuser
 
-# Clean up
-RUN rm -rf /var/cache/apk/* /tmp/* /var/tmp/*
-
-# Set working directory
-WORKDIR /app
-
-# Default command
 CMD ["/bin/bash"]

@@ -82,22 +82,21 @@ CREATE TABLE IF NOT EXISTS project_members (
     UNIQUE(project_id, user_id)
 );
 
--- Project environment variables table
-CREATE TABLE IF NOT EXISTS project_environments (
+-- Environment variables table (Platform and Project level)
+CREATE TABLE IF NOT EXISTS environment_variables (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    project_id INTEGER NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    value TEXT,
-    type VARCHAR(20) DEFAULT 'normal',
-    description VARCHAR(500),
-    scope VARCHAR(20) DEFAULT 'global',
-    scope_target VARCHAR(100),
-    is_encrypted INTEGER DEFAULT 0,
-    created_by INTEGER NOT NULL,
+    name VARCHAR(64) NOT NULL,
+    value TEXT NOT NULL,
+    scope VARCHAR(20) NOT NULL CHECK (scope IN ('PLATFORM', 'PROJECT')),
+    project_id INTEGER,
+    description TEXT,
+    is_sensitive INTEGER NOT NULL DEFAULT 0,
+    owner_id INTEGER NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
-    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE RESTRICT
+    FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE RESTRICT,
+    CHECK ((scope = 'PROJECT' AND project_id IS NOT NULL) OR (scope = 'PLATFORM' AND project_id IS NULL))
 );
 
 -- Project files table
@@ -197,8 +196,19 @@ CREATE TABLE IF NOT EXISTS resource_groups (
     code VARCHAR(32) NOT NULL UNIQUE,
     description TEXT,
     owner_id INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    is_default INTEGER DEFAULT 0, -- 0: not default, 1: default
     sort_order INTEGER DEFAULT 0,
-    status INTEGER DEFAULT 1, -- 0-disabled, 1-enabled
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Resource types table (similar to modules table)
+CREATE TABLE IF NOT EXISTS resource_types (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name VARCHAR(64) NOT NULL,
+    code VARCHAR(64) NOT NULL UNIQUE,
+    table_name VARCHAR(64) NOT NULL,
+    description TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -312,31 +322,6 @@ CREATE TABLE IF NOT EXISTS ssl_certificates (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- Secret key management table
-CREATE TABLE IF NOT EXISTS secret_keys (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name VARCHAR(64) NOT NULL,
-    key_type VARCHAR(20) NOT NULL, -- API_KEY, DATABASE, SSH, CERTIFICATE, CUSTOM
-    description TEXT,
-    secret_fields TEXT, -- JSON format
-    expires_at DATETIME,
-    resource_group_id INTEGER REFERENCES resource_groups(id) ON DELETE SET NULL,
-    owner_id INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
--- User secret access table (many-to-many relationship between users and secret_keys)
-CREATE TABLE IF NOT EXISTS user_secret (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    secret_key_id INTEGER NOT NULL REFERENCES secret_keys(id) ON DELETE CASCADE,
-    granted_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-    granted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    expires_at DATETIME,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(user_id, secret_key_id)
-);
 
 -- Application gateways table
 CREATE TABLE IF NOT EXISTS app_gateways (
@@ -983,28 +968,68 @@ CREATE TABLE IF NOT EXISTS taggings (
     FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
 );
 
--- Secret references table
+-- Secrets Table
+CREATE TABLE IF NOT EXISTS secrets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    type TEXT NOT NULL CHECK(type IN ('text', 'account', 'file')),
+    description TEXT,
+    secret_fields TEXT NOT NULL,
+    expires_at TEXT,
+    resource_group_id INTEGER NOT NULL,
+    owner_id INTEGER NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (resource_group_id) REFERENCES resource_groups (id) ON DELETE RESTRICT,
+    FOREIGN KEY (owner_id) REFERENCES users (id) ON DELETE RESTRICT
+);
+
+-- Secret References Table
 CREATE TABLE IF NOT EXISTS secret_references (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     secret_id INTEGER NOT NULL,
-    resource_code VARCHAR(64) NOT NULL,
+    resource_code TEXT NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (secret_id) REFERENCES secret_keys(id) ON DELETE CASCADE
+    FOREIGN KEY (secret_id) REFERENCES secrets (id) ON DELETE CASCADE
+);
+
+-- Secret Authorizes Table
+CREATE TABLE IF NOT EXISTS secret_authorizes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    secret_id INTEGER NOT NULL,
+    authorized_user_id INTEGER NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (secret_id) REFERENCES secrets (id) ON DELETE CASCADE,
+    FOREIGN KEY (authorized_user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
 -- ========================================
 -- Index creation
 -- ========================================
 
+-- Resource types related indexes
+CREATE INDEX IF NOT EXISTS idx_resource_types_code ON resource_types(code);
+CREATE INDEX IF NOT EXISTS idx_resource_types_table ON resource_types(table_name);
+
+-- Resource groups related indexes
+CREATE INDEX IF NOT EXISTS idx_resource_groups_project ON resource_groups(project_id);
+CREATE INDEX IF NOT EXISTS idx_resource_groups_code ON resource_groups(code);
+CREATE INDEX IF NOT EXISTS idx_resource_groups_owner ON resource_groups(owner_id);
+
 -- Project related indexes
 CREATE INDEX IF NOT EXISTS idx_projects_owner_status ON projects(owner_id, status);
 CREATE INDEX IF NOT EXISTS idx_project_members_project ON project_members(project_id);
 CREATE INDEX IF NOT EXISTS idx_project_members_user ON project_members(user_id);
-CREATE INDEX IF NOT EXISTS idx_project_environments_project ON project_environments(project_id);
 CREATE INDEX IF NOT EXISTS idx_project_files_project ON project_files(project_id);
 CREATE INDEX IF NOT EXISTS idx_project_files_parent ON project_files(parent_id);
 CREATE INDEX IF NOT EXISTS idx_project_activities_project ON project_activities(project_id);
+
+-- Environment variables related indexes
+CREATE UNIQUE INDEX IF NOT EXISTS idx_env_vars_name_scope_project ON environment_variables(name, scope, project_id);
+CREATE INDEX IF NOT EXISTS idx_env_vars_project_id ON environment_variables(project_id);
+CREATE INDEX IF NOT EXISTS idx_env_vars_scope ON environment_variables(scope);
+CREATE INDEX IF NOT EXISTS idx_env_vars_owner_id ON environment_variables(owner_id);
 
 -- Notification channels related indexes
 CREATE INDEX IF NOT EXISTS idx_notification_channels_type ON notification_channels(channel_type);
@@ -1054,11 +1079,6 @@ CREATE INDEX IF NOT EXISTS idx_server_agents_deployment_type ON server_agents(de
 CREATE INDEX IF NOT EXISTS idx_app_instances_server ON app_instances(server_id);
 CREATE INDEX IF NOT EXISTS idx_app_instances_template ON app_instances(template_id);
 
--- secret_references indexes
-CREATE INDEX IF NOT EXISTS idx_secret_references_secret_id ON secret_references(secret_id);
-CREATE INDEX IF NOT EXISTS idx_secret_references_resource_code ON secret_references(resource_code);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_secret_references_secret_resource ON secret_references(secret_id, resource_code);
-
 -- Audit log indexes
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user ON audit_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action);
@@ -1069,6 +1089,22 @@ CREATE INDEX IF NOT EXISTS idx_tags_name ON tags(name);
 CREATE INDEX IF NOT EXISTS idx_tags_created_by ON tags(created_by);
 CREATE INDEX IF NOT EXISTS idx_taggings_tag_id ON taggings(tag_id);
 CREATE INDEX IF NOT EXISTS idx_taggings_resource_code ON taggings(resource_code);
+
+-- Create unique index for secret_id + resource_code
+CREATE UNIQUE INDEX IF NOT EXISTS uk_secret_resource ON secret_references (secret_id, resource_code);
+-- Create index for resource_code
+CREATE INDEX IF NOT EXISTS idx_secret_references_resource_code ON secret_references (resource_code);
+-- Create unique index for resource_group_id + name
+CREATE UNIQUE INDEX IF NOT EXISTS uk_resource_group_name ON secrets (resource_group_id, name);
+-- Create indexes for secrets table
+CREATE INDEX IF NOT EXISTS idx_secrets_resource_group_id ON secrets (resource_group_id);
+CREATE INDEX IF NOT EXISTS idx_secrets_owner_id ON secrets (owner_id);
+CREATE INDEX IF NOT EXISTS idx_secrets_type ON secrets (type);
+CREATE INDEX IF NOT EXISTS idx_secrets_created_at ON secrets (created_at);
+-- Create unique index for secret_id + authorized_user_id
+CREATE UNIQUE INDEX IF NOT EXISTS uk_secret_user ON secret_authorizes (secret_id, authorized_user_id);
+-- Create index for authorized_user_id
+CREATE INDEX IF NOT EXISTS idx_secret_authorizes_authorized_user_id ON secret_authorizes (authorized_user_id);
 
 -- ========================================
 -- Create triggers for automatic updated_at field update
@@ -1087,16 +1123,17 @@ CREATE TRIGGER IF NOT EXISTS update_project_members_updated_at
         UPDATE project_members SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
     END;
 
-CREATE TRIGGER IF NOT EXISTS update_project_environments_updated_at
-    AFTER UPDATE ON project_environments
-    BEGIN
-        UPDATE project_environments SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
-    END;
-
 CREATE TRIGGER IF NOT EXISTS update_project_files_updated_at
     AFTER UPDATE ON project_files
     BEGIN
         UPDATE project_files SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+    END;
+
+-- Environment variables trigger
+CREATE TRIGGER IF NOT EXISTS update_environment_variables_updated_at
+    AFTER UPDATE ON environment_variables
+    BEGIN
+        UPDATE environment_variables SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
     END;
 
 -- Create trigger for notification_channels updated_at
@@ -1191,6 +1228,12 @@ CREATE TRIGGER IF NOT EXISTS update_workflow_executions_updated_at
     END;
 
 -- Other triggers
+CREATE TRIGGER IF NOT EXISTS update_resource_types_updated_at
+    AFTER UPDATE ON resource_types
+    BEGIN
+        UPDATE resource_types SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+    END;
+
 CREATE TRIGGER IF NOT EXISTS update_resource_groups_updated_at
     AFTER UPDATE ON resource_groups
     BEGIN
@@ -1237,6 +1280,13 @@ CREATE TRIGGER IF NOT EXISTS update_notifications_updated_at
     AFTER UPDATE ON notifications
     BEGIN
         UPDATE notifications SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+    END;
+
+-- Trigger to automatically update updated_at timestamp for secrets table
+CREATE TRIGGER IF NOT EXISTS secrets_updated_at_trigger
+    AFTER UPDATE ON secrets
+    BEGIN
+        UPDATE secrets SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
     END;
 
 -- Re-enable foreign key constraints after data insertion

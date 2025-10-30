@@ -28,12 +28,14 @@ type Controllers struct {
 	SystemConfigController         *controller.SystemConfigController
 	AlertController                *controller.AlertController
 	TagController                  *controller.TagController
-	SecretKeyController            *controller.SecretKeyController
 	ServerController               *controller.ServerController
 	NotificationRecordController   *controller.NotificationRecordController
 	NotificationChannelController  *controller.NotificationChannelController
 	NotificationTemplateController *controller.NotificationTemplateController
 	DatabaseConnectionController   *controller.DatabaseConnectionController
+	ResourceGroupController        *controller.ResourceGroupController
+	EnvironmentVariableController  *controller.EnvironmentVariableController
+	SecretController               *controller.SecretController
 	// More controllers can be added
 	// AppController  *controller.ApplicationController
 }
@@ -154,9 +156,11 @@ func setupAPIRoutes(v1 *gin.RouterGroup, controllers *Controllers) {
 	setupNotificationRoutes(protected, controllers.NotificationRecordController, controllers.NotificationChannelController, controllers.NotificationTemplateController)
 	setupTagRoutes(protected, controllers.TagController)
 	setupAlertRoutes(protected, controllers.AlertController)
-	setupSecretKeyRoutes(protected, controllers.SecretKeyController)
 	setupServerRoutes(protected, controllers.ServerController)
 	setupDatabaseConnectionRoutes(protected, controllers.DatabaseConnectionController)
+	setupResourceGroupRoutes(protected, controllers.ResourceGroupController)
+	setupEnvironmentVariableRoutes(protected, controllers.EnvironmentVariableController)
+	setupSecretRoutes(protected, controllers.SecretController)
 }
 
 // setupUserRoutes sets up user related routes
@@ -413,26 +417,6 @@ func setupAlertRoutes(protected *gin.RouterGroup, alertController *controller.Al
 	recordsGroup.PUT("/:id/resolve", alertController.ResolveAlertRecord)         // Resolve an alert
 }
 
-// setupSecretKeyRoutes sets up secret key management routes
-func setupSecretKeyRoutes(protected *gin.RouterGroup, secretKeyController *controller.SecretKeyController) {
-	if secretKeyController == nil {
-		return
-	}
-
-	// Secret key routes
-	secretKeys := protected.Group("/secrets")
-	secretKeys.GET("", secretKeyController.ListSecretKeys)                         // GET /api/v1/secrets
-	secretKeys.POST("/text", secretKeyController.CreateSecretKeyText)              // POST /api/v1/secrets/text
-	secretKeys.POST("/file", secretKeyController.CreateSecretKeyFile)              // POST /api/v1/secrets/file
-	secretKeys.GET("/export", secretKeyController.ExportSecretKeys)                // GET /api/v1/secrets/export
-	secretKeys.POST("/assign", secretKeyController.AssignSecretToResource)         // POST /api/v1/secrets/assign
-	secretKeys.DELETE("/unassign", secretKeyController.UnassignSecretFromResource) // DELETE /api/v1/secrets/unassign
-	secretKeys.GET("/resource", secretKeyController.GetSecretResources)            // GET /api/v1/secrets/resource
-	secretKeys.GET("/:id", secretKeyController.GetSecretKey)                       // GET /api/v1/secrets/{id}
-	secretKeys.PUT("/:id", secretKeyController.UpdateSecretKey)                    // PUT /api/v1/secrets/{id}
-	secretKeys.DELETE("/:id", secretKeyController.DeleteSecretKey)                 // DELETE /api/v1/secrets/{id}
-}
-
 // setupServerRoutes sets up server management routes
 func setupServerRoutes(protected *gin.RouterGroup, serverController *controller.ServerController) {
 	if serverController == nil {
@@ -470,4 +454,71 @@ func setupDatabaseConnectionRoutes(protected *gin.RouterGroup, dbController *con
 	databases.GET("/:id", dbController.GetConnection)       // GET /api/v1/databases/{id}
 	databases.PUT("/:id", dbController.UpdateConnection)    // PUT /api/v1/databases/{id}
 	databases.DELETE("/:id", dbController.DeleteConnection) // DELETE /api/v1/databases/{id}
+}
+
+// setupResourceGroupRoutes sets up resource group management routes
+func setupResourceGroupRoutes(protected *gin.RouterGroup, rgController *controller.ResourceGroupController) {
+	if rgController == nil {
+		return
+	}
+
+	// Resource group CRUD routes
+	resourceGroups := protected.Group("/resource-groups")
+	resourceGroups.GET("", rgController.GetResourceGroupList)       // GET /api/v1/resource-groups
+	resourceGroups.POST("", rgController.CreateResourceGroup)       // POST /api/v1/resource-groups
+	resourceGroups.GET("/:id", rgController.GetResourceGroup)       // GET /api/v1/resource-groups/{id}
+	resourceGroups.PUT("/:id", rgController.UpdateResourceGroup)    // PUT /api/v1/resource-groups/{id}
+	resourceGroups.DELETE("/:id", rgController.DeleteResourceGroup) // DELETE /api/v1/resource-groups/{id}
+
+	// Resource association management routes (under resource group)
+	resourceGroups.GET("/:id/resources", rgController.GetResourcesByGroupID) // GET /api/v1/resource-groups/{id}/resources
+
+	// Resource management routes (global)
+	resources := protected.Group("/resources")
+	resources.PUT("/resource-group", rgController.MoveResourcesToGroup) // PUT /api/v1/resources/resource-group
+	resources.GET("/statistics", rgController.GetResourceStatistics)    // GET /api/v1/resources/statistics
+}
+
+// setupEnvironmentVariableRoutes sets up environment variable management routes
+func setupEnvironmentVariableRoutes(protected *gin.RouterGroup, envVarController *controller.EnvironmentVariableController) {
+	if envVarController == nil {
+		return
+	}
+
+	// Environment variable routes
+	envVars := protected.Group("/environment-variables")
+
+	// Platform-level environment variables
+	envVars.POST("/platform", envVarController.CreatePlatformEnvVar) // POST /api/v1/environment-variables/platform
+	envVars.GET("/platform", envVarController.GetPlatformEnvVarList) // GET /api/v1/environment-variables/platform
+
+	// Project-level environment variables
+	envVars.POST("/project", envVarController.CreateProjectEnvVar) // POST /api/v1/environment-variables/project
+	envVars.GET("/project", envVarController.GetProjectEnvVarList) // GET /api/v1/environment-variables/project
+
+	// Variable interpolation resolution
+	envVars.POST("/resolve", envVarController.ResolveEnvVar) // POST /api/v1/environment-variables/resolve
+
+	// CRUD operations by ID
+	envVars.GET("/:id", envVarController.GetEnvVar)       // GET /api/v1/environment-variables/{id}
+	envVars.PUT("/:id", envVarController.UpdateEnvVar)    // PUT /api/v1/environment-variables/{id}
+	envVars.DELETE("/:id", envVarController.DeleteEnvVar) // DELETE /api/v1/environment-variables/{id}
+}
+
+// setupSecretRoutes sets up secret management routes
+func setupSecretRoutes(protected *gin.RouterGroup, secretController *controller.SecretController) {
+	if secretController == nil {
+		return
+	}
+
+	// Secret management routes
+	secrets := protected.Group("/secrets")
+	secrets.GET("", secretController.ListSecrets)                  // GET /api/v1/secrets
+	secrets.POST("/text", secretController.CreateTextSecret)       // POST /api/v1/secrets/text
+	secrets.POST("/account", secretController.CreateAccountSecret) // POST /api/v1/secrets/account
+	secrets.POST("/file", secretController.CreateFileSecret)       // POST /api/v1/secrets/file
+	secrets.GET("/:id", secretController.GetSecret)                // GET /api/v1/secrets/:id
+	secrets.PUT("/:id", secretController.UpdateSecret)             // PUT /api/v1/secrets/:id
+	secrets.DELETE("/:id", secretController.DeleteSecret)          // DELETE /api/v1/secrets/:id
+	secrets.POST("/references", secretController.CreateReference)  // POST /api/v1/secrets/references
 }

@@ -26,8 +26,9 @@ INSERT INTO `modules` (`name`, `code`, `description`) VALUES
 	 ('ui.task_management','job','Default module defines'),
 	 ('ui.resource','project_resource','Default module defines'),
 	 ('ui.resource_group_management','resource_group','Default module defines'),
+	 ('ui.environment_variable_management','environment_variable','Default module defines'),
 	 ('ui.server_management','server','Default module defines'),
-	 ('ui.secret_management','secret','Default module defines'),
+	 ('ui.secret_management','secrets','Default module defines'),
 	 ('ui.database_management','database','Default module defines'),
 	 ('ui.gateway_management','gateway','Default module defines'),
 	 ('ui.certificate_management','certificate','Default module defines'),
@@ -114,12 +115,25 @@ INSERT INTO `permissions` (`parent_code`,`scope`,`name`,`code`,`module`,`action`
 	 ('cfda7904-5e54-4049-8bcf-261327b95194','project','ui.action_update','d43b3275-84e1-45a1-966b-216d423a5022','job','update',NULL,NULL,'Task enable permission',1,0,0,1,1,1),
 	 ('cfda7904-5e54-4049-8bcf-261327b95194','project','ui.action_update','8ea00e66-107b-4781-ad97-5161d47595dc','job','update',NULL,NULL,'Task disable permission',1,0,0,1,1,1),
 	 ('e1dbef1f-22e8-4b53-9e20-80a83c6b697b','project','ui.resource','b8535fc4-8da4-4184-b184-55a3090e45fb','project_resource','*',NULL,NULL,'Project resource management all permissions',1,1,0,1,1,1),
-	 ('b8535fc4-8da4-4184-b184-55a3090e45fb','project','ui.resource_group_management','c1bae555-b464-444a-8f9c-5fc7a133b674','resource_group','*',NULL,NULL,'Resource group management all permissions',1,1,0,1,1,1),
-	 ('c1bae555-b464-444a-8f9c-5fc7a133b674','project','ui.action_query','6d9e764a-49e0-42f5-9fb8-3efc2cd40e70','resource_group','query',NULL,NULL,'Resource group query permission',1,0,0,1,1,1),
-	 ('c1bae555-b464-444a-8f9c-5fc7a133b674','project','ui.action_create','2c844549-d528-4e05-9e22-39f920bb5bca','resource_group','create',NULL,NULL,'Resource group create permission',1,0,0,1,1,1),
-	 ('c1bae555-b464-444a-8f9c-5fc7a133b674','project','ui.action_update','3415c393-d433-4fed-b958-fa3581114669','resource_group','update',NULL,NULL,'Resource group update permission',1,0,0,1,1,1),
-	 ('c1bae555-b464-444a-8f9c-5fc7a133b674','project','ui.action_delete','7beabed6-c57d-4185-8edf-ea64c098d53f','resource_group','delete',NULL,NULL,'Resource group delete permission',1,0,0,1,1,1),
-    ('b8535fc4-8da4-4184-b184-55a3090e45fb','project','ui.server_management','b943ea96-4d7d-4a68-bf15-02a1ddded533','server','*','/servers',NULL,'Server management all permissions',1,1,0,1,1,1),
+	 ('b8535fc4-8da4-4184-b184-55a3090e45fb','project','ui.resource_group_management','c1bae555-b464-444a-8f9c-5fc7a133b674','resource_group','*','/resource-groups',NULL,'Resource group management all permissions',1,1,0,1,1,1),
+	 ('c1bae555-b464-444a-8f9c-5fc7a133b674','project','ui.action_query','6d9e764a-49e0-42f5-9fb8-3efc2cd40e70','resource_group','query','/resource-groups',NULL,'Resource group list query permission',1,0,0,1,1,1),
+	 ('c1bae555-b464-444a-8f9c-5fc7a133b674','project','ui.action_query','f8a7c1e2-5d6b-4a9c-8e3f-2b1d4c7a9e5f','resource_group','query','/resource-groups/*',NULL,'Resource group detail query permission',1,0,0,1,1,1),
+	 ('c1bae555-b464-444a-8f9c-5fc7a133b674','project','ui.action_create','2c844549-d528-4e05-9e22-39f920bb5bca','resource_group','create','/resource-groups',NULL,'Resource group create permission',1,0,0,1,1,1),
+	 ('c1bae555-b464-444a-8f9c-5fc7a133b674','project','ui.action_update','3415c393-d433-4fed-b958-fa3581114669','resource_group','update','/resource-groups/*',NULL,'Resource group update permission',1,0,0,1,1,1),
+	 ('c1bae555-b464-444a-8f9c-5fc7a133b674','project','ui.action_delete','7beabed6-c57d-4185-8edf-ea64c098d53f','resource_group','delete','/resource-groups/*',NULL,'Resource group delete permission',1,0,0,1,1,1),
+	 ('c1bae555-b464-444a-8f9c-5fc7a133b674','project','ui.action_query','a1b2c3d4-5e6f-7g8h-9i0j-1k2l3m4n5o6p','resource_group','query','/resource-groups/*/resources',NULL,'Resource group resources query permission',1,0,0,1,1,1),
+	 ('c1bae555-b464-444a-8f9c-5fc7a133b674','project','ui.action_update','e5f6g7h8-9i0j-1k2l-3m4n-5o6p7q8r9s0t','resource_group','update','/resources/resource-group',NULL,'Move resources to group permission',1,0,0,1,1,1),
+	 ('c1bae555-b464-444a-8f9c-5fc7a133b674','project','ui.action_query','d4e5f6g7-8h9i-0j1k-2l3m-4n5o6p7q8r9s','resource_group','query','/resources/statistics',NULL,'Resource statistics query permission',1,0,0,1,1,1),
+	 ('a9b8c7d6-e5f4-3210-9876-543210fedcba','project','ui.environment_variable_management','e9f8d7c6-b5a4-3210-9876-543210abcdef','environment_variable','*','/environment-variables',NULL,'Environment variable management all permissions',1,1,0,1,1,1),
+	 ('e9f8d7c6-b5a4-3210-9876-543210abcdef','platform','ui.action_query','b1c2d3e4-f5a6-7890-1234-56789abcdef0','environment_variable','query','/environment-variables/platform',NULL,'Platform environment variable list query permission',1,0,0,1,1,1),
+	 ('e9f8d7c6-b5a4-3210-9876-543210abcdef','platform','ui.action_create','b2c3d4e5-f6a7-8901-2345-6789abcdef01','environment_variable','create','/environment-variables/platform',NULL,'Platform environment variable create permission',1,0,0,1,1,1),
+	 ('e9f8d7c6-b5a4-3210-9876-543210abcdef','project','ui.action_query','b3c4d5e6-f7a8-9012-3456-789abcdef012','environment_variable','query','/environment-variables/project',NULL,'Project environment variable list query permission',1,0,0,1,1,1),
+	 ('e9f8d7c6-b5a4-3210-9876-543210abcdef','project','ui.action_create','b4c5d6e7-f8a9-0123-4567-89abcdef0123','environment_variable','create','/environment-variables/project',NULL,'Project environment variable create permission',1,0,0,1,1,1),
+	 ('e9f8d7c6-b5a4-3210-9876-543210abcdef','project','ui.action_query','b5c6d7e8-f9a0-1234-5678-9abcdef01234','environment_variable','query','/environment-variables/*',NULL,'Environment variable detail query permission',1,0,0,1,1,1),
+	 ('e9f8d7c6-b5a4-3210-9876-543210abcdef','project','ui.action_update','b6c7d8e9-f0a1-2345-6789-abcdef012345','environment_variable','update','/environment-variables/*',NULL,'Environment variable update permission',1,0,0,1,1,1),
+	 ('e9f8d7c6-b5a4-3210-9876-543210abcdef','project','ui.action_delete','b7c8d9e0-f1a2-3456-789a-bcdef0123456','environment_variable','delete','/environment-variables/*',NULL,'Environment variable delete permission',1,0,0,1,1,1),
+	 ('e9f8d7c6-b5a4-3210-9876-543210abcdef','project','ui.action_create','c8d9e0f1-a2b3-4567-890a-bcdef1234567','environment_variable','create','/environment-variables/resolve',NULL,'Environment variable resolve permission',1,0,0,1,1,1),
+	 ('b8535fc4-8da4-4184-b184-55a3090e45fb','project','ui.server_management','b943ea96-4d7d-4a68-bf15-02a1ddded533','server','*','/servers',NULL,'Server management all permissions',1,1,0,1,1,1),
 	 ('b943ea96-4d7d-4a68-bf15-02a1ddded533','project','ui.action_query','bbc990d0-b47e-4ddd-9d60-6941e6498386','server','query','/servers',NULL,'Server query permission',1,0,0,1,1,1),
     ('b943ea96-4d7d-4a68-bf15-02a1ddded533','project','ui.action_query','64618046-70f3-4971-aeef-bff6313669c8','server','query','/servers/*',NULL,'Server query permission',1,0,0,1,1,1),
 	 ('b943ea96-4d7d-4a68-bf15-02a1ddded533','project','ui.action_create','d1f06bce-29c6-4419-8a07-7738d9825f1a','server','create','/servers',NULL,'Server create permission',1,0,0,1,1,1),
@@ -130,11 +144,15 @@ INSERT INTO `permissions` (`parent_code`,`scope`,`name`,`code`,`module`,`action`
 	 ('b943ea96-4d7d-4a68-bf15-02a1ddded533','project','ui.action_create','03ac0ca1-e756-4001-bde0-39c17b59281d','server','create','/servers/*/files',NULL,'Upload file permission',1,0,0,1,1,1),
 	 ('b943ea96-4d7d-4a68-bf15-02a1ddded533','project','ui.action_query', 'adb4e670-8522-4840-a75e-bc2a9643c11f','server','query','/servers/*/files/download',NULL,'Download file permission',1,0,0,1,1,1),
 	 ('b943ea96-4d7d-4a68-bf15-02a1ddded533','project','ui.action_delete','a0a528ec-6938-48cf-8307-8575da72ebc3','server','delete','/servers/*/files',NULL,'Delete file permission',1,0,0,1,1,1),
-	 ('b8535fc4-8da4-4184-b184-55a3090e45fb','project','ui.secret_management','9606f68e-7aa7-452e-a3af-2d21e243971b','secret','*',NULL,NULL,'Secret management all permissions',1,1,0,1,1,1),
-	 ('9606f68e-7aa7-452e-a3af-2d21e243971b','project','ui.action_query','651efc85-4833-46b8-9d41-12158b6988c6','secret','query',NULL,NULL,'Secret query permission',1,0,0,1,1,1),
-	 ('9606f68e-7aa7-452e-a3af-2d21e243971b','project','ui.action_create','461d7acc-d38f-4927-a74a-d2232b1cb9d8','secret','create',NULL,NULL,'Secret create permission',1,0,0,1,1,1),
-	 ('9606f68e-7aa7-452e-a3af-2d21e243971b','project','ui.action_update','5efcc84d-1f23-45f6-83ef-6cca8498b456','secret','update',NULL,NULL,'Secret update permission',1,0,0,1,1,1),
-	 ('9606f68e-7aa7-452e-a3af-2d21e243971b','project','ui.action_delete','1cb1d050-9623-498d-abcd-8d9c4b88bc55','secret','delete',NULL,NULL,'Secret delete permission',1,0,0,1,1,1),
+	 ('b8535fc4-8da4-4184-b184-55a3090e45fb','project','ui.secret_management','9606f68e-7aa7-452e-a3af-2d21e243971b','secrets','*','/secrets',NULL,'Secret management all permissions',1,1,0,1,1,1),
+	 ('9606f68e-7aa7-452e-a3af-2d21e243971b','project','ui.action_query', '651efc85-4833-46b8-9d41-12158b6988c6','secrets','query','/secrets',NULL,'Secret query permission',1,0,0,1,1,1),
+   ('9606f68e-7aa7-452e-a3af-2d21e243971b','project','ui.action_query', '16876197-7cb7-4247-8d13-ba2b2f5a828c','secrets','query','/secrets/*',NULL,'Secret query permission',1,0,0,1,1,1),
+	 ('9606f68e-7aa7-452e-a3af-2d21e243971b','project','ui.action_create','461d7acc-d38f-4927-a74a-d2232b1cb9d8','secrets','create','/secrets/text',NULL,'Secret create permission',1,0,0,1,1,1),
+   ('9606f68e-7aa7-452e-a3af-2d21e243971b','project','ui.action_create','10f779b4-11e4-41e4-9dfa-922b7a94fcc9','secrets','create','/secrets/account',NULL,'Secret create permission',1,0,0,1,1,1),
+	 ('9606f68e-7aa7-452e-a3af-2d21e243971b','project','ui.action_create','7a111b11-da3a-4db2-b950-51d036e4e1d6','secrets','create','/secrets/file',NULL,'Secret create permission',1,0,0,1,1,1),
+	 ('9606f68e-7aa7-452e-a3af-2d21e243971b','project','ui.action_create','b77debd5-d664-40be-9f2c-deeddbfebf25','secrets','create','/secrets/references',NULL,'Secret create permission',1,0,0,1,1,1),
+	 ('9606f68e-7aa7-452e-a3af-2d21e243971b','project','ui.action_update','5efcc84d-1f23-45f6-83ef-6cca8498b456','secrets','update','/secrets/*',NULL,'Secret update permission',1,0,0,1,1,1),
+	 ('9606f68e-7aa7-452e-a3af-2d21e243971b','project','ui.action_delete','1cb1d050-9623-498d-abcd-8d9c4b88bc55','secrets','delete','/secrets/*',NULL,'Secret delete permission',1,0,0,1,1,1),
 	 ('b8535fc4-8da4-4184-b184-55a3090e45fb','project','ui.database_management','218f52bf-e23b-42ed-9e52-11a4685f7574','database','*','/databases',NULL,'Database management all permissions',1,1,0,1,1,1),
 	 ('218f52bf-e23b-42ed-9e52-11a4685f7574','project','ui.action_query','019ffd00-5a4a-48a0-b939-694ac139e91d','database','query','/databases',NULL,'Database connection list query permission',1,0,0,1,1,1),
 	 ('218f52bf-e23b-42ed-9e52-11a4685f7574','project','ui.action_query','8f3a2b1c-4d5e-6f7a-8b9c-0d1e2f3a4b5c','database','query','/databases/*',NULL,'Database connection detail query permission',1,0,0,1,1,1),
@@ -264,18 +282,7 @@ INSERT INTO `permissions` (`parent_code`,`scope`,`name`,`code`,`module`,`action`
    ('e4d3f825-d72c-4a2e-b6fb-0143f5e5eb5e','platform','ui.alert_records','3a8d521d-d3f2-47d8-b302-62cc586bc8c5','alert','*','/alert/records',NULL,'Alert records management all permissions',1,1,0,1,1,1),
    ('3a8d521d-d3f2-47d8-b302-62cc586bc8c5','platform','ui.action_query','a23c0473-c7a5-4651-b9e5-86fe5a87f416','alert','query','/alert/records',NULL,'Alert records query permission',1,0,0,1,1,1),
    ('3a8d521d-d3f2-47d8-b302-62cc586bc8c5','platform','ui.action_update','6e3b8ca7-1e76-4c2c-a395-53795a426a02','alert','update','/alert/records/*/acknowledge',NULL,'Alert records acknowledge permission',1,0,0,1,1,1),
-   ('3a8d521d-d3f2-47d8-b302-62cc586bc8c5','platform','ui.action_update','dc85e805-bce7-4c2c-abef-3f813345921f','alert','update','/alert/records/*/resolve',NULL,'Alert records resolve permission',1,0,0,1,1,1),
-   ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_query','a1b2c3d4-e5f6-4789-a012-3456789abcde','secret_key','query','/secrets',NULL,'Secret key list query permission',1,0,0,1,1,1),
-   ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_create','b2c3d4e5-f6a7-4890-b123-456789abcdef','secret_key','create','/secrets/text',NULL,'Secret key text create permission',1,0,0,1,1,1),
-   ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_create','b2c3d4e5-f6a7-4890-b124-456789abcdef','secret_key','create','/secrets/file',NULL,'Secret key file create permission',1,0,0,1,1,1),
-   ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_query','c3d4e5f6-a7b8-4901-c234-56789abcdef0','secret_key','query','/secrets/*',NULL,'Secret key detail query permission',1,0,0,1,1,1),
-   ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_update','d4e5f6a7-b8c9-4012-d345-6789abcdef01','secret_key','update','/secrets/*',NULL,'Secret key update permission',1,0,0,1,1,1),
-   ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_delete','e5f6a7b8-c9d0-4123-e456-789abcdef012','secret_key','delete','/secrets/*',NULL,'Secret key delete permission',1,0,0,1,1,1),
-   ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_query','f6a7b8c9-d0e1-4234-f567-89abcdef0123','secret_key','query','/secrets/export',NULL,'Secret key export permission',1,0,0,1,1,1),
-   ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_query','a7b8c9d0-e1f2-4345-a678-9abcdef01234','secret_key','query','/secrets/*/value',NULL,'Secret key value decrypt permission',1,0,0,1,1,1),
-   ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_create','b8c9d0e1-f2a3-4456-b789-cdef01234567','secret_key','create','/secrets/assign',NULL,'Secret key assign to resource permission',1,0,0,1,1,1),
-   ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_delete','c9d0e1f2-a3b4-4567-c890-def012345678','secret_key','delete','/secrets/unassign',NULL,'Secret key unassign from resource permission',1,0,0,1,1,1),
-   ('89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f','platform','ui.action_query','d0e1f2a3-b4c5-4678-d901-ef0123456789','secret_key','query','/secrets/resource',NULL,'Secret key resource query permission',1,0,0,1,1,1);
+   ('3a8d521d-d3f2-47d8-b302-62cc586bc8c5','platform','ui.action_update','dc85e805-bce7-4c2c-abef-3f813345921f','alert','update','/alert/records/*/resolve',NULL,'Alert records resolve permission',1,0,0,1,1,1);
 
 -- Insert default users and role permissions
 INSERT INTO `users` (`id`,`username`,`email`,`password_hash`,`nickname`,`avatar`,`phone`,`gender`,`signature`,`status`,`last_login_at`,`last_login_ip`,`timezone`,`language`) VALUES
@@ -348,9 +355,23 @@ INSERT INTO `role_permissions` (`role_id`,`permission_code`,`granted_by`,`status
          (1, 'b8535fc4-8da4-4184-b184-55a3090e45fb',1,1),
          (1, 'c1bae555-b464-444a-8f9c-5fc7a133b674',1,1),
          (1, '6d9e764a-49e0-42f5-9fb8-3efc2cd40e70',1,1),
+         (1, 'f8a7c1e2-5d6b-4a9c-8e3f-2b1d4c7a9e5f',1,1),
          (1, '2c844549-d528-4e05-9e22-39f920bb5bca',1,1),
+         -- environment variable permissions for Super Admin
+         (1, 'e9f8d7c6-b5a4-3210-9876-543210abcdef',1,1),
+         (1, 'b1c2d3e4-f5a6-7890-1234-56789abcdef0',1,1),
+         (1, 'b2c3d4e5-f6a7-8901-2345-6789abcdef01',1,1),
+         (1, 'b3c4d5e6-f7a8-9012-3456-789abcdef012',1,1),
+         (1, 'b4c5d6e7-f8a9-0123-4567-89abcdef0123',1,1),
+         (1, 'b5c6d7e8-f9a0-1234-5678-9abcdef01234',1,1),
+         (1, 'b6c7d8e9-f0a1-2345-6789-abcdef012345',1,1),
+         (1, 'b7c8d9e0-f1a2-3456-789a-bcdef0123456',1,1),
+         (1, 'c8d9e0f1-a2b3-4567-890a-bcdef1234567',1,1),
          (1, '3415c393-d433-4fed-b958-fa3581114669',1,1),
          (1, '7beabed6-c57d-4185-8edf-ea64c098d53f',1,1),
+         (1, 'a1b2c3d4-5e6f-7g8h-9i0j-1k2l3m4n5o6p',1,1),
+         (1, 'e5f6g7h8-9i0j-1k2l-3m4n-5o6p7q8r9s0t',1,1),
+         (1, 'd4e5f6g7-8h9i-0j1k-2l3m-4n5o6p7q8r9s',1,1),
          (1, 'b943ea96-4d7d-4a68-bf15-02a1ddded533',1,1),
          (1, 'bbc990d0-b47e-4ddd-9d60-6941e6498386',1,1),
          (1, '64618046-70f3-4971-aeef-bff6313669c8',1,1),
@@ -364,7 +385,11 @@ INSERT INTO `role_permissions` (`role_id`,`permission_code`,`granted_by`,`status
          (1, 'a0a528ec-6938-48cf-8307-8575da72ebc3',1,1),
          (1, '9606f68e-7aa7-452e-a3af-2d21e243971b',1,1),
          (1, '651efc85-4833-46b8-9d41-12158b6988c6',1,1),
+         (1, '16876197-7cb7-4247-8d13-ba2b2f5a828c',1,1),
          (1, '461d7acc-d38f-4927-a74a-d2232b1cb9d8',1,1),
+         (1, '10f779b4-11e4-41e4-9dfa-922b7a94fcc9',1,1),
+         (1, '7a111b11-da3a-4db2-b950-51d036e4e1d6',1,1),
+         (1, 'b77debd5-d664-40be-9f2c-deeddbfebf25',1,1),
          (1, '5efcc84d-1f23-45f6-83ef-6cca8498b456',1,1),
          (1, '1cb1d050-9623-498d-abcd-8d9c4b88bc55',1,1),
          (1, '218f52bf-e23b-42ed-9e52-11a4685f7574',1,1),
@@ -498,17 +523,37 @@ INSERT INTO `role_permissions` (`role_id`,`permission_code`,`granted_by`,`status
          (1, '6e3b8ca7-1e76-4c2c-a395-53795a426a02',1,1),
          (1, 'dc85e805-bce7-4c2c-abef-3f813345921f',1,1),
          (1, '89f7e8d6-5c2a-4b1e-9f3d-1a2b3c4d5e6f',1,1),
-         (1, 'a1b2c3d4-e5f6-4789-a012-3456789abcde',1,1),
-         (1, 'b2c3d4e5-f6a7-4890-b123-456789abcdef',1,1),
-         (1, 'b2c3d4e5-f6a7-4890-b124-456789abcdef',1,1),
-         (1, 'c3d4e5f6-a7b8-4901-c234-56789abcdef0',1,1),
-         (1, 'd4e5f6a7-b8c9-4012-d345-6789abcdef01',1,1),
-         (1, 'e5f6a7b8-c9d0-4123-e456-789abcdef012',1,1),
-         (1, 'f6a7b8c9-d0e1-4234-f567-89abcdef0123',1,1),
-         (1, 'a7b8c9d0-e1f2-4345-a678-9abcdef01234',1,1),
-         (1,'b8c9d0e1-f2a3-4456-b789-cdef01234567',1,1),
-         (1,'c9d0e1f2-a3b4-4567-c890-def012345678',1,1),
-         (1,'d0e1f2a3-b4c5-4678-d901-ef0123456789',1,1);
+-- System Administrator (role_id=2) environment variable permissions
+         (2, 'e9f8d7c6-b5a4-3210-9876-543210abcdef',1,1),
+         (2, 'b1c2d3e4-f5a6-7890-1234-56789abcdef0',1,1),
+         (2, 'b2c3d4e5-f6a7-8901-2345-6789abcdef01',1,1),
+         (2, 'b3c4d5e6-f7a8-9012-3456-789abcdef012',1,1),
+         (2, 'b4c5d6e7-f8a9-0123-4567-89abcdef0123',1,1),
+         (2, 'b5c6d7e8-f9a0-1234-5678-9abcdef01234',1,1),
+         (2, 'b6c7d8e9-f0a1-2345-6789-abcdef012345',1,1),
+         (2, 'b7c8d9e0-f1a2-3456-789a-bcdef0123456',1,1),
+         (2, 'c8d9e0f1-a2b3-4567-890a-bcdef1234567',1,1),
+-- Project Manager (role_id=3) environment variable permissions (project scope only)
+         (3, 'b3c4d5e6-f7a8-9012-3456-789abcdef012',1,1),
+         (3, 'b4c5d6e7-f8a9-0123-4567-89abcdef0123',1,1),
+         (3, 'b5c6d7e8-f9a0-1234-5678-9abcdef01234',1,1),
+         (3, 'b6c7d8e9-f0a1-2345-6789-abcdef012345',1,1),
+         (3, 'b7c8d9e0-f1a2-3456-789a-bcdef0123456',1,1),
+         (3, 'c8d9e0f1-a2b3-4567-890a-bcdef1234567',1,1),
+-- Developer (role_id=4) environment variable permissions (project scope, no delete)
+         (4, 'b3c4d5e6-f7a8-9012-3456-789abcdef012',1,1),
+         (4, 'b4c5d6e7-f8a9-0123-4567-89abcdef0123',1,1),
+         (4, 'b5c6d7e8-f9a0-1234-5678-9abcdef01234',1,1),
+         (4, 'b6c7d8e9-f0a1-2345-6789-abcdef012345',1,1),
+         (4, 'c8d9e0f1-a2b3-4567-890a-bcdef1234567',1,1),
+-- Operator (role_id=5) environment variable permissions (project scope, read-only)
+         (5, 'b3c4d5e6-f7a8-9012-3456-789abcdef012',1,1),
+         (5, 'b5c6d7e8-f9a0-1234-5678-9abcdef01234',1,1),
+         (5, 'c8d9e0f1-a2b3-4567-890a-bcdef1234567',1,1),
+-- User (role_id=6) environment variable permissions (project scope, read-only)
+         (6, 'b3c4d5e6-f7a8-9012-3456-789abcdef012',1,1),
+         (6, 'b5c6d7e8-f9a0-1234-5678-9abcdef01234',1,1),
+         (6, 'c8d9e0f1-a2b3-4567-890a-bcdef1234567',1,1);
 
 -- Insert default application categories
 INSERT INTO `app_store_categories` (`name`, `code`, `description`, `sort_order`, `status`) VALUES
@@ -580,16 +625,35 @@ INSERT INTO `notification_templates` (`name`, `template_type`, `subject`, `conte
 ('Application Deployment Success', 'EMAIL', 'Application Deployment Success Notification', 'Dear {{username}},\n\nYour application {{app_name}} has been successfully deployed to server {{server_name}}.\n\nAccess URL: {{app_url}}\nDeployment Time: {{deployed_at}}\n\n{{system_name}} Team', 1, 1),
 ('Application Deployment Failure', 'EMAIL', 'Application Deployment Failure Notification', 'Dear {{username}},\n\nYour application {{app_name}} deployment has failed.\n\nError Message: {{error_message}}\nFailure Time: {{failed_at}}\n\nPlease check the configuration and try again.\n\n{{system_name}} Team', 1, 1);
 
+-- Insert default resource types
+INSERT OR IGNORE INTO resource_types (name, code, table_name, description) VALUES
+('resource_type.server', 'server', 'servers', 'resource_type.server_desc'),
+('resource_type.database', 'database', 'database_connections', 'resource_type.database_desc');
+-- ('resource_type.secret', 'secret', 'secret_keys', 'resource_type.secret_desc'),
+-- ('resource_type.application', 'application', 'app_instances', 'resource_type.application_desc'),
+-- ('resource_type.gateway', 'gateway', 'app_gateways', 'resource_type.gateway_desc'),
+-- ('resource_type.certificate', 'certificate', 'ssl_certificates', 'resource_type.certificate_desc'),
+-- ('resource_type.workflow', 'workflow', 'workflows', 'resource_type.workflow_desc');
+
 -- ========================================
 -- Test data for development and testing
 -- ========================================
 
 -- Insert default project (for testing)
 INSERT INTO `projects` (`name`, `identifier`, `description`, `owner_id`, `status`) VALUES
-('Default Project', 'default_project', 'Default project for testing and development', 1, 'NORMAL');
+('Default Project', 'default_project', 'Default project for testing and development', 1, 'NORMAL'),
+('E-commerce Platform', 'ecommerce_platform', 'E-commerce application project for online retail', 1, 'NORMAL');
 
 -- Insert default resource groups (for testing)
-INSERT INTO `resource_groups` (`project_id`, `name`, `code`, `description`, `owner_id`, `sort_order`, `status`) VALUES
-(1, 'Default Resource Group', 'default_rg', 'Default resource group for testing', 1, 0, 1),
-(1, 'Development Environment', 'dev_env', 'Development environment resource group', 1, 1, 1),
-(1, 'Production Environment', 'prod_env', 'Production environment resource group', 1, 2, 1);
+INSERT INTO `resource_groups` (`project_id`, `name`, `code`, `description`, `owner_id`, `is_default`, `sort_order`) VALUES
+-- Default Project 资源组
+(1, 'Default Resource Group', 'default_rg', 'Default resource group for testing', 1, 1, 0),
+(1, 'Development Environment', 'dev_env', 'Development environment resource group', 1, 0, 1),
+(1, 'Production Environment', 'prod_env', 'Production environment resource group', 1, 0, 2),
+-- E-commerce Platform 资源组
+(2, 'Default Resource Group', 'ecommerce_default_rg', 'Default resource group for e-commerce project', 1, 1, 0),
+(2, 'Frontend Services', 'frontend_services', 'Frontend application and static resources', 1, 0, 1),
+(2, 'Backend Services', 'backend_services', 'Backend API and microservices', 1, 0, 2),
+(2, 'Database Cluster', 'database_cluster', 'Database and cache services', 1, 0, 3),
+(2, 'Message Queue', 'message_queue', 'Message queue and event streaming', 1, 0, 4),
+(2, 'Monitoring & Logging', 'monitoring_logging', 'Monitoring, logging and tracing services', 1, 0, 5);
