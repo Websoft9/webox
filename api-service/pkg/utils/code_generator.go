@@ -7,26 +7,24 @@ import (
 )
 
 const (
-	// SecretCodePrefix is the prefix for secret codes
-	SecretCodePrefix = "secrets"
-	// SecretCodeLength is the length of the random string in secret code
-	SecretCodeLength = 10
-	// SecretCodeCharset is the character set for generating secret codes
-	SecretCodeCharset = "abcdefghijklmnopqrstuvwxyz0123456789"
+	// CodeLength is the length of the random string in resource code
+	CodeLength = 10
+	// CodeCharset is the character set for generating resource codes
+	CodeCharset = "abcdefghijklmnopqrstuvwxyz0123456789"
 	// MaxRetryAttempts is the maximum number of retry attempts for generating unique codes
 	MaxRetryAttempts = 3
 )
 
-// GenerateSecretCode generates a unique secret code with format "secrets_" + 10-character random string
+// GenerateCode generates a unique resource code with format "resource_" + 10-character random string
 // The random string consists of lowercase letters (a-z) and digits (0-9)
 // Uses cryptographically secure random number generator
-func GenerateSecretCode() (string, error) {
-	randomStr, err := generateRandomString(SecretCodeLength, SecretCodeCharset)
+func GenerateCode(resourceType string) (string, error) {
+	randomStr, err := generateRandomString(CodeLength, resourceType)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate random string: %w", err)
 	}
 
-	return fmt.Sprintf("%s_%s", SecretCodePrefix, randomStr), nil
+	return fmt.Sprintf("%s_%s", resourceType, randomStr), nil
 }
 
 // generateRandomString generates a cryptographically secure random string
@@ -54,14 +52,14 @@ func generateRandomString(length int, charset string) (string, error) {
 	return string(result), nil
 }
 
-// GenerateSecretCodeWithRetry generates a unique secret code with retry mechanism
+// GenerateCodeWithRetry generates a unique resource code with retry mechanism
 // It attempts to generate a code up to maxRetries times
 // The uniqueCheck function should return true if the code is unique
-func GenerateSecretCodeWithRetry(uniqueCheck func(string) (bool, error)) (string, error) {
+func GenerateCodeWithRetry(resourceType string, uniqueCheck func(string) (bool, error)) (string, error) {
 	var lastErr error
 
 	for attempt := 0; attempt < MaxRetryAttempts; attempt++ {
-		code, err := GenerateSecretCode()
+		code, err := GenerateCode(resourceType)
 		if err != nil {
 			lastErr = err
 			continue
@@ -81,5 +79,5 @@ func GenerateSecretCodeWithRetry(uniqueCheck func(string) (bool, error)) (string
 		lastErr = fmt.Errorf("generated code is not unique")
 	}
 
-	return "", fmt.Errorf("failed to generate unique secret code after %d attempts: %w", MaxRetryAttempts, lastErr)
+	return "", fmt.Errorf("failed to generate unique resource code after %d attempts: %w", MaxRetryAttempts, lastErr)
 }
