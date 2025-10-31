@@ -292,6 +292,11 @@ func (s *userService) UpdateUserPassword(
 	// 2. Encrypt new password
 	hashedPassword := auth.HashToken(req.NewPassword)
 
+	if req.NewPassword != req.ConfirmPassword {
+		s.logger.WarnContext(ctx, "Password confirmation mismatch", logger.Uint("userID", userID))
+		return errors.NewAppError(errors.CodeValidationFailed)
+	}
+
 	// 3. Update password
 	user.PasswordHash = hashedPassword
 	if err := s.userRepo.Update(ctx, user); err != nil {
