@@ -24,6 +24,8 @@ import (
 )
 
 const (
+	// SecretCodePrefix is the prefix for secret codes
+	SecretCodePrefix = "secrets"
 	// MaxFileSize is the maximum file size for secret files (5MB)
 	MaxFileSize = 5 * 1024 * 1024
 )
@@ -274,7 +276,7 @@ func (s *secretService) validateFileUpload(req *request.CreateFileSecretRequest)
 // saveSecretFile saves uploaded file to storage and returns filename
 func (s *secretService) saveSecretFile(ctx context.Context, req *request.CreateFileSecretRequest, ext string) (string, error) {
 	// Generate UUID filename
-	filename, err := utils.GenerateSecretCode()
+	filename, err := utils.GenerateCode(SecretCodePrefix)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to generate filename", logger.ErrorField(err))
 		return "", errors.NewAppErrorWrapError(err, errors.CodeInternalError)
@@ -446,7 +448,7 @@ func (s *secretService) verifyResourceGroupAndName(ctx context.Context, resource
 
 // generateUniqueCode generates a unique secret code
 func (s *secretService) generateUniqueCode(ctx context.Context) (string, error) {
-	code, err := utils.GenerateSecretCodeWithRetry(func(candidateCode string) (bool, error) {
+	code, err := utils.GenerateCodeWithRetry(SecretCodePrefix, func(candidateCode string) (bool, error) {
 		codeExists, codeErr := s.secretRepo.ExistsByCode(ctx, candidateCode)
 		return !codeExists, codeErr
 	})

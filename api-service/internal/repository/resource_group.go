@@ -10,11 +10,11 @@ import (
 	"api-service/internal/interface/repository"
 	"api-service/internal/model"
 	"api-service/pkg/errors"
+	"api-service/pkg/utils"
 )
 
 const (
 	resourceGroupCodePrefix = "rg" // Prefix for resource group code
-	resourceGroupCodeLength = 10   // Length of random string in resource group code
 )
 
 // resourceGroupRepository implements ResourceGroupRepository
@@ -32,7 +32,11 @@ func NewResourceGroupRepository(db *gorm.DB) repository.ResourceGroupRepository 
 // Create creates a new resource group and generates its code
 func (r *resourceGroupRepository) Create(ctx context.Context, rg *model.ResourceGroup) error {
 	// Generate code before creating
-	rg.Code = model.GenerateCode(resourceGroupCodePrefix, resourceGroupCodeLength)
+	resourceCode, codeErr := utils.GenerateCode(resourceGroupCodePrefix)
+	if codeErr != nil {
+		return errors.NewAppErrorWrapError(codeErr, errors.CodeRecordCreateFailed)
+	}
+	rg.Code = resourceCode
 
 	// Create the resource group
 	if err := r.db.WithContext(ctx).Create(rg).Error; err != nil {
@@ -279,14 +283,14 @@ func (r *resourceGroupRepository) queryResourcesByType(
 	var resources []response.ResourceItemResponse
 
 	query := `
-		SELECT 
+		SELECT
 			id,
 			code,
 			name,
 			? as resource_type,
 			created_at,
 			updated_at
-		FROM ` + tableName + ` 
+		FROM ` + tableName + `
 		WHERE resource_group_id = ?
 		ORDER BY created_at DESC
 	`

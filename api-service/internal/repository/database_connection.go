@@ -9,11 +9,11 @@ import (
 	"api-service/internal/interface/repository"
 	"api-service/internal/model"
 	"api-service/pkg/errors"
+	"api-service/pkg/utils"
 )
 
 const (
 	dbConnectionCodePrefix = "database" // Prefix for database connection code
-	dbConnectionCodeLength = 10         // Length of random string in connection code
 )
 
 // databaseConnectionRepository implements DatabaseConnectionRepository
@@ -31,8 +31,11 @@ func NewDatabaseConnectionRepository(db *gorm.DB) repository.DatabaseConnectionR
 // Create creates a new database connection and generates its code
 func (r *databaseConnectionRepository) Create(ctx context.Context, conn *model.DatabaseConnection) error {
 	// Generate code before creating
-	conn.Code = model.GenerateCode(dbConnectionCodePrefix, dbConnectionCodeLength)
-
+	resourceCode, codeErr := utils.GenerateCode(dbConnectionCodePrefix)
+	if codeErr != nil {
+		return errors.NewAppErrorWrapError(codeErr, errors.CodeRecordCreateFailed)
+	}
+	conn.Code = resourceCode
 	// Create the connection
 	if err := r.db.WithContext(ctx).Create(conn).Error; err != nil {
 		return errors.NewAppErrorWrapError(err, errors.CodeRecordCreateFailed)
