@@ -8,7 +8,7 @@
 
 FROM alpine:3.22
 
-LABEL version="1.6.0" \
+LABEL version="1.6.1" \
   maintainer="Websoft9" \
   description="Websoft9 runtime base: Redis + InfluxDB 2.x + Supervisor"
 
