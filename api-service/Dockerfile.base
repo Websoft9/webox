@@ -30,6 +30,8 @@ RUN set -eux; \
   python3 \
   redis \
   sqlite \
+  mysql-client \
+  postgresql-client \
   supervisor \
   tzdata; \
   ln -snf /usr/share/zoneinfo/$TZ /etc/localtime; \
