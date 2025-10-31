@@ -262,8 +262,8 @@ func (c *UserController) UpdateUserStatus(ctx *gin.Context) {
 }
 
 // UpdateUserPassword update user password (admin function)
-// @Summary Update user password
-// @Description Update user password (admin only)
+// @Summary Reset user password
+// @Description Reset user password (admin only)
 // @Tags Users
 // @Accept json
 // @Produce json

@@ -2,25 +2,25 @@ package request
 
 import "api-service/internal/dto/common"
 
-// UserRegisterRequest 用户注册请求
+// UserRegisterRequest
 type UserRegisterRequest struct {
 	Username string `json:"username" binding:"required,email" example:"john@example.com"`
 	Password string `json:"password" binding:"required" example:"123456"`
 }
 
-// UserLoginRequest 用户登录请求
+// UserLoginRequest
 type UserLoginRequest struct {
 	Username string `json:"username" binding:"required" example:"admin@websoft9.com"`
 	Password string `json:"password" binding:"required" example:"Websoft9"`
 }
 
-// UserChangePasswordRequest 用户修改密码请求
+// UserChangePasswordRequest
 type UserChangePasswordRequest struct {
 	OldPassword string `json:"old_password" binding:"required" example:"oldpass123"`
 	NewPassword string `json:"new_password" binding:"required" example:"newpass123"`
 }
 
-// UserListRequest 用户列表请求
+// UserListRequest
 type UserListRequest struct {
 	common.BaseListRequest
 	Status   *int    `form:"status" json:"status" binding:"omitempty,min=0,max=1" example:"1"`
@@ -47,7 +47,7 @@ type UserCreateRequest struct {
 	RoleIDs   []uint  `json:"role_ids,omitempty" binding:"omitempty,dive,gt=0" example:"1,2"`                    // Array of role IDs to assign (optional)
 }
 
-// UserUpdateRequest 更新用户请求
+// UserUpdateRequest
 type UserUpdateRequest struct {
 	Username  *string `json:"username,omitempty" binding:"omitempty,max=64" example:"johndoe"`
 	Email     *string `json:"email,omitempty" binding:"omitempty,email" example:"newemail@example.com"`
@@ -61,38 +61,39 @@ type UserUpdateRequest struct {
 	RoleIDs   []uint  `json:"role_ids,omitempty" binding:"omitempty,dive,gt=0"` // Array of role IDs to assign (optional)
 }
 
-// UserUpdateStatusRequest 用户状态更新请求
+// UserUpdateStatusRequest
 type UserUpdateStatusRequest struct {
 	Status int `json:"status" binding:"min=0,max=1" example:"1"`
 }
 
-// UserPasswordUpdateRequest 管理员修改用户密码请求
+// UserPasswordUpdateRequest
 type UserPasswordUpdateRequest struct {
-	NewPassword string `json:"new_password" binding:"required" example:"newpassword123"`
+	NewPassword     string `json:"new_password" binding:"required,min=6" example:"newpass123"`
+	ConfirmPassword string `json:"confirm_password" binding:"required,eqfield=NewPassword" example:"newpass123"`
 }
 
-// ForgotPasswordRequest 忘记密码请求
+// ForgotPasswordRequest
 type ForgotPasswordRequest struct {
 	Username string `json:"username" binding:"required,email" example:"john@example.com"`
 }
 
-// ResetPasswordRequest 重置密码请求
+// ResetPasswordRequest
 type ResetPasswordRequest struct {
 	Token       string `json:"token" binding:"required" example:"abc123def456"`
 	NewPassword string `json:"new_password" binding:"required" example:"newpassword123"`
 }
 
-// VerifyEmailRequest 验证邮箱请求
+// VerifyEmailRequest
 type VerifyEmailRequest struct {
 	Token string `json:"token" binding:"required" example:"abc123def456"`
 }
 
-// ResendVerificationRequest 重新发送验证邮件请求
+// ResendVerificationRequest
 type ResendVerificationRequest struct {
 	Username string `json:"username" binding:"required,email" example:"john@example.com"`
 }
 
-// OAuth2LoginRequest OAuth2登录请求
+// OAuth2LoginRequest
 type OAuth2LoginRequest struct {
 	Provider string `json:"provider" binding:"required" example:"github"`
 	Code     string `json:"code" binding:"required" example:"authorization_code"`
