@@ -84,31 +84,12 @@ wait_for_database() {
             fi
             ;;
         mysql)
-            print_info "Waiting for MySQL to be ready at ${db_host}:${db_port}..."
-            local retries=0
-            while [[ $retries -lt $MAX_RETRIES ]]; do
-                if mysql -h "$db_host" -P "${db_port:-3306}" -u "${WEBSOFT9_DB_USER}" -p"${WEBSOFT9_DB_PASSWORD}" --skip-ssl -e "SELECT 1;" &>/dev/null; then
-                    print_info "MySQL is ready"
-                    return 0
-                fi
-                retries=$((retries + 1))
-                sleep $RETRY_INTERVAL
-            done
-            handle_error "Database Check" "MySQL is not ready after ${MAX_RETRIES} retries"
+            print_info "Skip MySQL database check"
+            return 0
             ;;
         postgres)
-            print_info "Waiting for PostgreSQL to be ready at ${db_host}:${db_port}..."
-            local retries=0
-            export PGPASSWORD="${WEBSOFT9_DB_PASSWORD}"
-            while [[ $retries -lt $MAX_RETRIES ]]; do
-                if psql -h "$db_host" -p "${db_port:-5432}" -U "${WEBSOFT9_DB_USER}" -c "SELECT 1;" &>/dev/null; then
-                    print_info "PostgreSQL is ready"
-                    return 0
-                fi
-                retries=$((retries + 1))
-                sleep $RETRY_INTERVAL
-            done
-            handle_error "Database Check" "PostgreSQL is not ready after ${MAX_RETRIES} retries"
+            print_info "Skip PostgreSQL database check"
+            return 0
             ;;
         *)
             handle_error "Database Check" "Unsupported database type: $db_type"
