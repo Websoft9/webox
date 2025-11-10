@@ -26,6 +26,12 @@ const (
 
 	// Redis key constants for user preferences
 	RK_USER_PREFERENCES = "PREFERENCES:USER:%d" // User preferences hash key format
+
+	// Redis key constants for configuration center
+	RK_CONFIG_SYSTEM     = "CONFIG:SYSTEM:%s"     // System configuration hash key format
+	RK_CONFIG_SERVICE    = "CONFIG:SERVICE:%s"    // Service configuration hash key format
+	RK_CONFIG_PROFILE    = "CONFIG:PROFILE:%d"    // User profile configuration hash key format
+	RK_CONFIG_PERMISSION = "CONFIG:PERMISSION:%d" // User permission configuration hash key format
 )
 
 func FormatRedisKey(redisPrefix, key string) string {

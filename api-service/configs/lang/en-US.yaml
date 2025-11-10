@@ -117,6 +117,17 @@ system:
   system_maintenance: "System under maintenance"
   database_connection_failed: "Database connection failed"
   unknown_error: "Unknown error"
+config:
+  not_found: "Configuration not found"
+  readonly: "Configuration is readonly and cannot be modified"
+  invalid_type: "Invalid configuration type"
+  sync_failed: "Failed to synchronize configuration to cache"
+  preload_failed: "Failed to preload configurations"
+  created_success: "Configuration created successfully"
+  updated_success: "Configuration updated successfully"
+  deleted_success: "Configuration deleted successfully"
+  get_success: "Configuration retrieved successfully"
+  list_success: "Configuration list retrieved successfully"
 ui:
   platform: "Websoft9"
   home: "Home"

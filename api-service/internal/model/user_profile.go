@@ -42,6 +42,15 @@ func (UserProfile) TableName() string {
 	return "user_profile"
 }
 
+// GetEffectiveValue returns the effective value for the user profile
+// If ConfigValue is empty, returns DefaultValue
+func (up *UserProfile) GetEffectiveValue() string {
+	if up.ConfigValue != "" {
+		return up.ConfigValue
+	}
+	return up.DefaultValue
+}
+
 // TableName specifies the table name
 func (UserLoginHistory) TableName() string {
 	return "user_login_history"

@@ -123,6 +123,13 @@ const (
 	CodeThirdPartyServiceUnavailable ErrorCode = 6005 // Third party service unavailable
 	CodeSystemMaintenance            ErrorCode = 6006 // System under maintenance
 	CodeDatabaseConnectionFailed     ErrorCode = 6007 // Database connection failed
+
+	// Configuration center related error codes (7000-7099)
+	CodeConfigNotFound      ErrorCode = 7001 // Configuration not found
+	CodeConfigReadonly      ErrorCode = 7002 // Configuration is readonly
+	CodeConfigInvalidType   ErrorCode = 7003 // Configuration type invalid
+	CodeConfigSyncFailed    ErrorCode = 7004 // Configuration sync failed
+	CodeConfigPreloadFailed ErrorCode = 7005 // Configuration preload failed
 )
 
 // CodeToI18nKey maps error codes to their i18n message keys
@@ -220,6 +227,13 @@ var CodeToI18nKey = map[ErrorCode]string{
 	CodeThirdPartyServiceUnavailable: "system.third_party_service_unavailable",
 	CodeSystemMaintenance:            "system.system_maintenance",
 	CodeDatabaseConnectionFailed:     "system.database_connection_failed",
+
+	// Configuration center related errors (7000-7099)
+	CodeConfigNotFound:      "config.not_found",
+	CodeConfigReadonly:      "config.readonly",
+	CodeConfigInvalidType:   "config.invalid_type",
+	CodeConfigSyncFailed:    "config.sync_failed",
+	CodeConfigPreloadFailed: "config.preload_failed",
 }
 
 // codeToHTTPStatus maps business error codes to HTTP status codes
@@ -312,4 +326,11 @@ var CodeToHTTPStatus = map[ErrorCode]HTTPCode{
 	CodeNetworkTimeout:               http.StatusRequestTimeout,
 	CodeThirdPartyServiceUnavailable: http.StatusServiceUnavailable,
 	CodeSystemMaintenance:            http.StatusServiceUnavailable,
+
+	// Configuration center related errors (7000-7099)
+	CodeConfigNotFound:      http.StatusNotFound,
+	CodeConfigReadonly:      http.StatusForbidden,
+	CodeConfigInvalidType:   http.StatusBadRequest,
+	CodeConfigSyncFailed:    http.StatusInternalServerError,
+	CodeConfigPreloadFailed: http.StatusInternalServerError,
 }
