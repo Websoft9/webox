@@ -36,6 +36,7 @@ type Controllers struct {
 	ResourceGroupController        *controller.ResourceGroupController
 	EnvironmentVariableController  *controller.EnvironmentVariableController
 	SecretController               *controller.SecretController
+	CredentialController           *controller.CredentialController
 	// More controllers can be added
 	// AppController  *controller.ApplicationController
 }
@@ -161,6 +162,7 @@ func setupAPIRoutes(v1 *gin.RouterGroup, controllers *Controllers) {
 	setupResourceGroupRoutes(protected, controllers.ResourceGroupController)
 	setupEnvironmentVariableRoutes(protected, controllers.EnvironmentVariableController)
 	setupSecretRoutes(protected, controllers.SecretController)
+	setupCredentialRoutes(protected, controllers.CredentialController)
 }
 
 // setupUserRoutes sets up user related routes
@@ -521,4 +523,21 @@ func setupSecretRoutes(protected *gin.RouterGroup, secretController *controller.
 	secrets.PUT("/:id", secretController.UpdateSecret)             // PUT /api/v1/secrets/:id
 	secrets.DELETE("/:id", secretController.DeleteSecret)          // DELETE /api/v1/secrets/:id
 	secrets.POST("/references", secretController.CreateReference)  // POST /api/v1/secrets/references
+}
+
+// setupCredentialRoutes sets up credential management routes
+func setupCredentialRoutes(protected *gin.RouterGroup, credentialController *controller.CredentialController) {
+	if credentialController == nil {
+		return
+	}
+
+	// Credential management routes
+	credential := protected.Group("/credential")
+	credential.GET("", credentialController.ListCredentials)                     // GET /api/v1/credentials
+	credential.POST("", credentialController.CreateCredential)                   // POST /api/v1/credentials
+	credential.GET("/:id", credentialController.GetCredential)                   // GET /api/v1/credentials/:id
+	credential.PUT("/:id", credentialController.UpdateCredential)                // PUT /api/v1/credentials/:id
+	credential.DELETE("/:id", credentialController.DeleteCredential)             // DELETE /api/v1/credentials/:id
+	credential.GET("/templates", credentialController.ListCredentialTemplates)   // GET /api/v1/credential/templates
+	credential.GET("/categories", credentialController.ListCredentialCategories) // GET /api/v1/credential/categories
 }

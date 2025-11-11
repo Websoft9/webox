@@ -195,3 +195,21 @@ secret:
   file_delete_failed: "密钥文件删除失败"
   permission_denied: "您没有权限访问此密钥"
   owner_only_operation: "只有密钥所有者可以执行此操作"
+
+# 凭据管理
+credential:
+  invalid_name_format: "凭据名称格式无效，仅支持英文、数字、下划线，长度3-50字符"
+  name_already_exists: "凭据名称已存在"
+  template_not_found: "凭据模板不存在"
+  parameter_missing: "缺少必填参数"
+  parameter_not_in_schema: "参数不在模板定义中"
+  parameter_too_short: "参数长度过短"
+  parameter_too_long: "参数长度过长"
+  parameter_pattern_mismatch: "参数格式不匹配"
+  parameter_invalid: "参数格式无效"
+  not_found: "凭据不存在"
+  invalid_reference_format: "凭据引用格式无效，正确格式: {{ credentials.name.parameter }}"
+  parameter_not_found: "参数不存在"
+  created_success: "凭据创建成功"
+  updated_success: "凭据更新成功"
+  deleted_success: "凭据删除成功"
