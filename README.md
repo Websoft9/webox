@@ -96,7 +96,6 @@ Client agent deployed on server nodes, responsible for task execution and monito
    ```bash
    cd api-service
    go mod tidy
-   make init-db    # Initialize database
    make run        # Start development service
    ```
 

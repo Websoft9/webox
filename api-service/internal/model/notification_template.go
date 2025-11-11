@@ -6,15 +6,15 @@ import (
 
 // NotificationTemplate represents a notification template
 type NotificationTemplate struct {
-	ID           uint      `gorm:"primaryKey;autoIncrement" json:"id"`
-	Name         string    `gorm:"size:64;not null" json:"name"`
-	TemplateType string    `gorm:"size:20;not null;column:template_type" json:"template_type"` // EMAIL, WEBHOOK, INTERNAL
-	Subject      *string   `gorm:"size:255" json:"subject"`
-	Content      string    `gorm:"type:text;not null" json:"content"`
-	IsSystem     int       `gorm:"default:0;column:is_system" json:"is_system"` // 0-user template, 1-system template
-	Status       int       `gorm:"default:1" json:"status"`                     // 0-disabled, 1-enabled
-	CreatedAt    time.Time `json:"created_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`
-	UpdatedAt    time.Time `json:"updated_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`
+	ID           uint      `gorm:"primaryKey;autoIncrement;type:bigint unsigned" json:"id"`
+	Name         string    `gorm:"size:64;not null;comment:Template name" json:"name"`
+	TemplateType string    `gorm:"size:20;not null;column:template_type;index:idx_template_type;comment:Notification type" json:"template_type"` // EMAIL, WEBHOOK, INTERNAL
+	Subject      *string   `gorm:"size:255;comment:Notification subject" json:"subject"`
+	Content      string    `gorm:"type:text;not null;comment:Notification content template" json:"content"`
+	IsSystem     int       `gorm:"type:tinyint(1);default:0;column:is_system;comment:Whether system template" json:"is_system"`                          // 0-user template, 1-system template
+	Status       int       `gorm:"type:tinyint(1);default:1;index:idx_notification_template_status;comment:Status: 0-disabled, 1-enabled" json:"status"` // 0-disabled, 1-enabled
+	CreatedAt    time.Time `json:"created_at" gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP;comment:Creation time"`
+	UpdatedAt    time.Time `json:"updated_at" gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP;comment:Update time"`
 }
 
 // TableName returns the table name for NotificationTemplate
