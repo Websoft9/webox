@@ -193,6 +193,9 @@ func initDatabaseWrapper(cfg *config.Config, zapLogger logger.Logger) (*database
 		&model.NotificationChannelConfig{},
 		&model.NotificationTemplate{},
 		&model.DatabaseConnection{},
+		&model.CredentialCategory{},
+		&model.CredentialTemplate{},
+		&model.Credential{},
 	); migrateErr != nil {
 		return nil, fmt.Errorf("failed to migrate database models: %v", migrateErr)
 	}
@@ -258,6 +261,9 @@ func startServer(
 	// Register custom validators
 	if err := customValidator.RegisterTimeRangeValidator(validatorInstance); err != nil {
 		return fmt.Errorf("failed to register custom validators: %w", err)
+	}
+	if err := customValidator.RegisterCredentialValidators(validatorInstance); err != nil {
+		return fmt.Errorf("failed to register credential validators: %w", err)
 	}
 
 	// Initialize data access layer repositories with database connection
@@ -380,6 +386,9 @@ type repositories struct {
 	secretRepo               repoInterface.SecretRepository
 	secretReferenceRepo      repoInterface.SecretReferenceRepository
 	secretAuthorizeRepo      repoInterface.SecretAuthorizeRepository
+	credentialRepo           repoInterface.CredentialRepository
+	credentialCategoryRepo   repoInterface.CredentialCategoryRepository
+	credentialTemplateRepo   repoInterface.CredentialTemplateRepository
 }
 
 // initRepositories creates and initializes all repository instances
@@ -409,6 +418,9 @@ func initRepositories(db *gorm.DB, zapLogger logger.Logger) *repositories {
 		secretRepo:               repoImpl.NewSecretRepository(db),
 		secretReferenceRepo:      repoImpl.NewSecretReferenceRepository(db),
 		secretAuthorizeRepo:      repoImpl.NewSecretAuthorizeRepository(db),
+		credentialRepo:           repoImpl.NewCredentialRepository(db),
+		credentialCategoryRepo:   repoImpl.NewCredentialCategoryRepository(db),
+		credentialTemplateRepo:   repoImpl.NewCredentialTemplateRepository(db),
 	}
 }
 
@@ -437,6 +449,7 @@ type businessServices struct {
 	resourceGroupService        serviceInterface.ResourceGroupService
 	environmentVariableService  serviceInterface.EnvironmentVariableService
 	secretService               serviceInterface.SecretService
+	credentialService           serviceInterface.CredentialService
 }
 
 // initBusinessServices creates and initializes all service instances with their dependencies
@@ -538,7 +551,26 @@ func initBusinessServices(
 	// Secret service already created above (before services struct initialization)
 	services.secretService = secretService
 
+	// Initialize additional services
+	initAdditionalServices(services, repos, zapLogger)
+
 	return services
+}
+
+// initAdditionalServices initializes additional services to keep initBusinessServices under 100 lines
+func initAdditionalServices(services *businessServices, repos *repositories, zapLogger logger.Logger) {
+	// Create credential service
+	credentialService, err := serviceImpl.NewCredentialService(
+		repos.credentialRepo,
+		repos.credentialCategoryRepo,
+		repos.credentialTemplateRepo,
+		crypto.GetDefaultCrypto(),
+		zapLogger,
+	)
+	if err != nil {
+		zapLogger.Fatal("Failed to initialize credential service", logger.ErrorField(err))
+	}
+	services.credentialService = credentialService
 }
 
 // initControllers creates and initializes all HTTP controllers with their dependencies
@@ -598,6 +630,7 @@ func initControllers(
 		ResourceGroupController:        controller.NewResourceGroupController(services.resourceGroupService, validatorInstance, zapLogger),
 		EnvironmentVariableController:  controller.NewEnvironmentVariableController(services.environmentVariableService, validatorInstance, zapLogger),
 		SecretController:               controller.NewSecretController(services.secretService, validatorInstance, zapLogger),
+		CredentialController:           controller.NewCredentialController(services.credentialService, validatorInstance, zapLogger),
 	}
 }
 
