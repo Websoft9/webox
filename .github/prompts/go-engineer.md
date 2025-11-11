@@ -56,7 +56,6 @@ make run           # Run in development mode
 make test          # Run tests
 make fmt           # Format code
 make vet           # Run go vet
-make init-db       # Initialize database
 ```
 
 For the Agent service:

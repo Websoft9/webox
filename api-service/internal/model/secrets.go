@@ -15,18 +15,18 @@ const (
 
 // Secret represents a secret for storing sensitive credentials
 type Secret struct {
-	ID uint `gorm:"primaryKey;autoIncrement" json:"id"`
+	ID uint `gorm:"primaryKey;autoIncrement;type:bigint unsigned;comment:Secret ID" json:"id"`
 	// Secret code, globally unique, format: secrets_{random_string}
-	Code            string     `gorm:"size:128;uniqueIndex;not null" json:"code"`
-	Name            string     `gorm:"size:64;not null" json:"name"`                                                           // Secret name
-	Type            SecretType `gorm:"type:enum('text','account','file');not null" json:"type"`                                // Secret type
-	Description     *string    `gorm:"type:text" json:"description"`                                                           // Secret description
-	SecretFields    JSON       `gorm:"type:json;not null" json:"secret_fields"`                                                // Encrypted secret data (JSON format)
-	ExpiresAt       *time.Time `gorm:"type:datetime;serializer:datetime" json:"expires_at"`                                    // Expiration time
-	ResourceGroupID uint       `gorm:"not null;column:resource_group_id;index:idx_resource_group_id" json:"resource_group_id"` // Resource group ID
-	OwnerID         uint       `gorm:"not null;column:owner_id;index:idx_owner_id" json:"owner_id"`                            // Owner ID
-	CreatedAt       time.Time  `json:"created_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`                              // Creation time
-	UpdatedAt       time.Time  `json:"updated_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`                              // Last update time
+	Code            string     `gorm:"size:128;uniqueIndex:uk_secret_code;not null;comment:Secret code, globally unique, format: secrets_{random_string}" json:"code"`
+	Name            string     `gorm:"size:64;not null;uniqueIndex:uk_resource_group_name;comment:Secret name" json:"name"`                                                                                             // Secret name
+	Type            SecretType `gorm:"type:varchar(20);not null;index:idx_secret_type;comment:Secret type" json:"type"`                                                                                                 // Secret type
+	Description     *string    `gorm:"type:text;comment:Secret description" json:"description"`                                                                                                                         // Secret description
+	SecretFields    JSON       `gorm:"type:json;not null;comment:Encrypted secret data (JSON format)" json:"secret_fields"`                                                                                             // Encrypted secret data (JSON format)
+	ExpiresAt       *time.Time `gorm:"type:datetime;serializer:datetime;comment:Expiration time" json:"expires_at"`                                                                                                     // Expiration time
+	ResourceGroupID uint       `gorm:"type:bigint unsigned;not null;column:resource_group_id;uniqueIndex:uk_resource_group_name;index:idx_secret_resource_group_id;comment:Resource group ID" json:"resource_group_id"` // Resource group ID
+	OwnerID         uint       `gorm:"type:bigint unsigned;not null;column:owner_id;index:idx_secret_owner_id;comment:Owner ID" json:"owner_id"`                                                                        // Owner ID
+	CreatedAt       time.Time  `json:"created_at" gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP;index:idx_secret_created_at;comment:Creation time"`                                                            // Creation time
+	UpdatedAt       time.Time  `json:"updated_at" gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP;comment:Update time"`                                                                                          // Last update time
 }
 
 // TableName returns the table name for Secret
@@ -36,10 +36,10 @@ func (Secret) TableName() string {
 
 // SecretReference represents the reference relationship between secrets and resources
 type SecretReference struct {
-	ID           uint      `gorm:"primaryKey;autoIncrement" json:"id"`
-	SecretID     uint      `gorm:"not null;column:secret_id;index:idx_secret_id" json:"secret_id"` // Secret ID
-	ResourceCode string    `gorm:"size:128;not null;index:idx_resource_code" json:"resource_code"` // Resource code
-	CreatedAt    time.Time `json:"created_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`      // Creation time
+	ID           uint      `gorm:"primaryKey;autoIncrement;type:bigint unsigned;comment:Reference ID" json:"id"`
+	SecretID     uint      `gorm:"type:bigint unsigned;not null;column:secret_id;uniqueIndex:uk_secret_resource;comment:Secret ID" json:"secret_id"`              // Secret ID
+	ResourceCode string    `gorm:"size:128;not null;uniqueIndex:uk_secret_resource;index:idx_reference_resource_code;comment:Resource code" json:"resource_code"` // Resource code
+	CreatedAt    time.Time `json:"created_at" gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP;comment:Creation time"`                                      // Creation time
 }
 
 // TableName returns the table name for SecretReference
@@ -49,10 +49,10 @@ func (SecretReference) TableName() string {
 
 // SecretAuthorize represents the authorization relationship between secrets and users
 type SecretAuthorize struct {
-	ID               uint      `gorm:"primaryKey;autoIncrement" json:"id"`
-	SecretID         uint      `gorm:"not null;column:secret_id;index:idx_secret_id" json:"secret_id"`                            // Secret ID
-	AuthorizedUserID uint      `gorm:"not null;column:authorized_user_id;index:idx_authorized_user_id" json:"authorized_user_id"` // Authorized user ID
-	CreatedAt        time.Time `json:"created_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`                                 // Creation time
+	ID               uint      `gorm:"primaryKey;autoIncrement;type:bigint unsigned;comment:Authorization ID" json:"id"`
+	SecretID         uint      `gorm:"type:bigint unsigned;not null;column:secret_id;uniqueIndex:uk_secret_user;comment:Secret ID" json:"secret_id"`                                                         // Secret ID
+	AuthorizedUserID uint      `gorm:"type:bigint unsigned;not null;column:authorized_user_id;uniqueIndex:uk_secret_user;index:idx_authorized_user_id;comment:Authorized user ID" json:"authorized_user_id"` // Authorized user ID
+	CreatedAt        time.Time `json:"created_at" gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP;comment:Creation time"`                                                                             // Creation time
 }
 
 // TableName returns the table name for SecretAuthorize

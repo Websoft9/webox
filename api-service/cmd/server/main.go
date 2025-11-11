@@ -58,6 +58,9 @@ import (
 //	@name						Authorization
 //	@description				Enter the token with the 'Bearer ' prefix, e.g. 'Bearer abc123'
 
+// SQL statement preview length limit
+const maxStatementPreviewLength = 200
+
 func main() {
 	// 1. Load configuration first
 	cfg, err := config.Load()
@@ -150,6 +153,201 @@ func initCrypto(cfg *config.Config) (*crypto.AESCrypto, error) {
 	return crypto.GetDefaultCrypto(), nil
 }
 
+// importSQLFile reads and executes SQL statements from a file
+// Returns error if file reading or SQL execution fails
+func importSQLFile(db *gorm.DB, filePath string, zapLogger logger.Logger) error {
+	// #nosec G304 -- filePath is a hardcoded constant from trusted source (scripts/init_data.sql)
+	sqlContent, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to read SQL file %s: %w", filePath, err)
+	}
+
+	sqlStatements := parseSQLStatements(string(sqlContent))
+	dialectName := db.Dialector.Name()
+
+	zapLogger.Info("Starting SQL data import",
+		logger.String("dialect", dialectName),
+		logger.String("file", filePath),
+		logger.Int("statements", len(sqlStatements)))
+
+	// Setup foreign key constraint handling for SQLite
+	if dialectName == database.DatabaseTypeSQLite {
+		setupSQLiteForeignKeys(db, zapLogger)
+		defer restoreSQLiteForeignKeys(db, zapLogger)
+	}
+
+	// Execute SQL statements in transaction
+	return executeStatementsInTransaction(db, sqlStatements, dialectName, filePath, zapLogger)
+}
+
+// setupSQLiteForeignKeys disables foreign key constraints for SQLite
+func setupSQLiteForeignKeys(db *gorm.DB, zapLogger logger.Logger) {
+	if err := db.Exec("PRAGMA foreign_keys = OFF").Error; err != nil {
+		zapLogger.Warn("Failed to disable SQLite foreign keys", logger.ErrorField(err))
+		return
+	}
+
+	zapLogger.Info("SQLite foreign keys disabled")
+
+	// Verify the setting
+	var fkEnabled int
+	if err := db.Raw("PRAGMA foreign_keys").Scan(&fkEnabled).Error; err == nil {
+		zapLogger.Debug("SQLite foreign keys status", logger.Int("enabled", fkEnabled))
+	}
+}
+
+// restoreSQLiteForeignKeys re-enables foreign key constraints for SQLite
+func restoreSQLiteForeignKeys(db *gorm.DB, zapLogger logger.Logger) {
+	if err := db.Exec("PRAGMA foreign_keys = ON").Error; err != nil {
+		zapLogger.Error("Failed to re-enable SQLite foreign keys", logger.ErrorField(err))
+		return
+	}
+	zapLogger.Info("SQLite foreign keys re-enabled")
+}
+
+// executeStatementsInTransaction executes SQL statements within a database transaction
+func executeStatementsInTransaction(db *gorm.DB, statements []string, dialectName, filePath string, zapLogger logger.Logger) error {
+	return db.Transaction(func(tx *gorm.DB) error {
+		// Disable foreign key checks at transaction level
+		disableForeignKeyChecksInTransaction(tx, dialectName, zapLogger)
+
+		// Execute each statement
+		executedCount := 0
+		for i, stmt := range statements {
+			if stmt == "" {
+				continue
+			}
+
+			if err := tx.Exec(stmt).Error; err != nil {
+				logStatementError(stmt, i+1, err, zapLogger)
+				return fmt.Errorf("failed to execute SQL statement %d: %w", i+1, err)
+			}
+			executedCount++
+		}
+
+		// Re-enable foreign key checks for non-SQLite databases
+		if dialectName != database.DatabaseTypeSQLite {
+			if err := enableForeignKeyChecks(tx, dialectName, zapLogger); err != nil {
+				zapLogger.Warn("Failed to enable foreign key checks", logger.ErrorField(err))
+			}
+		}
+
+		zapLogger.Info("SQL file imported successfully",
+			logger.String("file", filePath),
+			logger.Int("statements_executed", executedCount))
+		return nil
+	})
+}
+
+// disableForeignKeyChecksInTransaction disables foreign key checks within a transaction
+func disableForeignKeyChecksInTransaction(tx *gorm.DB, dialectName string, zapLogger logger.Logger) {
+	switch dialectName {
+	case database.DatabaseTypeSQLite:
+		if err := tx.Exec("PRAGMA foreign_keys = OFF").Error; err != nil {
+			zapLogger.Warn("Failed to disable SQLite foreign keys in transaction", logger.ErrorField(err))
+		} else {
+			zapLogger.Debug("SQLite foreign keys disabled in transaction")
+		}
+	case database.DatabaseTypeMySQL, database.DatabaseTypePostgres:
+		if err := disableForeignKeyChecks(tx, dialectName, zapLogger); err != nil {
+			zapLogger.Warn("Failed to disable foreign key checks", logger.ErrorField(err))
+		}
+	}
+}
+
+// logStatementError logs detailed information about a failed SQL statement
+func logStatementError(stmt string, index int, err error, zapLogger logger.Logger) {
+	stmtPreview := stmt
+	if len(stmtPreview) > maxStatementPreviewLength {
+		stmtPreview = stmtPreview[:maxStatementPreviewLength] + "..."
+	}
+	zapLogger.Error("Failed to execute SQL statement",
+		logger.Int("statement_index", index),
+		logger.String("statement_preview", stmtPreview),
+		logger.ErrorField(err))
+}
+
+// disableForeignKeyChecks disables foreign key constraint checks for MySQL and PostgreSQL
+func disableForeignKeyChecks(db *gorm.DB, dialectName string, zapLogger logger.Logger) error {
+	var sql string
+	switch dialectName {
+	case database.DatabaseTypeMySQL:
+		sql = "SET FOREIGN_KEY_CHECKS = 0"
+	case database.DatabaseTypePostgres:
+		sql = "SET CONSTRAINTS ALL DEFERRED"
+	default:
+		return nil
+	}
+
+	zapLogger.Debug("Disabling foreign key checks", logger.String("dialect", dialectName))
+	return db.Exec(sql).Error
+}
+
+// enableForeignKeyChecks enables foreign key constraint checks for MySQL
+func enableForeignKeyChecks(db *gorm.DB, dialectName string, zapLogger logger.Logger) error {
+	if dialectName == database.DatabaseTypeMySQL {
+		zapLogger.Debug("Enabling MySQL foreign key checks")
+		return db.Exec("SET FOREIGN_KEY_CHECKS = 1").Error
+	}
+	// PostgreSQL constraints are automatically checked at transaction commit
+	return nil
+}
+
+// parseSQLStatements parses SQL content and splits it into individual statements
+// Handles multi-line statements and comments properly
+func parseSQLStatements(sqlContent string) []string {
+	var statements []string
+	var currentStmt strings.Builder
+
+	lines := strings.Split(sqlContent, "\n")
+
+	for _, line := range lines {
+		trimmedLine := strings.TrimSpace(line)
+
+		// Skip empty lines and comment-only lines
+		if trimmedLine == "" || strings.HasPrefix(trimmedLine, "--") {
+			continue
+		}
+
+		// Remove inline comments
+		if idx := strings.Index(line, "--"); idx >= 0 {
+			line = line[:idx]
+		}
+
+		// Trim the line and add to current statement
+		line = strings.TrimSpace(line)
+		if line != "" {
+			currentStmt.WriteString(line)
+			currentStmt.WriteString(" ")
+		}
+
+		// Check if statement is complete (ends with semicolon)
+		if strings.HasSuffix(trimmedLine, ";") {
+			stmt := strings.TrimSpace(currentStmt.String())
+			// Remove trailing semicolon and trim again
+			stmt = strings.TrimSuffix(stmt, ";")
+			stmt = strings.TrimSpace(stmt)
+
+			if stmt != "" {
+				statements = append(statements, stmt)
+			}
+			currentStmt.Reset()
+		}
+	}
+
+	// Add any remaining statement
+	if currentStmt.Len() > 0 {
+		stmt := strings.TrimSpace(currentStmt.String())
+		stmt = strings.TrimSuffix(stmt, ";")
+		stmt = strings.TrimSpace(stmt)
+		if stmt != "" {
+			statements = append(statements, stmt)
+		}
+	}
+
+	return statements
+}
+
 // initDatabaseWrapper establishes database connection using our enhanced SQLite manager
 // and performs automatic schema migration. Supports SQLite with optimized concurrent access
 func initDatabaseWrapper(cfg *config.Config, zapLogger logger.Logger) (*database.DBWrapper, error) {
@@ -159,7 +357,7 @@ func initDatabaseWrapper(cfg *config.Config, zapLogger logger.Logger) (*database
 	}
 	zapLogger.Info("Database connection successful",
 		logger.String("type", cfg.Database.Type),
-		logger.Bool("sqlite_optimized", cfg.Database.Type == "sqlite"))
+		logger.Bool("sqlite_optimized", cfg.Database.Type == database.DatabaseTypeSQLite))
 
 	// Check if database was already initialized by the init script
 	flagFile := "data/.websoft9_db_initialized"
@@ -171,6 +369,8 @@ func initDatabaseWrapper(cfg *config.Config, zapLogger logger.Logger) (*database
 	// Auto-migrate all database models to ensure schema consistency
 	db := dbWrapper.GetDB()
 	if migrateErr := db.AutoMigrate(
+		&model.Module{},
+		&model.ServiceConfig{},
 		&model.User{},
 		&model.Role{},
 		&model.Permission{},
@@ -193,6 +393,11 @@ func initDatabaseWrapper(cfg *config.Config, zapLogger logger.Logger) (*database
 		&model.NotificationChannelConfig{},
 		&model.NotificationTemplate{},
 		&model.DatabaseConnection{},
+		&model.EnvironmentVariable{},
+		&model.ResourceGroup{},
+		&model.ResourceType{},
+		&model.Server{},
+		&model.ServerAgent{},
 		&model.CredentialCategory{},
 		&model.CredentialTemplate{},
 		&model.Credential{},
@@ -201,6 +406,13 @@ func initDatabaseWrapper(cfg *config.Config, zapLogger logger.Logger) (*database
 	}
 
 	zapLogger.Info("Database schema migration completed successfully")
+
+	// Import initial data from SQL file
+	sqlFilePath := "scripts/init_data.sql"
+	if err := importSQLFile(db, sqlFilePath, zapLogger); err != nil {
+		return nil, fmt.Errorf("failed to import initial data: %v", err)
+	}
+	zapLogger.Info("Initial data imported successfully")
 
 	// Create flag file to indicate database is initialized
 	flagDir := filepath.Dir(flagFile)
