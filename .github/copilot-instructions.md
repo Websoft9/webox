@@ -34,11 +34,6 @@ make deps          # 下载依赖
 make run           # 启动开发服务器 (http://localhost:8080)
 make dev           # 热重载开发 (需要 air: go install github.com/air-verse/air@latest)
 
-# 数据库操作
-make init-db       # 初始化 SQLite 数据库
-make reset-db      # 重置数据库 (删除 websoft9.db 并重新初始化)
-make init-mysql    # 初始化 MySQL 数据库
-
 # 测试和质量控制
 make test          # 运行单元测试
 make full-test     # 运行 API 集成测试

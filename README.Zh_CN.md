@@ -96,7 +96,6 @@ Websoft9 是一个以项目为核心组织单元的云应用管理平台，采�
    ```bash
    cd api-service
    go mod tidy
-   make init-db    # 初始化数据库
    make run        # 启动开发服务
    ```
 

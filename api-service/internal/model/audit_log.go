@@ -13,22 +13,22 @@ const (
 
 // AuditLog audit log model
 type AuditLog struct {
-	ID             uint      `json:"id" gorm:"primarykey"`
-	UserID         *uint     `json:"user_id" gorm:"index"`
-	Username       string    `json:"username" gorm:"size:64;index"`
-	Action         string    `json:"action" gorm:"size:32;not null;index"`
-	Module         string    `json:"module" gorm:"size:32;not null;index"`
-	Description    string    `json:"description"`
-	IPAddress      string    `json:"ip_address" gorm:"size:45"`
-	UserAgent      string    `json:"user_agent" gorm:"size:255"`
-	RequestMethod  string    `json:"request_method" gorm:"size:10"`
-	RequestURL     string    `json:"request_url" gorm:"size:255"`
-	RequestParams  string    `json:"request_params"`
-	ResponseStatus *int      `json:"response_status"`
-	ResponseTime   *int      `json:"response_time"`
-	Success        bool      `json:"success" gorm:"not null;index"`
-	ErrorMessage   string    `json:"error_message"`
-	CreatedAt      time.Time `json:"created_at" gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP;index"`
+	ID             uint      `json:"id" gorm:"primarykey;type:bigint unsigned"`
+	UserID         *uint     `json:"user_id" gorm:"type:bigint unsigned;index:idx_audit_logs_created_user;comment:User ID"`
+	Username       string    `json:"username" gorm:"size:64;comment:Username"`
+	Action         string    `json:"action" gorm:"size:32;not null;index:idx_audit_action;comment:Action"`
+	Module         string    `json:"module" gorm:"size:32;not null;index:idx_audit_module;comment:Module name"`
+	Description    string    `json:"description" gorm:"type:text;comment:Operation description"`
+	IPAddress      string    `json:"ip_address" gorm:"size:45;comment:IP address"`
+	UserAgent      string    `json:"user_agent" gorm:"size:255;comment:User agent"`
+	RequestMethod  string    `json:"request_method" gorm:"size:10;comment:Request method"`
+	RequestURL     string    `json:"request_url" gorm:"size:255;comment:Request URL"`
+	RequestParams  string    `json:"request_params" gorm:"type:json;comment:Request parameters"`
+	ResponseStatus *int      `json:"response_status" gorm:"comment:Response status"`
+	ResponseTime   *int      `json:"response_time" gorm:"comment:Response time (milliseconds)"`
+	Success        bool      `json:"success" gorm:"type:tinyint(1);not null;default:1;index:idx_audit_success;comment:Whether successful"`
+	ErrorMessage   string    `json:"error_message" gorm:"type:text;comment:Error message"`
+	CreatedAt      time.Time `json:"created_at" gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP;index:idx_audit_logs_created_user;comment:Creation time"`
 }
 
 // TableName specifies the table name for AuditLog

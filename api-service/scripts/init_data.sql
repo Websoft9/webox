@@ -11,6 +11,14 @@ INSERT INTO `roles` (`name`, `code`, `description`, `is_system`, `status`) VALUE
    ('Operator', 'operator', 'Operations role responsible for system operations', 1, 1),
    ('User', 'user', 'Regular user role with basic permissions', 1, 1);
 
+-- Insert default users and role permissions
+INSERT INTO `users` (`id`,`username`,`email`,`password_hash`,`nickname`,`avatar`,`phone`,`gender`,`signature`,`status`,`last_login_at`,`last_login_ip`,`timezone`,`language`) VALUES
+	 (1,'admin','admin@websoft9.com','d1a7b27aa60359a6033b046831168286dddc5a83268d4d483d30a09983f9c944','Manager','','',0,'Websoft9 manager',1,NULL,'','Asia/Shanghai','zh-CN');
+
+INSERT INTO `user_roles` (`id`,`user_id`,`role_id`,`granted_by`,`status`) VALUES
+	 (1,1,1,1,1);
+
+-- Insert default modules
 INSERT INTO `modules` (`name`, `code`, `description`) VALUES
 	 ('ui.platform','platform','Default module defines'),
 	 ('ui.home','home','Default module defines'),
@@ -54,7 +62,7 @@ INSERT INTO `modules` (`name`, `code`, `description`) VALUES
 	 ('ui.action_query','secret_key','Default module defines');
 
 INSERT INTO `permissions` (`parent_code`,`scope`,`name`,`code`,`module`,`action`,`resource`,`element`,`description`,`is_system`,`is_menu`,`sort_order`,`status`,`created_by`,`updated_by`) VALUES
-	 (NULL,'platform','ui.platform','e06e84c7-fe48-4d0d-9dbb-cbe65cf5d936','platform','*',NULL,NULL,'Default permissions root node',1,1,0,1,1,1),
+	 ('NULL','platform','ui.platform','e06e84c7-fe48-4d0d-9dbb-cbe65cf5d936','platform','*',NULL,NULL,'Default permissions root node',1,1,0,1,1,1),
 	 ('e06e84c7-fe48-4d0d-9dbb-cbe65cf5d936','platform','ui.home','16aa0ce0-ce2a-4075-8aee-5f9ccb472819','home','*',NULL,NULL,'Platform home page',1,1,0,1,1,1),
 	 ('16aa0ce0-ce2a-4075-8aee-5f9ccb472819','platform','ui.project_overview_dashboard','b2fabec8-f7fe-480d-883c-5e0a355b8c69','project_overview','*',NULL,NULL,'Project overview dashboard all permissions',1,1,0,1,1,1),
 	 ('b2fabec8-f7fe-480d-883c-5e0a355b8c69','platform','ui.action_query','e0aec98a-101f-494a-b5ea-ada5cb5071d1','project_overview','query',NULL,NULL,'Project overview dashboard query permission',1,0,0,1,1,1),
@@ -284,12 +292,6 @@ INSERT INTO `permissions` (`parent_code`,`scope`,`name`,`code`,`module`,`action`
    ('3a8d521d-d3f2-47d8-b302-62cc586bc8c5','platform','ui.action_update','6e3b8ca7-1e76-4c2c-a395-53795a426a02','alert','update','/alert/records/*/acknowledge',NULL,'Alert records acknowledge permission',1,0,0,1,1,1),
    ('3a8d521d-d3f2-47d8-b302-62cc586bc8c5','platform','ui.action_update','dc85e805-bce7-4c2c-abef-3f813345921f','alert','update','/alert/records/*/resolve',NULL,'Alert records resolve permission',1,0,0,1,1,1);
 
--- Insert default users and role permissions
-INSERT INTO `users` (`id`,`username`,`email`,`password_hash`,`nickname`,`avatar`,`phone`,`gender`,`signature`,`status`,`last_login_at`,`last_login_ip`,`timezone`,`language`) VALUES
-	 (1,'admin','admin@websoft9.com','d1a7b27aa60359a6033b046831168286dddc5a83268d4d483d30a09983f9c944','Manager','','',0,'Websoft9 manager',1,NULL,'','Asia/Shanghai','zh-CN');
-
-INSERT INTO `user_roles` (`id`,`user_id`,`role_id`,`granted_by`,`status`) VALUES
-	 (1,1,1,1,1);
 
 INSERT INTO `role_permissions` (`role_id`,`permission_code`,`granted_by`,`status`) VALUES
          (1, 'e06e84c7-fe48-4d0d-9dbb-cbe65cf5d936',1,1),
@@ -556,16 +558,16 @@ INSERT INTO `role_permissions` (`role_id`,`permission_code`,`granted_by`,`status
          (6, 'c8d9e0f1-a2b3-4567-890a-bcdef1234567',1,1);
 
 -- Insert default application categories
-INSERT INTO `app_store_categories` (`name`, `code`, `description`, `sort_order`, `status`) VALUES
-('Web Services', 'web', 'Web servers and related applications', 1, 1),
-('Database', 'database', 'Various database systems', 2, 1),
-('Development Tools', 'development', 'Development and build tools', 3, 1),
-('Monitoring Tools', 'monitoring', 'System monitoring and logging tools', 4, 1),
-('Security Tools', 'security', 'Security protection tools', 5, 1),
-('Storage Services', 'storage', 'File storage and object storage services', 6, 1),
-('Message Queue', 'message_queue', 'Message queue and stream processing services', 7, 1),
-('Container Orchestration', 'orchestration', 'Container orchestration and management tools', 8, 1),
-('Others', 'others', 'Other applications', 99, 1);
+-- INSERT INTO `app_store_categories` (`name`, `code`, `description`, `sort_order`, `status`) VALUES
+-- ('Web Services', 'web', 'Web servers and related applications', 1, 1),
+-- ('Database', 'database', 'Various database systems', 2, 1),
+-- ('Development Tools', 'development', 'Development and build tools', 3, 1),
+-- ('Monitoring Tools', 'monitoring', 'System monitoring and logging tools', 4, 1),
+-- ('Security Tools', 'security', 'Security protection tools', 5, 1),
+-- ('Storage Services', 'storage', 'File storage and object storage services', 6, 1),
+-- ('Message Queue', 'message_queue', 'Message queue and stream processing services', 7, 1),
+-- ('Container Orchestration', 'orchestration', 'Container orchestration and management tools', 8, 1),
+-- ('Others', 'others', 'Other applications', 99, 1);
 
 -- Insert system configurations
 INSERT INTO `system_configs` (`config_key`, `config_value`, `config_type`, `category`, `description`, `is_readonly`, `sort_order`) VALUES
@@ -578,17 +580,17 @@ INSERT INTO `system_configs` (`config_key`, `config_value`, `config_type`, `cate
 ('system.favicon', '', 'STRING', 'basic', 'System favicon URL', 0, 6),
 
 -- Security configuration
-('security.password_min_length', '8', 'INTEGER', 'security', 'Minimum password length', 0, 10),
+('security.password_min_length', '8', 'NUMBER', 'security', 'Minimum password length', 0, 10),
 ('security.password_complexity', 'true', 'BOOLEAN', 'security', 'Enable password complexity checking', 0, 11),
-('security.session_timeout', '3600', 'INTEGER', 'security', 'Session timeout (seconds)', 0, 12),
-('security.max_login_attempts', '5', 'INTEGER', 'security', 'Maximum login attempts', 0, 13),
-('security.lockout_duration', '300', 'INTEGER', 'security', 'Account lockout duration (seconds)', 0, 14),
+('security.session_timeout', '3600', 'NUMBER', 'security', 'Session timeout (seconds)', 0, 12),
+('security.max_login_attempts', '5', 'NUMBER', 'security', 'Maximum login attempts', 0, 13),
+('security.lockout_duration', '300', 'NUMBER', 'security', 'Account lockout duration (seconds)', 0, 14),
 ('security.jwt_secret', '', 'STRING', 'security', 'JWT secret key', 1, 15),
-('security.jwt_expire_hours', '24', 'INTEGER', 'security', 'JWT expiration time (hours)', 0, 16),
+('security.jwt_expire_hours', '24', 'NUMBER', 'security', 'JWT expiration time (hours)', 0, 16),
 
 -- Email configuration
 ('email.smtp_host', '', 'STRING', 'email', 'SMTP server address', 0, 20),
-('email.smtp_port', '587', 'INTEGER', 'email', 'SMTP port', 0, 21),
+('email.smtp_port', '587', 'NUMBER', 'email', 'SMTP port', 0, 21),
 ('email.smtp_username', '', 'STRING', 'email', 'SMTP username', 0, 22),
 ('email.smtp_password', '', 'STRING', 'email', 'SMTP password', 1, 23),
 ('email.smtp_encryption', 'tls', 'STRING', 'email', 'SMTP encryption method', 0, 24),
@@ -597,19 +599,19 @@ INSERT INTO `system_configs` (`config_key`, `config_value`, `config_type`, `cate
 
 -- Storage configuration
 ('storage.default_driver', 'local', 'STRING', 'storage', 'Default storage driver', 0, 30),
-('storage.max_file_size', '100', 'INTEGER', 'storage', 'Maximum file size (MB)', 0, 31),
+('storage.max_file_size', '100', 'NUMBER', 'storage', 'Maximum file size (MB)', 0, 31),
 ('storage.allowed_extensions', 'jpg,jpeg,png,gif,pdf,doc,docx,xls,xlsx,ppt,pptx,txt,zip,tar,gz', 'STRING', 'storage', 'Allowed file extensions', 0, 32),
 
 -- Monitoring configuration
-('monitor.metrics_retention_days', '30', 'INTEGER', 'monitor', 'Monitoring data retention days', 0, 40),
-('monitor.alert_check_interval', '60', 'INTEGER', 'monitor', 'Alert check interval (seconds)', 0, 41),
+('monitor.metrics_retention_days', '30', 'NUMBER', 'monitor', 'Monitoring data retention days', 0, 40),
+('monitor.alert_check_interval', '60', 'NUMBER', 'monitor', 'Alert check interval (seconds)', 0, 41),
 ('monitor.default_alert_channels', '["email"]', 'JSON', 'monitor', 'Default alert channels', 0, 42),
 
 -- Server management configuration
-('server.ssh_timeout', '30', 'INTEGER', 'server', 'SSH connection timeout (seconds)', 0, 50),
-('server.ssh_retry_count', '3', 'INTEGER', 'server', 'SSH connection retry count', 0, 51),
-('server.file_upload_max_size', '104857600', 'INTEGER', 'server', 'Maximum file upload size (bytes, 100MB)', 0, 52),
-('server.file_download_max_size', '524288000', 'INTEGER', 'server', 'Maximum file download size (bytes, 500MB)', 0, 53),
+('server.ssh_timeout', '30', 'NUMBER', 'server', 'SSH connection timeout (seconds)', 0, 50),
+('server.ssh_retry_count', '3', 'NUMBER', 'server', 'SSH connection retry count', 0, 51),
+('server.file_upload_max_size', '104857600', 'NUMBER', 'server', 'Maximum file upload size (bytes, 100MB)', 0, 52),
+('server.file_download_max_size', '524288000', 'NUMBER', 'server', 'Maximum file download size (bytes, 500MB)', 0, 53),
 ('server.file_path_mode', 'blacklist', 'STRING', 'security', 'File path security mode: blacklist/whitelist', 0, 54),
 ('server.file_ext_mode', 'blacklist', 'STRING', 'security', 'File extension security mode: blacklist/whitelist', 0, 55),
 ('server.custom_forbidden_paths', '[]', 'JSON', 'security', 'Custom forbidden paths list (blacklist mode)', 0, 56),
@@ -626,7 +628,7 @@ INSERT INTO `notification_templates` (`name`, `template_type`, `subject`, `conte
 ('Application Deployment Failure', 'EMAIL', 'Application Deployment Failure Notification', 'Dear {{username}},\n\nYour application {{app_name}} deployment has failed.\n\nError Message: {{error_message}}\nFailure Time: {{failed_at}}\n\nPlease check the configuration and try again.\n\n{{system_name}} Team', 1, 1);
 
 -- Insert default resource types
-INSERT OR IGNORE INTO resource_types (name, code, table_name, description) VALUES
+INSERT INTO `resource_types` (`name`, `code`, `table_name`, `description`) VALUES
 ('resource_type.server', 'server', 'servers', 'resource_type.server_desc'),
 ('resource_type.database', 'database', 'database_connections', 'resource_type.database_desc');
 -- ('resource_type.secret', 'secret', 'secret_keys', 'resource_type.secret_desc'),
@@ -640,9 +642,9 @@ INSERT OR IGNORE INTO resource_types (name, code, table_name, description) VALUE
 -- ========================================
 
 -- Insert default project (for testing)
-INSERT INTO `projects` (`name`, `identifier`, `description`, `owner_id`, `status`) VALUES
-('Default Project', 'default_project', 'Default project for testing and development', 1, 'NORMAL'),
-('E-commerce Platform', 'ecommerce_platform', 'E-commerce application project for online retail', 1, 'NORMAL');
+-- INSERT INTO `projects` (`name`, `identifier`, `description`, `owner_id`, `status`) VALUES
+-- ('Default Project', 'default_project', 'Default project for testing and development', 1, 'NORMAL'),
+-- ('E-commerce Platform', 'ecommerce_platform', 'E-commerce application project for online retail', 1, 'NORMAL');
 
 -- Insert default resource groups (for testing)
 INSERT INTO `resource_groups` (`project_id`, `name`, `code`, `description`, `owner_id`, `is_default`, `sort_order`) VALUES

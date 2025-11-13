@@ -7,8 +7,8 @@ import (
 // Role role model
 type Role struct {
 	ID          uint      `json:"id" gorm:"primarykey"`
-	Name        string    `json:"name" gorm:"uniqueIndex;size:64;not null" validate:"required,min=2,max=64"`
-	Code        string    `json:"code" gorm:"uniqueIndex;size:32;not null" validate:"required,min=2,max=32"`
+	Name        string    `json:"name" gorm:"uniqueIndex;type:varchar(64);not null" validate:"required,min=2,max=64"`
+	Code        string    `json:"code" gorm:"uniqueIndex;type:varchar(64);not null" validate:"required,min=2,max=32"`
 	Description string    `json:"description" gorm:"type:text" validate:"max=500"`
 	IsSystem    bool      `json:"is_system" gorm:"default:false"`
 	SortOrder   int       `json:"sort_order" gorm:"default:0"`
@@ -38,14 +38,14 @@ func (r *Role) IsActive() bool {
 // Permission permission model
 type Permission struct {
 	ID          uint      `json:"id" gorm:"primarykey"`
-	ParentCode  string    `json:"parent_code" gorm:"index;size:64;"`
-	Scope       string    `json:"scope" gorm:"size:64;not null" validate:"required,oneof=platform project"`
-	Name        string    `json:"name" gorm:"size:64;not null" validate:"required,min=2,max=64"`
-	Code        string    `json:"code" gorm:"uniqueIndex;size:64;not null" validate:"required,min=2,max=64"`
-	Module      string    `json:"module" gorm:"size:32;not null" validate:"required,min=2,max=32"`
-	Action      string    `json:"action" gorm:"size:32;not null" validate:"required,min=2,max=32"`
-	Resource    string    `json:"resource" gorm:"size:64" validate:"max=64"`
-	Element     string    `json:"element" gorm:"size:64" validate:"max=64"`
+	ParentCode  string    `json:"parent_code" gorm:"type:varchar(64)"`
+	Scope       string    `json:"scope" gorm:"type:varchar(64);not null" validate:"required,oneof=platform project"`
+	Name        string    `json:"name" gorm:"type:varchar(64);not null" validate:"required,min=2,max=64"`
+	Code        string    `json:"code" gorm:"uniqueIndex;type:varchar(64);not null" validate:"required,min=2,max=64"`
+	Module      string    `json:"module" gorm:"type:varchar(32);not null" validate:"required,min=2,max=32"`
+	Action      string    `json:"action" gorm:"type:varchar(32);not null" validate:"required,min=2,max=32"`
+	Resource    string    `json:"resource" gorm:"type:varchar(64)" validate:"max=64"`
+	Element     string    `json:"element" gorm:"type:varchar(64)" validate:"max=64"`
 	Description string    `json:"description" gorm:"type:text" validate:"max=500"`
 	IsSystem    bool      `json:"is_system" gorm:"default:false"`
 	IsMenu      bool      `json:"is_menu" gorm:"default:false"`
@@ -57,8 +57,8 @@ type Permission struct {
 	UpdatedAt   time.Time `json:"updated_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`
 
 	// Associations
-	Parent   *Permission   `json:"parent,omitempty" gorm:"foreignKey:ParentCode"`
-	Children []*Permission `json:"children,omitempty" gorm:"foreignKey:ParentCode"`
+	Parent   *Permission   `json:"parent,omitempty" gorm:"foreignKey:ParentCode;references:Code"`
+	Children []*Permission `json:"children,omitempty" gorm:"foreignKey:ParentCode;references:Code"`
 	Roles    []Role        `json:"roles,omitempty" gorm:"many2many:role_permissions"`
 
 	// Statistical fields (not mapped to database)
@@ -101,7 +101,7 @@ func (UserRole) TableName() string {
 type RolePermission struct {
 	ID             uint      `json:"id" gorm:"primarykey"`
 	RoleID         uint      `json:"role_id" gorm:"not null;index"`
-	PermissionCode string    `json:"permission_code" gorm:"not null;size:64;index"`
+	PermissionCode string    `json:"permission_code" gorm:"not null;type:varchar(64);index"`
 	GrantedBy      *uint     `json:"granted_by" gorm:"index"`
 	GrantedAt      time.Time `json:"granted_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP;not null;serializer:datetime"`
 	Status         int       `json:"status" gorm:"default:1"` //  -1:deleted, 0:disabled, 1:enabled
@@ -110,7 +110,7 @@ type RolePermission struct {
 
 	// Associations
 	Role       Role       `json:"role,omitempty" gorm:"foreignKey:RoleID"`
-	Permission Permission `json:"permission,omitempty" gorm:"foreignKey:PermissionCode"`
+	Permission Permission `json:"permission,omitempty" gorm:"foreignKey:PermissionCode;references:Code"`
 }
 
 // TableName specify table name
@@ -121,14 +121,14 @@ func (RolePermission) TableName() string {
 // APIToken API access token table
 type APIToken struct {
 	ID          uint       `json:"id" gorm:"primarykey"`
-	Name        string     `json:"name" gorm:"size:64;not null" validate:"required,min=2,max=64"`
-	Token       string     `json:"token" gorm:"uniqueIndex;size:255;not null"`
-	TokenHash   string     `json:"-" gorm:"uniqueIndex;size:64;not null"`
+	Name        string     `json:"name" gorm:"type:varchar(64);not null" validate:"required,min=2,max=64"`
+	Token       string     `json:"token" gorm:"uniqueIndex;type:varchar(255);not null"`
+	TokenHash   string     `json:"-" gorm:"uniqueIndex;type:varchar(64);not null"`
 	UserID      uint       `json:"user_id" gorm:"not null;index"`
 	Scopes      JSON       `json:"scopes" gorm:"type:json"`
 	Description string     `json:"description" gorm:"type:text" validate:"max=500"`
 	LastUsedAt  *time.Time `json:"last_used_at" gorm:"type:datetime;serializer:datetime"`
-	LastUsedIP  string     `json:"last_used_ip" gorm:"size:45"`
+	LastUsedIP  string     `json:"last_used_ip" gorm:"type:varchar(45)"`
 	ExpiresAt   *time.Time `json:"expires_at" gorm:"type:datetime;serializer:datetime"`
 	CreatedAt   time.Time  `json:"created_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`
 	UpdatedAt   time.Time  `json:"updated_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`
@@ -157,9 +157,9 @@ func (t *APIToken) IsExpired() bool {
 type UserTwoFactor struct {
 	ID          uint       `json:"id" gorm:"primarykey"`
 	UserID      uint       `json:"user_id" gorm:"not null;index"`
-	Method      string     `json:"method" gorm:"size:32;not null"` // TOTP, EMAIL
-	Secret      string     `json:"-" gorm:"size:255"`              // Encrypted storage
-	BackupCodes JSON       `json:"-" gorm:"type:json"`             // Backup codes
+	Method      string     `json:"method" gorm:"type:varchar(32);not null"` // TOTP, EMAIL
+	Secret      string     `json:"-" gorm:"size:255"`                       // Encrypted storage
+	BackupCodes JSON       `json:"-" gorm:"type:json"`                      // Backup codes
 	Email       string     `json:"email" gorm:"size:255"`
 	Enabled     bool       `json:"enabled" gorm:"default:false"`
 	VerifiedAt  *time.Time `json:"verified_at" gorm:"type:datetime;serializer:datetime"`

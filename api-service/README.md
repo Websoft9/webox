@@ -68,10 +68,7 @@ api-service/
 │   ├── response/       # 统一响应格式
 │   ├── utils/          # 工具函数
 │   └── validator/      # 参数验证
-└── scripts/            # 部署和初始化脚本
-    ├── init_db.sh     # 数据库初始化
-    ├── init_mysql.sql # MySQL初始化脚本
-    └── init_sqlite.sql # SQLite初始化脚本
+└── scripts/            # 工具脚本
 ```
 
 ## 🏗️ 架构设计

@@ -97,73 +97,7 @@ wait_for_database() {
     esac
 }
 
-# Step 1: Initialize database
-initialize_database() {
-    print_step "Step 1: Initializing database..."
 
-    # Build init_db.sh command with environment variables
-    local init_db_cmd="$SCRIPT_DIR/init_db.sh"
-    local db_type="${WEBSOFT9_DB_TYPE:-sqlite}"
-    local init_sql="${WEBSOFT9_DB_INIT_SQL:-/home/appuser/scripts/init_data.sql}"
-
-    # Add common parameters
-    init_db_cmd="$init_db_cmd --type $db_type"
-
-    case "$db_type" in
-        sqlite)
-            local db_path="${WEBSOFT9_DB_PATH:-$DATA_DIR/websoft9.db}"
-            init_db_cmd="$init_db_cmd --file $db_path"
-            ;;
-        mysql|postgres)
-            init_db_cmd="$init_db_cmd --host ${WEBSOFT9_DB_HOST:-localhost}"
-            init_db_cmd="$init_db_cmd --port ${WEBSOFT9_DB_PORT}"
-            init_db_cmd="$init_db_cmd --database ${WEBSOFT9_DB_NAME:-websoft9}"
-            init_db_cmd="$init_db_cmd --user ${WEBSOFT9_DB_USER}"
-            init_db_cmd="$init_db_cmd --password ${WEBSOFT9_DB_PASSWORD}"
-            ;;
-    esac
-
-    # Add init SQL file if specified
-    if [[ -n "$init_sql" ]]; then
-        init_db_cmd="$init_db_cmd --init $init_sql"
-    fi
-
-    # Execute database initialization
-    print_info "Executing: $init_db_cmd"
-    if eval "$init_db_cmd"; then
-        print_info "Database initialization completed successfully"
-        return 0
-    else
-        handle_error "Database Initialization" "Failed to initialize database"
-    fi
-}
-
-# Step 2: Initialize user
-initialize_user() {
-    print_step "Step 2: Initializing user..."
-
-    local email="${WEBSOFT9_EMAIL:-}"
-    local password="${WEBSOFT9_PASSWORD:-}"
-    local role="${WEBSOFT9_ROLE:-}"
-
-    # Check if all required parameters are provided
-    if [[ -z "$email" ]] || [[ -z "$password" ]] || [[ -z "$role" ]]; then
-        print_warn "User initialization skipped: email, password, or role not provided"
-        print_info "To initialize user, set WEBSOFT9_EMAIL, WEBSOFT9_PASSWORD, and WEBSOFT9_ROLE environment variables"
-        return 0
-    fi
-
-    print_info "Creating user: $email with role: $role"
-
-    if "$SCRIPT_DIR/init_user.sh" "$email" "$password" "$role"; then
-        print_info "User initialization completed successfully"
-        return 0
-    else
-        print_warn "User initialization failed, but continuing with startup..."
-        print_info "You can manually create users later through the API or web interface"
-        return 0
-    fi
-}
 
 # Function to initialize InfluxDB
 initialize_influxdb() {
@@ -217,9 +151,9 @@ initialize_influxdb() {
     fi
 }
 
-# Step 3: Start and initialize InfluxDB
+# Step 1: Start and initialize InfluxDB
 start_influxdb() {
-    print_step "Step 3: Starting InfluxDB service..."
+    print_step "Step 1: Starting InfluxDB service..."
 
     local influxdb_url="${WEBSOFT9_INFLUXDB_URL:-}"
     local use_external_influxdb=false
@@ -284,9 +218,9 @@ start_influxdb() {
     fi
 }
 
-# Step 4: Start Redis
+# Step 2: Start Redis
 start_redis() {
-    print_step "Step 4: Starting Redis service..."
+    print_step "Step 2: Starting Redis service..."
 
     local redis_host="${WEBSOFT9_REDIS_HOST:-}"
     local redis_port="${WEBSOFT9_REDIS_PORT:-}"
@@ -378,9 +312,9 @@ start_redis() {
     fi
 }
 
-# Step 5: Verify all services and start API service
+# Step 3: Verify all services and start API service
 start_api_service() {
-    print_step "Step 5: Verifying services and starting API service..."
+    print_step "Step 3: Verifying services and starting API service..."
 
     # Verify database
     print_info "Verifying database service..."
@@ -431,8 +365,6 @@ main() {
     ensure_directories
 
     # Execute startup steps in sequence
-    initialize_database
-    initialize_user
     start_influxdb
     start_redis
     start_api_service

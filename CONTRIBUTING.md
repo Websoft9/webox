@@ -57,9 +57,6 @@ Websoft9 is a modern cloud application management solution platform with layered
    cd api-service
    go mod tidy
 
-   # Initialize database
-   make init-db
-
    # Start API service
    make run
    ```
