@@ -105,7 +105,7 @@ func (s *alertService) ListAlertRecords(ctx context.Context, req *request.AlertR
 	}
 
 	return common.NewPaginationResponse(
-		req.GetOffset(),
+		req.GetPage(),
 		req.GetPageSize(),
 		total,
 		items,
@@ -230,7 +230,7 @@ func (s *alertService) ListAlertRules(ctx context.Context, req *request.AlertRul
 	}
 
 	return common.NewPaginationResponse(
-		req.GetOffset(),
+		req.GetPage(),
 		req.GetPageSize(),
 		total,
 		items,
