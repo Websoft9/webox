@@ -84,7 +84,7 @@ func (s *userService) ListUsers(ctx context.Context,
 	}
 
 	return common.NewPaginationResponse(
-		req.GetOffset(),
+		req.GetPage(),
 		req.GetPageSize(),
 		total,
 		userList,

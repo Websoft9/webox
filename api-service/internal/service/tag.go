@@ -316,7 +316,7 @@ func (s *tagService) SearchResourcesByTags(ctx context.Context, req *request.Tag
 
 	if len(allTagIDs) == 0 {
 		return common.NewPaginationResponse(
-			req.GetOffset(),
+			req.GetPage(),
 			req.GetPageSize(),
 			0,
 			[]response.TaggedResource{},
@@ -345,7 +345,7 @@ func (s *tagService) SearchResourcesByTags(ctx context.Context, req *request.Tag
 	}
 
 	return common.NewPaginationResponse(
-		req.GetOffset(),
+		req.GetPage(),
 		req.GetPageSize(),
 		total,
 		resources,

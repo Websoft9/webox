@@ -210,7 +210,7 @@ func (s *userProfileService) GetLoginHistories(ctx context.Context, userID uint,
 	}
 
 	return common.NewPaginationResponse(
-		req.GetOffset(),
+		req.GetPage(),
 		req.GetPageSize(),
 		total,
 		items,
