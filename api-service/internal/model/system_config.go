@@ -17,7 +17,7 @@ const (
 
 // SystemConfig represents the system configuration model
 type SystemConfig struct {
-	ID              uint       `json:"id" gorm:"primarykey;type:bigint unsigned"`
+	ID              uint       `json:"id" gorm:"primarykey"`
 	ConfigKey       string     `json:"config_key" gorm:"uniqueIndex;not null;size:64;comment:Configuration key" validate:"required,max=64"`
 	ConfigValue     string     `json:"config_value" gorm:"type:text;comment:Configuration value"`
 	ConfigType      ConfigType `json:"config_type" gorm:"type:varchar(20);default:'STRING';index:idx_system_config_type;comment:Configuration type" validate:"required,oneof=STRING INTEGER BOOLEAN JSON FLOAT"`

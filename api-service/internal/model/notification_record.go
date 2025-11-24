@@ -4,8 +4,8 @@ import "time"
 
 // NotificationRecord represents a notification record in the database
 type NotificationRecord struct {
-	ID            uint       `json:"id" gorm:"primaryKey;autoIncrement;type:bigint unsigned;comment:Record ID"`
-	TemplateID    *uint      `json:"template_id" gorm:"type:bigint unsigned;index:idx_notification_template_id;comment:Template ID"`
+	ID            uint       `json:"id" gorm:"primarykey"`
+	TemplateID    *uint      `json:"template_id" gorm:"type:integer;index:idx_notification_template_id;comment:Template ID"`
 	ChannelType   string     `json:"channel_type" gorm:"type:varchar(20);not null;index:idx_notification_channel_type;comment:Notification type"`
 	Recipient     string     `json:"recipient" gorm:"type:varchar(255);not null;comment:Recipient"`
 	Subject       *string    `json:"subject" gorm:"type:varchar(255);comment:Notification subject"`

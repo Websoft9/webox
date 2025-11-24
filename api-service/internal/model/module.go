@@ -4,7 +4,7 @@ import "time"
 
 // Module represents a system module
 type Module struct {
-	ID          uint      `json:"id" gorm:"primaryKey;autoIncrement;type:bigint unsigned"`
+	ID          uint      `json:"id" gorm:"primarykey"`
 	Name        string    `json:"name" gorm:"size:64;not null;comment:module name"`
 	Code        string    `json:"code" gorm:"size:64;not null;uniqueIndex;index:idx_module_code;comment:module code"`
 	Description string    `json:"description" gorm:"type:text;comment:module description"`

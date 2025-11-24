@@ -6,7 +6,7 @@ import (
 
 // CredentialCategory represents a credential category
 type CredentialCategory struct {
-	ID          uint      `gorm:"primaryKey;autoIncrement;type:bigint unsigned" json:"id"`
+	ID          uint      `json:"id" gorm:"primarykey"`
 	Name        string    `gorm:"size:100;not null;uniqueIndex:uk_lcategory_name;comment:Category name" json:"name"` // Category name
 	Description *string   `gorm:"size:500;comment:Category description" json:"description"`                          // Category description
 	CreatedAt   time.Time `json:"created_at" gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP;comment:Creation time"`
@@ -20,13 +20,13 @@ func (CredentialCategory) TableName() string {
 
 // CredentialTemplate represents a credential template
 type CredentialTemplate struct {
-	ID          uint      `gorm:"primaryKey;autoIncrement;type:bigint unsigned" json:"id"`
-	Name        string    `gorm:"size:100;not null;comment:Template name" json:"name"`                                                           // Template name
-	Description *string   `gorm:"size:500;comment:Template description" json:"description"`                                                      // Template description
-	CategoryID  uint      `gorm:"type:bigint unsigned;not null;column:category_id;index:idx_category_id;comment:Category ID" json:"category_id"` // Category ID
-	FormSchema  JSON      `gorm:"type:json;not null;comment:Form schema (JSON format)" json:"form_schema"`                                       // Form schema (JSON format)
-	CreatedAt   time.Time `json:"created_at" gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP;comment:Creation time"`                      // Creation time
-	UpdatedAt   time.Time `json:"updated_at" gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP;comment:Update time"`                        // Update time
+	ID          uint      `json:"id" gorm:"primarykey"`
+	Name        string    `gorm:"size:100;not null;comment:Template name" json:"name"`                                                   // Template name
+	Description *string   `gorm:"size:500;comment:Template description" json:"description"`                                              // Template description
+	CategoryID  uint      `gorm:"type:integer;not null;column:category_id;index:idx_category_id;comment:Category ID" json:"category_id"` // Category ID
+	FormSchema  JSON      `gorm:"type:json;not null;comment:Form schema (JSON format)" json:"form_schema"`                               // Form schema (JSON format)
+	CreatedAt   time.Time `json:"created_at" gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP;comment:Creation time"`              // Creation time
+	UpdatedAt   time.Time `json:"updated_at" gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP;comment:Update time"`                // Update time
 
 	// Association fields
 	Category *CredentialCategory `json:"category,omitempty" gorm:"foreignKey:CategoryID"`
@@ -39,14 +39,14 @@ func (CredentialTemplate) TableName() string {
 
 // Credential represents a credential record
 type Credential struct {
-	ID          uint      `gorm:"primaryKey;autoIncrement;type:bigint unsigned" json:"id"`
-	Name        string    `gorm:"size:100;not null;uniqueIndex:uk_credential_name;comment:Credential name (alphanumeric and underscore only)" json:"name"`  // Credential name (alphanumeric and underscore only)
-	Description *string   `gorm:"size:500;comment:Credential description" json:"description"`                                                               // Credential description
-	TemplateID  uint      `gorm:"type:bigint unsigned;not null;column:template_id;index:idx_credential_template_id;comment:Template ID" json:"template_id"` // Template ID
-	Parameters  JSON      `gorm:"type:json;not null;comment:Credential parameters (JSON format)" json:"parameters"`                                         // Credential parameters (JSON format)
-	OwnerID     uint      `gorm:"type:bigint unsigned;not null;column:owner_id;index:idx_cred_owner_id;comment:Owner user ID" json:"owner_id"`              // Owner user ID
-	CreatedAt   time.Time `json:"created_at" gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP;comment:Creation time"`                                 // Creation time
-	UpdatedAt   time.Time `json:"updated_at" gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP;comment:Update time"`                                   // Update time
+	ID          uint      `json:"id" gorm:"primarykey"`
+	Name        string    `gorm:"size:100;not null;uniqueIndex:uk_credential_name;comment:Credential name (alphanumeric and underscore only)" json:"name"` // Credential name (alphanumeric and underscore only)
+	Description *string   `gorm:"size:500;comment:Credential description" json:"description"`                                                              // Credential description
+	TemplateID  uint      `gorm:"type:integer;not null;column:template_id;index:idx_credential_template_id;comment:Template ID" json:"template_id"`        // Template ID
+	Parameters  JSON      `gorm:"type:json;not null;comment:Credential parameters (JSON format)" json:"parameters"`                                        // Credential parameters (JSON format)
+	OwnerID     uint      `gorm:"type:integer;not null;column:owner_id;index:idx_cred_owner_id;comment:Owner user ID" json:"owner_id"`                     // Owner user ID
+	CreatedAt   time.Time `json:"created_at" gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP;comment:Creation time"`                                // Creation time
+	UpdatedAt   time.Time `json:"updated_at" gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP;comment:Update time"`                                  // Update time
 
 	// Association fields
 	Template *CredentialTemplate `json:"template,omitempty" gorm:"foreignKey:TemplateID"`

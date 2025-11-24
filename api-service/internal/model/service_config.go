@@ -6,7 +6,7 @@ import (
 
 // ServiceConfig represents the service configuration model
 type ServiceConfig struct {
-	ID           uint       `json:"id" gorm:"primarykey;type:bigint unsigned"`
+	ID           uint       `json:"id" gorm:"primarykey"`
 	Code         string     `json:"code" gorm:"uniqueIndex;not null;size:64;comment:Configuration code (unique identifier)" validate:"required,max=64"`
 	ConfigKey    string     `json:"config_key" gorm:"not null;size:64;comment:Configuration key" validate:"required,max=64"`
 	ConfigValue  string     `json:"config_value" gorm:"type:text;comment:Configuration value"`
@@ -17,7 +17,7 @@ type ServiceConfig struct {
 	IsEncrypted  bool       `json:"is_encrypted" gorm:"type:tinyint(1);default:0;comment:Whether encrypted"`
 	DefaultValue string     `json:"default_value" gorm:"type:text;comment:Default value"`
 	SortOrder    int        `json:"sort_order" gorm:"default:0;index:idx_service_sort_order;comment:Sort order"`
-	OwnerID      uint       `json:"owner_id" gorm:"type:bigint unsigned;not null;comment:Owner ID" validate:"required"`
+	OwnerID      uint       `json:"owner_id" gorm:"type:integer;not null;comment:Owner ID" validate:"required"`
 	CreatedAt    time.Time  `json:"created_at" gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP;comment:Creation time"`
 	UpdatedAt    time.Time  `json:"updated_at" gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP;comment:Update time"`
 }

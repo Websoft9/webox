@@ -13,8 +13,8 @@ const (
 
 // AuditLog audit log model
 type AuditLog struct {
-	ID             uint      `json:"id" gorm:"primarykey;type:bigint unsigned"`
-	UserID         *uint     `json:"user_id" gorm:"type:bigint unsigned;index:idx_audit_logs_created_user;comment:User ID"`
+	ID             uint      `json:"id" gorm:"primarykey"`
+	UserID         *uint     `json:"user_id" gorm:"type:integer;index:idx_audit_logs_created_user;comment:User ID"`
 	Username       string    `json:"username" gorm:"size:64;comment:Username"`
 	Action         string    `json:"action" gorm:"size:32;not null;index:idx_audit_action;comment:Action"`
 	Module         string    `json:"module" gorm:"size:32;not null;index:idx_audit_module;comment:Module name"`

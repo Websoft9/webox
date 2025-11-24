@@ -16,7 +16,7 @@ const (
 
 // Server represents a managed server in the platform
 type Server struct {
-	ID              uint            `json:"id" gorm:"primaryKey;autoIncrement;type:bigint unsigned"`
+	ID              uint            `json:"id" gorm:"primarykey"`
 	Name            string          `json:"name" gorm:"type:varchar(64);not null;index:idx_server_name;comment:Server name"`
 	Code            string          `json:"code" gorm:"type:varchar(64);not null;index:idx_server_code;comment:Server code"`
 	Hostname        string          `json:"hostname" gorm:"type:varchar(255);not null;comment:Hostname"`
@@ -31,8 +31,8 @@ type Server struct {
 	MemoryTotal     int64           `json:"memory_total" gorm:"type:bigint;default:0;comment:Total memory (MB)"`
 	DiskTotal       int64           `json:"disk_total" gorm:"type:bigint;default:0;comment:Total disk space (MB)"`
 	Architecture    *string         `json:"architecture" gorm:"type:varchar(16);comment:System architecture"`
-	ResourceGroupID *uint           `json:"resource_group_id" gorm:"type:bigint unsigned;index:idx_server_resource_group_id;comment:Resource group ID"`
-	OwnerID         uint            `json:"owner_id" gorm:"type:bigint unsigned;not null;index:idx_server_owner_id;comment:Owner user ID"`
+	ResourceGroupID *uint           `json:"resource_group_id" gorm:"type:integer;index:idx_server_resource_group_id;comment:Resource group ID"`
+	OwnerID         uint            `json:"owner_id" gorm:"type:integer;not null;index:idx_server_owner_id;comment:Owner user ID"`
 	Description     *string         `json:"description" gorm:"type:text;comment:Server description"`
 	CreatedAt       time.Time       `json:"created_at" gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP;comment:Creation time"`
 	UpdatedAt       time.Time       `json:"updated_at" gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP;comment:Update time"`
@@ -46,8 +46,8 @@ func (Server) TableName() string {
 
 // ServerAgent represents agent deployment information for a server
 type ServerAgent struct {
-	ID              uint                `json:"id" gorm:"primaryKey;autoIncrement;type:bigint unsigned"`
-	ServerID        uint                `json:"server_id" gorm:"type:bigint unsigned;uniqueIndex:uk_server_id;not null;index:idx_server_id;comment:Server ID"`
+	ID              uint                `json:"id" gorm:"primarykey"`
+	ServerID        uint                `json:"server_id" gorm:"type:integer;uniqueIndex:uk_server_id;not null;index:idx_server_id;comment:Server ID"`
 	AgentID         string              `json:"agent_id" gorm:"type:varchar(64);uniqueIndex:uk_agent_id;not null;comment:Agent unique identifier"`
 	DeploymentType  AgentDeploymentType `json:"deployment_type" gorm:"type:varchar(20);default:'docker';index:idx_deployment_type;comment:Agent deployment type: docker container or systemd service"`
 	ContainerID     *string             `json:"container_id" gorm:"type:varchar(64);comment:Container ID (for Docker deployment)"`

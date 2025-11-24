@@ -6,7 +6,7 @@ import (
 
 // NotificationTemplate represents a notification template
 type NotificationTemplate struct {
-	ID           uint      `gorm:"primaryKey;autoIncrement;type:bigint unsigned" json:"id"`
+	ID           uint      `json:"id" gorm:"primarykey"`
 	Name         string    `gorm:"size:64;not null;comment:Template name" json:"name"`
 	TemplateType string    `gorm:"size:20;not null;column:template_type;index:idx_template_type;comment:Notification type" json:"template_type"` // EMAIL, WEBHOOK, INTERNAL
 	Subject      *string   `gorm:"size:255;comment:Notification subject" json:"subject"`

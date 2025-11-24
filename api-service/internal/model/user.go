@@ -6,7 +6,7 @@ import (
 
 // User user model
 type User struct {
-	ID           uint       `json:"id" gorm:"primarykey;type:bigint unsigned"`
+	ID           uint       `json:"id" gorm:"primarykey"`
 	Username     string     `json:"username" gorm:"uniqueIndex;not null;size:64;comment:Username"`
 	Email        string     `json:"email" gorm:"uniqueIndex;not null;size:255;index:idx_email;comment:Email"`
 	PasswordHash string     `json:"-" gorm:"column:password_hash;not null;size:255;comment:Password hash"`

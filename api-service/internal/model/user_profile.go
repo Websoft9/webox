@@ -6,8 +6,8 @@ import (
 
 // UserLoginHistory User login history model
 type UserLoginHistory struct {
-	ID         uint       `json:"id" gorm:"primarykey;type:bigint unsigned"`
-	UserID     uint       `json:"user_id" gorm:"column:user_id;type:bigint unsigned;not null;index:idx_log_user_id;comment:User ID"`
+	ID         uint       `json:"id" gorm:"primarykey"`
+	UserID     uint       `json:"user_id" gorm:"column:user_id;type:integer;not null;index:idx_log_user_id;comment:User ID"`
 	IPAddress  string     `json:"ip_address" gorm:"column:ip_address;size:45;comment:IP address"`
 	UserAgent  string     `json:"user_agent" gorm:"column:user_agent;size:255;comment:User agent"`
 	Location   string     `json:"location" gorm:"column:location;size:100;comment:Login location"`
@@ -25,8 +25,8 @@ type UserLoginHistory struct {
 
 // UserProfile User profile settings table
 type UserProfile struct {
-	ID           uint      `gorm:"primaryKey;column:id;type:bigint unsigned" json:"id"`
-	UserID       uint      `gorm:"column:user_id;type:bigint unsigned;not null;uniqueIndex:uk_user_config_key;comment:User ID" json:"user_id"`
+	ID           uint      `json:"id" gorm:"primarykey"`
+	UserID       uint      `gorm:"column:user_id;type:integer;not null;uniqueIndex:uk_user_config_key;comment:User ID" json:"user_id"`
 	Category     string    `gorm:"column:category;size:64;default:general;comment:Profile category" json:"category"`
 	ConfigKey    string    `gorm:"column:config_key;size:64;not null;uniqueIndex:uk_user_config_key;comment:Configuration key" json:"config_key"`
 	ConfigValue  string    `gorm:"column:config_value;type:text;comment:Configuration value" json:"config_value"`
