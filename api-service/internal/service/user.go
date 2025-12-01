@@ -247,13 +247,14 @@ func (s *userService) syncUserRoles(ctx context.Context, currentUserID, userID u
 func (s *userService) UpdateUserStatus(ctx context.Context, userID uint, req *request.UserUpdateStatusRequest) error {
 	s.logger.InfoContext(ctx, "Updating user status", logger.Uint("user_id", userID), logger.Int("status", req.Status))
 
-	user, err := s.userRepo.GetByID(ctx, userID)
+	// Check if user exists
+	_, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		return err
 	}
 
-	user.Status = req.Status
-	if err := s.userRepo.Update(ctx, user); err != nil {
+	// Use UpdateStatus to explicitly update status field, including zero values
+	if err := s.userRepo.UpdateStatus(ctx, userID, req.Status); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to update user status", logger.ErrorField(err))
 		return err
 	}
@@ -343,15 +344,20 @@ func (s *userService) validateEmailUniqueness(ctx context.Context, email string,
 // validateUserCreation validates user creation
 
 // validatePhoneFormat validates phone number format (must start with + and contain only digits)
+
 func validatePhoneFormat(phone string) bool {
 	if phone == "" {
 		return true // Phone is optional
 	}
-	if !strings.HasPrefix(phone, "+") {
-		return false
+
+	// Phone can optionally start with +
+	startIndex := 0
+	if strings.HasPrefix(phone, "+") {
+		startIndex = 1
 	}
-	// Check remaining characters are digits
-	for _, ch := range phone[1:] {
+
+	// Check remaining characters are all digits
+	for _, ch := range phone[startIndex:] {
 		if ch < '0' || ch > '9' {
 			return false
 		}

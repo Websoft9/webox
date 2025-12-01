@@ -16,6 +16,7 @@ type UserRepository interface {
 	GetByEmail(ctx context.Context, email string) (*model.User, error)
 	GetByUsernameOrEmail(ctx context.Context, usernameOrEmail string) (*model.User, error)
 	Update(ctx context.Context, user *model.User) error
+	UpdateStatus(ctx context.Context, id uint, status int) error
 	Delete(ctx context.Context, id uint) error
 
 	// CreateUserRole creates a user-role association record.
