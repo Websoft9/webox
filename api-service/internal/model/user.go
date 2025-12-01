@@ -15,7 +15,7 @@ type User struct {
 	Phone        string     `json:"phone" gorm:"size:20;comment:Phone number"`
 	Gender       int        `json:"gender" gorm:"type:tinyint(1);default:0;comment:Gender: 0-unknown, 1-male, 2-female"` // 0:unknown, 1:male, 2:female
 	Signature    string     `json:"signature" gorm:"size:255;comment:Personal signature"`
-	Status       int        `json:"status" gorm:"type:tinyint(1);default:1;index:idx_user_status;comment:Status: -1-deleted, 0-disabled, 1-enabled" binding:"min=-1,max=1"` // -1:deleted, 0:disabled, 1:enabled
+	Status       int        `json:"status" gorm:"type:tinyint(1);default:1;index:idx_user_status;comment:Status: -1-deleted, 0-disabled, 1-enabled"` // -1:deleted, 0:disabled, 1:enabled
 	LastLoginAt  *time.Time `json:"last_login_at" gorm:"type:datetime;serializer:datetime;comment:Last login time"`
 	LastLoginIP  string     `json:"last_login_ip" gorm:"size:45;comment:Last login IP"`
 	Timezone     string     `json:"timezone" gorm:"size:64;default:UTC;comment:Timezone"`

@@ -111,6 +111,14 @@ func (r *userRepository) Update(ctx context.Context, user *model.User) error {
 	return nil
 }
 
+// UpdateStatus updates a user's status explicitly, including zero values
+func (r *userRepository) UpdateStatus(ctx context.Context, id uint, status int) error {
+	if err := r.db.WithContext(ctx).Model(&model.User{}).Where("id = ?", id).Update("status", status).Error; err != nil {
+		return errors.NewAppErrorWrapError(err, errors.CodeRecordUpdateFailed)
+	}
+	return nil
+}
+
 // Delete deletes a user (soft delete)
 func (r *userRepository) Delete(ctx context.Context, id uint) error {
 	// soft delete: set status = -1 and update updated_at

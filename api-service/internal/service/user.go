@@ -247,13 +247,14 @@ func (s *userService) syncUserRoles(ctx context.Context, currentUserID, userID u
 func (s *userService) UpdateUserStatus(ctx context.Context, userID uint, req *request.UserUpdateStatusRequest) error {
 	s.logger.InfoContext(ctx, "Updating user status", logger.Uint("user_id", userID), logger.Int("status", req.Status))
 
-	user, err := s.userRepo.GetByID(ctx, userID)
+	// Check if user exists
+	_, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		return err
 	}
 
-	user.Status = req.Status
-	if err := s.userRepo.Update(ctx, user); err != nil {
+	// Use UpdateStatus to explicitly update status field, including zero values
+	if err := s.userRepo.UpdateStatus(ctx, userID, req.Status); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to update user status", logger.ErrorField(err))
 		return err
 	}
