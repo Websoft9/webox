@@ -343,15 +343,20 @@ func (s *userService) validateEmailUniqueness(ctx context.Context, email string,
 // validateUserCreation validates user creation
 
 // validatePhoneFormat validates phone number format (must start with + and contain only digits)
+
 func validatePhoneFormat(phone string) bool {
 	if phone == "" {
 		return true // Phone is optional
 	}
-	if !strings.HasPrefix(phone, "+") {
-		return false
+
+	// Phone can optionally start with +
+	startIndex := 0
+	if strings.HasPrefix(phone, "+") {
+		startIndex = 1
 	}
-	// Check remaining characters are digits
-	for _, ch := range phone[1:] {
+
+	// Check remaining characters are all digits
+	for _, ch := range phone[startIndex:] {
 		if ch < '0' || ch > '9' {
 			return false
 		}

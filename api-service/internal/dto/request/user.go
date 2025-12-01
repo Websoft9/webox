@@ -41,7 +41,7 @@ type UserCreateRequest struct {
 	Avatar    *string `json:"avatar,omitempty" binding:"omitempty,url" example:"https://example.com/avatar.jpg"` // Avatar URL (optional)
 	Gender    *int    `json:"gender,omitempty" binding:"omitempty,min=0,max=2" example:"1"`                      // Gender: 1-male, 2-female, 0-unknown (optional)
 	Signature *string `json:"signature,omitempty" binding:"omitempty,max=255" example:"This is my signature"`    // Personal signature (optional)
-	Status    *int    `json:"status,omitempty" binding:"omitempty,min=0,max=1" example:"1"`                      // Status: 0-disabled, 1-enabled (optional)
+	Status    *int    `json:"status,omitempty" validate:"oneof=0 1" example:"1"`                                 // Status: 0-disabled, 1-enabled (optional)
 	Timezone  *string `json:"timezone,omitempty" binding:"omitempty,max=64" example:"Asia/Shanghai"`             // Timezone, default UTC (optional)
 	Language  *string `json:"language,omitempty" binding:"omitempty,max=10" example:"zh-CN"`                     // Language, default zh-CN (optional)
 	RoleIDs   []uint  `json:"role_ids,omitempty" binding:"omitempty,dive,gt=0" example:"1,2"`                    // Array of role IDs to assign (optional)
@@ -63,7 +63,7 @@ type UserUpdateRequest struct {
 
 // UserUpdateStatusRequest
 type UserUpdateStatusRequest struct {
-	Status int `json:"status" binding:"min=0,max=1" example:"1"`
+	Status int `json:"status" validate:"oneof=0 1" example:"1"`
 }
 
 // UserPasswordUpdateRequest
