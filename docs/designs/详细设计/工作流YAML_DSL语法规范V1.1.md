@@ -760,6 +760,7 @@ variables:
 
 steps:
   - id: deploy
+    target: "server1"
     type: COMPOSE
     with:
       app_name: ${{ variables.APP_NAME }}
@@ -770,6 +771,7 @@ steps:
 ```yaml
 steps:
   - id: clone_repo
+    target: "server1"
     type: SHELL
     env:
       GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
@@ -782,6 +784,7 @@ steps:
 ```yaml
 steps:
   - id: build
+    target: "server1"
     type: SHELL
     with:
       command: |
@@ -791,9 +794,11 @@ steps:
         value: ${{ steps.build.result.BUILD_ID }}
 
   - id: deploy
+    target: "server1"
     type: COMPOSE
     with:
-      image_tag: ${{ steps.build.outputs.build_id }}
+      app_name: ${{ variables.APP_NAME }}
+      compose_file: ${{ steps.build.outputs.build_id }}
 ```
 
 ---
@@ -908,7 +913,6 @@ steps:
 | ------------------- | ------ | ---- | -------------------- |
 | `command`           | string | 是   | Shell命令或脚本      |
 | `working_directory` | string | 否   | 工作目录（默认/tmp） |
-| `server_id`         | number | 是   | 目标服务器ID         |
 
 **输出结果（result）**：
 
@@ -934,7 +938,6 @@ steps:
       ./deploy.sh
       echo "DEPLOY_TIME=$(date +%Y%m%d%H%M%S)" >> $GITHUB_OUTPUT
     working_directory: /opt/apps
-    server_id: ${{ variables.SERVER_ID }}
   env:
     APP_NAME: ${{ variables.APP_NAME }}
   outputs:
@@ -1015,11 +1018,11 @@ steps:
 
 **配置参数（with）**：
 
-| 参数          | 类型    | 必填 | 说明                     |
-| ------------- | ------- | ---- | ------------------------ |
-| `app_name`    | string  | 是   | 应用名称                 |
-| `server_id`   | number  | 是   | 目标服务器ID             |
-| `pull_images` | boolean | 否   | 是否拉取镜像（默认true） |
+| 参数           | 类型    | 必填 | 说明                     |
+| -------------- | ------- | ---- | ------------------------ |
+| `app_name`     | string  | 是   | 应用名称                 |
+| `compose_file` | string  | 是   | compose 配置文件         |
+| `pull_images`  | boolean | 否   | 是否拉取镜像（默认true） |
 
 **示例**：
 
@@ -1030,7 +1033,7 @@ steps:
   type: COMPOSE
   with:
     app_name: ${{ variables.APP_NAME }}
-    server_id: ${{ variables.SERVER_ID }}
+    compose_file: docker-compose.yml
     pull_images: true
 ```
 
@@ -1044,7 +1047,6 @@ steps:
 | ------------------ | ------- | ---- | --------------------- |
 | `source_path`      | string  | 是   | 源文件路径            |
 | `destination_path` | string  | 是   | 目标文件路径          |
-| `server_id`        | number  | 是   | 目标服务器ID          |
 | `overwrite`        | boolean | 否   | 是否覆盖（默认false） |
 | `permissions`      | string  | 否   | 文件权限（如"0644"）  |
 
@@ -1058,7 +1060,6 @@ steps:
   with:
     source_path: /tmp/config.yaml
     destination_path: /etc/app/config.yaml
-    server_id: ${{ variables.SERVER_ID }}
     overwrite: true
     permissions: "0644"
 ```
@@ -1073,7 +1074,6 @@ steps:
 | ------------------ | ------- | ---- | ----------------------- |
 | `source_url`       | string  | 是   | 源文件URL               |
 | `destination_path` | string  | 是   | 目标文件路径            |
-| `server_id`        | number  | 是   | 目标服务器ID            |
 | `verify_ssl`       | boolean | 否   | 是否验证SSL（默认true） |
 
 **示例**：
@@ -1086,7 +1086,6 @@ steps:
   with:
     source_url: https://releases.example.com/myapp.tar.gz
     destination_path: /tmp/myapp.tar.gz
-    server_id: ${{ variables.SERVER_ID }}
     verify_ssl: true
 ```
 
@@ -1375,6 +1374,7 @@ env:
 ```yaml
 steps:
   - id: backup_database
+    target: "server1"
     type: SHELL
     env:
       DB_USER: ${{ secrets.DB_CREDENTIAL.username }}
@@ -1394,6 +1394,7 @@ steps:
 ```yaml
 steps:
   - id: deploy
+    target: "server1"
     type: SHELL
     env:
       API_TOKEN: ${{ secrets.API_TOKEN }}
@@ -1406,6 +1407,7 @@ steps:
 ```yaml
 steps:
   - id: api_call
+    target: "server1"
     type: HTTP
     with:
       method: POST
@@ -1419,6 +1421,7 @@ steps:
 ```yaml
 steps:
   - id: ssh_deploy
+    target: "server1"
     type: SHELL
     env:
       SSH_KEY: ${{ secrets.SSH_KEY.private_key }}
@@ -1444,6 +1447,7 @@ steps:
 ```yaml
 steps:
   - id: connect_db
+    target: "server1"
     type: SHELL
     env:
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
@@ -1467,6 +1471,7 @@ mysql -p*** -e "SELECT 1"
 ```yaml
 steps:
   - id: deploy
+    target: "server1"
     type: SHELL
     env:
       API_KEY: ${{ secrets.API_KEY }}
@@ -1483,6 +1488,7 @@ steps:
 # ❌ 错误：密钥直接暴露在命令中
 steps:
   - id: bad_example
+    target: "server1"
     type: SHELL
     with:
       command: curl -H "Authorization: Bearer ${{ secrets.API_TOKEN }}" https://api.example.com
@@ -1490,6 +1496,7 @@ steps:
 # ✅ 正确：通过环境变量传递
 steps:
   - id: good_example
+    target: "server1"
     type: SHELL
     env:
       API_TOKEN: ${{ secrets.API_TOKEN }}
@@ -1534,6 +1541,7 @@ steps:
 ```yaml
 steps:
   - id: create_config
+    target: "server1"
     type: FILE_UPLOAD
     with:
       source_path: /tmp/config.yaml
@@ -1571,6 +1579,7 @@ steps:
 ```yaml
 steps:
   - id: safe_execution
+    target: "server1"
     type: SHELL
     with:
       command: |
@@ -1585,6 +1594,7 @@ steps:
 ```yaml
 steps:
   - id: api_call
+    target: "server1"
     type: HTTP
     with:
       method: POST
@@ -1638,6 +1648,7 @@ variables:
 steps:
   - id: deploy
     name: "部署应用"
+    target: "server1"
     type: COMPOSE
     with:
       app_name: ${{ variables.APP_NAME }}
@@ -1765,6 +1776,7 @@ POST /api/v1/workflows/{id}/execute
 steps:
   - id: step_id
     name: "步骤名称"
+    target: "server1"
     type: GITHUB_ACTION
     with:
       uses: owner/repo@version
@@ -1778,6 +1790,7 @@ steps:
 steps:
   - id: checkout_code
     name: "检出代码"
+    target: "server1"
     type: GITHUB_ACTION
     with:
       uses: actions/checkout@v4
@@ -1794,6 +1807,8 @@ steps:
 ```yaml
 # 检出代码
 - id: checkout
+  name: "检出代码"
+  target: "server1"
   type: GITHUB_ACTION
   with:
     uses: actions/checkout@v4
@@ -1803,6 +1818,8 @@ steps:
 
 # 缓存依赖
 - id: cache
+  name: "缓存依赖"
+  target: "server1"
   type: GITHUB_ACTION
   with:
     uses: actions/cache@v4
@@ -1816,6 +1833,8 @@ steps:
 ```yaml
 # 设置 Node.js
 - id: setup_node
+  name: "设置 Node.js"
+  target: "server1"
   type: GITHUB_ACTION
   with:
     uses: actions/setup-node@v4
@@ -1825,6 +1844,8 @@ steps:
 
 # 设置 Python
 - id: setup_python
+  name: "设置 Python"
+  target: "server1"
   type: GITHUB_ACTION
   with:
     uses: actions/setup-python@v5
@@ -1837,6 +1858,8 @@ steps:
 ```yaml
 # 上传构建制品文件
 - id: upload_artifact
+  name: "上传构建制品文件"
+  target: "server1"
   type: GITHUB_ACTION
   with:
     uses: actions/upload-artifact@v4
@@ -1846,6 +1869,8 @@ steps:
 
 # 下载构建制品文件
 - id: download_artifact
+  name: "下载构建制品文件"
+  target: "server1"
   type: GITHUB_ACTION
   with:
     uses: actions/download-artifact@v4
@@ -1872,6 +1897,7 @@ steps:
   # 1. 使用 GitHub Action 检出代码
   - id: checkout
     name: "检出代码"
+    target: "server1"
     type: GITHUB_ACTION
     with:
       uses: actions/checkout@v4
@@ -1883,6 +1909,7 @@ steps:
   # 2. 使用 GitHub Action 设置 Node.js
   - id: setup_node
     name: "设置 Node.js"
+    target: "server1"
     type: GITHUB_ACTION
     with:
       uses: actions/setup-node@v4
@@ -1893,20 +1920,21 @@ steps:
   # 3. 使用自定义 SHELL 组件构建
   - id: build
     name: "构建应用"
+    target: "server1"
     type: SHELL
     with:
       command: |
         npm install
         npm run build
-      server_id: 1
 
   # 4. 使用自定义 COMPOSE 组件部署
   - id: deploy
     name: "部署应用"
+    target: "server1"
     type: COMPOSE
     with:
       app_name: ${{ variables.APP_NAME }}
-      server_id: 1
+      compose_file: docker-compose.yml
 ```
 
 ### 15.5 输入输出处理
@@ -2114,7 +2142,6 @@ steps:
         cd /tmp/build/${{ variables.APP_NAME }}
         echo "COMMIT_HASH=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
       working_directory: /tmp
-      server_id: ${{ variables.SERVER_ID }}
     env:
       GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
     outputs:
@@ -2134,7 +2161,6 @@ steps:
         cd /tmp/build/${{ variables.APP_NAME }}
         docker build -t ${{ env.DOCKER_REGISTRY }}/${{ variables.APP_NAME }}:${{ steps.clone_repo.outputs.commit_hash }} .
         docker push ${{ env.DOCKER_REGISTRY }}/${{ variables.APP_NAME }}:${{ steps.clone_repo.outputs.commit_hash }}
-      server_id: ${{ variables.SERVER_ID }}
     env:
       DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
@@ -2146,7 +2172,7 @@ steps:
     timeout: 300
     with:
       app_name: ${{ variables.APP_NAME }}
-      server_id: ${{ variables.SERVER_ID }}
+      compose_file: docker-compose.yml
       pull_images: true
       recreate: true
     env:
@@ -2215,7 +2241,6 @@ steps:
     with:
       command: |
         rm -rf /tmp/build/${{ variables.APP_NAME }}
-      server_id: ${{ variables.SERVER_ID }}
 ```
 
 ### 17.2 数据库定时备份工作流
@@ -2260,7 +2285,6 @@ steps:
                   ${{ variables.DB_NAME }} | gzip > $BACKUP_FILE
         echo "BACKUP_FILE=$BACKUP_FILE" >> $GITHUB_OUTPUT
         echo "BACKUP_SIZE=$(du -h $BACKUP_FILE | cut -f1)" >> $GITHUB_OUTPUT
-      server_id: 1
     outputs:
       backup_file:
         value: ${{ steps.backup_database.result.BACKUP_FILE }}
@@ -2286,7 +2310,6 @@ steps:
     with:
       command: |
         find /tmp -name "backup-${{ variables.DB_NAME }}-*.sql.gz" -mtime +${{ variables.BACKUP_RETENTION_DAYS }} -delete
-      server_id: 1
 
   - id: notify
     name: "发送通知"
