@@ -5,9 +5,6 @@ build:
 	swag init -g cmd/server/main.go
 	CGO_ENABLED=1 go build -v -o api-service ./cmd/server
 
-# 构建用户创建工具
-build-create-user:
-	go build -v -o scripts/create-user ./tools/create-user
 
 # 运行应用
 run:
@@ -77,26 +74,10 @@ init: deps build
 full-test: build
 	./test_api.sh
 
-# 数据库初始化（默认SQLite）
-init-db:
-	./scripts/init_db.sh --init ./scripts/init_data.sql
-
-# MySQL数据库初始化
-init-mysql:
-	./scripts/init_db.sh -t mysql -u root -p $(or $(DB_PASSWORD),password) --init ./scripts/init_data.sql
-
-# PostgreSQL数据库初始化
-init-postgres:
-	./scripts/init_db.sh -t postgres -u postgres -p $(or $(DB_PASSWORD),password) --init ./scripts/init_data.sql
-
 # 测试数据库连接
 test-db:
 	@echo "Testing database connection..."
 	@go run ./tools/test-db/main.go
-
-# 重置SQLite数据库
-reset-db:
-	./scripts/init_db.sh --init ./scripts/init_data.sql --force
 
 # 健康检查
 health-check:
@@ -105,12 +86,12 @@ health-check:
 	@curl -f http://localhost:8080/health/database || echo "Database health check failed"
 
 # 启动开发环境（包含数据库初始化）
-setup-dev: deps init-db
+setup-dev: deps
 	@echo "Development environment setup complete!"
 	@echo "Run 'make dev' to start the development server"
 
 # 启动生产环境
-setup-prod: deps build init-db
+setup-prod: deps build
 	@echo "Production environment setup complete!"
 	@echo "Run './api-service' to start the server"
 
@@ -141,11 +122,7 @@ help:
 	@echo "  lint          - Run static code analysis"
 	@echo "  security-scan - Run security scan"
 	@echo "  init-swag     - Initialize swagger docs"
-	@echo "  init-db       - Initialize SQLite database"
-	@echo "  init-mysql    - Initialize MySQL database"
-	@echo "  init-postgres - Initialize PostgreSQL database"
 	@echo "  test-db       - Test database connection"
-	@echo "  reset-db      - Reset SQLite database"
 	@echo "  migrate       - Run database migrations"
 	@echo "  health-check  - Check application health"
 	@echo "  setup-dev     - Setup development environment"

@@ -73,11 +73,15 @@ func (m *MockUserRepository) Update(ctx context.Context, user *model.User) error
 	return args.Error(0)
 }
 
+func (m *MockUserRepository) UpdateStatus(ctx context.Context, id uint, status int) error {
+	args := m.Called(ctx, id, status)
+	return args.Error(0)
+}
+
 func (m *MockUserRepository) Delete(ctx context.Context, id uint) error {
 	args := m.Called(ctx, id)
 	return args.Error(0)
 }
-
 func (m *MockUserRepository) List(ctx context.Context, offset, limit int, filters map[string]interface{}) ([]*model.User, int64, error) {
 	args := m.Called(ctx, offset, limit, filters)
 	return args.Get(0).([]*model.User), args.Get(1).(int64), args.Error(2)
@@ -536,7 +540,7 @@ func TestUserService_UpdateUserStatus_Success(t *testing.T) {
 	}
 
 	mockRepo.On("GetByID", ctx, userID).Return(testUser, nil)
-	mockRepo.On("Update", ctx, mock.AnythingOfType("*model.User")).Return(nil)
+	mockRepo.On("UpdateStatus", ctx, userID, UserStatusInactive).Return(nil)
 
 	err := service.UpdateUserStatus(ctx, userID, req)
 

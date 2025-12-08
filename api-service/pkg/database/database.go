@@ -27,6 +27,11 @@ const (
 	DatabaseTypePostgreSQL = "postgresql"
 )
 
+// MySQL configuration constants
+const (
+	defaultStringSize = 256
+)
+
 // parseLogLevel converts string log level to gorm logger level
 func parseLogLevel(level string) gormlogger.LogLevel {
 	switch strings.ToLower(level) {
@@ -161,10 +166,33 @@ func initMySQL(cfg *DatabaseConnectionConfig) (*gorm.DB, error) {
 	// Build MySQL DSN
 	dsn := buildMySQLDSN(cfg)
 
-	// Open MySQL database
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
+	// Configure MySQL driver to disable datetime precision for compatibility
+	mysqlConfig := mysql.Config{
+		DSN:                       dsn,
+		DefaultStringSize:         defaultStringSize,
+		DisableDatetimePrecision:  true,  // Disable datetime precision for MySQL 5.x compatibility
+		DontSupportRenameIndex:    true,  // Drop & create when rename index
+		DontSupportRenameColumn:   true,  // Use `change` when rename column
+		SkipInitializeWithVersion: false, // Auto configure based on MySQL version
+	}
+
+	// Try to connect to the database first
+	db, err := gorm.Open(mysql.New(mysqlConfig), &gorm.Config{
 		Logger: gormlogger.Default.LogMode(parseLogLevel(cfg.LogLevel)),
 	})
+
+	// If database doesn't exist, create it
+	if err != nil && strings.Contains(err.Error(), "Unknown database") {
+		if createErr := createMySQLDatabase(cfg); createErr != nil {
+			return nil, fmt.Errorf("failed to create MySQL database: %v", createErr)
+		}
+
+		// Retry connection after creating database
+		db, err = gorm.Open(mysql.New(mysqlConfig), &gorm.Config{
+			Logger: gormlogger.Default.LogMode(parseLogLevel(cfg.LogLevel)),
+		})
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to MySQL database: %v", err)
 	}
@@ -183,15 +211,76 @@ func initMySQL(cfg *DatabaseConnectionConfig) (*gorm.DB, error) {
 	return db, nil
 }
 
+// createMySQLDatabase creates a MySQL database if it doesn't exist
+func createMySQLDatabase(cfg *DatabaseConnectionConfig) error {
+	// Connect to MySQL server without specifying database
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/",
+		cfg.User,
+		cfg.Password,
+		cfg.Host,
+		cfg.Port,
+	)
+
+	// Add connection parameters
+	params := []string{"parseTime=True"}
+	if cfg.Charset != "" {
+		params = append(params, fmt.Sprintf("charset=%s", cfg.Charset))
+	}
+	if cfg.ConnectTimeout > 0 {
+		params = append(params, fmt.Sprintf("timeout=%ds", cfg.ConnectTimeout))
+	}
+	dsn += "?" + strings.Join(params, "&")
+
+	// Open connection to MySQL server
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
+		Logger: gormlogger.Default.LogMode(gormlogger.Silent),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to connect to MySQL server: %v", err)
+	}
+
+	// Get underlying sql.DB to close connection later
+	sqlDB, err := db.DB()
+	if err != nil {
+		return fmt.Errorf("failed to get underlying sql.DB: %v", err)
+	}
+	defer sqlDB.Close()
+
+	// Create database with charset
+	charset := cfg.Charset
+	if charset == "" {
+		charset = "utf8mb4"
+	}
+	createSQL := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s` CHARACTER SET %s COLLATE %s_unicode_ci",
+		cfg.Name, charset, charset)
+
+	if err := db.Exec(createSQL).Error; err != nil {
+		return fmt.Errorf("failed to create database: %v", err)
+	}
+
+	return nil
+}
+
 // initPostgreSQL initializes PostgreSQL database connection
 func initPostgreSQL(cfg *DatabaseConnectionConfig) (*gorm.DB, error) {
-	// Build PostgreSQL DSN
+	// Try to connect to the database first
 	dsn := buildPostgreSQLDSN(cfg)
-
-	// Open PostgreSQL database
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		Logger: gormlogger.Default.LogMode(parseLogLevel(cfg.LogLevel)),
 	})
+
+	// If database doesn't exist, create it
+	if err != nil && (strings.Contains(err.Error(), "does not exist") || strings.Contains(err.Error(), "database") && strings.Contains(err.Error(), "does not exist")) {
+		if createErr := createPostgreSQLDatabase(cfg); createErr != nil {
+			return nil, fmt.Errorf("failed to create PostgreSQL database: %v", createErr)
+		}
+
+		// Retry connection after creating database
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
+			Logger: gormlogger.Default.LogMode(parseLogLevel(cfg.LogLevel)),
+		})
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to PostgreSQL database: %v", err)
 	}
@@ -203,6 +292,54 @@ func initPostgreSQL(cfg *DatabaseConnectionConfig) (*gorm.DB, error) {
 		}
 	}
 	return db, nil
+}
+
+// createPostgreSQLDatabase creates a PostgreSQL database if it doesn't exist
+func createPostgreSQLDatabase(cfg *DatabaseConnectionConfig) error {
+	// Connect to PostgreSQL server using 'postgres' database
+	dsn := fmt.Sprintf("host=%s port=%d user=%s dbname=postgres",
+		cfg.Host,
+		cfg.Port,
+		cfg.User,
+	)
+
+	if cfg.Password != "" {
+		dsn += fmt.Sprintf(" password=%s", cfg.Password)
+	}
+	if cfg.SSLMode != "" {
+		dsn += fmt.Sprintf(" sslmode=%s", cfg.SSLMode)
+	}
+	if cfg.ConnectTimeout > 0 {
+		dsn += fmt.Sprintf(" connect_timeout=%d", cfg.ConnectTimeout)
+	}
+
+	// Open connection to PostgreSQL server
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		Logger: gormlogger.Default.LogMode(gormlogger.Silent),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to connect to PostgreSQL server: %v", err)
+	}
+
+	// Get underlying sql.DB to close connection later
+	sqlDB, err := db.DB()
+	if err != nil {
+		return fmt.Errorf("failed to get underlying sql.DB: %v", err)
+	}
+	defer sqlDB.Close()
+
+	// Create database
+	createSQL := fmt.Sprintf("CREATE DATABASE %s WITH ENCODING='UTF8' LC_COLLATE='en_US.UTF-8' LC_CTYPE='en_US.UTF-8' TEMPLATE=template0",
+		cfg.Name)
+
+	if err := db.Exec(createSQL).Error; err != nil {
+		// Ignore error if database already exists
+		if !strings.Contains(err.Error(), "already exists") {
+			return fmt.Errorf("failed to create database: %v", err)
+		}
+	}
+
+	return nil
 }
 
 // buildMySQLDSN builds MySQL data source name

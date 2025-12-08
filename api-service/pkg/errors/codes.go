@@ -115,6 +115,23 @@ const (
 	CodeNotificationChannelDeleteFailed      = 5110 // Notification channel deletion failed
 	CodeNotificationChannelInUse             = 5111 // Notification channel is in use
 
+	// Credential management related error codes (5200-5299)
+	CodeCredentialNameInvalid       ErrorCode = 5201 // Credential name format invalid
+	CodeCredentialNameExists        ErrorCode = 5202 // Credential name already exists
+	CodeCredentialTemplateNotFound  ErrorCode = 5203 // Credential template not found
+	CodeCredentialParameterMissing  ErrorCode = 5204 // Required parameter missing
+	CodeCredentialParameterInvalid  ErrorCode = 5205 // Parameter format invalid
+	CodeCredentialNotFound          ErrorCode = 5206 // Credential not found
+	CodeCredentialReferenceInvalid  ErrorCode = 5207 // Credential reference format invalid
+	CodeCredentialParameterNotFound ErrorCode = 5208 // Parameter not found in credential
+
+	// Configuration center related error codes (5300-5399)
+	CodeConfigNotFound      ErrorCode = 5301 // Configuration not found
+	CodeConfigReadonly      ErrorCode = 5302 // Configuration is readonly
+	CodeConfigInvalidType   ErrorCode = 5303 // Configuration type invalid
+	CodeConfigSyncFailed    ErrorCode = 5304 // Configuration sync failed
+	CodeConfigPreloadFailed ErrorCode = 5305 // Configuration preload failed
+
 	// System related error codes (6000-6999)
 	CodeInternalError                ErrorCode = 6001 // System Internal Error
 	CodeCacheServiceUnavailable      ErrorCode = 6002 // Cache service unavailable
@@ -212,6 +229,23 @@ var CodeToI18nKey = map[ErrorCode]string{
 	CodeServerAgentOffline:          "server.agent_offline",
 	CodeServerTaskTimeout:           "server.task_timeout",
 
+	// Credential management related errors (5200-5299)
+	CodeCredentialNameInvalid:       "credential.invalid_name_format",
+	CodeCredentialNameExists:        "credential.name_already_exists",
+	CodeCredentialTemplateNotFound:  "credential.template_not_found",
+	CodeCredentialParameterMissing:  "credential.parameter_missing",
+	CodeCredentialParameterInvalid:  "credential.parameter_invalid",
+	CodeCredentialNotFound:          "credential.not_found",
+	CodeCredentialReferenceInvalid:  "credential.invalid_reference_format",
+	CodeCredentialParameterNotFound: "credential.parameter_not_found",
+
+	// Configuration center related errors (5300-5399)
+	CodeConfigNotFound:      "config.not_found",
+	CodeConfigReadonly:      "config.readonly",
+	CodeConfigInvalidType:   "config.invalid_type",
+	CodeConfigSyncFailed:    "config.sync_failed",
+	CodeConfigPreloadFailed: "config.preload_failed",
+
 	// System related errors (6000-6999)
 	CodeInternalError:                "system.internal_error",
 	CodeCacheServiceUnavailable:      "system.cache_service_unavailable",
@@ -303,6 +337,23 @@ var CodeToHTTPStatus = map[ErrorCode]HTTPCode{
 	CodeServerStatusCacheExpired:    http.StatusServiceUnavailable,
 	CodeServerAgentOffline:          http.StatusServiceUnavailable,
 	CodeServerTaskTimeout:           http.StatusRequestTimeout,
+
+	// Credential management related errors (5200-5299)
+	CodeCredentialNameInvalid:       http.StatusBadRequest,
+	CodeCredentialNameExists:        http.StatusConflict,
+	CodeCredentialTemplateNotFound:  http.StatusNotFound,
+	CodeCredentialParameterMissing:  http.StatusBadRequest,
+	CodeCredentialParameterInvalid:  http.StatusBadRequest,
+	CodeCredentialNotFound:          http.StatusNotFound,
+	CodeCredentialReferenceInvalid:  http.StatusBadRequest,
+	CodeCredentialParameterNotFound: http.StatusNotFound,
+
+	// Configuration center related errors (5300-5399)
+	CodeConfigNotFound:      http.StatusNotFound,
+	CodeConfigReadonly:      http.StatusForbidden,
+	CodeConfigInvalidType:   http.StatusBadRequest,
+	CodeConfigSyncFailed:    http.StatusInternalServerError,
+	CodeConfigPreloadFailed: http.StatusInternalServerError,
 
 	// System related errors (6000-6999)
 	CodeInternalError:                http.StatusInternalServerError,

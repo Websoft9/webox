@@ -36,16 +36,16 @@ func IsValidEnvVarScope(scope EnvVarScope) bool {
 
 // EnvironmentVariable represents an environment variable in the system
 type EnvironmentVariable struct {
-	ID          uint        `gorm:"primaryKey;autoIncrement" json:"id"`
-	Name        string      `gorm:"size:64;not null;index:idx_name_scope_project" json:"name"`                // Variable name
-	Value       string      `gorm:"type:text;not null" json:"value"`                                          // Variable value, encrypted if is_sensitive=true
-	Scope       EnvVarScope `gorm:"size:20;not null;index:idx_name_scope_project" json:"scope"`               // Scope: PLATFORM or PROJECT
-	ProjectID   *uint       `gorm:"index:idx_name_scope_project;index:idx_project_id" json:"project_id"`      // Project ID, required when scope=PROJECT
-	Description *string     `gorm:"type:text" json:"description"`                                             // Variable description
-	IsSensitive bool        `gorm:"default:false;not null" json:"is_sensitive"`                               // Whether the variable is sensitive (encrypted storage)
-	OwnerID     uint        `gorm:"not null;index:idx_owner_id" json:"owner_id"`                              // Owner user ID
-	CreatedAt   time.Time   `json:"created_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`                // Creation time
-	UpdatedAt   time.Time   `json:"updated_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP;autoUpdateTime"` // Last update time
+	ID          uint        `json:"id" gorm:"primarykey"`
+	Name        string      `gorm:"size:64;not null;uniqueIndex:idx_name_scope_project;comment:Variable name" json:"name"`                            // Variable name
+	Value       string      `gorm:"type:text;not null;comment:Variable value (encrypted if sensitive)" json:"value"`                                  // Variable value, encrypted if is_sensitive=true
+	Scope       EnvVarScope `gorm:"size:20;not null;uniqueIndex:idx_name_scope_project;index:idx_scope;comment:Scope: PLATFORM/PROJECT" json:"scope"` // Scope: PLATFORM or PROJECT
+	ProjectID   *uint       `gorm:"type:integer;uniqueIndex:idx_name_scope_project;index:idx_env_project_id;comment:Project ID" json:"project_id"`    // Project ID, required when scope=PROJECT
+	Description *string     `gorm:"type:text;comment:Variable description" json:"description"`                                                        // Variable description
+	IsSensitive bool        `gorm:"default:false;not null;comment:Whether sensitive variable" json:"is_sensitive"`                                    // Whether the variable is sensitive (encrypted storage)
+	OwnerID     uint        `gorm:"type:integer;not null;index:idx_env_owner_id;comment:Owner user ID" json:"owner_id"`                               // Owner user ID
+	CreatedAt   time.Time   `json:"created_at" gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP;comment:Creation time"`                         // Creation time
+	UpdatedAt   time.Time   `json:"updated_at" gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP;comment:Update time"`                           // Last update time
 }
 
 // TableName returns the table name for EnvironmentVariable

@@ -4,16 +4,16 @@ import "time"
 
 // NotificationChannelConfig represents notification channel configuration
 type NotificationChannelConfig struct {
-	ID            uint      `json:"id" gorm:"primaryKey;autoIncrement;comment:Channel ID"`
-	Code          string    `json:"code" gorm:"uniqueIndex;size:64;not null;comment:Channel unique code"`
-	Name          string    `json:"name" gorm:"size:128;not null;comment:Channel display name"`
-	Description   *string   `json:"description" gorm:"size:512;comment:Channel description"`
-	ChannelType   string    `json:"channel_type" gorm:"size:16;not null;comment:Channel type (EMAIL, WEBHOOK)"`
-	ChannelConfig JSON      `json:"channel_config" gorm:"type:json;comment:Channel configuration data"`
-	OwnerID       uint      `json:"owner_id" gorm:"not null;comment:Channel owner user ID"`
-	Status        int8      `json:"status" gorm:"default:1;comment:Channel status (0:disabled, 1:enabled)"`
-	CreatedAt     time.Time `json:"created_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`
-	UpdatedAt     time.Time `json:"updated_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`
+	ID            uint      `json:"id" gorm:"primarykey"`
+	Code          string    `json:"code" gorm:"uniqueIndex:uk_nfc_code;size:64;not null;comment:Channel code (unique identifier)"`
+	Name          string    `json:"name" gorm:"size:128;not null;comment:Channel name"`
+	Description   *string   `json:"description" gorm:"type:text;comment:Channel description"`
+	ChannelType   string    `json:"channel_type" gorm:"type:varchar(20);not null;index:idx_channel_type;comment:Channel type"`
+	ChannelConfig JSON      `json:"channel_config" gorm:"type:json;not null;comment:Channel configuration (JSON format)"`
+	OwnerID       uint      `json:"owner_id" gorm:"type:integer;not null;index:idx_nfc_owner_id;comment:Owner user ID"`
+	Status        int8      `json:"status" gorm:"type:tinyint(1);default:1;index:idx_nfc_status;comment:Status (0-disabled, 1-enabled)"`
+	CreatedAt     time.Time `json:"created_at" gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP;comment:Creation time"`
+	UpdatedAt     time.Time `json:"updated_at" gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP;comment:Update time"`
 }
 
 // EmailConfig represents email channel configuration

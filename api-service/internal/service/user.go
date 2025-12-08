@@ -11,6 +11,7 @@ import (
 	"api-service/pkg/errors"
 	"api-service/pkg/logger"
 	"context"
+	"strings"
 	"time"
 )
 
@@ -84,7 +85,7 @@ func (s *userService) ListUsers(ctx context.Context,
 	}
 
 	return common.NewPaginationResponse(
-		req.GetOffset(),
+		req.GetPage(),
 		req.GetPageSize(),
 		total,
 		userList,
@@ -161,6 +162,11 @@ func (s *userService) UpdateUser(ctx context.Context, currentUserID, userID uint
 		if err := s.validateEmailUniqueness(ctx, *req.Email, userID); err != nil {
 			return nil, err
 		}
+	}
+
+	// 2.5. If updating phone, check format
+	if req.Phone != nil && !validatePhoneFormat(*req.Phone) {
+		return nil, errors.NewAppError(errors.CodeInvalidPhoneFormat)
 	}
 
 	// 3. Update user info
@@ -241,13 +247,14 @@ func (s *userService) syncUserRoles(ctx context.Context, currentUserID, userID u
 func (s *userService) UpdateUserStatus(ctx context.Context, userID uint, req *request.UserUpdateStatusRequest) error {
 	s.logger.InfoContext(ctx, "Updating user status", logger.Uint("user_id", userID), logger.Int("status", req.Status))
 
-	user, err := s.userRepo.GetByID(ctx, userID)
+	// Check if user exists
+	_, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		return err
 	}
 
-	user.Status = req.Status
-	if err := s.userRepo.Update(ctx, user); err != nil {
+	// Use UpdateStatus to explicitly update status field, including zero values
+	if err := s.userRepo.UpdateStatus(ctx, userID, req.Status); err != nil {
 		s.logger.ErrorContext(ctx, "Failed to update user status", logger.ErrorField(err))
 		return err
 	}
@@ -335,6 +342,28 @@ func (s *userService) validateEmailUniqueness(ctx context.Context, email string,
 }
 
 // validateUserCreation validates user creation
+
+// validatePhoneFormat validates phone number format (must start with + and contain only digits)
+
+func validatePhoneFormat(phone string) bool {
+	if phone == "" {
+		return true // Phone is optional
+	}
+
+	// Phone can optionally start with +
+	startIndex := 0
+	if strings.HasPrefix(phone, "+") {
+		startIndex = 1
+	}
+
+	// Check remaining characters are all digits
+	for _, ch := range phone[startIndex:] {
+		if ch < '0' || ch > '9' {
+			return false
+		}
+	}
+	return true
+}
 func (s *userService) validateUserCreation(ctx context.Context, req *request.UserCreateRequest) error {
 	// Check if username exists
 	exists, err := s.userRepo.ExistsByUsername(ctx, req.Username)
@@ -344,6 +373,11 @@ func (s *userService) validateUserCreation(ctx context.Context, req *request.Use
 	}
 	if exists {
 		return errors.ErrUserAlreadyExists
+	}
+
+	// Check phone format (only if provided)
+	if req.Phone != nil && !validatePhoneFormat(*req.Phone) {
+		return errors.NewAppError(errors.CodeInvalidPhoneFormat)
 	}
 
 	// Check if email exists

@@ -32,18 +32,18 @@ type NotificationChannel struct {
 
 // AlertRule is the model for alert rules.
 type AlertRule struct {
-	ID                   uint          `gorm:"primaryKey;autoIncrement"`
-	Name                 string        `gorm:"size:64;not null"`
-	RuleType             AlertRuleType `gorm:"type:enum('METRIC','LOG','EVENT');not null"`
-	TargetType           TargetType    `gorm:"type:enum('SERVER','APP_INSTANCE','WORKFLOW');not null"`
-	TargetID             *uint         `gorm:"index"`
-	MetricName           string        `gorm:"size:64"`
-	ConditionExpression  string        `gorm:"type:text;not null"`
-	NotificationChannels string        `gorm:"type:text"`
-	IsEnabled            bool          `gorm:"default:true"`
-	OwnerID              uint          `gorm:"not null;index"`
-	CreatedAt            time.Time     `json:"created_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`
-	UpdatedAt            time.Time     `json:"updated_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`
+	ID                   uint          `json:"id" gorm:"primarykey"`
+	Name                 string        `gorm:"size:64;not null;comment:Rule name"`
+	RuleType             AlertRuleType `gorm:"type:varchar(20);not null;index:idx_rule_type;comment:Rule type"`
+	TargetType           TargetType    `gorm:"type:varchar(20);not null;index:idx_target_type;comment:Target type"`
+	TargetID             *uint         `gorm:"type:integer;index:idx_target_id;comment:Target ID"`
+	MetricName           string        `gorm:"size:64;comment:Metric name"`
+	ConditionExpression  string        `gorm:"type:text;not null;comment:Condition expression"`
+	NotificationChannels string        `gorm:"type:json;comment:Notification channels (JSON format)"`
+	IsEnabled            bool          `gorm:"type:tinyint(1);default:1;index:idx_is_enabled;comment:Whether enabled"`
+	OwnerID              uint          `gorm:"type:integer;not null;index:idx_alert_owner_id;comment:Owner ID"`
+	CreatedAt            time.Time     `json:"created_at" gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP;comment:Creation time"`
+	UpdatedAt            time.Time     `json:"updated_at" gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP;comment:Update time"`
 }
 
 // TableName specifies the table name.
@@ -54,21 +54,21 @@ func (AlertRule) TableName() string {
 // AlertRecord represents an alert record in the system
 type AlertRecord struct {
 	ID                   uint       `json:"id" gorm:"primarykey"`
-	AlertRuleID          uint       `json:"alert_rule_id" gorm:"not null"`
-	AlertID              string     `json:"alert_id" gorm:"not null;unique;size:64"`
-	Title                string     `json:"title" gorm:"not null;size:255"`
-	Description          string     `json:"description" gorm:"type:text"`
-	Status               string     `json:"status" gorm:"default:'FIRING'"`
-	FiredAt              time.Time  `json:"fired_at" gorm:"type:datetime;serializer:datetime;not null"`
-	ResolvedAt           *time.Time `json:"resolved_at" gorm:"type:datetime;serializer:datetime"`
-	AcknowledgedAt       *time.Time `json:"acknowledged_at" gorm:"type:datetime;serializer:datetime"`
-	AcknowledgedBy       *uint      `json:"acknowledged_by"`
+	AlertRuleID          uint       `json:"alert_rule_id" gorm:"type:integer;not null;index:idx_alert_records_rule_status;comment:Alert rule ID"`
+	AlertID              string     `json:"alert_id" gorm:"not null;uniqueIndex;size:64;comment:Alert ID"`
+	Title                string     `json:"title" gorm:"not null;size:255;comment:Alert title"`
+	Description          string     `json:"description" gorm:"type:text;comment:Alert description"`
+	Status               string     `json:"status" gorm:"type:varchar(20);default:'FIRING';index:idx_alert_records_rule_status;comment:Status"`
+	FiredAt              time.Time  `json:"fired_at" gorm:"type:datetime;serializer:datetime;not null;default:CURRENT_TIMESTAMP;index:idx_fired_at;comment:Fired time"`
+	ResolvedAt           *time.Time `json:"resolved_at" gorm:"type:datetime;serializer:datetime;comment:Resolved time"`
+	AcknowledgedAt       *time.Time `json:"acknowledged_at" gorm:"type:datetime;serializer:datetime;comment:Acknowledged time"`
+	AcknowledgedBy       *uint      `json:"acknowledged_by" gorm:"type:integer;index:idx_acknowledged_by;comment:Acknowledged by ID"`
 	AcknowledgeNote      string     `json:"acknowledge_note" gorm:"type:text"`
-	ResolutionNote       string     `json:"resolution_note" gorm:"type:text"`
-	NotificationSent     bool       `json:"notification_sent" gorm:"default:false"`
-	NotificationChannels string     `json:"notification_channels" gorm:"type:json"`
-	CreatedAt            time.Time  `json:"created_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`
-	UpdatedAt            time.Time  `json:"updated_at" gorm:"type:datetime;default:CURRENT_TIMESTAMP"`
+	ResolutionNote       string     `json:"resolution_note" gorm:"type:text;comment:Resolution note"`
+	NotificationSent     bool       `json:"notification_sent" gorm:"type:tinyint(1);default:0;comment:Notification sent"`
+	NotificationChannels string     `json:"notification_channels" gorm:"type:json;comment:Notification channels (JSON format)"`
+	CreatedAt            time.Time  `json:"created_at" gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP;comment:Creation time"`
+	UpdatedAt            time.Time  `json:"updated_at" gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP;comment:Update time"`
 }
 
 // TableName specifies the table name for AlertRecord

@@ -236,4 +236,11 @@ var (
 	ErrThirdPartyServiceUnavailable = NewAppErrorWithI18n(CodeThirdPartyServiceUnavailable, CodeToI18nKey[CodeThirdPartyServiceUnavailable])
 	ErrSystemMaintenance            = NewAppErrorWithI18n(CodeSystemMaintenance, CodeToI18nKey[CodeSystemMaintenance])
 	ErrDatabaseConnectionFailed     = NewAppErrorWithI18n(CodeDatabaseConnectionFailed, CodeToI18nKey[CodeDatabaseConnectionFailed])
+
+	// Configuration center related errors (7000-7099)
+	ErrConfigNotFound      = NewAppErrorWithI18n(CodeConfigNotFound, CodeToI18nKey[CodeConfigNotFound])
+	ErrConfigReadonly      = NewAppErrorWithI18n(CodeConfigReadonly, CodeToI18nKey[CodeConfigReadonly])
+	ErrConfigInvalidType   = NewAppErrorWithI18n(CodeConfigInvalidType, CodeToI18nKey[CodeConfigInvalidType])
+	ErrConfigSyncFailed    = NewAppErrorWithI18n(CodeConfigSyncFailed, CodeToI18nKey[CodeConfigSyncFailed])
+	ErrConfigPreloadFailed = NewAppErrorWithI18n(CodeConfigPreloadFailed, CodeToI18nKey[CodeConfigPreloadFailed])
 )

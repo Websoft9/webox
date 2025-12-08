@@ -40,11 +40,6 @@ COPY . .
 # Generate swagger docs
 RUN swag init -g cmd/server/main.go -o ./docs
 
-# Build create-user tool (rarely changes, better cache)
-RUN --mount=type=cache,target=/root/.cache/go-build \
-  --mount=type=cache,target=/go/pkg/mod \
-  go build -ldflags="-w -s" -trimpath -o create-user ./tools/create-user
-
 # Build api-service with parallel compilation
 RUN --mount=type=cache,target=/root/.cache/go-build \
   --mount=type=cache,target=/go/pkg/mod \
@@ -71,7 +66,6 @@ COPY --from=builder --chown=appuser:appuser --chmod=755 /app/api-service ./
 COPY --from=builder --chown=appuser:appuser /app/docs ./docs/
 COPY --from=builder --chown=appuser:appuser /app/configs ./configs/
 COPY --from=builder --chown=appuser:appuser /app/scripts ./scripts/
-COPY --from=builder --chown=appuser:appuser --chmod=755 /app/create-user ./scripts/create-user
 
 # Set executable permissions for scripts
 RUN chmod +x ./scripts/*.sh

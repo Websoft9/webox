@@ -70,9 +70,6 @@ Websoft9 是一个现代化的云应用管理解决方案平台，采用分层�
    # 下载依赖包
    go mod tidy
 
-   # 初始化数据库
-   make init-db
-
    # 启动 API 服务
    make run
    ```
